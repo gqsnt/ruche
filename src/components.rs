@@ -5,3 +5,5 @@ pub mod summoner_champions_page;
 pub mod summoner_encounters_page;
 pub mod summoner_live_page;
 pub mod summoner_page;
+mod match_filters;
+mod pagination;

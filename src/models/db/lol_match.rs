@@ -1,3 +1,4 @@
+use riven::models::match_v5::Match;
 use crate::models::db::Id;
 use crate::models::entities::lol_match::LolMatch;
 use crate::version_to_major_minor;
@@ -31,7 +32,7 @@ impl LolMatch {
     }
 
 
-    pub async fn bulk_update(db: &sqlx::PgPool, matches: &[crate::riven_fix::Match]) -> Vec<i32> {
+    pub async fn bulk_update(db: &sqlx::PgPool, matches: &[Match]) -> Vec<i32> {
         let match_ids = matches.iter().map(|x| x.metadata.match_id.clone()).collect::<Vec<String>>();
         let match_creations = matches.iter().map(|x| chrono::DateTime::from_timestamp_millis(x.info.game_start_timestamp).unwrap()).collect::<Vec<_>>();
         let match_ends = matches.iter().map(|x| chrono::DateTime::from_timestamp_millis(x.info.game_end_timestamp.unwrap()).unwrap()).collect::<Vec<_>>();

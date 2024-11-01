@@ -1,144 +1,153 @@
-use std::str::FromStr;
-use leptos::{component, create_blocking_resource, create_effect, create_isomorphic_effect, create_server_action, create_signal, expect_context, server, spawn_local, use_context, view, IntoView, RwSignal, ServerFnError, SignalGet, SignalSet, SignalWith, Suspense, Transition};
-use leptos_router::{use_location, use_navigate, use_params_map, ActionForm, Outlet};
-#[cfg(feature = "ssr")]
-use crate::AppState;
-use crate::models::entities::summoner::Summoner;
-use crate::models::types::PlatformType;
-#[cfg(feature = "ssr")]
-use crate::models::update::summoner_matches::update_summoner_matches;
-
-#[server(GetSummoner, "/api")]
-pub async fn get_summoner(
-    platform_type: String,
-    summoner_slug: String,
-) -> Result<Summoner, ServerFnError> {
-    println!("SERVER: get_summoner {} {}", platform_type, summoner_slug);
-    let state = expect_context::<AppState>();
-    let db = state.db.clone();
-    let platform_type = PlatformType::from_code(platform_type.as_str()).unwrap();
-    let (game_name, tag_line) = Summoner::parse_slug(summoner_slug.as_str()).unwrap();
-    if let Ok(summoner) = Summoner::find_by_details(&db, &platform_type, game_name.as_str(), tag_line.as_str()).await {
-        Ok(summoner)
-    } else {
-        let (game_name, tag_line) = Summoner::parse_slug(summoner_slug.as_str()).unwrap();
-        leptos_axum::redirect(format!("/{}?game_name={}&tag_line={}", platform_type.to_string(), game_name, tag_line).as_str());
-        Err(ServerFnError::new("Summoner not found"))
-    }
-}
-
-#[server(UpdateSummoner, "/api")]
-pub async fn update_summoner(id:String, puuid: String, platform_type: String) -> Result<(), ServerFnError>{
-    let platform_type = PlatformType::from_code(platform_type.as_str()).unwrap();
-    let state = expect_context::<AppState>();
-    let riot_api = state.riot_api.clone();
-    let region = platform_type.region().to_riven();
-    match riot_api.account_v1()
-        .get_by_puuid(region, puuid.as_str())
-        .await{
-        Ok(account) => {
-            let riven_route = platform_type.to_riven();
-            match riot_api.summoner_v4().get_by_puuid(riven_route, account.puuid.as_str()).await{
-                Ok(summoner) => {
-                    let db = state.db.clone();
-                    let puuid = summoner.puuid.clone();
-                    let slug = Summoner::generate_slug(&account.game_name.clone().unwrap(), &account.tag_line.clone().unwrap());
-                    leptos_axum::redirect(format!("/{}/summoners/{}/matches", platform_type.to_string(), slug).as_str());
-                    Summoner::insert_or_update_account_and_summoner(&db, platform_type, account, summoner).await?;
-                    tokio::spawn(async move {
-                        let _ = update_summoner_matches(db.clone(),riot_api,puuid,platform_type, 1000).await;
-                        println!("Matches updated");
-                    });
-                }
-                _ => {
-                }
-            }
-        }
-        Err(_) => {
-        }
-    }
-    Ok(())
-}
+use crate::apis::{get_summoner, UpdateSummoner};
+use crate::components::match_filters::MatchFilters;
+use crate::components::summoner_champions_page::SummonerChampionsPage;
+use crate::components::summoner_encounters_page::SummonerEncountersPage;
+use crate::components::summoner_live_page::SummonerLivePage;
+use crate::components::summoner_matches_page::SummonerMatchesPage;
+use leptos::context::provide_context;
+use leptos::either::Either;
+use leptos::prelude::{log, OnAttribute};
+use leptos::prelude::{signal, Children, ElementChild, ElementExt, Show};
+use leptos::prelude::{ActionForm, ClassAttribute, Get, Read, ServerAction, Suspend, Transition};
+use leptos::server::Resource;
+use leptos::{component, view, IntoView};
+use leptos_router::hooks::{query_signal, query_signal_with_options, use_location, use_params_map};
+use leptos_router::NavigateOptions;
 
 #[component]
 pub fn SummonerPage() -> impl IntoView {
-    let navigate = use_navigate();
+    let update_summoner_action = ServerAction::<UpdateSummoner>::new();
     let params = use_params_map();
-    let location = use_location();
-
-    let update_summoner_action = create_server_action::<UpdateSummoner>();
-
-    let platform_type = use_context::<RwSignal<PlatformType>>().expect("PlatformType signal not found");
+    let platform_type = move || {
+        params.read().get("platform_type").clone().unwrap_or_default()
+    };
     let summoner_slug = move || {
-        params.with(|params| params.get("summoner_slug").cloned().unwrap())
+        params.read().get("summoner_slug").clone().unwrap_or_default()
     };
 
-    let summoner = create_blocking_resource(
-        move ||(platform_type.get().to_string(), summoner_slug(), update_summoner_action.version().get()),
-        move |(platform_type, summoner_slug,_ )| async move {
-            update_summoner_action.value().set(None);
-            println!("CLIENT: get_summoner {} {}", platform_type, summoner_slug);
-            get_summoner(platform_type, summoner_slug).await
+
+    // Update the summoner signal when resource changes
+
+    let summoner_resource = Resource::new_blocking(
+        move || (update_summoner_action.version().get(), platform_type(), summoner_slug()),
+        |(_, pt, ss)| async move {
+            //log!("Client::Fetching summoner: {}", ss);
+            get_summoner(pt, ss).await
         },
     );
 
-    view! {
-        <Transition fallback=move || view!{<div>"Loading..."</div>}>
-            {move || {
-                match summoner.get() {
-                    Some(Ok(summoner)) => {
-                        let summoner_id = use_context::<RwSignal<Option<i32>>>().expect("summoner_id not found");
-                        let summoner_route = format!(
-                            "/{}/summoners/{}",
-                            summoner.platform,
-                            summoner.slug(),
-                        );
-                        summoner_id.set(Some(summoner.id));
-                        let summoner_id_ = summoner.id;
-                        let puuid_ = summoner.puuid.clone();
-                        let platform_type_ = platform_type.get();
-                        let is_active = |route: &str| {
-                            location.pathname.get().contains(route)
-                        };
+    let is_active = |route: &str| {
+        let location = use_location();
+        location.pathname.get().contains(route)
+    };
 
+
+    let summoner_view = move || {
+        Suspend::new(async move {
+            match summoner_resource.await {
+                Ok(summoner) => {
+                    Either::Left({
+
+                        let (summoner_signal, set_summoner) = signal(summoner.clone());
+                        provide_context(summoner_signal);
+                        provide_context(update_summoner_action.version());
                         view! {
                             <div class="flex justify-between">
                                 <div class="flex justify-center items-center mt-2">
-                                    <img src=summoner.profile_icon_url() class="w-16 h-16"/>
+                                    <img src=format!("/profile_icons/{}.webp", summoner_signal().profile_icon_id) class="w-16 h-16"/>
                                     <div class="flex flex-col items-start">
-                                        <div>{summoner.game_name} #{summoner.tag_line}</div>
-                                        <div >lvl. {summoner.summoner_level}</div>
+                                        <div>{summoner_signal().game_name} #{summoner_signal().tag_line}</div>
+                                        <div >lvl. {summoner_signal().summoner_level}</div>
                                     </div>
                                     <ActionForm action=update_summoner_action >
-                                        <input type="hidden" name="id" value=move || summoner.id/>
-                                        <input type="hidden" name="puuid" value=move || summoner.puuid.clone()/>
-                                        <input type="hidden" name="platform_type" value=move || platform_type.get().to_string()/>
+                                        <input type="hidden" name="id" value=move || summoner_signal().id/>
+                                        <input type="hidden" name="puuid" value=move || summoner_signal().puuid.clone()/>
+                                        <input type="hidden" name="platform_type" value=move || summoner_signal().platform.as_region_str()/>
                                         <button class="ml-2 bg-green-500 px-3 py-1" type="submit">Update</button>
                                     </ActionForm>
                                 </div>
                             </div>
-                            <nav>
-                                <ul class="flex border-b">
-                                  <li class="-mb-px mr-1">
-                                    <a class=if is_active("matches") { "active-tab" } else { "default-tab" } href=format!("{}/matches",summoner_route)>Matches</a>
-                                  </li>
-                                  <li class="-mb-px mr-1">
-                                    <a class=if is_active("champions") { "active-tab" } else { "default-tab" } href=format!("{}/champions",summoner_route)>Champions</a>
-                                  </li>
-                                  <li class="-mb-px mr-1">
-                                    <a class=if is_active("encounters") { "active-tab" } else { "default-tab" } href=format!("{}/encounters",summoner_route)>Encounters</a>
-                                  </li>
-                                  <li class="-mb-px mr-1">
-                                    <a class=if is_active("live") { "active-tab" } else { "default-tab" } href=format!("{}/live",summoner_route)>Live</a>
-                                  </li>
-                                </ul>
-                            </nav>
-                            <Outlet/>
-                        }.into_view()
-                    }
-                    _ => ().into_view(),
+                            <SummonerNav/>
+                        }
+                    })
                 }
-            }}
+                Err(_) => { Either::Right(view! {}) }
+            }
+        })
+    };
+
+    view! {
+         <Transition fallback=move || view!{<div>"Loading summoner ..."</div>}>
+            {summoner_view}
+
         </Transition>
     }
 }
+
+
+#[component]
+pub fn SummonerNav() -> impl IntoView {
+    let (tab, set_tab) = query_signal_with_options::<String>("tab", NavigateOptions {
+        scroll: false,
+        replace: true,
+        ..Default::default()
+    });
+
+    view! {
+        <nav>
+            <ul class="flex ">
+              <li class="-mb-px mr-1">
+                <button on:click=move |e|set_tab(Some(Tabs::Matches.to_string())) class=move ||  if tab().is_none() || tab()== Some(Tabs::Matches.to_string())  { "active-tab" } else { "default-tab" }>Matches</button>
+              </li>
+              <li class="-mb-px mr-1">
+                <button on:click=move |e|set_tab(Some(Tabs::Champions.to_string()))  class=move ||  if tab() == Some(Tabs::Champions.to_string()) { "active-tab" } else { "default-tab" }>Champions</button>
+              </li>
+              <li class="-mb-px mr-1">
+                <button on:click=move |e|set_tab(Some(Tabs::Encounters.to_string()))  class= move || if tab() == Some(Tabs::Encounters.to_string()) { "active-tab" } else { "default-tab" }>Encounters</button>
+              </li>
+              <li class="-mb-px mr-1">
+                <button on:click=move |e|set_tab(Some(Tabs::Live.to_string()))  class= move || if tab() == Some(Tabs::Live.to_string()) { "active-tab" } else { "default-tab" }>Live</button>
+              </li>
+            </ul>
+        </nav>
+        <div class="my-4">
+            <Show when=move || tab().is_none() || tab() == Some(Tabs::Matches.to_string())>
+                <MatchFilters>
+                    <SummonerMatchesPage/>
+                </MatchFilters>
+            </Show>
+            <Show when=move || tab() == Some(Tabs::Champions.to_string())>
+                <SummonerChampionsPage/>
+            </Show>
+            <Show when=move || tab() == Some(Tabs::Encounters.to_string())>
+                <SummonerEncountersPage/>
+            </Show>
+            <Show when=move || tab() == Some(Tabs::Live.to_string())>
+                <SummonerLivePage/>
+            </Show>
+
+        </div>
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum Tabs {
+    #[default]
+    Matches,
+    Champions,
+    Encounters,
+    Live,
+}
+
+impl Tabs {
+    pub fn to_string(&self) -> String {
+        match self {
+            Tabs::Matches => "matches".to_string(),
+            Tabs::Champions => "champions".to_string(),
+            Tabs::Encounters => "encounters".to_string(),
+            Tabs::Live => "live".to_string(),
+        }
+    }
+}
+

@@ -1,18 +1,21 @@
-
-
+use tower_http::compression::{CompressionLayer, DefaultPredicate};
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
+    use memory_serve::{load_assets, MemoryServe};
+    use tower_http::services::ServeDir;
     use axum::Router;
-    use leptos::*;
+    use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use leptos_broken_gg::app::*;
-    use leptos_broken_gg::fileserv::file_and_error_handler;
     use std::sync::Arc;
     use leptos_broken_gg::{init_database, init_riot_api, AppState};
     use leptos_broken_gg::lol_static;
     use dotenv::dotenv;
+    use axum::middleware;
+    use tower::ServiceBuilder;
+
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
     // For deployment these variables are:
@@ -20,10 +23,12 @@ async fn main() {
     // Alternately a file can be specified such as Some("Cargo.toml")
     // The file would need to be included with the executable when moved to deployment
     dotenv().ok();
-    let conf = get_configuration(None).await.unwrap();
+    let conf = get_configuration(None).unwrap();
     let leptos_options = conf.leptos_options;
+    let root = leptos_options.site_root.clone();
     lol_static::init_static_data().await;
-    let app_state = AppState{
+
+    let app_state = AppState {
         leptos_options: leptos_options.clone(),
         riot_api: Arc::new(init_riot_api()),
         db: init_database().await,
@@ -41,13 +46,29 @@ async fn main() {
                 let app_state = app_state.clone();
                 move || provide_context(app_state.clone())
             },
-            App
+            {
+                let leptos_options = leptos_options.clone();
+                move || shell(leptos_options.clone())
+            },
         )
-        .fallback(file_and_error_handler)
+        .merge(
+            MemoryServe::new(load_assets!("./target/site"))
+                .enable_brotli(!cfg!(debug_assertions))
+                .into_router()
+        )
+
+        .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
+        .layer(
+            CompressionLayer::new()
+                .br(true)
+                .deflate(true)
+                .gzip(true)
+                .zstd(true).compress_when(DefaultPredicate::default())
+        )
         .with_state(app_state);
 
+    log!("listening on http://{}", &addr);
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    logging::log!("listening on http://{}", &addr);
     axum::serve(listener, app.into_make_service())
         .await
         .unwrap();

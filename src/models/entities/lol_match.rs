@@ -1,5 +1,5 @@
-use crate::models::types::PlatformType;
 use serde::{Deserialize, Serialize};
+use crate::consts::PlatformRoute;
 use crate::models::entities::lol_match_participant::LolMatchParticipant;
 
 /// Represents a League of Legends match.
@@ -11,7 +11,7 @@ pub struct LolMatch {
     pub mode_id: Option<i32>,
     pub map_id: Option<i32>,
     pub queue_id: Option<i32>,
-    pub platform: Option<PlatformType>,
+    pub platform: Option<PlatformRoute>,
     pub updated: bool,
     pub match_creation: Option<String>,
     pub match_end: Option<String>,

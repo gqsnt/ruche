@@ -1,128 +1,210 @@
+use futures::StreamExt;
+use image::codecs::webp::WebPEncoder;
+use image::{DynamicImage, EncodableLayout, ExtendedColorType, ImageReader};
+use once_cell::sync::OnceCell;
+use reactive_stores::{OptionStoreExt, StoreFieldIterator};
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
-use std::num::ParseIntError;
-use once_cell::sync::OnceCell;
-use riven::endpoints::ChampionV3;
-use crate::lol_static;
+use std::path::{Path, PathBuf};
+use leptos::html::tr;
+use strum::IntoEnumIterator;
+use webp::Encoder;
+use crate::consts::{Champion, Perk, SummonerSpell};
 
 pub static VERSION: OnceCell<String> = OnceCell::new();
-pub static CHAMPIONS: OnceCell<HashMap<String, Champion>> = OnceCell::new();
-pub static ITEMS: OnceCell<HashMap<i32, Item>> = OnceCell::new();
-pub static SUMMONER_SPELLS: OnceCell<HashMap<i32, SummonerSpell>> = OnceCell::new();
-
-pub static PERKS: OnceCell<HashMap<i32, Perk>> = OnceCell::new();
-pub static MAPS: OnceCell<HashMap<i32, Map>> = OnceCell::new();
-pub static QUEUES: OnceCell<HashMap<i32, Queue>> = OnceCell::new();
-pub static GAME_MODES: OnceCell<HashMap<String, GameMode>> = OnceCell::new();
 
 
-pub async fn init_static_data(){
+
+
+
+#[derive(Debug, Clone)]
+struct ImageToDownload {
+    url: String,
+    path: PathBuf,
+    size: (u32, u32),
+    to_webp: bool,
+}
+
+
+
+pub async fn init_static_data() {
     let version = get_current_version().await.unwrap();
     let t = std::time::Instant::now();
+
     let (
-        champions,
-        items,
-        summoner_spells,
+        item_images,
+        profile_icons_images,
         perks,
-        maps,
-        queues,
-        game_modes,
     ) = tokio::join!(
-    get_champions(version.clone()),
-    get_items(version.clone()),
-    get_summoner_spells(version.clone()),
-    get_perks(version.clone()),
-    get_maps(),
-    get_queues(),
-    get_game_modes(),
-);
-    VERSION.set(version.clone()).unwrap();
-    CHAMPIONS.set(champions.unwrap()).unwrap();
-    ITEMS.set(items.unwrap()).unwrap();
-    SUMMONER_SPELLS.set(summoner_spells.unwrap()).unwrap();
-    PERKS.set(perks.unwrap()).unwrap();
-    MAPS.set(maps.unwrap()).unwrap();
-    QUEUES.set(queues.unwrap()).unwrap();
-    GAME_MODES.set(game_modes.unwrap()).unwrap();
+        get_items(version.clone()),
+        update_profile_icons_image(version.clone()),
+        get_perks(version.clone())
+    );
+
+    let mut images_to_download = Vec::new();
+    images_to_download.extend(item_images.unwrap());
+    images_to_download.extend(profile_icons_images.unwrap());
+    images_to_download.extend(perks.unwrap());
+    for champion in Champion::iter(){
+        if champion == Champion::UNKNOWN {
+            continue;
+        }
+        let path = Path::new("public").join("champions").join(format!("{}.webp", champion as i16));
+        if !path.exists() {
+            let image_url = format!(
+                "https://cdn.communitydragon.org/{}/champion/{}/square",
+                version.clone(),
+                riven::consts::Champion::from(champion as i16).identifier().unwrap()
+            );
+            images_to_download.push(ImageToDownload {
+                url: image_url,
+                path: path.clone(),
+                size: (60, 60),
+                to_webp: true,
+            });
+        }
+    }
+
+    for summoner_spell in SummonerSpell::iter() {
+        if summoner_spell == SummonerSpell::UNKNOWN {
+            continue;
+        }
+        let path = Path::new("public").join("summoner_spells").join(format!("{}.webp", summoner_spell as u16));
+        if !path.exists() {
+            images_to_download.push(ImageToDownload {
+                url: summoner_spell.get_url(version.clone()),
+                path,
+                size: (22, 22),
+                to_webp: true,
+            });
+        }
+    }
+    // Download and save all images concurrently
+    for image in &images_to_download {
+        println!("Downloading image: {:?} to {:?}", image.url, image.path);
+    }
+    println!("Downloading and saving {} images...", images_to_download.len());
+    download_and_save_images(images_to_download).await;
+
     println!("Time to load static data: {:?}", t.elapsed());
 }
 
-pub fn get_version() -> String {
-    VERSION.get().unwrap().clone()
+
+pub async fn encode_and_save_image(image_data: &[u8], file_path: &Path, size: (u32, u32), to_webp: bool) {
+    println!("Saving image: {:?}", file_path);
+    let img = image::load_from_memory_with_format(image_data, image::ImageFormat::Png).unwrap();
+    let resized = img.resize_exact(size.0, size.1, image::imageops::FilterType::Lanczos3);
+    tokio::fs::create_dir_all(file_path.parent().unwrap()).await.unwrap();
+    if to_webp {
+        let rgb8 =  DynamicImage::ImageRgb8(resized.to_rgb8());
+        let encoder = Encoder::from_image(&rgb8).unwrap();
+
+        tokio::fs::write(file_path, encoder.encode(100.0).to_vec()).await.unwrap();
+    }else{
+        resized.save(file_path).unwrap();
+    }
 }
 
-pub fn get_champion_by_name(name:&str) -> Champion{
-    match CHAMPIONS.get().unwrap().get(name){
-        None => {
-            let champions = CHAMPIONS.get().unwrap();
-            for (k, v) in champions.iter(){
-                // check if k match name
-                if name.contains(k) || name.to_lowercase() == v.name.to_lowercase(){
-                    return v.clone();
+async fn download_and_save_images(images_to_download: Vec<ImageToDownload>) {
+    let client = reqwest::Client::new();
+
+    futures::stream::iter(images_to_download)
+        .for_each_concurrent(10, |image| {
+            let client = client.clone();
+            async move {
+                // Download the image
+                match client.get(&image.url).send().await {
+                    Ok(response) => {
+                        match response.bytes().await {
+                            Ok(image_data) => {
+                                // Save the image in a blocking task
+                                let image_data_vec = image_data.to_vec();
+                                let path = image.path.clone();
+                                let size = image.size;
+                                let to_webp = image.to_webp;
+                                encode_and_save_image(&image_data_vec, &path, size,to_webp).await;
+                            }
+                            Err(e) => {
+                                eprintln!("Error getting image data: {}", e);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Error downloading image: {}", e);
+                    }
                 }
             }
-            panic!("Champion: {} not found", name);
+        })
+        .await;
+}
+
+
+
+pub async  fn get_perks(version:String) -> Result<Vec<ImageToDownload>, reqwest::Error> {
+    let raw_perks = StaticUrl::Perks { version : version.clone()}.get().await?;
+    let main_perks: Vec<JsonParentPerk> = serde_json::from_value(raw_perks).unwrap();
+    let mut images_to_download = Vec::new();
+    for main_perk in main_perks {
+        for slot in main_perk.slots {
+            for rune in slot.runes {
+                let path = Path::new("public").join("perks").join(format!("{}.png", rune.id));
+                if !path.exists(){
+                    let image_url = format!("https://ddragon.leagueoflegends.com/cdn/img/{}", rune.icon);
+                    images_to_download.push(ImageToDownload {
+                        url: image_url,
+                        path,
+                        size: (22, 22),
+                        to_webp: false ,
+                    });
+                }
+            }
         }
-        Some(c) => c.clone(),
-    }
-}
-
-pub fn get_champion_by_id(id:i32) -> Champion{
-    let champions = CHAMPIONS.get().unwrap();
-    for (_, v) in champions.iter(){
-        if v.id == id{
-            return v.clone();
+        let path = Path::new("public").join("perks").join(format!("{}.png", main_perk.id));
+        if !path.exists(){
+            let image_url = format!("https://ddragon.leagueoflegends.com/cdn/img/{}", main_perk.icon);
+            images_to_download.push(ImageToDownload {
+                url: image_url,
+                path,
+                size: (22, 22),
+                to_webp: false ,
+            });
         }
     }
-    panic!("Champion with id: {} not found", id);
+    Ok(images_to_download)
 }
 
-
-
-
-pub fn get_item(id:i32) -> Option<Item>{
-    if id == 0{
-        return None;
+pub async fn get_items(version: String) -> Result<Vec<ImageToDownload>, reqwest::Error> {
+    let mut images_to_download = Vec::new();
+    let raw_items = StaticUrl::Items { version: version.clone() }.get().await?;
+    let items_json = raw_items["data"].as_object().unwrap();
+    for (key, value) in items_json {
+        let item: JsonItem = serde_json::from_value(value.clone()).unwrap();
+        let id = key.parse::<i32>().unwrap();
+        let path = Path::new("public").join("items").join(format!("{}.webp", id));
+        if !path.exists() {
+            let image_url = format!(
+                "https://ddragon.leagueoflegends.com/cdn/{}/img/item/{}",
+                version.clone(),
+                item.image.full
+            );
+            images_to_download.push(ImageToDownload {
+                url: image_url,
+                path: path.clone(),
+                size: (22, 22),
+                to_webp: true,
+            });
+        }
     }
-    ITEMS.get().unwrap().get(&id).cloned()
-}
-
-pub fn get_summoner_spell(id:i32) -> Option<SummonerSpell>{
-    if id == 0{
-        return None;
-    }
-    SUMMONER_SPELLS.get().unwrap().get(&id).cloned()
-}
-
-pub fn get_perk(id:i32) -> Option<Perk>{
-    if id == 0{
-        return None;
-    }
-    PERKS.get().unwrap().get(&id).cloned()
-}
-
-pub fn get_map(id:i32) -> Map{
-    MAPS.get().unwrap().get(&id).unwrap().clone()
-}
-
-pub fn get_queue(id:i32) -> Queue{
-    QUEUES.get().unwrap().get(&id).unwrap().clone()
-}
-
-pub fn get_game_mode(name:&str) -> GameMode{
-    GAME_MODES.get().unwrap().get(name).unwrap().clone()
+    Ok(images_to_download)
 }
 
 
-
-
-
-
-
-
-
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProfileIcon {
+    pub id: i32,
+}
 
 
 pub async fn get_current_version() -> Result<String, reqwest::Error> {
@@ -130,347 +212,40 @@ pub async fn get_current_version() -> Result<String, reqwest::Error> {
     Ok(versions[0].clone())
 }
 
-pub async fn get_champions(version:String) -> Result<HashMap<String, Champion>, reqwest::Error> {
-    let mut champions = HashMap::new();
-    let raw_champions = StaticUrl::Champions { version:version.clone() }.get().await?;
-    let champions_json = raw_champions["data"].as_object().unwrap();
-    for (key, value) in champions_json {
-        let champion: JsonChampion = serde_json::from_value(value.clone()).unwrap();
-        let id = champion.key.parse::<i32>().unwrap();
-        champions.insert(key.clone(), Champion {
-            id,
-            name: champion.name,
-            info: champion.info,
-            tags: champion.tags,
-            img_url: format!("https://ddragon.leagueoflegends.com/cdn/{}/img/champion/{}", version.clone(), champion.image.full),
-            stats: champion.stats,
-            slug: champion.id,
-        });
-    }
-    Ok(champions)
-}
 
 
-pub async fn get_items(version:String) -> Result<HashMap<i32, Item>, reqwest::Error> {
-    let mut items = HashMap::new();
-    let raw_items = StaticUrl::Items { version : version.clone()}.get().await?;
-    let items_json = raw_items["data"].as_object().unwrap();
-    for (key, value) in items_json {
-        let item: JsonItem = serde_json::from_value(value.clone()).unwrap();
-        let id = key.parse::<i32>().unwrap();
-        items.insert(id, Item {
-            id,
-            name: item.name,
-            description: item.description,
-            tags: item.tags,
-            into_items: item.into.unwrap_or_default().into_iter().map(|e| e.parse::<i32>().unwrap()).collect::<Vec<_>>(),
-            from_items: item.from.unwrap_or_default().into_iter().map(|e| e.parse::<i32>().unwrap()).collect::<Vec<_>>(),
-            depth: item.depth.unwrap_or_default(),
-            img_url: format!("https://ddragon.leagueoflegends.com/cdn/{}/img/item/{}", version.clone(), item.image.full),
-            stats: item.stats,
-            gold: item.gold,
-        });
-    }
-    Ok(items)
-}
 
-pub async fn get_summoner_spells(version:String) -> Result<HashMap<i32, SummonerSpell>, reqwest::Error> {
-    let mut summoner_spells = HashMap::new();
-    let raw_summoner_spells = StaticUrl::SummonerSpells { version: version.clone()}.get().await?;
-    let summoner_spells_json = raw_summoner_spells["data"].as_object().unwrap();
-    for (_, value) in summoner_spells_json {
-        let summoner_spell: JsonSummonerSpell = serde_json::from_value(value.clone()).unwrap();
-        let id = summoner_spell.key.parse::<i32>().unwrap();
-        summoner_spells.insert(id, SummonerSpell {
-            id,
-            name: summoner_spell.name,
-            description: summoner_spell.description,
-            img_url: format!("https://ddragon.leagueoflegends.com/cdn/{}/img/spell/{}", version.clone(), summoner_spell.image.full),
-        });
-    }
-    Ok(summoner_spells)
-}
-pub async  fn get_perks(version:String) -> Result<HashMap<i32, Perk>, reqwest::Error> {
-    let mut perks = HashMap::new();
-    let raw_perks = StaticUrl::Perks { version : version.clone()}.get().await?;
-    let main_perks: Vec<JsonParentPerk> = serde_json::from_value(raw_perks).unwrap();
-    for main_perk in main_perks {
-        for slot in main_perk.slots {
-            for rune in slot.runes {
-                perks.insert(rune.id, Perk {
-                    id: rune.id,
-                    name: rune.name,
-                    img_url: format!("https://ddragon.leagueoflegends.com/cdn/img/{}", rune.icon),
-                });
-            }
-        }
-        perks.insert(main_perk.id, Perk {
-            id: main_perk.id,
-            name: main_perk.name,
-            img_url: format!("https://ddragon.leagueoflegends.com/cdn/img/{}", main_perk.icon),
-        });
-    }
-    Ok(perks)
-}
-
-pub async fn get_maps() -> Result<HashMap<i32, Map>, reqwest::Error> {
-    let mut maps = HashMap::new();
-    let raw_maps = StaticUrl::Maps.get().await?;
-    let maps_json: Vec<JsonMap> = serde_json::from_value(raw_maps).unwrap();
-    for map in maps_json {
-        maps.insert(map.map_id, Map {
-            id: map.map_id,
-            name: map.map_name,
-            description: map.notes,
-        });
-    }
-    Ok(maps)
-}
-
-
-pub async fn get_queues() -> Result<HashMap<i32, Queue>, reqwest::Error> {
-    let mut queues = HashMap::new();
-    let raw_queues = StaticUrl::Queues.get().await?;
-    let queues_json: Vec<JsonQueue> = serde_json::from_value(raw_queues).unwrap();
-    for queue in queues_json {
-        queues.insert(queue.queue_id, Queue {
-            id: queue.queue_id,
-            name: queue.map,
-            description: Some(queue.description.clone().unwrap_or_default().replace(" games", "")),
-            notes: queue.notes,
-        });
-    }
-    Ok(queues)
-}
-
-pub async fn get_game_modes() -> Result<HashMap<String, GameMode>, reqwest::Error> {
-    let mut modes = HashMap::new();
-    let raw_modes = StaticUrl::Modes.get().await?;
-    let modes_json: Vec<JsonMode> = serde_json::from_value(raw_modes).unwrap();
-    for mode in modes_json {
-        modes.insert(mode.game_mode.clone(), GameMode {
-            name: mode.game_mode,
-            description: mode.description,
-        });
-    }
-    Ok(modes)
-}
-
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SummonerIcon{
-    pub id: i32,
-    pub img_url: String,
-}
-
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Map {
-    pub id: i32,
-    pub name: String,
-    pub description: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GameMode {
-    pub name: String,
-    pub description: String,
-}
-
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct Perk {
-    pub id: i32,
-    pub name: String,
-    pub img_url: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Queue {
-    pub id: i32,
-    pub name: String,
-    pub description: Option<String>,
-    pub notes: Option<String>,
-}
-
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SummonerSpell {
-    pub id: i32,
-    pub name: String,
-    pub description: String,
-    pub img_url: String,
-}
-
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ChampionInfo {
-    pub attack: i32,
-    pub defense: i32,
-    pub magic: i32,
-    pub difficulty: i32,
-}
-
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ChampionStats {
-    pub hp: i32,
-    #[serde(rename = "hpperlevel")]
-    pub hp_per_level: i32,
-    pub mp: i32,
-    #[serde(rename = "mpperlevel")]
-    pub mp_per_level: f32,
-    #[serde(rename = "movespeed")]
-    pub move_speed: i32,
-    pub armor: i32,
-    #[serde(rename = "armorperlevel")]
-    pub armor_per_level: f32,
-    #[serde(rename = "spellblock")]
-    pub spell_block: i32,
-    #[serde(rename = "spellblockperlevel")]
-    pub spell_block_per_level: f32,
-    #[serde(rename = "attackrange")]
-    pub attack_range: i32,
-    #[serde(rename = "hpregen")]
-    pub hp_regen: f32,
-    #[serde(rename = "hpregenperlevel")]
-    pub hp_regen_per_level: f32,
-    #[serde(rename = "mpregen")]
-    pub mp_regen: f32,
-    #[serde(rename = "mpregenperlevel")]
-    pub mp_regen_per_level: f32,
-    pub crit: i32,
-    #[serde(rename = "critperlevel")]
-    pub crit_per_level: i32,
-    #[serde(rename = "attackdamage")]
-    pub attack_damage: i32,
-    #[serde(rename = "attackdamageperlevel")]
-    pub attack_damage_per_level: f32,
-    #[serde(rename = "attackspeedperlevel")]
-    pub attack_speed_per_level: f32,
-    #[serde(rename = "attackspeed")]
-    pub attack_speed: f32,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Champion {
-    pub id: i32,
-    pub name: String,
-    pub slug: String,
-    pub img_url: String,
-    pub info: ChampionInfo,
-    pub tags: Vec<String>,
-    pub stats: ChampionStats,
-}
-
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct ItemGoldInfo {
-    pub base: i32,
-    pub total: i32,
-    pub sell: i32,
-    pub purchasable: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct Item {
-    pub id: i32,
-    pub name: String,
-    pub img_url: String,
-    pub description: String,
-    pub tags: Vec<String>,
-    pub into_items: Vec<i32>,
-    pub from_items: Vec<i32>,
-    pub gold: ItemGoldInfo,
-    pub stats: serde_json::Value,
-    pub depth: i32,
-}
-
-pub enum StaticUrl {
-    Versions,
-    Champions { version: String },
-    Items { version: String },
-    SummonerSpells { version: String },
-    Perks { version: String },
-    Maps,
-    Queues,
-    Modes,
-}
-
-impl StaticUrl {
-    pub fn url(&self) -> String {
-        match self {
-            StaticUrl::Versions => "https://ddragon.leagueoflegends.com/api/versions.json".to_string(),
-            StaticUrl::Champions { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/champion.json", version),
-            StaticUrl::Items { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/item.json", version),
-            StaticUrl::SummonerSpells { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/summoner.json", version),
-            StaticUrl::Perks { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/runesReforged.json", version),
-            StaticUrl::Maps => "https://static.developer.riotgames.com/docs/lol/maps.json".to_string(),
-            StaticUrl::Queues => "https://static.developer.riotgames.com/docs/lol/queues.json".to_string(),
-            StaticUrl::Modes => "https://static.developer.riotgames.com/docs/lol/gameModes.json".to_string(),
+pub async fn update_profile_icons_image(version: String) -> Result<Vec<ImageToDownload>, reqwest::Error> {
+    let mut images_to_download = Vec::new();
+    let raw_champions = StaticUrl::ProfileIcons { version: version.clone() }.get().await?;
+    let data = raw_champions["data"].as_object().unwrap();
+    for (k, value) in data {
+        let id = k.clone().parse::<i64>().unwrap() as i32;
+        let path = Path::new("public").join("profile_icons").join(format!("{}.webp", id));
+        if !path.exists() {
+            let image_url = format!(
+                "https://ddragon.leagueoflegends.com/cdn/{}/img/profileicon/{}.png",
+                version.clone(),
+                id
+            );
+            images_to_download.push(ImageToDownload {
+                url: image_url,
+                path: path.clone(),
+                size: (64, 64),
+                to_webp: true,
+            });
         }
     }
-
-    pub async fn get(&self) -> Result<Value, reqwest::Error> {
-        let client = reqwest::Client::builder().danger_accept_invalid_certs(true).build().unwrap();
-        client.get(self.url().as_str()).send().await?.json().await
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct JsonImage {
-    pub full: String,
-    pub sprite: String,
-    pub group: String,
-    pub x: i32,
-    pub y: i32,
-    pub w: i32,
-    pub h: i32,
+   Ok(images_to_download)
 }
 
 
-#[derive(Serialize, Deserialize)]
-pub struct JsonChampion {
-    pub id: String,
-    pub key: String,
-    pub name: String,
-    pub title: String,
-    pub info: ChampionInfo,
-    pub tags: Vec<String>,
-    pub image: JsonImage,
-    pub stats: ChampionStats,
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SummonerIcon {
+    pub id: i32,
+    pub img_url: String,
 }
 
-
-#[derive(Serialize, Deserialize)]
-pub struct JsonItem {
-    pub name: String,
-    pub description: String,
-    pub tags: Vec<String>,
-    pub image: JsonImage,
-    pub stats: Value,
-    pub gold: ItemGoldInfo,
-    pub into: Option<Vec<String>>,
-    pub from: Option<Vec<String>>,
-    pub depth: Option<i32>,
-}
-
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct JsonMap {
-    pub map_id: i32,
-    pub map_name: String,
-    pub notes: String,
-}
-
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct JsonMode {
-    pub game_mode: String,
-    pub description: String,
-}
 
 
 #[derive(Serialize, Deserialize)]
@@ -495,22 +270,90 @@ struct JsonChildPerk {
     name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct JsonQueue {
-    pub queue_id: i32,
-    pub map: String,
-    pub description: Option<String>,
-    pub notes: Option<String>,
+
+
+
+
+pub enum StaticUrl {
+    Versions,
+    Champions { version: String },
+    Items { version: String },
+    SummonerSpells { version: String },
+    Perks { version: String },
+    ProfileIcons { version: String },
+    Maps,
+    Queues,
+    Modes,
+}
+
+impl StaticUrl {
+    pub fn url(&self) -> String {
+        match self {
+            StaticUrl::Versions => "https://ddragon.leagueoflegends.com/api/versions.json".to_string(),
+            StaticUrl::Champions { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/champion.json", version),
+            StaticUrl::Items { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/item.json", version),
+            StaticUrl::SummonerSpells { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/summoner.json", version),
+            StaticUrl::Perks { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/runesReforged.json", version),
+            StaticUrl::ProfileIcons { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/profileicon.json", version).to_string(),
+            StaticUrl::Maps => "https://static.developer.riotgames.com/docs/lol/maps.json".to_string(),
+            StaticUrl::Queues => "https://static.developer.riotgames.com/docs/lol/queues.json".to_string(),
+            StaticUrl::Modes => "https://static.developer.riotgames.com/docs/lol/gameModes.json".to_string(),
+        }
+    }
+
+    pub async fn get(&self) -> Result<Value, reqwest::Error> {
+        let client = reqwest::Client::builder().danger_accept_invalid_certs(true).build().unwrap();
+        client.get(self.url().as_str()).send().await?.json().await
+    }
+}
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ItemGoldInfo {
+    pub base: i32,
+    pub total: i32,
+    pub sell: i32,
+    pub purchasable: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct Item {
+    pub id: i32,
+    pub name: String,
+    pub description: String,
+    pub tags: Vec<String>,
+    pub into_items: Vec<i32>,
+    pub from_items: Vec<i32>,
+    pub gold: ItemGoldInfo,
+    pub stats: serde_json::Value,
+    pub depth: i32,
+}
+#[derive(Serialize, Deserialize)]
+pub struct JsonImage {
+    pub full: String,
+    pub sprite: String,
+    pub group: String,
+    pub x: i32,
+    pub y: i32,
+    pub w: i32,
+    pub h: i32,
 }
 
 
 #[derive(Serialize, Deserialize)]
-pub struct JsonSummonerSpell {
-    pub id: String,
-    pub key: String,
+pub struct JsonItem {
     pub name: String,
     pub description: String,
+    pub tags: Vec<String>,
     pub image: JsonImage,
+    pub stats: Value,
+    pub gold: ItemGoldInfo,
+    pub into: Option<Vec<String>>,
+    pub from: Option<Vec<String>>,
+    pub maps:HashMap<i32, bool>,
+    pub depth: Option<i32>,
 }
+
+
+
+
+
 

@@ -1,15 +1,13 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use crate::error_template::{AppError, AppResult};
-use crate::lol_static::get_champion_by_name;
 use crate::models::entities::lol_match::LolMatch;
 use crate::models::entities::lol_match_participant::{LolMatchParticipant, LolMatchParticipantStats};
 use crate::models::entities::summoner::Summoner;
-use crate::models::types::PlatformType;
-use crate::riven_fix::get_riven_match;
-use riven::consts::RegionalRoute;
+use riven::consts::{Champion, PlatformRoute, RegionalRoute};
 use riven::RiotApi;
 use sqlx::types::chrono;
 use sqlx::types::chrono::{DateTime, Utc};
@@ -20,11 +18,10 @@ pub async fn update_summoner_matches(
     db: sqlx::PgPool,
     api: Arc<RiotApi>,
     puuid: String,
-    platform: PlatformType,
+    platform: PlatformRoute,
     max_matches: usize,
 ) -> AppResult<()> {
-    let region = platform.to_riven().to_regional();
-    let match_ids = fetch_all_match_ids(&api, region, &puuid, max_matches).await?;
+    let match_ids = fetch_all_match_ids(&api, platform.to_regional(), &puuid, max_matches).await?;
 
     // Fetch existing match IDs from the database
     let existing_match_ids: HashSet<String> = sqlx::query_scalar!(
@@ -61,7 +58,7 @@ pub async fn update_summoner_matches(
 async fn update_matches(
     db: &sqlx::PgPool,
     api: &Arc<RiotApi>,
-    platform: PlatformType,
+    platform: PlatformRoute,
     match_ids: Vec<i32>,
     match_riot_ids: Vec<String>,
 ) -> AppResult<()> {
@@ -71,7 +68,7 @@ async fn update_matches(
         let platform = platform.clone();
 
         async move {
-            get_riven_match(&api, platform.to_riven().to_regional(), &match_id).await
+            api.match_v5().get_match(platform.to_regional(), &match_id).await
         }
     });
 
@@ -90,7 +87,7 @@ async fn update_matches(
             .split('_')
             .next()
             .unwrap_or_default();
-        let match_platform = PlatformType::from_code(platform_code).unwrap_or(platform);
+        let match_platform = PlatformRoute::from_str(platform_code).unwrap_or(platform);
 
         for participant in &match_data.info.participants {
             participants_map
@@ -192,9 +189,9 @@ async fn update_matches(
                         (participant.kills + participant.assists) as f64 / team_kill_count as f64
                     };
                     let kill_participation = (kill_participation * 100.0).round() / 100.0;
-
+                    let champion_id =  Champion::try_from(participant.champion_name.as_str()).unwrap().0;
                     TempParticipant {
-                        champion_id: get_champion_by_name(&participant.champion_name).id,
+                        champion_id: champion_id,
                         summoner_id,
                         lol_match_id: match_id,
                         summoner_spell1_id: participant.summoner1_id,
@@ -335,7 +332,7 @@ pub struct TempSummoner {
     pub game_name: String,
     pub tag_line: String,
     pub puuid: String,
-    pub platform: PlatformType,
+    pub platform: PlatformRoute,
     pub summoner_level: i64,
     pub profile_icon_id: i32,
     pub updated_at: DateTime<Utc>,
@@ -343,7 +340,7 @@ pub struct TempSummoner {
 
 #[derive(Clone)]
 pub struct TempParticipant {
-    pub champion_id: i32,
+    pub champion_id: i16,
     pub summoner_id: i32,
     pub lol_match_id: i32,
     pub summoner_spell1_id: i32,

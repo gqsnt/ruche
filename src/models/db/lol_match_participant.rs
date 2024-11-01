@@ -1,35 +1,91 @@
-use crate::error_template::AppResult;
+use std::str::FromStr;
+use crate::error_template::{AppError, AppResult};
 use crate::models::entities::lol_match_participant::{LolMatchDefaultParticipantMatchesPage, LolMatchParticipant, LolMatchParticipantMatchesPage, LolMatchParticipantStats};
 use crate::models::update::summoner_matches::TempParticipant;
 use unzip_n::unzip_n;
-use crate::lol_static::{get_champion_by_id, get_champion_by_name, get_item, get_perk, get_queue, get_summoner_spell, CHAMPIONS, QUEUES};
 use itertools::Itertools;
-use bigdecimal::ToPrimitive;
+use bigdecimal::{BigDecimal, ToPrimitive};
+use chrono::{DateTime, Duration, NaiveDateTime, Utc};
+use sqlx::{Execute, FromRow, PgPool, QueryBuilder, Row};
+use crate::apis::MatchFiltersSearch;
+use crate::consts::Queue;
+use crate::models::db::Id;
+use crate::models::entities::summoner::Summoner;
+
 unzip_n!(14);
 unzip_n!(11);
 unzip_n!(7);
 
-impl LolMatchParticipant {
-    pub async fn get_match_participant_for_matches_page(db: &sqlx::PgPool, summoner_id: i32, page:i64) -> AppResult<(Vec<LolMatchDefaultParticipantMatchesPage>, i64)> {
-        let per_page = 10;
-        let total_count = sqlx::query_scalar!(
-            "SELECT COUNT(*) FROM lol_match_participants
-            INNER JOIN lol_matches ON lol_matches.id = lol_match_participants.lol_match_id
-            WHERE lol_match_participants.summoner_id = $1;",
-            summoner_id
-        )
-            .fetch_one(db)
-            .await?;
-        let total_pages = (total_count.unwrap() + per_page - 1) / per_page;
 
-        let mut matches= sqlx::query!(
+#[derive(FromRow)]
+struct LolMatchParticipantMatchesQueryResult{
+    total_count: Option<i64>,
+    id: i32,
+    lol_match_id: i32,
+    champion_id: i32,
+    summoner_id: i32,
+    summoner_spell1_id: Option<i32>,
+    summoner_spell2_id: Option<i32>,
+    team_id: i32,
+    won: bool,
+    champ_level: i32,
+    kill_participation: Option<BigDecimal>,
+    kda: Option<BigDecimal>,
+    kills: i32,
+    deaths: i32,
+    assists: i32,
+    perk_primary_selection_id: Option<i32>,
+    perk_sub_style_id: Option<i32>,
+    item0_id: Option<i32>,
+    item1_id: Option<i32>,
+    item2_id: Option<i32>,
+    item3_id: Option<i32>,
+    item4_id: Option<i32>,
+    item5_id: Option<i32>,
+    item6_id: Option<i32>,
+    lol_match_queue_id: Option<i32>,
+    lol_match_match_end: Option<NaiveDateTime>,
+    lol_match_match_duration: Option<i32>,
+}
+
+
+impl LolMatchParticipant {
+    pub async fn get_match_participant_for_matches_page(
+        db: &PgPool,
+        summoner_id: i32,
+        page: i32,
+        filters: MatchFiltersSearch,
+    ) -> AppResult<(Vec<LolMatchDefaultParticipantMatchesPage>, i64)> {
+        let start_date=  if let Some(start_date) = filters.start_date {
+            if !start_date.is_empty() {
+                Some(NaiveDateTime::parse_from_str(format!("{} 00:00:00", start_date).as_str(), "%Y-%m-%d %H:%M:%S").unwrap())
+            } else {
+                None
+            }
+        }else{
+            None
+        };
+        let end_date = if let Some(end_date) = filters.end_date {
+            if !end_date.is_empty() {
+                Some(NaiveDateTime::parse_from_str(format!("{} 00:00:00", end_date).as_str(), "%Y-%m-%d %H:%M:%S").unwrap())
+            } else {
+                None
+            }
+        }else{
+            None
+        };
+        let per_page = 20;
+        let offset = (page.max(1) - 1) * per_page;
+
+
+        let query = sqlx::query_as!(
+            LolMatchParticipantMatchesQueryResult,
             "SELECT
+                count(lol_match_participants.lol_match_id) over() as total_count,
                 lol_match_participants.id,
                 lol_match_participants.lol_match_id,
                 lol_match_participants.champion_id,
                 lol_match_participants.summoner_id,
-                lol_match_participants.summoner_spell1_id,
-                lol_match_participants.summoner_spell2_id,
                 lol_match_participants.team_id,
                 lol_match_participants.won,
                 lol_match_participants.champ_level,
@@ -38,6 +94,8 @@ impl LolMatchParticipant {
                 lol_match_participants.kills,
                 lol_match_participants.deaths,
                 lol_match_participants.assists,
+                lol_match_participants.summoner_spell1_id,
+                lol_match_participants.summoner_spell2_id,
                 lol_match_participants.perk_primary_selection_id,
                 lol_match_participants.perk_sub_style_id,
                 lol_match_participants.item0_id,
@@ -47,128 +105,145 @@ impl LolMatchParticipant {
                 lol_match_participants.item4_id,
                 lol_match_participants.item5_id,
                 lol_match_participants.item6_id,
-                lol_matches.queue_id as lol_match_queue_id,
-                lol_matches.match_end as lol_match_match_end,
-                lol_matches.match_duration as lol_match_match_duration
+                lol_matches.queue_id AS lol_match_queue_id,
+                lol_matches.match_end AS lol_match_match_end,
+                lol_matches.match_duration AS lol_match_match_duration
             FROM lol_match_participants
             INNER JOIN lol_matches ON lol_matches.id = lol_match_participants.lol_match_id
-            WHERE lol_match_participants.summoner_id = $1
-            ORDER BY lol_matches.match_end DESC LIMIT 10 OFFSET $2;",
+            AND lol_match_participants.summoner_id = $1
+            AND ($2::INTEGER IS NULL OR lol_matches.queue_id = $2)
+            AND ($3::INTEGER IS NULL OR lol_match_participants.champion_id = $3)
+            AND ($4::TIMESTAMP IS NULL OR lol_matches.match_end >= $4)
+            AND ($5::TIMESTAMP IS NULL OR lol_matches.match_end <= $5)
+            ORDER BY lol_matches.match_end DESC
+            LIMIT $6 OFFSET $7;",
             summoner_id,
-            page * 10
-        )
-            .map(|row|{
-                let match_duration =  chrono::Duration::seconds(row.lol_match_match_duration.unwrap() as i64);
-                let match_duration_str =  format!("{:02}:{:02}:{:02}", match_duration.num_hours(), match_duration.num_minutes()%60, match_duration.num_seconds() %60);
-                // convert match _end to thing like "2 hours ago"
-                let match_ended_since: String = {
-                    let match_end = row.lol_match_match_end.unwrap();
-                    let now = chrono::Utc::now();
-                    let duration = now.signed_duration_since(match_end.and_utc());
-                    if duration.num_days() > 0 {
-                        format!("{} days ago", duration.num_days())
-                    } else if duration.num_hours() > 0 {
-                        format!("{} hours ago", duration.num_hours())
-                    } else if duration.num_minutes() > 0 {
-                        format!("{} minutes ago", duration.num_minutes())
-                    } else {
-                        format!("{} seconds ago", duration.num_seconds())
-                    }
-                };
-                let kda= row.kda.to_f64().unwrap();
-                let  kda = if kda.is_nan() {
-                    0.0
-                } else {
-                    (kda *100.0 ).round() / 100.0
-                };
-                let  kill_participation = row.kill_participation.to_f64().unwrap();
-                let  kill_participation = if kill_participation.is_nan() {
-                    0.0
-                } else {
-                    (kill_participation *100.0 ).round() / 100.0
-                };
+            filters.queue_id,
+            filters.champion_id,
+            start_date,
+            end_date,
+            per_page as i64,
+            offset as i64
+        );
+        //println!("{}\n$1:{:?}, $2:{}, $3:{}, $4:{}", query.sql(), matches_ids, summoner_id, per_page, offset);
+        let mut total_matches = 0;
+        let mut matches_ids = vec![];
+        let mut matches =query.fetch_all(db).await?.into_iter().map(|row|{
+            if total_matches == 0 {
+                total_matches = row.total_count.unwrap_or_default();
+            }
+            matches_ids.push(row.lol_match_id);
+            let match_duration = Duration::seconds(row.lol_match_match_duration.unwrap_or_default() as i64);
+            let match_duration_str = format!(
+                "{:02}:{:02}:{:02}",
+                match_duration.num_hours(),
+                match_duration.num_minutes() % 60,
+                match_duration.num_seconds() % 60
+            );
 
-                LolMatchDefaultParticipantMatchesPage{
-                    summoner_id:row.summoner_id,
-                    match_id: row.lol_match_id,
-                    match_ended_since,
-                    match_duration: match_duration_str,
-                    queue: get_queue(row.lol_match_queue_id.unwrap()).description.unwrap_or_default(),
-                    champion_id: row.champion_id,
-                    champion_img_url: get_champion_by_id(row.champion_id).img_url,
-                    champ_level:row.champ_level,
-                    won: row.won,
-                    kda,
-                    kills: row.kills,
-                    deaths: row.deaths,
-                    assists: row.assists,
-                    kill_participation,
-                    summoner_spell1_id: row.summoner_spell1_id.unwrap_or_default(),
-                    summoner_spell_img_url1: get_summoner_spell(row.summoner_spell1_id.unwrap_or_default()).unwrap_or_default().img_url,
-                    summoner_spell2_id: row.summoner_spell2_id.unwrap_or_default(),
-                    summoner_spell_img_url2: get_summoner_spell(row.summoner_spell2_id.unwrap_or_default()).unwrap_or_default().img_url,
-                    perk_primary_selection_id: row.perk_primary_selection_id.unwrap_or_default(),
-                    perk_primary_selection_url: get_perk(row.perk_primary_selection_id.unwrap_or_default()).unwrap_or_default().img_url,
-                    perk_sub_style_id: row.perk_sub_style_id.unwrap_or_default(),
-                    perk_sub_style_img_url: get_perk(row.perk_sub_style_id.unwrap_or_default()).unwrap_or_default().img_url,
-                    item0_id: row.item0_id.unwrap_or_default(),
-                    item0_img_url: get_item(row.item0_id.unwrap_or_default()).unwrap_or_default().img_url,
-                    item1_id:  row.item1_id.unwrap_or_default(),
-                    item1_img_url: get_item(row.item1_id.unwrap_or_default()).unwrap_or_default().img_url,
-                    item2_id: row.item2_id.unwrap_or_default(),
-                    item2_img_url: get_item(row.item2_id.unwrap_or_default()).unwrap_or_default().img_url,
-                    item3_id: row.item3_id.unwrap_or_default(),
-                    item3_img_url: get_item(row.item3_id.unwrap_or_default()).unwrap_or_default().img_url,
-                    item4_id: row.item4_id.unwrap_or_default(),
-                    item4_img_url: get_item(row.item4_id.unwrap_or_default()).unwrap_or_default().img_url,
-                    item5_id: row.item5_id.unwrap_or_default(),
-                    item5_img_url: get_item(row.item5_id.unwrap_or_default()).unwrap_or_default().img_url,
-                    item6_id: row.item6_id.unwrap_or_default(),
-                    item6_img_url: get_item(row.item6_id.unwrap_or_default()).unwrap_or_default().img_url,
-                    participants: vec![],
+            // Calculate time since match ended
+            let match_ended_since = {
+                let match_end = row.lol_match_match_end.unwrap_or_default().and_utc();
+                let now = Utc::now();
+                let duration = now.signed_duration_since(match_end);
+
+                if duration.num_days() > 0 {
+                    format!("{} days ago", duration.num_days())
+                } else if duration.num_hours() > 0 {
+                    format!("{} hours ago", duration.num_hours())
+                } else if duration.num_minutes() > 0 {
+                    format!("{} minutes ago", duration.num_minutes())
+                } else {
+                    format!("{} seconds ago", duration.num_seconds())
                 }
-            })
-            .fetch_all(db)
-            .await?;
+            };
 
-        let match_ids = matches.iter().map(|m| m.match_id).collect::<Vec<_>>();
-        let participants = sqlx::query!("
+            // Safely handle floating point operations
+            let kda = (row.kda.unwrap_or_default().to_f64().unwrap_or(0.0).max(0.0) * 100.0).round() / 100.0;
+            let kill_participation = (row.kill_participation.unwrap_or_default().to_f64().unwrap_or(0.0).max(0.0) * 100.0).round();
+            LolMatchDefaultParticipantMatchesPage {
+                summoner_id: row.summoner_id,
+                match_id: row.lol_match_id,
+                match_ended_since,
+                match_duration: match_duration_str,
+                queue: Queue::try_from(row.lol_match_queue_id.unwrap_or_default() as u16)
+                    .unwrap()
+                    .to_string(),
+                champion_id: row.champion_id,
+                champ_level: row.champ_level,
+                won: row.won,
+                kda,
+                kills: row.kills,
+                deaths: row.deaths,
+                assists: row.assists,
+                kill_participation,
+                summoner_spell1_id: row.summoner_spell1_id.unwrap_or_default(),
+                summoner_spell2_id: row.summoner_spell2_id.unwrap_or_default(),
+                perk_primary_selection_id: row.perk_primary_selection_id.unwrap_or_default(),
+                perk_sub_style_id: row.perk_sub_style_id.unwrap_or_default(),
+                item0_id: row.item0_id.unwrap_or_default(),
+                item1_id: row.item1_id.unwrap_or_default(),
+                item2_id: row.item2_id.unwrap_or_default(),
+                item3_id: row.item3_id.unwrap_or_default(),
+                item4_id: row.item4_id.unwrap_or_default(),
+                item5_id: row.item5_id.unwrap_or_default(),
+                item6_id: row.item6_id.unwrap_or_default(),
+                participants: vec![],
+            }
+        }).collect::<Vec<_>>();
+        let total_pages = (total_matches as f64 / per_page as f64).ceil() as i32;
+
+        // Fetch participants for the collected match_ids
+        let participants = if !matches_ids.is_empty() {
+            sqlx::query!(
+            "
             SELECT
                 lol_match_participants.lol_match_id,
                 lol_match_participants.summoner_id,
                 lol_match_participants.champion_id,
                 lol_match_participants.team_id,
-                summoners.game_name as summoner_name,
-                summoners.tag_line as summoner_tag_line,
-                summoners.platform as summoner_platform
-                FROM  lol_match_participants
-                INNER JOIN summoners ON summoners.id = lol_match_participants.summoner_id
-                WHERE lol_match_participants.lol_match_id = ANY($1);",
-            &match_ids
-        ).map(|row|{
-            LolMatchParticipantMatchesPage{
-                team_id: row.team_id,
-                lol_match_id: row.lol_match_id,
-                summoner_id: row.summoner_id,
-                summoner_name: row.summoner_name,
-                champion_id: row.champion_id,
-                summoner_tag_line: row.summoner_tag_line,
-                summoner_platform: row.summoner_platform,
-                champion_img_url: get_champion_by_id(row.champion_id).img_url,
-            }
-        })
-            .fetch_all(db)
-            .await?;
-        let participants = participants.into_iter().into_group_map_by(|p| p.lol_match_id).into_iter().collect::<Vec<_>>();
-        for match_ in matches.iter_mut(){
-            if let Some((match_id, participants)) = participants.iter().find(|p| p.0 == match_.match_id){
+                summoners.game_name AS summoner_name,
+                summoners.tag_line AS summoner_tag_line,
+                summoners.platform AS summoner_platform
+            FROM lol_match_participants
+            INNER JOIN summoners ON summoners.id = lol_match_participants.summoner_id
+            WHERE lol_match_participants.lol_match_id = ANY($1)
+            ORDER BY lol_match_participants.team_id ASC;
+            ",
+            &matches_ids
+        )
+                .fetch_all(db)
+                .await
+                .unwrap()
+                .into_iter()
+                .map(|row| LolMatchParticipantMatchesPage {
+                    team_id: row.team_id,
+                    lol_match_id: row.lol_match_id,
+                    summoner_id: row.summoner_id,
+                    summoner_name: row.summoner_name,
+                    champion_id: row.champion_id,
+                    summoner_tag_line: row.summoner_tag_line,
+                    summoner_platform: row.summoner_platform,
+                })
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
+
+        // Group participants by match_id
+        let participants_grouped = participants
+            .into_iter()
+            .into_group_map_by(|p| p.lol_match_id);
+
+        // Assign participants to their respective matches
+        for match_ in matches.iter_mut() {
+            if let Some(participants) = participants_grouped.get(&match_.match_id) {
                 match_.participants = participants.clone();
             }
         }
 
-        Ok((matches, total_pages))
+        Ok((matches, total_pages as i64))
     }
-
 
     pub async fn bulk_insert(db: &sqlx::PgPool, participants: &[TempParticipant]) -> AppResult<()> {
         // Collect all fields into vectors

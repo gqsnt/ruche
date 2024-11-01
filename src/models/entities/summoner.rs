@@ -1,6 +1,6 @@
-use crate::models::types::PlatformType;
-use leptos::IntoAttribute;
+
 use serde::{Deserialize, Serialize};
+use crate::consts::PlatformRoute;
 
 /// Represents a League of Legends summoner.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -9,7 +9,7 @@ pub struct Summoner {
     pub game_name: String,
     pub tag_line: String,
     pub puuid: String,
-    pub platform: PlatformType,
+    pub platform: PlatformRoute,
     pub updated_at: String,
     pub summoner_level: i64,
     pub profile_icon_id: i32,
@@ -42,7 +42,7 @@ impl Summoner {
     }
 
     /// Returns the URL of the summoner's profile icon.
-    pub fn profile_icon_url(&self) -> impl IntoAttribute {
+    pub fn profile_icon_url(&self) -> String {
         format!(
             "https://raw.communitydragon.org/latest/game/assets/ux/summonericons/profileicon{}.png",
             self.profile_icon_id

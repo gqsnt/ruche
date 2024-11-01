@@ -1,20 +1,26 @@
 extern crate core;
 
 use std::collections::HashMap;
+#[cfg(feature = "ssr")]
+use axum::extract::Request;
+#[cfg(feature = "ssr")]
+use axum::middleware::Next;
+#[cfg(feature = "ssr")]
+use axum::response::Response;
+use http::{header, HeaderValue};
+use leptos::prelude::LeptosOptions;
 
 pub mod app;
 pub mod error_template;
 pub mod models;
-#[cfg(feature = "ssr")]
-pub mod fileserv;
+
 #[cfg(feature = "ssr")]
 pub mod lol_static;
 pub mod components;
 
-#[cfg(feature = "ssr")]
-pub mod riven_fix;
 
-
+pub mod apis;
+pub mod consts;
 
 #[cfg(feature = "ssr")]
 pub const DB_CHUNK_SIZE: usize = 500;
@@ -24,9 +30,8 @@ pub const DB_CHUNK_SIZE: usize = 500;
 pub fn hydrate() {
     use crate::app::*;
     console_error_panic_hook::set_once();
-    leptos::mount_to_body(App);
+    leptos::mount::hydrate_body(App);
 }
-
 
 pub fn version_to_major_minor(version: String) -> String {
     let mut split = version.split(".");
@@ -39,7 +44,7 @@ pub fn version_to_major_minor(version: String) -> String {
 #[cfg(feature = "ssr")]
 #[derive(Clone, axum::extract::FromRef)]
 pub struct AppState {
-    pub leptos_options: leptos::LeptosOptions,
+    pub leptos_options: LeptosOptions,
     pub riot_api: std::sync::Arc<riven::RiotApi>,
     pub db: sqlx::PgPool,
 }
@@ -58,7 +63,7 @@ pub async fn init_database() -> sqlx::PgPool {
     let database_url = dotenv::var("DATABASE_URL").expect("no database url specify");
 
     let pool = sqlx::postgres::PgPoolOptions::new()
-        .max_connections(4)
+        .max_connections(10)
         .connect(database_url.as_str())
         .await
         .expect("could not connect to database_url");

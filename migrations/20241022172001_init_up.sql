@@ -34,9 +34,8 @@ CREATE TABLE IF NOT EXISTS lol_matches
     match_end      TIMESTAMP ,
     match_duration INTEGER
 );
-
--- Index on (platform, queue_id) as these may often be used together in filters, helping to speed up specific platform and queue searches.
-CREATE INDEX lol_matches_platform_queue_idx ON lol_matches (queue_id, match_creation);
+CREATE INDEX lol_matches_match_end_queue_idx ON lol_matches (match_end DESC, queue_id);
+CREATE INDEX idx_lol_matches_queue_id ON lol_matches(queue_id);
 
 
 
@@ -78,12 +77,6 @@ CREATE TABLE IF NOT EXISTS lol_match_participants
     item6_id                   INTEGER
     );
 
--- Index on lol_match_id for faster joins and lookups when filtering participants by match.
-CREATE INDEX lol_match_participants_lol_match_id_idx ON lol_match_participants (lol_match_id);
-
--- Index on summoner_id for efficient lookups by summoner, as we frequently query based on summoner performance.
-CREATE INDEX lol_match_participants_summoner_id_idx ON lol_match_participants (summoner_id);
-
--- Index on champion_id as this will be commonly used for filtering when querying participants by champion.
-CREATE INDEX lol_match_participants_champion_id_idx ON lol_match_participants (champion_id);
+CREATE INDEX lol_match_participants_summoner_lol_match_champion_idx
+    ON lol_match_participants (summoner_id, lol_match_id, champion_id);
 
