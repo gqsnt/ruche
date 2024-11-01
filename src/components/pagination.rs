@@ -79,38 +79,43 @@ pub fn Pagination(max_page: usize) -> impl IntoView {
                 {"Previous"}
             </button>
 
-            {
-                    page_numbers().into_iter().map(|p| {
-                        if p == 0 {
+            {page_numbers()
+                .into_iter()
+                .map(|p| {
+                    if p == 0 {
+                        Either::Left(
                             // Render ellipsis
-                            Either::Left(view!{<li class="ellipsis">{"..."}</li> })
-                        } else {
+                            view! { <li class="ellipsis">{"..."}</li> },
+                        )
+                    } else {
+                        let is_current = p == current_page();
+                        let set_p = set_page.clone();
+                        Either::Right(
                             // Render page number
-                            let is_current = p == current_page();
-                            let set_p = set_page.clone();
-                            Either::Right(view! {
+                            view! {
                                 <button
                                     class=move || {
-                                           if is_current {
-                                               "bg-blue-500 text-white px-3 py-1 rounded"
-                                           } else {
-                                               "bg-white text-blue-500 px-3 py-1 rounded hover:bg-blue-100"
-                                           }
-                                       }
+                                        if is_current {
+                                            "bg-blue-500 text-white px-3 py-1 rounded"
+                                        } else {
+                                            "bg-white text-blue-500 px-3 py-1 rounded hover:bg-blue-100"
+                                        }
+                                    }
                                     on:click=move |_| set_p(Some(p))
                                     disabled=move || is_current
                                 >
                                     {p}
                                 </button>
-                            })
-                        }
-                    }).collect::<Vec<_>>()
-                }
+                            },
+                        )
+                    }
+                })
+                .collect::<Vec<_>>()}
 
             // Next Button
             <button
                 class=move || {
-                    if current_page() >= max_page  {
+                    if current_page() >= max_page {
                         "bg-gray-300 text-gray-500 px-4 py-2 rounded cursor-not-allowed"
                     } else {
                         "bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
@@ -118,8 +123,8 @@ pub fn Pagination(max_page: usize) -> impl IntoView {
                 }
                 on:click=move |_| go_to_next_page()
                 disabled=move || (current_page() >= max_page)
-
             >
+
                 {"Next"}
             </button>
         </nav>

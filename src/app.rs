@@ -21,14 +21,14 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
         <!DOCTYPE html>
         <html lang="en">
             <head>
-                <meta charset="utf-8"/>
-                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <AutoReload options=options.clone() />
-                <HydrationScripts options=options/>
-                <MetaTags/>
+                <HydrationScripts options=options />
+                <MetaTags />
             </head>
             <body>
-                <App/>
+                <App />
             </body>
         </html>
     }
@@ -44,22 +44,22 @@ pub fn App() -> impl IntoView {
     view! {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
-        <Stylesheet id="leptos" href="/pkg/leptos-broken-gg.css"/>
+        <Stylesheet id="leptos" href="/pkg/leptos-broken-gg.css" />
 
         // sets the document title
-        <Title text="Broken.gg"/>
-        <Meta name="color-scheme" content="dark light"/>
+        <Title text="Broken.gg" />
+        <Meta name="color-scheme" content="dark light" />
         // content for this welcome page
         <Router>
             <main>
                 <Routes transition=true fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=move ||view!{<Redirect path="EUW"/>}/>
-                    <ParentRoute
-                        path=ParamSegment("platform_type")
-                        view=PlatformTypePage
-                    >
-                        <Route path=StaticSegment("") view=move ||view!{}/>
-                        <Route path=(StaticSegment("summoners"), ParamSegment("summoner_slug")) view=SummonerPage />
+                    <Route path=StaticSegment("") view=move || view! { <Redirect path="EUW" /> } />
+                    <ParentRoute path=ParamSegment("platform_type") view=PlatformTypePage>
+                        <Route path=StaticSegment("") view=move || view! {} />
+                        <Route
+                            path=(StaticSegment("summoners"), ParamSegment("summoner_slug"))
+                            view=SummonerPage
+                        />
                     </ParentRoute>
                 </Routes>
             </main>

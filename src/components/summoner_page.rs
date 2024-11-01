@@ -54,20 +54,42 @@ pub fn SummonerPage() -> impl IntoView {
                         view! {
                             <div class="flex justify-between">
                                 <div class="flex justify-center items-center mt-2">
-                                    <img src=format!("/profile_icons/{}.webp", summoner_signal().profile_icon_id) class="w-16 h-16"/>
+                                    <img
+                                        src=format!(
+                                            "/profile_icons/{}.webp",
+                                            summoner_signal().profile_icon_id,
+                                        )
+                                        class="w-16 h-16"
+                                    />
                                     <div class="flex flex-col items-start">
-                                        <div>{summoner_signal().game_name} #{summoner_signal().tag_line}</div>
-                                        <div >lvl. {summoner_signal().summoner_level}</div>
+                                        <div>
+                                            {summoner_signal().game_name}#{summoner_signal().tag_line}
+                                        </div>
+                                        <div>lvl. {summoner_signal().summoner_level}</div>
                                     </div>
-                                    <ActionForm action=update_summoner_action >
-                                        <input type="hidden" name="id" value=move || summoner_signal().id/>
-                                        <input type="hidden" name="puuid" value=move || summoner_signal().puuid.clone()/>
-                                        <input type="hidden" name="platform_type" value=move || summoner_signal().platform.as_region_str()/>
-                                        <button class="ml-2 bg-green-500 px-3 py-1" type="submit">Update</button>
+                                    <ActionForm action=update_summoner_action>
+                                        <input
+                                            type="hidden"
+                                            name="id"
+                                            value=move || summoner_signal().id
+                                        />
+                                        <input
+                                            type="hidden"
+                                            name="puuid"
+                                            value=move || summoner_signal().puuid.clone()
+                                        />
+                                        <input
+                                            type="hidden"
+                                            name="platform_type"
+                                            value=move || summoner_signal().platform.as_region_str()
+                                        />
+                                        <button class="ml-2 bg-green-500 px-3 py-1" type="submit">
+                                            Update
+                                        </button>
                                     </ActionForm>
                                 </div>
                             </div>
-                            <SummonerNav/>
+                            <SummonerNav />
                         }
                     })
                 }
@@ -77,9 +99,7 @@ pub fn SummonerPage() -> impl IntoView {
     };
 
     view! {
-         <Transition fallback=move || view!{<div>"Loading summoner ..."</div>}>
-            {summoner_view}
-
+        <Transition fallback=move || view! { <div>"Loading summoner ..."</div> }>{summoner_view}
         </Transition>
     }
 }
@@ -96,34 +116,78 @@ pub fn SummonerNav() -> impl IntoView {
     view! {
         <nav>
             <ul class="flex ">
-              <li class="-mb-px mr-1">
-                <button on:click=move |e|set_tab(Some(Tabs::Matches.to_string())) class=move ||  if tab().is_none() || tab()== Some(Tabs::Matches.to_string())  { "active-tab" } else { "default-tab" }>Matches</button>
-              </li>
-              <li class="-mb-px mr-1">
-                <button on:click=move |e|set_tab(Some(Tabs::Champions.to_string()))  class=move ||  if tab() == Some(Tabs::Champions.to_string()) { "active-tab" } else { "default-tab" }>Champions</button>
-              </li>
-              <li class="-mb-px mr-1">
-                <button on:click=move |e|set_tab(Some(Tabs::Encounters.to_string()))  class= move || if tab() == Some(Tabs::Encounters.to_string()) { "active-tab" } else { "default-tab" }>Encounters</button>
-              </li>
-              <li class="-mb-px mr-1">
-                <button on:click=move |e|set_tab(Some(Tabs::Live.to_string()))  class= move || if tab() == Some(Tabs::Live.to_string()) { "active-tab" } else { "default-tab" }>Live</button>
-              </li>
+                <li class="-mb-px mr-1">
+                    <button
+                        on:click=move |e| set_tab(Some(Tabs::Matches.to_string()))
+                        class=move || {
+                            if tab().is_none() || tab() == Some(Tabs::Matches.to_string()) {
+                                "active-tab"
+                            } else {
+                                "default-tab"
+                            }
+                        }
+                    >
+                        Matches
+                    </button>
+                </li>
+                <li class="-mb-px mr-1">
+                    <button
+                        on:click=move |e| set_tab(Some(Tabs::Champions.to_string()))
+                        class=move || {
+                            if tab() == Some(Tabs::Champions.to_string()) {
+                                "active-tab"
+                            } else {
+                                "default-tab"
+                            }
+                        }
+                    >
+                        Champions
+                    </button>
+                </li>
+                <li class="-mb-px mr-1">
+                    <button
+                        on:click=move |e| set_tab(Some(Tabs::Encounters.to_string()))
+                        class=move || {
+                            if tab() == Some(Tabs::Encounters.to_string()) {
+                                "active-tab"
+                            } else {
+                                "default-tab"
+                            }
+                        }
+                    >
+                        Encounters
+                    </button>
+                </li>
+                <li class="-mb-px mr-1">
+                    <button
+                        on:click=move |e| set_tab(Some(Tabs::Live.to_string()))
+                        class=move || {
+                            if tab() == Some(Tabs::Live.to_string()) {
+                                "active-tab"
+                            } else {
+                                "default-tab"
+                            }
+                        }
+                    >
+                        Live
+                    </button>
+                </li>
             </ul>
         </nav>
         <div class="my-4">
             <Show when=move || tab().is_none() || tab() == Some(Tabs::Matches.to_string())>
                 <MatchFilters>
-                    <SummonerMatchesPage/>
+                    <SummonerMatchesPage />
                 </MatchFilters>
             </Show>
             <Show when=move || tab() == Some(Tabs::Champions.to_string())>
-                <SummonerChampionsPage/>
+                <SummonerChampionsPage />
             </Show>
             <Show when=move || tab() == Some(Tabs::Encounters.to_string())>
-                <SummonerEncountersPage/>
+                <SummonerEncountersPage />
             </Show>
             <Show when=move || tab() == Some(Tabs::Live.to_string())>
-                <SummonerLivePage/>
+                <SummonerLivePage />
             </Show>
 
         </div>

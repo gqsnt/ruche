@@ -94,53 +94,91 @@ pub fn MatchFilters(children:Children) -> impl IntoView {
     let champion_options = Champion::iter().filter(|c|c != &Champion::UNKNOWN).map(|champion|view! {
         <option
             value=champion as i32
-            selected = move ||(champion as i32).to_string() == champion_id().unwrap_or_default()
-        >{format!("{}",champion)}</option>
+            selected=move || (champion as i32).to_string() == champion_id().unwrap_or_default()
+        >
+            {format!("{}", champion)}
+        </option>
     }).collect::<Vec<_>>();
     let queue_options = QUEUE_OPTIONS.iter().map(|(inner_queue_id, queue_name)|view! {
         <option
             value=*inner_queue_id
-            selected = move ||inner_queue_id.to_string() == queue_id().unwrap_or_default()
-        >{queue_name.to_string()}</option>
+            selected=move || inner_queue_id.to_string() == queue_id().unwrap_or_default()
+        >
+            {queue_name.to_string()}
+        </option>
     }).collect::<Vec<_>>();
 
-    view!{
+    view! {
         <div>
-             <div>
+            <div>
                 <div class="flex mb-4">
                     <div>
                         <label>Champion</label>
                         <select
                             name="champion_id"
-                            prop:value=move ||champion_id().unwrap_or_default()
-                            on:change=move|e|set_optional_value(set_champion_id, event_target_value(&e), "champion_id")
+                            prop:value=move || champion_id().unwrap_or_default()
+                            on:change=move |e| set_optional_value(
+                                set_champion_id,
+                                event_target_value(&e),
+                                "champion_id",
+                            )
                         >
-                            <option value="" selected = move ||champion_id().is_none()>All</option>
+                            <option value="" selected=move || champion_id().is_none()>
+                                All
+                            </option>
                             {champion_options}
                         </select>
                     </div>
                     <div>
                         <label>Queue</label>
-                         <select
-                             name="queue_id"
-                             prop:value=move ||queue_id().unwrap_or_default()
-                             on:change=move|e|set_optional_value(set_queue_id, event_target_value(&e), "queue_id")
-                         >
-                             <option value="" selected = move ||queue_id().is_none()>All</option>
-                             {queue_options}
-                         </select>
+                        <select
+                            name="queue_id"
+                            prop:value=move || queue_id().unwrap_or_default()
+                            on:change=move |e| set_optional_value(
+                                set_queue_id,
+                                event_target_value(&e),
+                                "queue_id",
+                            )
+                        >
+                            <option value="" selected=move || queue_id().is_none()>
+                                All
+                            </option>
+                            {queue_options}
+                        </select>
                     </div>
                     <div>
                         <label>Start Date</label>
-                        <input placeholder="dd-mm-yyyy" type="date" name="start_date" value=start_date() prop:value=move || start_date().unwrap_or_default() on:input=move |e| set_optional_value(set_start_date, event_target_value(&e), "start_date")/>
+                        <input
+                            placeholder="dd-mm-yyyy"
+                            type="date"
+                            name="start_date"
+                            value=start_date()
+                            prop:value=move || start_date().unwrap_or_default()
+                            on:input=move |e| set_optional_value(
+                                set_start_date,
+                                event_target_value(&e),
+                                "start_date",
+                            )
+                        />
                     </div>
                     <div>
                         <label>End Date</label>
-                        <input placeholder="dd-mm-yyyy" type="date" name="end_date" value=end_date() prop:value=move || end_date().unwrap_or_default() on:input=move |e| set_optional_value(set_end_date, event_target_value(&e), "end_date")/>
+                        <input
+                            placeholder="dd-mm-yyyy"
+                            type="date"
+                            name="end_date"
+                            value=end_date()
+                            prop:value=move || end_date().unwrap_or_default()
+                            on:input=move |e| set_optional_value(
+                                set_end_date,
+                                event_target_value(&e),
+                                "end_date",
+                            )
+                        />
                     </div>
                 </div>
             </div>
-         {children()}
+            {children()}
         </div>
     }
 }

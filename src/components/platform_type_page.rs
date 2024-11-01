@@ -8,9 +8,11 @@ use leptos_router::components::Outlet;
 pub fn PlatformTypePage() -> impl IntoView {
     view! {
         <main class="my-0 mx-auto max-w-3xl text-center">
-            <a href="/" class="p-6 text-4xl">"Welcome to Broken.gg"</a>
-            <SummonerSearchPage/>
-            <Outlet/>
+            <a href="/" class="p-6 text-4xl">
+                "Welcome to Broken.gg"
+            </a>
+            <SummonerSearchPage />
+            <Outlet />
         </main>
     }
 }
