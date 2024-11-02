@@ -1,5 +1,5 @@
 # Get started with a build env with Rust nightly
-FROM rustlang/rust:nightly-bullseye AS builder
+FROM rustlang/rust:nightly-bookworm-slim AS builder
 
 
 
@@ -8,7 +8,8 @@ RUN apt-get update -y \
 RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
 
 RUN apt-get update -y \
-    && apt-get install -y nodejs
+    && apt-get install -y nodejs wget \
+    && apt-get --no-install-recommends openssl ca-certificates
 
 # Verify Node.js and npm installation
 RUN node -v
@@ -43,12 +44,17 @@ RUN npm install -D tailwindcss
 RUN cargo leptos build --release -vv
 
 FROM debian:bookworm-slim AS runtime
+
+
 WORKDIR /app
+
+
 RUN apt-get update -y \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
   && apt-get autoremove -y \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/*
+
 
 
 
