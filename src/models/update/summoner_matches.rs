@@ -12,7 +12,7 @@ use riven::RiotApi;
 use sqlx::types::chrono;
 use sqlx::types::chrono::{DateTime, Utc};
 use futures::stream::{FuturesUnordered, StreamExt};
-use crate::DB_CHUNK_SIZE;
+use crate::{consts, DB_CHUNK_SIZE};
 
 pub async fn update_summoner_matches(
     db: sqlx::PgPool,
@@ -24,10 +24,10 @@ pub async fn update_summoner_matches(
     let match_ids = fetch_all_match_ids(&api, platform.to_regional(), &puuid, max_matches).await?;
 
     // Fetch existing match IDs from the database
-    let existing_match_ids: HashSet<String> = sqlx::query_scalar!(
+    let existing_match_ids: HashSet<String> = sqlx::query_scalar(
         "SELECT match_id FROM lol_matches WHERE match_id = ANY($1)",
-        &match_ids
     )
+        .bind(&match_ids)
         .fetch_all(&db)
         .await?
         .into_iter()
@@ -87,7 +87,7 @@ async fn update_matches(
             .split('_')
             .next()
             .unwrap_or_default();
-        let match_platform = PlatformRoute::from_str(platform_code).unwrap_or(platform);
+        let match_platform = consts::PlatformRoute::from_str(platform_code).unwrap_or(consts::PlatformRoute::from_region_str(platform.as_region_str()).unwrap());
 
         for participant in &match_data.info.participants {
             participants_map
@@ -96,7 +96,7 @@ async fn update_matches(
                     puuid: participant.puuid.clone(),
                     game_name: participant.riot_id_game_name.clone().unwrap_or_default(),
                     tag_line: participant.riot_id_tagline.clone(),
-                    platform: match_platform,
+                    platform: match_platform.as_region_str().to_string(),
                     summoner_level: participant.summoner_level as i64,
                     profile_icon_id: participant.profile_icon,
                     updated_at: DateTime::from_timestamp_millis(
@@ -204,18 +204,18 @@ async fn update_matches(
                         kills: participant.kills,
                         deaths: participant.deaths,
                         assists: participant.assists,
+                        damage_dealt_to_champions: participant.total_damage_dealt_to_champions,
+                        damage_taken: participant.total_damage_taken,
+                        gold_earned: participant.gold_earned,
+                        wards_placed: participant.wards_placed,
+                        cs: participant.total_minions_killed,
                         stats: LolMatchParticipantStats {
-
-                            minions_killed: participant.total_minions_killed,
                             largest_killing_spree: participant.largest_killing_spree,
                             double_kills: participant.double_kills,
                             triple_kills: participant.triple_kills,
                             quadra_kills: participant.quadra_kills,
                             penta_kills: participant.penta_kills,
-                            total_damage_dealt_to_champions: participant.total_damage_dealt_to_champions,
-                            total_damage_taken: participant.total_damage_taken,
-                            gold_earned: participant.gold_earned,
-                            wards_placed: participant.wards_placed,
+
                         },
                         perk_defense_id: participant.perks.stat_perks.defense,
                         perk_flex_id: participant.perks.stat_perks.flex,
@@ -332,7 +332,7 @@ pub struct TempSummoner {
     pub game_name: String,
     pub tag_line: String,
     pub puuid: String,
-    pub platform: PlatformRoute,
+    pub platform: String,
     pub summoner_level: i64,
     pub profile_icon_id: i32,
     pub updated_at: DateTime<Utc>,
@@ -353,6 +353,11 @@ pub struct TempParticipant {
     pub kills: i32,
     pub deaths: i32,
     pub assists: i32,
+    pub damage_dealt_to_champions: i32,
+    pub damage_taken: i32,
+    pub gold_earned: i32,
+    pub wards_placed: i32,
+    pub cs: i32,
     pub stats: LolMatchParticipantStats,
     pub perk_defense_id: i32,
     pub perk_flex_id: i32,

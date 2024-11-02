@@ -63,7 +63,7 @@ pub async fn init_database() -> sqlx::PgPool {
     let database_url = dotenv::var("DATABASE_URL").expect("no database url specify");
 
     let pool = sqlx::postgres::PgPoolOptions::new()
-        .max_connections(10)
+        .max_connections(100)
         .connect(database_url.as_str())
         .await
         .expect("could not connect to database_url");

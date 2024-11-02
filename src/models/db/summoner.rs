@@ -1,26 +1,50 @@
+use crate::consts::PlatformRoute;
 use crate::error_template::{AppError, AppResult};
 use crate::models::db::{Id, DATE_FORMAT};
 use crate::models::entities::summoner::Summoner;
 use crate::models::update::summoner_matches::TempSummoner;
+use chrono::NaiveDateTime;
 use sqlx::types::chrono::{DateTime, Utc};
+use sqlx::Row;
 use std::collections::HashMap;
 use std::str::FromStr;
-use crate::consts::PlatformRoute;
+
+
+#[derive(sqlx::FromRow)]
+pub struct IdPuuidUpdatedAt {
+    id: i32,
+    puuid: String,
+    updated_at: Option<NaiveDateTime>,
+}
+
+
+#[derive(sqlx::FromRow)]
+pub struct SummonerDb {
+    pub id: i32,
+    pub game_name: String,
+    pub tag_line: String,
+    pub puuid: String,
+    pub platform: String,
+    pub updated_at: NaiveDateTime,
+    pub summoner_level: i64,
+    pub profile_icon_id: i32,
+}
+
 
 impl Summoner {
-
-    pub async fn find_by_slug(
+    pub async fn find_by_exact_details(
         db: &sqlx::PgPool,
         platform_route: &PlatformRoute,
         game_name: &str,
         tag_line: &str,
     ) -> AppResult<Summoner> {
-        sqlx::query!(
-            "SELECT * FROM summoners WHERE game_name = $1 AND tag_line = $2 AND platform = $3 LIMIT 1",
-            game_name,
-            tag_line,
-            platform_route.as_region_str()
-        )
+        sqlx::query_as::<_, SummonerDb>(
+            "SELECT * FROM summoners WHERE game_name = $1 AND tag_line = $2 AND platform = $3 LIMIT 1"
+        ).bind(game_name)
+            .bind(tag_line)
+            .bind(platform_route.as_region_str())
+            .fetch_one(db)
+            .await
             .map(|x| Self {
                 id: x.id,
                 game_name: x.game_name,
@@ -31,8 +55,6 @@ impl Summoner {
                 summoner_level: x.summoner_level as i64,
                 profile_icon_id: x.profile_icon_id,
             })
-            .fetch_one(db)
-            .await
             .map_err(AppError::from)
     }
 
@@ -43,12 +65,15 @@ impl Summoner {
         game_name: &str,
         tag_line: &str,
     ) -> AppResult<Summoner> {
-        sqlx::query!(
-            "SELECT * FROM summoners WHERE LOWER(game_name) = LOWER($1) AND LOWER(tag_line) = LOWER($2) AND platform = $3",
-            game_name,
-            tag_line,
-            platform_route.as_region_str()
+        sqlx::query_as::<_, SummonerDb>(
+            "SELECT * FROM summoners WHERE LOWER(game_name) = LOWER($1) AND LOWER(tag_line) = LOWER($2) AND platform = $3"
         )
+            .bind(game_name)
+            .bind(tag_line)
+            .bind(platform_route.as_region_str())
+
+            .fetch_one(db)
+            .await
             .map(|x| Self {
                 id: x.id,
                 game_name: x.game_name,
@@ -59,8 +84,6 @@ impl Summoner {
                 summoner_level: x.summoner_level as i64,
                 profile_icon_id: x.profile_icon_id,
             })
-            .fetch_one(db)
-            .await
             .map_err(AppError::from)
     }
 
@@ -68,17 +91,19 @@ impl Summoner {
         db: &sqlx::PgPool,
         puuids: &[String],
     ) -> AppResult<HashMap<String, (i32, i32)>> {
-        Ok(sqlx::query!("
+        Ok(sqlx::query_as::<_, IdPuuidUpdatedAt>("
             SELECT id, puuid, updated_at
             FROM summoners
             WHERE puuid = ANY($1)
-        ", puuids)
-            .map(|row| {
-                (row.puuid, (row.id, row.updated_at.and_utc().timestamp() as i32))
-            })
+        ")
+            .bind(puuids)
+
             .fetch_all(db)
             .await?
             .into_iter()
+            .map(|row| {
+                (row.puuid, (row.id, row.updated_at.unwrap().and_utc().timestamp() as i32))
+            })
             .collect::<HashMap<String, (i32, i32)>>())
     }
 
@@ -181,7 +206,11 @@ impl Summoner {
     }
 
     pub async fn find_by_id(db: &sqlx::PgPool, id: i32) -> AppResult<Summoner> {
-        sqlx::query!("SELECT * FROM summoners WHERE id = $1", id)
+        sqlx::query_as::<_, SummonerDb>("SELECT * FROM summoners WHERE id = $1")
+            .bind(id)
+
+            .fetch_one(db)
+            .await
             .map(|x| Self {
                 id: x.id,
                 game_name: x.game_name,
@@ -192,8 +221,6 @@ impl Summoner {
                 summoner_level: x.summoner_level as i64,
                 profile_icon_id: x.profile_icon_id,
             })
-            .fetch_one(db)
-            .await
             .map_err(AppError::from)
     }
 
@@ -205,16 +232,15 @@ impl Summoner {
         account: riven::models::account_v1::Account,
         summoner: riven::models::summoner_v4::Summoner,
     ) -> AppResult<Summoner> {
-        sqlx::query!(
-            "UPDATE summoners SET game_name = $1, tag_line = $2, puuid = $3, summoner_level = $4, profile_icon_id = $5, platform = $6 WHERE id = $7",
-            account.game_name,
-            account.tag_line,
-            summoner.puuid,
-            summoner.summoner_level as i32,
-            summoner.profile_icon_id,
-            platform_route.as_region_str(),
-            id
+        sqlx::query(
+            "UPDATE summoners SET game_name = $1, tag_line = $2, puuid = $3, summoner_level = $4, profile_icon_id = $5, platform = $6 WHERE id = $7"
         )
+            .bind(account.game_name.clone())
+            .bind(account.tag_line.clone())
+            .bind(summoner.puuid.clone())
+            .bind(summoner.summoner_level as i32)
+            .bind(summoner.profile_icon_id)
+            .bind(platform_route.as_region_str())
             .execute(db)
             .await?;
         Ok(
@@ -237,15 +263,15 @@ impl Summoner {
         account: riven::models::account_v1::Account,
         summoner: riven::models::summoner_v4::Summoner,
     ) -> AppResult<Summoner> {
-        let rec = sqlx::query!(
-            "INSERT INTO summoners(game_name, tag_line, puuid, platform, summoner_level, profile_icon_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
-            account.game_name,
-            account.tag_line,
-            summoner.puuid,
-            platform_route.as_region_str(),
-            summoner.summoner_level as i32,
-            summoner.profile_icon_id
+        let rec = sqlx::query_as::<_, Id>(
+            "INSERT INTO summoners(game_name, tag_line, puuid, platform, summoner_level, profile_icon_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
         )
+            .bind(account.game_name.clone())
+            .bind(account.tag_line.clone())
+            .bind(summoner.puuid.clone())
+            .bind(platform_route.as_region_str())
+            .bind(summoner.summoner_level as i32)
+            .bind(summoner.profile_icon_id)
             .fetch_one(db)
             .await?;
         Ok(Summoner {
@@ -260,11 +286,28 @@ impl Summoner {
         })
     }
 
-    pub async fn get_summoner_id_by_puuid(db: &sqlx::PgPool, platform_route: PlatformRoute, puuid: &str) -> AppResult<i32> {
-        sqlx::query!("SELECT id FROM summoners WHERE puuid = $1 and platform = $2", puuid, platform_route.as_region_str())
-            .map(|x| x.id)
+
+    pub async fn find_summoner_ids_by_puuids(db: &sqlx::PgPool, platform_route: PlatformRoute, puuids: &[String]) -> AppResult<HashMap<String, i32>> {
+        Ok(sqlx::query_as::<_, IdPuuidUpdatedAt>(
+            "SELECT id, puuid FROM summoners WHERE puuid = ANY($1) and platform = $2"
+        )
+            .bind(puuids)
+            .bind(platform_route.as_region_str())
+
+            .fetch_all(db)
+            .await?
+            .into_iter()
+            .map(|x| (x.puuid, x.id))
+            .collect::<HashMap<String, i32>>())
+    }
+
+    pub async fn find_summoner_id_by_puuid(db: &sqlx::PgPool, platform_route: PlatformRoute, puuid: &str) -> AppResult<i32> {
+        sqlx::query_as::<_, Id>("SELECT id FROM summoners WHERE puuid = $1 and platform = $2")
+            .bind(puuid)
+            .bind(platform_route.as_region_str())
             .fetch_one(db)
             .await
+            .map(|x| x.id)
             .map_err(AppError::from)
     }
 
@@ -274,7 +317,7 @@ impl Summoner {
         account: riven::models::account_v1::Account,
         summoner: riven::models::summoner_v4::Summoner,
     ) -> AppResult<Summoner> {
-        match Summoner::get_summoner_id_by_puuid(db, platform_route, &summoner.puuid).await {
+        match Summoner::find_summoner_id_by_puuid(db, platform_route, &summoner.puuid).await {
             Ok(id) => {
                 Summoner::update_summoner_by_id(db, id, platform_route, account, summoner).await
             }

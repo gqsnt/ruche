@@ -1,7 +1,7 @@
 pub mod lol_match;
 pub mod lol_match_participant;
 pub mod summoner;
-
+mod lol_match_timeline;
 
 #[derive(sqlx::FromRow)]
 struct Id {

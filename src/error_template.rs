@@ -20,6 +20,9 @@ pub enum AppError {
     #[cfg(feature = "ssr")]
     #[error("Riven Error: {0}")]
     RivenError(Arc<riven::RiotApiError>),
+    #[cfg(feature = "ssr")]
+    #[error("Custom Error: {0}")]
+    CustomError(String),
 }
 
 #[cfg(feature = "ssr")]
@@ -45,6 +48,8 @@ impl AppError {
             AppError::SqlxError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             #[cfg(feature = "ssr")]
             AppError::RivenError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            #[cfg(feature = "ssr")]
+            AppError::CustomError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 

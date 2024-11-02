@@ -1,8 +1,9 @@
-use tower_http::compression::{CompressionLayer, DefaultPredicate};
+
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
+    use tower_http::compression::{CompressionLayer, DefaultPredicate};
     use memory_serve::{load_assets, MemoryServe};
     use tower_http::services::ServeDir;
     use axum::Router;

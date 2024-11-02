@@ -111,7 +111,7 @@ pub fn MatchFilters(children:Children) -> impl IntoView {
     view! {
         <div>
             <div>
-                <div class="flex mb-4">
+                <div class="flex mb-4 text-left">
                     <div>
                         <label>Champion</label>
                         <select

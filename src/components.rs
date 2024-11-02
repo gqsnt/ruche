@@ -7,3 +7,4 @@ pub mod summoner_live_page;
 pub mod summoner_page;
 mod match_filters;
 mod pagination;
+mod match_details;

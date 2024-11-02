@@ -811,7 +811,7 @@ pub enum GameMode {
 }
 
 #[repr(i16)]
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, EnumIter, Display)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, EnumIter, Display, IntoPrimitive, TryFromPrimitive)]
 pub enum Champion {
     UNKNOWN = -1,
     Aatrox = 266,
