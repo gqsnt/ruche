@@ -1,79 +1,32 @@
-# Get started with a build env with Rust nightly
-FROM rustlang/rust:nightly-bookworm-slim AS builder
+FROM rustlang/rust:nightly-alpine AS builder
+
+RUN apk update && \
+    apk add --no-cache bash binaryen gcc git g++ libc-dev make npm protobuf-dev protoc gcompat libressl-dev
 
 
-
-RUN apt-get update -y \
-    && apt-get install curl -y
-RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
-
-RUN apt-get update -y \
-    && apt-get install -y nodejs wget \
-    && apt-get --no-install-recommends openssl ca-certificates
-
-# Verify Node.js and npm installation
-RUN node -v
-RUN npm -v
-
-# If you’re using stable, use this instead
-# FROM rust:1.74-bullseye as builder
-# Install cargo-binstall, which makes it easier to install other
-# cargo extensions like cargo-leptos
-RUN wget https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz
-RUN tar -xvf cargo-binstall-x86_64-unknown-linux-musl.tgz
-RUN cp cargo-binstall /usr/local/cargo/bin
-
-# Install cargo-leptos
-RUN cargo binstall cargo-leptos -y
+RUN curl --proto '=https' --tlsv1.2 -LsSf https://github.com/leptos-rs/cargo-leptos/releases/latest/download/cargo-leptos-installer.sh | sh
 
 # Add the WASM target
 RUN rustup target add wasm32-unknown-unknown
+RUN cargo install cargo-leptos
+RUN npm install -g tailwindcss
 
-
-
-
-# Make an /app dir, which everything will eventually live in
-RUN mkdir -p /app
-WORKDIR /app
+WORKDIR /work
 COPY . .
 
-# Install npm dependencies
-RUN npm install -D tailwindcss
-
-# Build the app
 RUN cargo leptos build --release -vv
 
-FROM debian:bookworm-slim AS runtime
-
+FROM rustlang/rust:nightly-alpine AS runner
 
 WORKDIR /app
 
+COPY --from=builder /work/target/release/leptos-broken-gg /app/
+COPY --from=builder /work/target/site /app/site
+COPY --from=builder /work/Cargo.toml /app/
 
-RUN apt-get update -y \
-  && apt-get install -y --no-install-recommends openssl ca-certificates \
-  && apt-get autoremove -y \
-  && apt-get clean -y \
-  && rm -rf /var/lib/apt/lists/*
-
-
-
-
-# -- NB: update binary name from "leptos_start" to match your app name in Cargo.toml --
-# Copy the server binary to the /app directory
-COPY --from=builder /app/target/release/leptos-broken-gg /app/
-
-# /target/site contains our JS/WASM/CSS, etc.
-COPY --from=builder /app/target/site /app/site
-
-# Copy Cargo.toml if it’s needed at runtime
-COPY --from=builder /app/Cargo.toml /app/
-
-# Set any required env variables and
 ENV RUST_LOG="info"
 ENV LEPTOS_SITE_ADDR="0.0.0.0:8080"
-ENV LEPTOS_SITE_ROOT="site"
+ENV LEPTOS_SITE_ROOT=./site
 EXPOSE 8080
 
-# -- NB: update binary name from "leptos_start" to match your app name in Cargo.toml --
-# Run the server
 CMD ["/app/leptos-broken-gg"]
