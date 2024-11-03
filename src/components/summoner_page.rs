@@ -35,10 +35,6 @@ pub fn SummonerPage() -> impl IntoView {
         },
     );
 
-    let is_active = |route: &str| {
-        let location = use_location();
-        location.pathname.get().contains(route)
-    };
 
 
     let summoner_view = move || {
@@ -47,7 +43,7 @@ pub fn SummonerPage() -> impl IntoView {
                 Ok(summoner) => {
                     Either::Left({
 
-                        let (summoner_signal, set_summoner) = signal(summoner.clone());
+                        let (summoner_signal, _) = signal(summoner.clone());
                         provide_context(summoner_signal);
                         provide_context(update_summoner_action.version());
                         view! {
@@ -118,7 +114,7 @@ pub fn SummonerNav() -> impl IntoView {
             <ul class="flex ">
                 <li class="-mb-px mr-1">
                     <button
-                        on:click=move |e| set_tab(Some(Tabs::Matches.to_string()))
+                        on:click=move |_| set_tab(Some(Tabs::Matches.to_string()))
                         class=move || {
                             if tab().is_none() || tab() == Some(Tabs::Matches.to_string()) {
                                 "active-tab"
@@ -132,7 +128,7 @@ pub fn SummonerNav() -> impl IntoView {
                 </li>
                 <li class="-mb-px mr-1">
                     <button
-                        on:click=move |e| set_tab(Some(Tabs::Champions.to_string()))
+                        on:click=move |_| set_tab(Some(Tabs::Champions.to_string()))
                         class=move || {
                             if tab() == Some(Tabs::Champions.to_string()) {
                                 "active-tab"
@@ -146,7 +142,7 @@ pub fn SummonerNav() -> impl IntoView {
                 </li>
                 <li class="-mb-px mr-1">
                     <button
-                        on:click=move |e| set_tab(Some(Tabs::Encounters.to_string()))
+                        on:click=move |_| set_tab(Some(Tabs::Encounters.to_string()))
                         class=move || {
                             if tab() == Some(Tabs::Encounters.to_string()) {
                                 "active-tab"

@@ -74,8 +74,8 @@ ssr = [
 [profile.release]
 panic = "abort"
 
-[profile.dev]
-rustflags = ["-Awarnings"]
+#[profile.dev]
+#rustflags = ["-Awarnings"]
 
 
 # Defines a size-optimized profile for the WASM bundle in release mode

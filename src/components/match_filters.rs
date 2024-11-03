@@ -21,10 +21,6 @@ use crate::consts::{Champion, Queue, QUEUE_OPTIONS};
 #[component]
 pub fn MatchFilters(children:Children) -> impl IntoView {
     let query_map = use_query_map();
-    let tab = move || {
-        query_map.read().get("tab").unwrap_or(String::from("matches"))
-    };
-
 
 
     let (start_date, set_start_date) = query_signal_with_options(

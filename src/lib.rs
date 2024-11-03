@@ -1,13 +1,5 @@
 extern crate core;
 
-use std::collections::HashMap;
-#[cfg(feature = "ssr")]
-use axum::extract::Request;
-#[cfg(feature = "ssr")]
-use axum::middleware::Next;
-#[cfg(feature = "ssr")]
-use axum::response::Response;
-use http::{header, HeaderValue};
 use leptos::prelude::LeptosOptions;
 
 pub mod app;

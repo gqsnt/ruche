@@ -83,7 +83,10 @@ pub fn MatchDetailsOverviewTable(won:bool, team_id:i32, participants:Vec<LolMatc
                                         <img
                                             width="32"
                                             height="32"
-                                            src=format!("/assets/champions/{}.webp", participant.champion_id)
+                                            src=format!(
+                                                "/assets/champions/{}.webp",
+                                                participant.champion_id,
+                                            )
                                             class="w-8 h-8 rounded-full block"
                                         />
                                         <span class="absolute left-[-3px] bottom-[-3px] w-[15px] h-[15px] bg-gray-600 rounded-full text-[10px] text-center">
@@ -131,7 +134,10 @@ pub fn MatchDetailsOverviewTable(won:bool, team_id:i32, participants:Vec<LolMatc
                                         <img
                                             width="16"
                                             height="16"
-                                            src=format!("/assets/perks/{}.png", participant.perk_sub_style_id)
+                                            src=format!(
+                                                "/assets/perks/{}.png",
+                                                participant.perk_sub_style_id,
+                                            )
                                             class="w-4 h-4 rounded"
                                         />
                                     </div>

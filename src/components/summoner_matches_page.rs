@@ -57,7 +57,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                             Ok(matches_result) => {
                                 let total_pages = matches_result.total_pages;
                                 let current_page = page_number().unwrap_or(1);
-                                if total_pages == 0 ||  (total_pages as i32) < current_page{
+                                if total_pages == 0 || (total_pages as i32) < current_page {
                                     set_reset_page_number(true);
                                 }
                                 let has_matches = matches_result.matches.len() > 0;
@@ -203,7 +203,10 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                             <img
                                                 width="22"
                                                 height="22"
-                                                src=format!("/assets/perks/{}.png", match_.perk_sub_style_id)
+                                                src=format!(
+                                                    "/assets/perks/{}.png",
+                                                    match_.perk_sub_style_id,
+                                                )
                                                 class="w-[22px] w-[22px]"
                                             />
                                         </div>
@@ -314,7 +317,10 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                         <img
                                             width="16"
                                             height="16"
-                                            src=format!("/assets/champions/{}.webp", participant.champion_id)
+                                            src=format!(
+                                                "/assets/champions/{}.webp",
+                                                participant.champion_id,
+                                            )
                                             class="w-4 h-4 rounded"
                                         />
                                         <a
