@@ -27,7 +27,7 @@ async fn main() {
     let conf = get_configuration(None).unwrap();
     let leptos_options = conf.leptos_options;
     let root = leptos_options.site_root.clone();
-    lol_static::init_static_data().await;
+    //lol_static::init_static_data().await;
 
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
@@ -53,11 +53,10 @@ async fn main() {
             },
         )
         .merge(
-            MemoryServe::new(load_assets!("./target/site"))
+            MemoryServe::new(load_assets!("./target/site/assets"))
                 .enable_brotli(!cfg!(debug_assertions))
                 .into_router()
         )
-
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
         .layer(
             CompressionLayer::new()

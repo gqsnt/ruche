@@ -16,7 +16,9 @@ use crate::consts::{Champion, Perk, SummonerSpell};
 pub static VERSION: OnceCell<String> = OnceCell::new();
 
 
-
+pub fn get_public_path()->PathBuf{
+    Path::new("public").join("assets")
+}
 
 
 #[derive(Debug, Clone)]
@@ -51,7 +53,7 @@ pub async fn init_static_data() {
         if champion == Champion::UNKNOWN {
             continue;
         }
-        let path = Path::new("public").join("champions").join(format!("{}.webp", champion as i16));
+        let path = get_public_path().join("champions").join(format!("{}.webp", champion as i16));
         if !path.exists() {
             let image_url = format!(
                 "https://cdn.communitydragon.org/{}/champion/{}/square",
@@ -71,7 +73,7 @@ pub async fn init_static_data() {
         if summoner_spell == SummonerSpell::UNKNOWN {
             continue;
         }
-        let path = Path::new("public").join("summoner_spells").join(format!("{}.webp", summoner_spell as u16));
+        let path = get_public_path().join("summoner_spells").join(format!("{}.webp", summoner_spell as u16));
         if !path.exists() {
             images_to_download.push(ImageToDownload {
                 url: summoner_spell.get_url(version.clone()),
@@ -149,7 +151,7 @@ pub async  fn get_perks(version:String) -> Result<Vec<ImageToDownload>, reqwest:
     for main_perk in main_perks {
         for slot in main_perk.slots {
             for rune in slot.runes {
-                let path = Path::new("public").join("perks").join(format!("{}.png", rune.id));
+                let path = get_public_path().join("perks").join(format!("{}.png", rune.id));
                 if !path.exists(){
                     let image_url = format!("https://ddragon.leagueoflegends.com/cdn/img/{}", rune.icon);
                     images_to_download.push(ImageToDownload {
@@ -161,7 +163,7 @@ pub async  fn get_perks(version:String) -> Result<Vec<ImageToDownload>, reqwest:
                 }
             }
         }
-        let path = Path::new("public").join("perks").join(format!("{}.png", main_perk.id));
+        let path = get_public_path().join("perks").join(format!("{}.png", main_perk.id));
         if !path.exists(){
             let image_url = format!("https://ddragon.leagueoflegends.com/cdn/img/{}", main_perk.icon);
             images_to_download.push(ImageToDownload {
@@ -182,7 +184,7 @@ pub async fn get_items(version: String) -> Result<Vec<ImageToDownload>, reqwest:
     for (key, value) in items_json {
         let item: JsonItem = serde_json::from_value(value.clone()).unwrap();
         let id = key.parse::<i32>().unwrap();
-        let path = Path::new("public").join("items").join(format!("{}.webp", id));
+        let path = get_public_path().join("items").join(format!("{}.webp", id));
         if !path.exists() {
             let image_url = format!(
                 "https://ddragon.leagueoflegends.com/cdn/{}/img/item/{}",
@@ -221,7 +223,7 @@ pub async fn update_profile_icons_image(version: String) -> Result<Vec<ImageToDo
     let data = raw_champions["data"].as_object().unwrap();
     for (k, value) in data {
         let id = k.clone().parse::<i64>().unwrap() as i32;
-        let path = Path::new("public").join("profile_icons").join(format!("{}.webp", id));
+        let path = get_public_path().join("profile_icons").join(format!("{}.webp", id));
         if !path.exists() {
             let image_url = format!(
                 "https://ddragon.leagueoflegends.com/cdn/{}/img/profileicon/{}.png",

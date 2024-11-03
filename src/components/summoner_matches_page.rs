@@ -4,11 +4,11 @@ use crate::apis::{get_summoner_matches, MatchFiltersSearch};
 use crate::components::pagination::Pagination;
 use crate::models::entities::summoner::Summoner;
 use leptos::either::Either;
-use leptos::prelude::{signal, CustomAttribute, OnAttribute};
+use leptos::prelude::{log, signal, CustomAttribute, Effect, OnAttribute, Read, ServerFnError, Set};
 use leptos::prelude::ElementChild;
 use leptos::prelude::{expect_context, ClassAttribute, Get, ReadSignal, Resource, RwSignal, Show, StyleAttribute, Suspend, Suspense};
 use leptos::{component, view, IntoView};
-use leptos_router::hooks::{query_signal_with_options, use_query_map};
+use leptos_router::hooks::{query_signal, query_signal_with_options, use_query_map};
 use leptos_router::NavigateOptions;
 use serde::{Deserialize, Serialize};
 use crate::components::match_details::MatchDetails;
@@ -19,7 +19,6 @@ pub fn SummonerMatchesPage() -> impl IntoView {
 
     let summoner_update_version = expect_context::<RwSignal<usize>>();
     let match_filters_updated = expect_context::<RwSignal<MatchFiltersSearch>>();
-    let query = use_query_map();
     let (page_number, set_page_number) = query_signal_with_options::<i32>(
         "page",
         NavigateOptions {
@@ -28,9 +27,19 @@ pub fn SummonerMatchesPage() -> impl IntoView {
             ..Default::default()
         },
     );
+
+    let (reset_page_number, set_reset_page_number) = signal::<bool>(false);
+    Effect::new(move |_| {
+        if reset_page_number() {
+            set_page_number(None);
+            set_reset_page_number(false);
+        }
+    });
+    
+
     let matches_resource = Resource::new(
         move || (match_filters_updated.get(), summoner(), page_number()),
-        |(filters, summoner, page_number)| async move {
+         |(filters, summoner, page_number)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
             get_summoner_matches(summoner.id, page_number.unwrap_or(1), Some(filters)).await
         },
@@ -47,10 +56,9 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                         match matches_resource.await {
                             Ok(matches_result) => {
                                 let total_pages = matches_result.total_pages;
-                                if total_pages == 0 {
-                                    set_page_number(None);
-                                } else if (total_pages as i32) < page_number().unwrap_or(1) {
-                                    set_page_number(Some(1));
+                                let current_page = page_number().unwrap_or(1);
+                                if total_pages == 0 ||  (total_pages as i32) < current_page{
+                                    set_reset_page_number(true);
                                 }
                                 let has_matches = matches_result.matches.len() > 0;
                                 let mut inner_pages: Vec<PageItem> = vec![];
@@ -135,7 +143,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                 <img
                                     width="48"
                                     height="48"
-                                    src=format!("/champions/{}.webp", match_.champion_id)
+                                    src=format!("/assets/champions/{}.webp", match_.champion_id)
                                     class="w-12 h-12 rounded-full"
                                 />
                                 <span
@@ -152,7 +160,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                             width="22"
                                             height="22"
                                             src=format!(
-                                                "/summoner_spells/{}.webp",
+                                                "/assets/summoner_spells/{}.webp",
                                                 match_.summoner_spell1_id,
                                             )
                                             class="w-[22px] w-[22px]"
@@ -163,7 +171,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                             width="22"
                                             height="22"
                                             src=format!(
-                                                "/summoner_spells/{}.webp",
+                                                "/assets/summoner_spells/{}.webp",
                                                 match_.summoner_spell2_id,
                                             )
                                             class="w-[22px] w-[22px]"
@@ -180,7 +188,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                                 width="22"
                                                 height="22"
                                                 src=format!(
-                                                    "/perks/{}.png",
+                                                    "/assets/perks/{}.png",
                                                     match_.perk_primary_selection_id,
                                                 )
                                                 class="w-[22px] w-[22px]"
@@ -195,7 +203,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                             <img
                                                 width="22"
                                                 height="22"
-                                                src=format!("/perks/{}.png", match_.perk_sub_style_id)
+                                                src=format!("/assets/perks/{}.png", match_.perk_sub_style_id)
                                                 class="w-[22px] w-[22px]"
                                             />
                                         </div>
@@ -226,7 +234,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                     <img
                                         width="22"
                                         height="22"
-                                        src=format!("/items/{}.webp", match_.item0_id)
+                                        src=format!("/assets/items/{}.webp", match_.item0_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -236,7 +244,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                     <img
                                         width="22"
                                         height="22"
-                                        src=format!("/items/{}.webp", match_.item1_id)
+                                        src=format!("/assets/items/{}.webp", match_.item1_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -246,7 +254,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                     <img
                                         width="22"
                                         height="22"
-                                        src=format!("/items/{}.webp", match_.item2_id)
+                                        src=format!("/assets/items/{}.webp", match_.item2_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -256,7 +264,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                     <img
                                         width="22"
                                         height="22"
-                                        src=format!("/items/{}.webp", match_.item3_id)
+                                        src=format!("/assets/items/{}.webp", match_.item3_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -266,7 +274,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                     <img
                                         width="22"
                                         height="22"
-                                        src=format!("/items/{}.webp", match_.item4_id)
+                                        src=format!("/assets/items/{}.webp", match_.item4_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -276,7 +284,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                     <img
                                         width="22"
                                         height="22"
-                                        src=format!("/items/{}.webp", match_.item5_id)
+                                        src=format!("/assets/items/{}.webp", match_.item5_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -286,7 +294,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                     <img
                                         width="22"
                                         height="22"
-                                        src=format!("/items/{}.webp", match_.item6_id)
+                                        src=format!("/assets/items/{}.webp", match_.item6_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -306,7 +314,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                         <img
                                             width="16"
                                             height="16"
-                                            src=format!("/champions/{}.webp", participant.champion_id)
+                                            src=format!("/assets/champions/{}.webp", participant.champion_id)
                                             class="w-4 h-4 rounded"
                                         />
                                         <a

@@ -36,8 +36,8 @@ CREATE TABLE IF NOT EXISTS lol_matches
 CREATE TABLE IF NOT EXISTS lol_match_participants
 (
     id                         SERIAL PRIMARY KEY,
-    lol_match_id               INTEGER NOT NULL REFERENCES lol_matches (id),
-    summoner_id                INTEGER NOT NULL REFERENCES summoners (id),
+    lol_match_id               INTEGER NOT NULL REFERENCES lol_matches (id) ON DELETE CASCADE,
+    summoner_id                INTEGER NOT NULL REFERENCES summoners (id) ON DELETE CASCADE,
     champion_id                INTEGER NOT NULL,
     team_id                    INTEGER NOT NULL,
     won                        BOOLEAN NOT NULL,
@@ -78,8 +78,8 @@ CREATE TABLE IF NOT EXISTS lol_match_participants
 CREATE TABLE IF NOT EXISTS lol_match_timelines
 (
     id SERIAL PRIMARY KEY,
-    lol_match_id INTEGER NOT NULL REFERENCES lol_matches (id),
-    summoner_id INTEGER NOT NULL REFERENCES summoners (id),
+    lol_match_id INTEGER NOT NULL REFERENCES lol_matches (id) ON DELETE CASCADE,
+    summoner_id INTEGER NOT NULL REFERENCES summoners (id) ON DELETE CASCADE,
     items_event_timeline JSONB NOT NULL,
     skills_timeline int[] NOT NULL
     );

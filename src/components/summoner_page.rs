@@ -27,7 +27,6 @@ pub fn SummonerPage() -> impl IntoView {
 
 
     // Update the summoner signal when resource changes
-
     let summoner_resource = Resource::new_blocking(
         move || (update_summoner_action.version().get(), platform_type(), summoner_slug()),
         |(_, pt, ss)| async move {
@@ -56,7 +55,7 @@ pub fn SummonerPage() -> impl IntoView {
                                 <div class="flex justify-center items-center mt-2">
                                     <img
                                         src=format!(
-                                            "/profile_icons/{}.webp",
+                                            "/assets/profile_icons/{}.webp",
                                             summoner_signal().profile_icon_id,
                                         )
                                         class="w-16 h-16"

@@ -14,6 +14,7 @@ use std::str::FromStr;
 pub struct IdPuuidUpdatedAt {
     id: i32,
     puuid: String,
+    #[sqlx(default)]
     updated_at: Option<NaiveDateTime>,
 }
 
@@ -208,7 +209,6 @@ impl Summoner {
     pub async fn find_by_id(db: &sqlx::PgPool, id: i32) -> AppResult<Summoner> {
         sqlx::query_as::<_, SummonerDb>("SELECT * FROM summoners WHERE id = $1")
             .bind(id)
-
             .fetch_one(db)
             .await
             .map(|x| Self {
@@ -241,6 +241,7 @@ impl Summoner {
             .bind(summoner.summoner_level as i32)
             .bind(summoner.profile_icon_id)
             .bind(platform_route.as_region_str())
+            .bind(id)
             .execute(db)
             .await?;
         Ok(

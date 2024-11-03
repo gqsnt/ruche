@@ -43,7 +43,7 @@ pub fn MatchDetailsBuild(summoner_id:i32, match_details : ReadSignal<Vec<LolMatc
                                                 let is_sold_item = matches!(item_event,ItemEvent::Sold {..});
                                                 view!{
                                                     <div class=("rounded", is_sold_item) class="relative border-gray-900 border-4" >
-                                                        <img height="30" width="30" src=format!("/items/{}.webp", item_event.get_id()) class=("opacity-75", is_sold_item) class="h-[30px] w-[30px]" />
+                                                        <img height="30" width="30" src=format!("/assets/items/{}.webp", item_event.get_id()) class=("opacity-75", is_sold_item) class="h-[30px] w-[30px]" />
                                                         <Show when=move ||is_sold_item>
                                                             <div class="absolute -bottom-0.5 -right-0.5">X</div>
                                                         </Show>
