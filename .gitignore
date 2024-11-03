@@ -13,4 +13,3 @@ end2end/playwright-report/
 playwright/.cache/
 .env
 .idea
-/public/

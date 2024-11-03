@@ -27,7 +27,7 @@ async fn main() {
     let conf = get_configuration(None).unwrap();
     let leptos_options = conf.leptos_options;
     let root = leptos_options.site_root.clone();
-    //lol_static::init_static_data().await;
+    lol_static::init_static_data().await;
 
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
