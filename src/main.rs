@@ -1,4 +1,4 @@
-
+use memory_serve::CacheControl;
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
@@ -55,7 +55,9 @@ async fn main() {
         .merge(
             MemoryServe::new(load_assets!("./target/site/assets"))
                 .enable_brotli(!cfg!(debug_assertions))
+                .html_cache_control(CacheControl::Medium)
                 .into_router()
+
         )
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
         .layer(
@@ -63,7 +65,8 @@ async fn main() {
                 .br(true)
                 .deflate(true)
                 .gzip(true)
-                .zstd(true).compress_when(DefaultPredicate::default())
+                .zstd(true)
+                .compress_when(DefaultPredicate::default())
         )
         .with_state(app_state);
 
