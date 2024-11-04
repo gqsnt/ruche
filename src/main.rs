@@ -50,7 +50,7 @@ async fn main() {
             },
         )
         .merge(
-            MemoryServe::new(load_assets!("./site/assets"))
+            MemoryServe::new(load_assets!("./target/site/assets"))
                 .enable_brotli(!cfg!(debug_assertions))
                 .cache_control(CacheControl::Long)
                 .into_router()

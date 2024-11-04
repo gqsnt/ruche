@@ -5,19 +5,21 @@ use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 use strum::IntoEnumIterator;
 use webp::Encoder;
 
 
 pub fn get_assets_path() -> std::path::PathBuf {
-    let path = std::env::current_exe().unwrap();
+    let ex_path = std::env::current_exe().unwrap();
+    let path = ex_path.parent().unwrap();
     let target_path = path.join("target");
     if target_path.exists() {
         target_path
     }else{
-        path
-    }.join("public").join("assets")
+        path.to_path_buf()
+    }.join("site").join("assets")
 }
 
 #[derive(Debug, Clone)]
@@ -32,7 +34,12 @@ pub struct ImageToDownload {
 pub async fn init_static_data() {
     let version = get_current_version().await.unwrap();
     let t = std::time::Instant::now();
-
+    create_dir_all(get_assets_path()).unwrap();
+    create_dir_all(get_assets_path().join("items")).unwrap();
+    create_dir_all(get_assets_path().join("profile_icons")).unwrap();
+    create_dir_all(get_assets_path().join("perks")).unwrap();
+    create_dir_all(get_assets_path().join("champions")).unwrap();
+    create_dir_all(get_assets_path().join("summoner_spells")).unwrap();
     let (
         item_images,
         profile_icons_images,
@@ -96,7 +103,7 @@ pub async fn encode_and_save_image(image_data: &[u8], file_path: &Path, size: (u
     println!("Saving image: {:?}", file_path);
     let img = image::load_from_memory_with_format(image_data, image::ImageFormat::Png).unwrap();
     let resized = img.resize_exact(size.0, size.1, image::imageops::FilterType::Lanczos3);
-    tokio::fs::create_dir_all(file_path.parent().unwrap()).await.unwrap();
+    //tokio::fs::create_dir_all(file_path.parent().unwrap()).await.unwrap();
     if to_webp {
         let rgb8 = DynamicImage::ImageRgb8(resized.to_rgb8());
         let encoder = Encoder::from_image(&rgb8).unwrap();

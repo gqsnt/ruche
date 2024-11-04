@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::components::summoner_matches_page::GetSummonerMatchesResult;
+use crate::components::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo};
 use crate::consts::PlatformRoute;
 use crate::models::entities::lol_match_participant::{LolMatchParticipant, LolMatchParticipantMatchesDetailPage};
 use crate::models::entities::lol_match_timeline::LolMatchTimeline;
@@ -167,7 +167,7 @@ pub async fn get_summoner_matches(summoner_id: i32, page_number: i32, filters: O
     let state = state.unwrap();
     let db = state.db.clone();
     let (matches, total_pages) = LolMatchParticipant::get_match_participant_for_matches_page(&db, summoner_id, page_number, filters.unwrap_or_default()).await?;
-    Ok(GetSummonerMatchesResult { matches, total_pages })
+    Ok(GetSummonerMatchesResult { matches, total_pages , matches_result_info:MatchesResultInfo::default()})
 }
 
 

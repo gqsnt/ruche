@@ -69,6 +69,13 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                                     Ok(
                                         Either::Right(
                                             view! {
+                                                <div class="my-2 flex">
+                                                    <div class="flex flex-col">
+                                                        <div>{matches_result.matches_result_info.total_matches}G {matches_result.matches_result_info.total_wins}W {matches_result.matches_result_info.total_losses}L</div>
+                                                        <div>{ matches_result.matches_result_info.total_wins / matches_result.matches_result_info.total_matches.min(1) }</div>
+                                                    </div>
+
+                                                </div>
                                                 <div class="text-gray-400 space-y-2">
                                                     {matches_result
                                                         .matches
@@ -395,6 +402,19 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
 pub struct GetSummonerMatchesResult {
     pub matches: Vec<LolMatchDefaultParticipantMatchesPage>,
     pub total_pages: i64,
+    pub matches_result_info:MatchesResultInfo,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+pub struct MatchesResultInfo {
+    pub total_matches: i64,
+    pub total_wins: i64,
+    pub total_losses: i64,
+    pub avg_kills: f64,
+    pub avg_deaths: f64,
+    pub avg_assists: f64,
+    pub avg_kda: f64,
+    pub avg_kill_participation: f64,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
