@@ -16,7 +16,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 RUN apt-get install -y nodejs
 
 # Install cargo-leptos
-RUN cargo binstall cargo-leptos -y
+RUN cargo binstall cargo-leptos@0.2.20 -y
 
 # Add the WASM target
 RUN rustup target add wasm32-unknown-unknown
