@@ -14,7 +14,8 @@ use webp::Encoder;
 pub fn get_assets_path() -> std::path::PathBuf {
     let ex_path = std::env::current_exe().unwrap();
     let parent_path = ex_path.parent().unwrap();
-    let parent_path = parent_path.parent().unwrap();
+    // dev
+    //let parent_path = parent_path.parent().unwrap();
     parent_path.join("site").join("assets")
 }
 
