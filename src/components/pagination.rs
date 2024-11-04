@@ -89,7 +89,7 @@ pub fn Pagination(max_page: usize) -> impl IntoView {
                         )
                     } else {
                         let is_current = p == current_page();
-                        let set_p = set_page.clone();
+                        let set_p = set_page;
                         Either::Right(
                             // Render page number
                             view! {
