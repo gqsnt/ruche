@@ -8,6 +8,7 @@ use chrono::{Duration, NaiveDateTime, Utc};
 use itertools::Itertools;
 use sqlx::{FromRow, PgPool, Row};
 use unzip_n::unzip_n;
+use crate::components::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo};
 
 unzip_n!(19);
 unzip_n!(11);
@@ -65,6 +66,12 @@ struct LolMatchParticipantDetailsQueryResult {
 struct LolMatchParticipantMatchesQueryResult {
     #[allow(dead_code)]
     total_count: Option<i64>,
+    total_wins: Option<i64>,
+    avg_kills: Option<BigDecimal>,
+    avg_deaths: Option<BigDecimal>,
+    avg_assists: Option<BigDecimal>,
+    avg_kda: Option<BigDecimal>,
+    avg_kill_participation: Option<BigDecimal>,
     #[allow(dead_code)]
     id: i32,
     lol_match_id: i32,
@@ -218,7 +225,7 @@ impl LolMatchParticipant {
         summoner_id: i32,
         page: i32,
         filters: MatchFiltersSearch,
-    ) -> AppResult<(Vec<LolMatchDefaultParticipantMatchesPage>, i64)> {
+    ) -> AppResult<GetSummonerMatchesResult> {
         let start_date = filters.start_date.as_deref().and_then(|s| {
             if s.is_empty() {
                 None
@@ -240,6 +247,12 @@ impl LolMatchParticipant {
         let results = sqlx::query_as::<_, LolMatchParticipantMatchesQueryResult>(
             "SELECT
                 count(lmp.lol_match_id) over() as total_count,
+                count(case when     lmp.won then 1 end) over() as total_wins,
+                avg(lmp.kills) over() as avg_kills,
+                avg(lmp.deaths) over() as avg_deaths,
+                avg(lmp.assists) over() as avg_assists,
+                avg(lmp.kda) over() as avg_kda,
+                avg(lmp.kill_participation) over() as avg_kill_participation,
                 lmp.id,
                 lmp.lol_match_id,
                 lmp.champion_id,
@@ -289,7 +302,22 @@ impl LolMatchParticipant {
             .fetch_all(db).await?;
 
         //println!("{}\n$1:{:?}, $2:{}, $3:{}, $4:{}", query.sql(), matches_ids, summoner_id, per_page, offset);
-        let total_matches = results.first().map_or(0, |row| row.total_count.unwrap_or(0));
+        let matches_result_info:MatchesResultInfo = results.first().map_or(MatchesResultInfo::default(), |row| {
+            let total_matches = row.total_count.unwrap_or_default() as i32;
+            let total_wins = row.total_wins.unwrap_or_default() as i32;
+            let total_losses = total_matches - total_wins;
+            let round_2 = |x: f64| (x * 100.0).round() / 100.0;
+            MatchesResultInfo{
+                total_matches,
+                total_wins,
+                total_losses,
+                avg_kills:round_2(row.avg_kills.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_deaths: round_2(row.avg_deaths.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_assists: round_2(row.avg_assists.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_kda: round_2(row.avg_kda.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_kill_participation: (row.avg_kill_participation.clone().unwrap_or_default().to_f64().unwrap_or_default() * 100.0) as i32,
+            }
+        });
         let matches_ids: Vec<_> = results.iter().map(|row| row.lol_match_id).collect();
         let mut matches = results.into_iter().map(|row| {
             let match_duration = Duration::seconds(row.lol_match_match_duration.unwrap_or_default() as i64);
@@ -341,9 +369,10 @@ impl LolMatchParticipant {
                 participants: vec![],
             }
         }).collect::<Vec<_>>();
-        let total_pages = (total_matches as f64 / per_page as f64).ceil() as i32;
+        let total_pages = (matches_result_info.total_matches as f64 / per_page as f64).ceil() as i32;
 
         // Fetch participants for the collected match_ids
+
         let participants = if !matches_ids.is_empty() {
             let participant_rows = sqlx::query_as::<_, LolMatchParticipantMatchesChildQueryResult>(
                 "SELECT
@@ -389,7 +418,7 @@ impl LolMatchParticipant {
             }
         }
 
-        Ok((matches, total_pages as i64))
+        Ok(GetSummonerMatchesResult { matches, total_pages: total_pages as i64, matches_result_info})
     }
 
     pub async fn bulk_insert(db: &sqlx::PgPool, participants: &[TempParticipant]) -> AppResult<()> {

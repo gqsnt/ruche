@@ -166,8 +166,7 @@ pub async fn get_summoner_matches(summoner_id: i32, page_number: i32, filters: O
     let state = use_context::<AppState>();
     let state = state.unwrap();
     let db = state.db.clone();
-    let (matches, total_pages) = LolMatchParticipant::get_match_participant_for_matches_page(&db, summoner_id, page_number, filters.unwrap_or_default()).await?;
-    Ok(GetSummonerMatchesResult { matches, total_pages , matches_result_info:MatchesResultInfo::default()})
+    LolMatchParticipant::get_match_participant_for_matches_page(&db, summoner_id, page_number, filters.unwrap_or_default()).await.map_err(|_| ServerFnError::new("Error fetching matches"))
 }
 
 

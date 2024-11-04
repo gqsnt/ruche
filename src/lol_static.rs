@@ -13,13 +13,9 @@ use webp::Encoder;
 
 pub fn get_assets_path() -> std::path::PathBuf {
     let ex_path = std::env::current_exe().unwrap();
-    let path = ex_path.parent().unwrap();
-    let target_path = path.join("target");
-    if target_path.exists() {
-        target_path
-    }else{
-        path.to_path_buf()
-    }.join("site").join("assets")
+    let parent_path = ex_path.parent().unwrap();
+    let parent_path = parent_path.parent().unwrap();
+    parent_path.join("site").join("assets")
 }
 
 #[derive(Debug, Clone)]
@@ -34,12 +30,6 @@ pub struct ImageToDownload {
 pub async fn init_static_data() {
     let version = get_current_version().await.unwrap();
     let t = std::time::Instant::now();
-    create_dir_all(get_assets_path()).unwrap();
-    create_dir_all(get_assets_path().join("items")).unwrap();
-    create_dir_all(get_assets_path().join("profile_icons")).unwrap();
-    create_dir_all(get_assets_path().join("perks")).unwrap();
-    create_dir_all(get_assets_path().join("champions")).unwrap();
-    create_dir_all(get_assets_path().join("summoner_spells")).unwrap();
     let (
         item_images,
         profile_icons_images,

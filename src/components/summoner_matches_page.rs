@@ -72,9 +72,13 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                                                 <div class="my-2 flex">
                                                     <div class="flex flex-col">
                                                         <div>{matches_result.matches_result_info.total_matches}G {matches_result.matches_result_info.total_wins}W {matches_result.matches_result_info.total_losses}L</div>
-                                                        <div>{ matches_result.matches_result_info.total_wins / matches_result.matches_result_info.total_matches.min(1) }</div>
+                                                        <div>{ (matches_result.matches_result_info.total_wins * 100 / matches_result.matches_result_info.total_matches.max(1)) }%</div>
                                                     </div>
-
+                                                    <div class="flex flex-col ml-2">
+                                                        <div>{matches_result.matches_result_info.avg_kills} / {matches_result.matches_result_info.avg_deaths} / {matches_result.matches_result_info.avg_assists}</div>
+                                                        <div>{matches_result.matches_result_info.avg_kda}:1</div>
+                                                        <div>P/kill {matches_result.matches_result_info.avg_kill_participation}%</div>
+                                                    </div>
                                                 </div>
                                                 <div class="text-gray-400 space-y-2">
                                                     {matches_result
@@ -407,14 +411,14 @@ pub struct GetSummonerMatchesResult {
 
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct MatchesResultInfo {
-    pub total_matches: i64,
-    pub total_wins: i64,
-    pub total_losses: i64,
+    pub total_matches: i32,
+    pub total_wins: i32,
+    pub total_losses: i32,
     pub avg_kills: f64,
     pub avg_deaths: f64,
     pub avg_assists: f64,
     pub avg_kda: f64,
-    pub avg_kill_participation: f64,
+    pub avg_kill_participation: i32,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

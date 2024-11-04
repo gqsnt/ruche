@@ -111,16 +111,17 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                     {move || {
                         selected_participant()
                             .skills_timeline
-                            .iter()
+                        .clone()
+                            .into_iter()
                             .map(|skill_id| {
                                 view! {
                                     <div
-                                        class=("text-blue-400", *skill_id == 1)
-                                        class=("text-green-400", *skill_id == 2)
-                                        class=("text-orange-400", *skill_id == 3)
-                                        class=("bg-indigo-500", *skill_id == 4)
-                                        class=("bg-zinc-700", *skill_id != 4)
-                                        class="font-bold rounded w-4 h-4 text-center"
+                                        class:text-blue-400= move || skill_id == 1
+                                        class:text-green-400= move || skill_id == 2
+                                        class:text-orange-400= move || skill_id == 3
+                                        class:bg-indigo-500= move || skill_id == 4
+                                        class:bg-zinc-700= move || skill_id != 4
+                                        class=" font-bold rounded w-4 h-4 text-center"
                                     >
 
                                         {match skill_id {
