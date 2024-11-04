@@ -63,3 +63,4 @@ pub async fn init_database() -> sqlx::PgPool {
 
     pool
 }
+

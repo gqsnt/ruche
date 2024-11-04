@@ -27,8 +27,10 @@ pub enum SummonerSpell {
     SummonerSnowURFSnowballMark = 39,
     SummonerSnowball = 32,
     SummonerTeleport = 12,
-    SummonerUltBookPlaceholder = 54,
-    SummonerUltBookSmitePlaceholder = 55,
+    #[allow(non_camel_case_types)]
+    Summoner_UltBookPlaceholder = 54,
+    #[allow(non_camel_case_types)]
+    Summoner_UltBookSmitePlaceholder = 55,
 }
 
 impl SummonerSpell {

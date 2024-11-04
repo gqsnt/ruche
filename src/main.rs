@@ -34,7 +34,6 @@ async fn main() {
     };
     let addr = leptos_options.site_addr;
     let routes = generate_route_list(App);
-
     // build our application with a route
     let app = Router::<AppState>::new()
 
@@ -51,7 +50,7 @@ async fn main() {
             },
         )
         .merge(
-            MemoryServe::new(load_assets!("./target/site/assets"))
+            MemoryServe::new(load_assets!("site/assets"))
                 .enable_brotli(!cfg!(debug_assertions))
                 .cache_control(CacheControl::Long)
                 .into_router()

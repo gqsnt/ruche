@@ -11,10 +11,15 @@ use webp::Encoder;
 
 
 
-pub fn get_public_path() -> PathBuf {
-    Path::new("public").join("assets")
+pub fn get_assets_path() -> std::path::PathBuf {
+    let path = std::env::current_exe().unwrap();
+    let target_path = path.join("target");
+    if target_path.exists() {
+        target_path
+    }else{
+        path
+    }.join("public").join("assets")
 }
-
 
 #[derive(Debug, Clone)]
 pub struct ImageToDownload {
