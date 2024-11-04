@@ -53,7 +53,7 @@ async fn main() {
         .merge(
             MemoryServe::new(load_assets!("./target/site/assets"))
                 .enable_brotli(!cfg!(debug_assertions))
-                .html_cache_control(CacheControl::Medium)
+                .html_cache_control(CacheControl::Long)
                 .into_router()
         )
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
