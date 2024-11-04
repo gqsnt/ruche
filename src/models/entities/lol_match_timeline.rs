@@ -1,6 +1,4 @@
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use crate::consts::PlatformRoute;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -13,26 +11,25 @@ pub struct LolMatchTimeline {
 }
 
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ItemEvent{
-    Purchased{
+pub enum ItemEvent {
+    Purchased {
         item_id: i32,
     },
-    Sold{
+    Sold {
         item_id: i32,
     },
-    Destroyed{
+    Destroyed {
         item_id: i32,
-    }
+    },
 }
 
-impl ItemEvent{
-    pub fn get_id(&self) -> i32{
-        match self{
-            ItemEvent::Purchased{item_id} => *item_id,
-            ItemEvent::Sold{item_id} => *item_id,
-            ItemEvent::Destroyed{item_id} => *item_id,
+impl ItemEvent {
+    pub fn get_id(&self) -> i32 {
+        match self {
+            ItemEvent::Purchased { item_id } => *item_id,
+            ItemEvent::Sold { item_id } => *item_id,
+            ItemEvent::Destroyed { item_id } => *item_id,
         }
     }
 }

@@ -1,28 +1,16 @@
-use itertools::Itertools;
-use leptos::{component, view, IntoView, Params};
-use leptos::context::provide_context;
-use leptos::either::Either;
-use leptos::prelude::{event_target_value, Children, ClassAttribute, Get, OnAttribute, PropAttribute, Read, RwSignal, Set, With};
-use leptos_router::hooks::{query_signal_with_options, use_navigate, use_query, use_query_map};
-use serde::{Deserialize, Serialize};
-use leptos_router::params::Params;
-use leptos::prelude::ElementChild;
-use leptos::prelude::BindAttribute;
-use leptos::reactive::wrappers::write::SignalSetter;
-use leptos::server_fn::codec::IntoReq;
-use leptos_router::NavigateOptions;
-use reactive_stores::StoreFieldIterator;
-use strum::IntoEnumIterator;
 use crate::apis::MatchFiltersSearch;
-use crate::consts::{Champion, Queue, QUEUE_OPTIONS};
-
-
+use crate::consts::{Champion, QUEUE_OPTIONS};
+use leptos::context::provide_context;
+use leptos::prelude::ElementChild;
+use leptos::prelude::{event_target_value, Children, ClassAttribute, OnAttribute, PropAttribute, RwSignal, Set};
+use leptos::reactive::wrappers::write::SignalSetter;
+use leptos::{component, view, IntoView};
+use leptos_router::hooks::{query_signal_with_options};
+use leptos_router::NavigateOptions;
+use strum::IntoEnumIterator;
 
 #[component]
-pub fn MatchFilters(children:Children) -> impl IntoView {
-    let query_map = use_query_map();
-
-
+pub fn MatchFilters(children: Children) -> impl IntoView {
     let (start_date, set_start_date) = query_signal_with_options(
         "filters[start_date]",
         NavigateOptions {
@@ -50,7 +38,7 @@ pub fn MatchFilters(children:Children) -> impl IntoView {
         },
     );
 
-    let (queue_id, set_queue_id)= query_signal_with_options::<String>(
+    let (queue_id, set_queue_id) = query_signal_with_options::<String>(
         "filters[queue_id]",
         NavigateOptions {
             scroll: false,
@@ -67,27 +55,26 @@ pub fn MatchFilters(children:Children) -> impl IntoView {
     ));
     provide_context(filters_signal);
 
-    let set_optional_value = move |setter:SignalSetter<Option<String>>, value:String, name:&str|{
-        let value = if value.is_empty(){
+    let set_optional_value = move |setter: SignalSetter<Option<String>>, value: String, name: &str| {
+        let value = if value.is_empty() {
             None
-        }else{
+        } else {
             Some(value)
         };
         setter.set(value.clone());
-        let filters = if name == "start_date"{
-            MatchFiltersSearch::from_signals(queue_id(),champion_id(),value,end_date())
-        }else if name == "end_date" {
-            MatchFiltersSearch::from_signals(queue_id(),champion_id(),start_date(),value)
-        }
-        else if name == "champion_id"{
-            MatchFiltersSearch::from_signals(queue_id(),value,start_date(),end_date())
-        }else{
-            MatchFiltersSearch::from_signals(value,champion_id(),start_date(),end_date())
+        let filters = if name == "start_date" {
+            MatchFiltersSearch::from_signals(queue_id(), champion_id(), value, end_date())
+        } else if name == "end_date" {
+            MatchFiltersSearch::from_signals(queue_id(), champion_id(), start_date(), value)
+        } else if name == "champion_id" {
+            MatchFiltersSearch::from_signals(queue_id(), value, start_date(), end_date())
+        } else {
+            MatchFiltersSearch::from_signals(value, champion_id(), start_date(), end_date())
         };
         filters_signal.set(filters);
     };
 
-    let champion_options = Champion::iter().filter(|c|c != &Champion::UNKNOWN).map(|champion|view! {
+    let champion_options = Champion::iter().filter(|c| c != &Champion::UNKNOWN).map(|champion| view! {
         <option
             value=champion as i32
             selected=move || (champion as i32).to_string() == champion_id().unwrap_or_default()
@@ -95,7 +82,7 @@ pub fn MatchFilters(children:Children) -> impl IntoView {
             {format!("{}", champion)}
         </option>
     }).collect::<Vec<_>>();
-    let queue_options = QUEUE_OPTIONS.iter().map(|(inner_queue_id, queue_name)|view! {
+    let queue_options = QUEUE_OPTIONS.iter().map(|(inner_queue_id, queue_name)| view! {
         <option
             value=*inner_queue_id
             selected=move || inner_queue_id.to_string() == queue_id().unwrap_or_default()

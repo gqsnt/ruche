@@ -1,19 +1,11 @@
 use crate::components::platform_type_page::PlatformTypePage;
-use crate::components::summoner_champions_page::SummonerChampionsPage;
-use crate::components::summoner_encounters_page::SummonerEncountersPage;
-use crate::components::summoner_live_page::SummonerLivePage;
-use crate::components::summoner_matches_page::SummonerMatchesPage;
-use crate::components::summoner_search_page::SummonerSearchPage;
+use crate::components::summoner_page::SummonerPage;
 use leptos::config::LeptosOptions;
 use leptos::prelude::GlobalAttributes;
 use leptos::prelude::*;
-use leptos::*;
 use leptos_meta::{provide_meta_context, Meta, MetaTags, Stylesheet, Title};
-use leptos_router::components::{ParentRoute, ProtectedParentRoute, Redirect};
-use leptos_router::hooks::use_params_map;
-use leptos_router::{components::{Route, Router, Routes}, MatchNestedRoutes, ParamSegment, SsrMode, StaticSegment};
-use crate::components::summoner_page::SummonerPage;
-
+use leptos_router::components::{ParentRoute, Redirect};
+use leptos_router::{components::{Route, Router, Routes}, ParamSegment, StaticSegment};
 
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {

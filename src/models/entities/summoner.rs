@@ -1,6 +1,5 @@
-
-use serde::{Deserialize, Serialize};
 use crate::consts::PlatformRoute;
+use serde::{Deserialize, Serialize};
 
 /// Represents a League of Legends summoner.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

@@ -1,13 +1,12 @@
 use crate::apis::FindSummoner;
+use crate::consts::PlatformRoute;
 use leptos::form::ActionForm;
 use leptos::prelude::ElementChild;
 use leptos::prelude::{PropAttribute, Read};
 use leptos::server::ServerAction;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_params_map, use_query_map};
-use serde::Serialize;
 use strum::IntoEnumIterator;
-use crate::consts::PlatformRoute;
 
 #[component]
 pub fn SummonerSearchPage() -> impl IntoView {
@@ -29,9 +28,9 @@ pub fn SummonerSearchPage() -> impl IntoView {
 
     view! {
         <ActionForm action=find_summoner>
-            <input type="text" placeholder="Game Name" value=move || game_name() name="game_name" />
-            <input type="text" placeholder="Tag Line" value=move || tag_line() name="tag_line" />
-            <select name="platform_type" prop:value=move || platform_type()>
+            <input type="text" placeholder="Game Name" value=move ||game_name() name="game_name" />
+            <input type="text" placeholder="Tag Line" value=move ||tag_line() name="tag_line" />
+            <select name="platform_type" prop:value=move ||platform_type()>
                 {PlatformRoute::iter()
                     .map(|pt| {
                         view! {

@@ -1,7 +1,6 @@
 use crate::models::entities::lol_match_participant::LolMatchParticipantMatchesDetailPage;
-use leptos::either::Either;
+use leptos::prelude::{ClassAttribute, ReadSignal};
 use leptos::prelude::{ElementChild, Show};
-use leptos::prelude::{signal, ClassAttribute, OnAttribute, ReadSignal, Resource, ServerFnError, Suspend, Suspense};
 use leptos::{component, view, IntoView};
 
 #[component]
@@ -11,9 +10,9 @@ pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolM
         let detail = details.iter().find(|participant| participant.summoner_id == summoner_id).unwrap();
         (detail.team_id, detail.won)
     };
-    let other_team = if summoner_team == 100{
+    let other_team = if summoner_team == 100 {
         200
-    }else{
+    } else {
         100
     };
     let first_team = details.iter().filter(|participant| participant.team_id == summoner_team).cloned().collect::<Vec<_>>();
@@ -36,8 +35,7 @@ pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolM
 
 
 #[component]
-pub fn MatchDetailsOverviewTable(won:bool, team_id:i32, participants:Vec<LolMatchParticipantMatchesDetailPage>) -> impl IntoView{
-
+pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, participants: Vec<LolMatchParticipantMatchesDetailPage>) -> impl IntoView {
     view! {
         <table class="table-fixed text-xs w-full border-collapse">
             <colgroup>

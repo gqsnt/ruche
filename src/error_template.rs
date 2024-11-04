@@ -1,8 +1,7 @@
-use std::sync::Arc;
 use http::status::StatusCode;
-use leptos::*;
 use leptos::prelude::ServerFnError;
 use thiserror::Error;
+use std::sync::Arc;
 
 pub type AppResult<T> = Result<T, AppError>;
 
@@ -57,5 +56,4 @@ impl AppError {
     pub fn to_server_fn_error(&self) -> ServerFnError {
         ServerFnError::new(self.to_string())
     }
-
 }

@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -7,12 +6,11 @@ use crate::error_template::{AppError, AppResult};
 use crate::models::entities::lol_match::LolMatch;
 use crate::models::entities::lol_match_participant::{LolMatchParticipant, LolMatchParticipantStats};
 use crate::models::entities::summoner::Summoner;
+use crate::{consts, DB_CHUNK_SIZE};
+use futures::stream::{FuturesUnordered, StreamExt};
 use riven::consts::{Champion, PlatformRoute, RegionalRoute};
 use riven::RiotApi;
-use sqlx::types::chrono;
 use sqlx::types::chrono::{DateTime, Utc};
-use futures::stream::{FuturesUnordered, StreamExt};
-use crate::{consts, DB_CHUNK_SIZE};
 
 pub async fn update_summoner_matches(
     db: sqlx::PgPool,
@@ -80,7 +78,7 @@ async fn update_matches(
 
     // Collect TempSummoner data from match data
     let mut participants_map = HashMap::new();
-    for match_data in match_datas.iter(){
+    for match_data in match_datas.iter() {
         let platform_code = match_data
             .metadata
             .match_id
@@ -114,7 +112,7 @@ async fn update_matches(
     let mut summoners_to_update = Vec::new();
 
     for summoner in participants_map.values() {
-        if let Some((id, existing_timestamp)) = existing_summoners.get(&summoner.puuid) {
+        if let Some((_, existing_timestamp)) = existing_summoners.get(&summoner.puuid) {
             if summoner.updated_at.timestamp() > *existing_timestamp as i64 {
                 summoners_to_update.push(summoner.clone());
             }
@@ -149,7 +147,7 @@ async fn update_matches(
     let match_participants: Vec<TempParticipant> = match_datas
         .iter()
         .zip(match_ids.iter())
-        .flat_map(|( match_data, &match_id)| {
+        .flat_map(|(match_data, &match_id)| {
             if match_data.info.game_mode == riven::consts::GameMode::STRAWBERRY {
                 return vec![];
             }
@@ -189,9 +187,9 @@ async fn update_matches(
                         (participant.kills + participant.assists) as f64 / team_kill_count as f64
                     };
                     let kill_participation = (kill_participation * 100.0).round() / 100.0;
-                    let champion_id =  Champion::try_from(participant.champion_name.as_str()).unwrap().0;
+                    let champion_id = Champion::try_from(participant.champion_name.as_str()).unwrap().0;
                     TempParticipant {
-                        champion_id: champion_id,
+                        champion_id,
                         summoner_id,
                         lol_match_id: match_id,
                         summoner_spell1_id: participant.summoner1_id,
@@ -347,7 +345,7 @@ pub struct TempParticipant {
     pub summoner_spell2_id: i32,
     pub team_id: i32,
     pub won: bool,
-    pub champ_level:i32,
+    pub champ_level: i32,
     pub kda: f64,
     pub kill_participation: f64,
     pub kills: i32,

@@ -1,7 +1,7 @@
-use riven::models::match_v5::Match;
 use crate::models::db::Id;
 use crate::models::entities::lol_match::LolMatch;
 use crate::version_to_major_minor;
+use riven::models::match_v5::Match;
 use sqlx::types::chrono;
 
 impl LolMatch {
@@ -81,7 +81,4 @@ impl LolMatch {
 
         rows.into_iter().map(|r| r.id).collect()
     }
-
-
-
 }

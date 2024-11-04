@@ -1,7 +1,6 @@
 use num_enum_derive::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use std::string::ToString;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString, IntoStaticStr, VariantNames};
 
@@ -25,11 +24,11 @@ pub enum SummonerSpell {
     SummonerPoroRecall = 30,
     SummonerPoroThrow = 31,
     SummonerSmite = 11,
-    SummonerSnowURFSnowball_Mark = 39,
+    SummonerSnowURFSnowballMark = 39,
     SummonerSnowball = 32,
     SummonerTeleport = 12,
-    Summoner_UltBookPlaceholder = 54,
-    Summoner_UltBookSmitePlaceholder = 55,
+    SummonerUltBookPlaceholder = 54,
+    SummonerUltBookSmitePlaceholder = 55,
 }
 
 impl SummonerSpell {
@@ -799,11 +798,11 @@ pub enum GameMode {
     /// Tutorial games
     TUTORIAL,
     /// Tutorial: Welcome to League.
-    TUTORIAL_MODULE_1,
+    TutorialModule1,
     /// Tutorial: Power Up.
-    TUTORIAL_MODULE_2,
+    TutorialModule2,
     /// Tutorial: Shop for Gear.
-    TUTORIAL_MODULE_3,
+    TutorialModule3,
     /// Ultimate Spellbook games
     ULTBOOK,
     /// URF games
@@ -811,7 +810,18 @@ pub enum GameMode {
 }
 
 #[repr(i16)]
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, EnumIter, Display, IntoPrimitive, TryFromPrimitive)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Eq,
+    PartialEq,
+    Hash,
+    EnumIter,
+    Display,
+    IntoPrimitive,
+    TryFromPrimitive
+)]
 pub enum Champion {
     UNKNOWN = -1,
     Aatrox = 266,
@@ -1016,7 +1026,7 @@ pub enum RegionalRoute {
     /// Asia-Pacific, deprecated, for some old matches in `lor-match-v1`.
     ///
     /// `10` (riotapi-schema ID/repr)
-    #[deprecated]
+    #[allow(deprecated)]
     APAC = 10,
 
     /// Special esports platform for `account-v1`. Do not confuse with the `esports` Valorant platform route.

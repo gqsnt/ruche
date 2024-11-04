@@ -1,27 +1,25 @@
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
-use crate::models::entities::lol_match::LolMatch;
 use crate::models::entities::lol_match_timeline::ItemEvent;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LolMatchDefaultParticipantMatchesPage{
+pub struct LolMatchDefaultParticipantMatchesPage {
     pub summoner_id: i32,
     pub match_id: i32,
-    pub riot_match_id:String,
+    pub riot_match_id: String,
     pub match_ended_since: String,
     pub match_duration: String,
     pub queue: String,
     pub platform: String,
     pub champion_id: i32,
     pub won: bool,
-    pub champ_level:i32,
+    pub champ_level: i32,
     pub kda: f64,
     pub kill_participation: f64,
     pub kills: i32,
     pub deaths: i32,
     pub assists: i32,
-    pub summoner_spell1_id : i32,
-    pub summoner_spell2_id : i32,
+    pub summoner_spell1_id: i32,
+    pub summoner_spell2_id: i32,
     pub perk_primary_selection_id: i32,
     pub perk_sub_style_id: i32,
     pub item0_id: i32,
@@ -36,27 +34,27 @@ pub struct LolMatchDefaultParticipantMatchesPage{
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LolMatchParticipantMatchesPage{
+pub struct LolMatchParticipantMatchesPage {
     pub lol_match_id: i32,
-    pub summoner_id:i32,
+    pub summoner_id: i32,
     pub summoner_name: String,
     pub summoner_tag_line: String,
     pub summoner_platform: String,
     pub champion_id: i32,
-    pub team_id:i32,
+    pub team_id: i32,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LolMatchParticipantMatchesDetailPage{
+pub struct LolMatchParticipantMatchesDetailPage {
     pub id: i32,
     pub lol_match_id: i32,
-    pub summoner_id:i32,
+    pub summoner_id: i32,
     pub summoner_name: String,
     pub summoner_tag_line: String,
     pub summoner_platform: String,
     pub summoner_icon_id: i32,
     pub summoner_level: i64,
     pub champion_id: i32,
-    pub team_id:i32,
+    pub team_id: i32,
     pub won: bool,
     pub kills: i32,
     pub deaths: i32,

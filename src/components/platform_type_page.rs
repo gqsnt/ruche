@@ -1,6 +1,6 @@
 use crate::components::summoner_search_page::SummonerSearchPage;
-use leptos::prelude::ElementChild;
 use leptos::prelude::ClassAttribute;
+use leptos::prelude::ElementChild;
 use leptos::{component, view, IntoView};
 use leptos_router::components::Outlet;
 

@@ -6,12 +6,12 @@ use crate::components::summoner_live_page::SummonerLivePage;
 use crate::components::summoner_matches_page::SummonerMatchesPage;
 use leptos::context::provide_context;
 use leptos::either::Either;
-use leptos::prelude::{log, OnAttribute};
-use leptos::prelude::{signal, Children, ElementChild, ElementExt, Show};
+use leptos::prelude::OnAttribute;
+use leptos::prelude::{signal, ElementChild, Show};
 use leptos::prelude::{ActionForm, ClassAttribute, Get, Read, ServerAction, Suspend, Transition};
 use leptos::server::Resource;
 use leptos::{component, view, IntoView};
-use leptos_router::hooks::{query_signal, query_signal_with_options, use_location, use_params_map};
+use leptos_router::hooks::{query_signal_with_options, use_params_map};
 use leptos_router::NavigateOptions;
 
 #[component]
@@ -36,13 +36,11 @@ pub fn SummonerPage() -> impl IntoView {
     );
 
 
-
     let summoner_view = move || {
         Suspend::new(async move {
             match summoner_resource.await {
                 Ok(summoner) => {
                     Either::Left({
-
                         let (summoner_signal, _) = signal(summoner.clone());
                         provide_context(summoner_signal);
                         provide_context(update_summoner_action.version());
@@ -88,7 +86,7 @@ pub fn SummonerPage() -> impl IntoView {
                         }
                     })
                 }
-                Err(_) => { Either::Right(view! {}) }
+                Err(_) => { Either::Right(()) }
             }
         })
     };
@@ -156,7 +154,7 @@ pub fn SummonerNav() -> impl IntoView {
                 </li>
                 <li class="-mb-px mr-1">
                     <button
-                        on:click=move |e| set_tab(Some(Tabs::Live.to_string()))
+                        on:click=move |_| set_tab(Some(Tabs::Live.to_string()))
                         class=move || {
                             if tab() == Some(Tabs::Live.to_string()) {
                                 "active-tab"
@@ -200,13 +198,13 @@ pub enum Tabs {
     Live,
 }
 
-impl Tabs {
-    pub fn to_string(&self) -> String {
+impl std::fmt::Display for Tabs {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Tabs::Matches => "matches".to_string(),
-            Tabs::Champions => "champions".to_string(),
-            Tabs::Encounters => "encounters".to_string(),
-            Tabs::Live => "live".to_string(),
+            Tabs::Matches => write!(f, "matches"),
+            Tabs::Champions => write!(f, "champions"),
+            Tabs::Encounters => write!(f, "encounters"),
+            Tabs::Live => write!(f, "live"),
         }
     }
 }

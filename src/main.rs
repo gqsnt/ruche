@@ -1,21 +1,19 @@
-use memory_serve::CacheControl;
+
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
     use tower_http::compression::{CompressionLayer, DefaultPredicate};
     use memory_serve::{load_assets, MemoryServe};
-    use tower_http::services::ServeDir;
     use axum::Router;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use leptos_broken_gg::app::*;
     use std::sync::Arc;
     use leptos_broken_gg::{init_database, init_riot_api, AppState};
-    use leptos_broken_gg::lol_static;
     use dotenv::dotenv;
-    use axum::middleware;
-    use tower::ServiceBuilder;
+    use memory_serve::CacheControl;
+    use leptos_broken_gg::lol_static;
 
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
@@ -26,7 +24,7 @@ async fn main() {
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
     let leptos_options = conf.leptos_options;
-    let root = leptos_options.site_root.clone();
+    let _ = leptos_options.site_root.clone();
     lol_static::init_static_data().await;
 
     let app_state = AppState {
@@ -57,7 +55,6 @@ async fn main() {
                 .enable_brotli(!cfg!(debug_assertions))
                 .html_cache_control(CacheControl::Medium)
                 .into_router()
-
         )
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
         .layer(

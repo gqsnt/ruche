@@ -63,7 +63,9 @@ struct LolMatchParticipantDetailsQueryResult {
 
 #[derive(FromRow)]
 struct LolMatchParticipantMatchesQueryResult {
+    #[allow(dead_code)]
     total_count: Option<i64>,
+    #[allow(dead_code)]
     id: i32,
     lol_match_id: i32,
     riot_match_id: String,
@@ -72,6 +74,7 @@ struct LolMatchParticipantMatchesQueryResult {
     summoner_id: i32,
     summoner_spell1_id: Option<i32>,
     summoner_spell2_id: Option<i32>,
+    #[allow(dead_code)]
     team_id: i32,
     won: bool,
     champ_level: i32,

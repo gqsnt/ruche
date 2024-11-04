@@ -1,23 +1,22 @@
 use crate::models::entities::lol_match_participant::LolMatchDefaultParticipantMatchesPage;
 
 use crate::apis::{get_summoner_matches, MatchFiltersSearch};
+use crate::components::match_details::MatchDetails;
 use crate::components::pagination::Pagination;
 use crate::models::entities::summoner::Summoner;
 use leptos::either::Either;
-use leptos::prelude::{log, signal, CustomAttribute, Effect, OnAttribute, Read, ServerFnError, Set};
 use leptos::prelude::ElementChild;
 use leptos::prelude::{expect_context, ClassAttribute, Get, ReadSignal, Resource, RwSignal, Show, StyleAttribute, Suspend, Suspense};
+use leptos::prelude::{signal, CustomAttribute, Effect, OnAttribute};
 use leptos::{component, view, IntoView};
-use leptos_router::hooks::{query_signal, query_signal_with_options, use_query_map};
+use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 use serde::{Deserialize, Serialize};
-use crate::components::match_details::MatchDetails;
 
 #[component]
 pub fn SummonerMatchesPage() -> impl IntoView {
     let summoner = expect_context::<ReadSignal<Summoner>>();
 
-    let summoner_update_version = expect_context::<RwSignal<usize>>();
     let match_filters_updated = expect_context::<RwSignal<MatchFiltersSearch>>();
     let (page_number, set_page_number) = query_signal_with_options::<i32>(
         "page",
@@ -35,11 +34,11 @@ pub fn SummonerMatchesPage() -> impl IntoView {
             set_reset_page_number(false);
         }
     });
-    
+
 
     let matches_resource = Resource::new(
         move || (match_filters_updated.get(), summoner(), page_number()),
-         |(filters, summoner, page_number)| async move {
+        |(filters, summoner, page_number)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
             get_summoner_matches(summoner.id, page_number.unwrap_or(1), Some(filters)).await
         },
@@ -60,8 +59,6 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                                 if total_pages == 0 || (total_pages as i32) < current_page {
                                     set_reset_page_number(true);
                                 }
-                                let has_matches = matches_result.matches.len() > 0;
-                                let mut inner_pages: Vec<PageItem> = vec![];
                                 if matches_result.matches.is_empty() {
                                     Ok(
                                         Either::Left(

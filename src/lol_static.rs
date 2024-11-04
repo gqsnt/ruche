@@ -1,34 +1,28 @@
+use crate::consts::{Champion, SummonerSpell};
 use futures::StreamExt;
-use image::codecs::webp::WebPEncoder;
-use image::{DynamicImage, EncodableLayout, ExtendedColorType, ImageReader};
-use once_cell::sync::OnceCell;
-use reactive_stores::{OptionStoreExt, StoreFieldIterator};
+use image::DynamicImage;
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use leptos::html::tr;
 use strum::IntoEnumIterator;
 use webp::Encoder;
-use crate::consts::{Champion, Perk, SummonerSpell};
-
-pub static VERSION: OnceCell<String> = OnceCell::new();
 
 
-pub fn get_public_path()->PathBuf{
+
+pub fn get_public_path() -> PathBuf {
     Path::new("public").join("assets")
 }
 
 
 #[derive(Debug, Clone)]
-struct ImageToDownload {
+pub struct ImageToDownload {
     url: String,
     path: PathBuf,
     size: (u32, u32),
     to_webp: bool,
 }
-
 
 
 pub async fn init_static_data() {
@@ -49,7 +43,7 @@ pub async fn init_static_data() {
     images_to_download.extend(item_images.unwrap());
     images_to_download.extend(profile_icons_images.unwrap());
     images_to_download.extend(perks.unwrap());
-    for champion in Champion::iter(){
+    for champion in Champion::iter() {
         if champion == Champion::UNKNOWN {
             continue;
         }
@@ -100,11 +94,11 @@ pub async fn encode_and_save_image(image_data: &[u8], file_path: &Path, size: (u
     let resized = img.resize_exact(size.0, size.1, image::imageops::FilterType::Lanczos3);
     tokio::fs::create_dir_all(file_path.parent().unwrap()).await.unwrap();
     if to_webp {
-        let rgb8 =  DynamicImage::ImageRgb8(resized.to_rgb8());
+        let rgb8 = DynamicImage::ImageRgb8(resized.to_rgb8());
         let encoder = Encoder::from_image(&rgb8).unwrap();
 
         tokio::fs::write(file_path, encoder.encode(100.0).to_vec()).await.unwrap();
-    }else{
+    } else {
         resized.save(file_path).unwrap();
     }
 }
@@ -126,7 +120,7 @@ async fn download_and_save_images(images_to_download: Vec<ImageToDownload>) {
                                 let path = image.path.clone();
                                 let size = image.size;
                                 let to_webp = image.to_webp;
-                                encode_and_save_image(&image_data_vec, &path, size,to_webp).await;
+                                encode_and_save_image(&image_data_vec, &path, size, to_webp).await;
                             }
                             Err(e) => {
                                 eprintln!("Error getting image data: {}", e);
@@ -143,34 +137,33 @@ async fn download_and_save_images(images_to_download: Vec<ImageToDownload>) {
 }
 
 
-
-pub async  fn get_perks(version:String) -> Result<Vec<ImageToDownload>, reqwest::Error> {
-    let raw_perks = StaticUrl::Perks { version : version.clone()}.get().await?;
+pub async fn get_perks(version: String) -> Result<Vec<ImageToDownload>, reqwest::Error> {
+    let raw_perks = StaticUrl::Perks { version: version.clone() }.get().await?;
     let main_perks: Vec<JsonParentPerk> = serde_json::from_value(raw_perks).unwrap();
     let mut images_to_download = Vec::new();
     for main_perk in main_perks {
         for slot in main_perk.slots {
             for rune in slot.runes {
                 let path = get_public_path().join("perks").join(format!("{}.png", rune.id));
-                if !path.exists(){
+                if !path.exists() {
                     let image_url = format!("https://ddragon.leagueoflegends.com/cdn/img/{}", rune.icon);
                     images_to_download.push(ImageToDownload {
                         url: image_url,
                         path,
                         size: (22, 22),
-                        to_webp: false ,
+                        to_webp: false,
                     });
                 }
             }
         }
         let path = get_public_path().join("perks").join(format!("{}.png", main_perk.id));
-        if !path.exists(){
+        if !path.exists() {
             let image_url = format!("https://ddragon.leagueoflegends.com/cdn/img/{}", main_perk.icon);
             images_to_download.push(ImageToDownload {
                 url: image_url,
                 path,
                 size: (22, 22),
-                to_webp: false ,
+                to_webp: false,
             });
         }
     }
@@ -210,18 +203,16 @@ pub struct ProfileIcon {
 
 
 pub async fn get_current_version() -> Result<String, reqwest::Error> {
-    let mut versions: Vec<String> = serde_json::from_value(StaticUrl::Versions.get().await?).unwrap();
+    let versions: Vec<String> = serde_json::from_value(StaticUrl::Versions.get().await?).unwrap();
     Ok(versions[0].clone())
 }
-
-
 
 
 pub async fn update_profile_icons_image(version: String) -> Result<Vec<ImageToDownload>, reqwest::Error> {
     let mut images_to_download = Vec::new();
     let raw_champions = StaticUrl::ProfileIcons { version: version.clone() }.get().await?;
     let data = raw_champions["data"].as_object().unwrap();
-    for (k, value) in data {
+    for (k, _) in data {
         let id = k.clone().parse::<i64>().unwrap() as i32;
         let path = get_public_path().join("profile_icons").join(format!("{}.webp", id));
         if !path.exists() {
@@ -238,7 +229,7 @@ pub async fn update_profile_icons_image(version: String) -> Result<Vec<ImageToDo
             });
         }
     }
-   Ok(images_to_download)
+    Ok(images_to_download)
 }
 
 
@@ -247,7 +238,6 @@ pub struct SummonerIcon {
     pub id: i32,
     pub img_url: String,
 }
-
 
 
 #[derive(Serialize, Deserialize)]
@@ -271,9 +261,6 @@ struct JsonChildPerk {
     icon: String,
     name: String,
 }
-
-
-
 
 
 pub enum StaticUrl {
@@ -304,7 +291,7 @@ impl StaticUrl {
     }
 
     pub async fn get(&self) -> Result<Value, reqwest::Error> {
-        let client = reqwest::Client::builder().danger_accept_invalid_certs(true).build().unwrap();
+        let client = reqwest::Client::builder().danger_accept_invalid_certs(true).build()?;
         client.get(self.url().as_str()).send().await?.json().await
     }
 }
@@ -325,7 +312,7 @@ pub struct Item {
     pub into_items: Vec<i32>,
     pub from_items: Vec<i32>,
     pub gold: ItemGoldInfo,
-    pub stats: serde_json::Value,
+    pub stats: Value,
     pub depth: i32,
 }
 #[derive(Serialize, Deserialize)]
@@ -350,7 +337,7 @@ pub struct JsonItem {
     pub gold: ItemGoldInfo,
     pub into: Option<Vec<String>>,
     pub from: Option<Vec<String>>,
-    pub maps:HashMap<i32, bool>,
+    pub maps: HashMap<i32, bool>,
     pub depth: Option<i32>,
 }
 

@@ -1,6 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::consts::PlatformRoute;
-use crate::models::entities::lol_match_participant::LolMatchParticipant;
+use serde::{Deserialize, Serialize};
 
 /// Represents a League of Legends match.
 #[derive(Debug, Clone, Serialize, Deserialize)]

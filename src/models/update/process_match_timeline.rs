@@ -2,7 +2,6 @@ use crate::consts::PlatformRoute;
 use crate::error_template::{AppError, AppResult};
 use crate::models::entities::lol_match_timeline::{ItemEvent, LolMatchTimeline};
 use crate::models::entities::summoner::Summoner;
-use futures::stream::StreamExt;
 use riven::RiotApi;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
@@ -42,12 +41,10 @@ impl From<&str> for EventType {
 }
 
 
-pub fn push_item_event_into_participant_id(participants:&mut HashMap<i32, TempLolMatchTimeline>,participant_id:i32, timestamp:i64, event:ItemEvent){
+pub fn push_item_event_into_participant_id(participants: &mut HashMap<i32, TempLolMatchTimeline>, participant_id: i32, timestamp: i64, event: ItemEvent) {
     let participant = participants.get_mut(&participant_id).unwrap();
     participant.items_event_timeline.push((timestamp, event));
-
 }
-
 
 
 pub async fn process_match_timeline(
@@ -95,7 +92,7 @@ pub async fn process_match_timeline(
         );
     }
 
-    for (frame_idx, frame) in timeline.info.frames.iter().enumerate() {
+    for (_, frame) in timeline.info.frames.iter().enumerate() {
         for event in &frame.events {
             let event_type = EventType::from(event.r#type.as_str());
             match event_type {
@@ -115,34 +112,19 @@ pub async fn process_match_timeline(
                     let item_id = event.item_id.ok_or_else(|| {
                         AppError::CustomError("Missing item_id in ITEM_PURCHASED event".into())
                     })?;
-                    push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent::Purchased{item_id});
+                    push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent::Purchased { item_id });
                 }
                 EventType::ItemSold => {
                     let item_id = event.item_id.ok_or_else(|| {
                         AppError::CustomError("Missing item_id in ITEM_SOLD event".into())
                     })?;
-                    let participant_id = event.participant_id.ok_or_else(|| {
-                        AppError::CustomError("Missing participant_id in event".into())
-                    })?;
-
-                    let participant = lol_match_timelines.get_mut(&participant_id).ok_or_else(|| {
-                        AppError::CustomError(format!("Participant with ID {} not found", participant_id))
-                    })?;
-                    push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent::Sold{item_id});
-
+                    push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent::Sold { item_id });
                 }
                 EventType::ItemDestroyed => {
                     let item_id = event.item_id.ok_or_else(|| {
                         AppError::CustomError("Missing item_id in ITEM_DESTROYED event".into())
                     })?;
-                    let participant_id = event.participant_id.ok_or_else(|| {
-                        AppError::CustomError("Missing participant_id in event".into())
-                    })?;
-
-                    let participant = lol_match_timelines.get_mut(&participant_id).ok_or_else(|| {
-                        AppError::CustomError(format!("Participant with ID {} not found", participant_id))
-                    })?;
-                    push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent::Destroyed{item_id});
+                    push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent::Destroyed { item_id });
                 }
                 EventType::ItemUndo => {
                     let participant_id = event.participant_id.ok_or_else(|| {

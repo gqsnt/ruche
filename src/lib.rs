@@ -1,5 +1,3 @@
-extern crate core;
-
 use leptos::prelude::LeptosOptions;
 
 pub mod app;
@@ -40,8 +38,6 @@ pub struct AppState {
     pub riot_api: std::sync::Arc<riven::RiotApi>,
     pub db: sqlx::PgPool,
 }
-
-
 
 
 #[cfg(feature = "ssr")]

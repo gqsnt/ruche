@@ -31,6 +31,21 @@ pub struct SummonerDb {
     pub profile_icon_id: i32,
 }
 
+impl SummonerDb{
+    pub fn map_to_summoner(&self) -> Summoner {
+        Summoner {
+            id: self.id,
+            game_name: self.game_name.clone(),
+            tag_line: self.tag_line.clone(),
+            puuid: self.puuid.clone(),
+            platform: PlatformRoute::from_str(self.platform.as_str()).unwrap(),
+            updated_at: self.updated_at.format(DATE_FORMAT).to_string(),
+            summoner_level: self.summoner_level,
+            profile_icon_id: self.profile_icon_id,
+        }
+    }
+}
+
 
 impl Summoner {
     pub async fn find_by_exact_details(
@@ -46,16 +61,7 @@ impl Summoner {
             .bind(platform_route.as_region_str())
             .fetch_one(db)
             .await
-            .map(|x| Self {
-                id: x.id,
-                game_name: x.game_name,
-                tag_line: x.tag_line,
-                puuid: x.puuid,
-                platform: PlatformRoute::from_region_str(x.platform.as_str()).unwrap(),
-                updated_at: x.updated_at.format(DATE_FORMAT).to_string(),
-                summoner_level: x.summoner_level as i64,
-                profile_icon_id: x.profile_icon_id,
-            })
+            .map(|x| x.map_to_summoner())
             .map_err(AppError::from)
     }
 
@@ -75,16 +81,7 @@ impl Summoner {
 
             .fetch_one(db)
             .await
-            .map(|x| Self {
-                id: x.id,
-                game_name: x.game_name,
-                tag_line: x.tag_line,
-                puuid: x.puuid,
-                platform: PlatformRoute::from_region_str(x.platform.as_str()).unwrap(),
-                updated_at: x.updated_at.format(DATE_FORMAT).to_string(),
-                summoner_level: x.summoner_level as i64,
-                profile_icon_id: x.profile_icon_id,
-            })
+            .map(|x| x.map_to_summoner())
             .map_err(AppError::from)
     }
 
@@ -211,16 +208,7 @@ impl Summoner {
             .bind(id)
             .fetch_one(db)
             .await
-            .map(|x| Self {
-                id: x.id,
-                game_name: x.game_name,
-                tag_line: x.tag_line,
-                puuid: x.puuid,
-                platform: PlatformRoute::from_str(x.platform.as_str()).unwrap(),
-                updated_at: x.updated_at.format(DATE_FORMAT).to_string(),
-                summoner_level: x.summoner_level as i64,
-                profile_icon_id: x.profile_icon_id,
-            })
+            .map(|x|  x.map_to_summoner())
             .map_err(AppError::from)
     }
 
@@ -252,7 +240,7 @@ impl Summoner {
                 puuid: summoner.puuid,
                 platform: platform_route.into(),
                 updated_at: Utc::now().format(DATE_FORMAT).to_string(),
-                summoner_level: summoner.summoner_level as i64,
+                summoner_level: summoner.summoner_level,
                 profile_icon_id: summoner.profile_icon_id,
             }
         )
@@ -282,7 +270,7 @@ impl Summoner {
             puuid: summoner.puuid,
             platform: platform_route.into(),
             updated_at: Utc::now().format(DATE_FORMAT).to_string(),
-            summoner_level: summoner.summoner_level as i64,
+            summoner_level: summoner.summoner_level,
             profile_icon_id: summoner.profile_icon_id,
         })
     }

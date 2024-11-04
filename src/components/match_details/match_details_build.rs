@@ -1,21 +1,20 @@
-use std::collections::HashMap;
-use leptos::prelude::{event_target_value, signal, ClassAttribute, OnAttribute, PropAttribute, Read, ReadSignal, Resource, ServerFnError, Show, Suspend, Suspense};
-use leptos::{component, view, IntoView};
-use leptos::either::Either;
-use leptos::prelude::ElementChild;
 use leptos::prelude::CustomAttribute;
+use leptos::prelude::ElementChild;
+use leptos::prelude::{event_target_value, signal, ClassAttribute, OnAttribute, PropAttribute, Read, ReadSignal, Show};
+use leptos::{component, view, IntoView};
+use std::collections::HashMap;
 
 use crate::consts::Champion;
 use crate::models::entities::lol_match_participant::LolMatchParticipantMatchesDetailPage;
 use crate::models::entities::lol_match_timeline::ItemEvent;
 
 #[component]
-pub fn MatchDetailsBuild(summoner_id:i32, match_details : ReadSignal<Vec<LolMatchParticipantMatchesDetailPage>>) -> impl IntoView {
-    let summoner_name_with_champion = |participant:&LolMatchParticipantMatchesDetailPage|{
-        format!("{}({})", participant.summoner_name, Champion::try_from(participant.champion_id as i16).unwrap().to_string())
+pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantMatchesDetailPage>>) -> impl IntoView {
+    let summoner_name_with_champion = |participant: &LolMatchParticipantMatchesDetailPage| {
+        format!("{}({})", participant.summoner_name, Champion::try_from(participant.champion_id as i16).unwrap())
     };
     let participant_ids = match_details.read().iter().map(|x| (x.summoner_id, summoner_name_with_champion(x))).collect::<HashMap<i32, String>>();
-    let find_participant = move |summoner_id:i32| match_details.read().iter().find(|x| x.summoner_id == summoner_id).cloned().unwrap();
+    let find_participant = move |summoner_id: i32| match_details.read().iter().find(|x| x.summoner_id == summoner_id).cloned().unwrap();
     let (selected_participant, set_selected_participant) = signal(find_participant(summoner_id));
     view! {
         <div class="text-left mt-1 ">
