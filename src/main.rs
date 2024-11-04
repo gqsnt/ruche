@@ -1,4 +1,5 @@
-
+use tower_http::compression::Predicate;
+use tower_http::compression::predicate::{NotForContentType, SizeAbove};
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
@@ -49,21 +50,17 @@ async fn main() {
                 move || shell(leptos_options.clone())
             },
         )
-        .merge(
-            MemoryServe::new(load_assets!("./target/site/assets"))
-                .enable_brotli(!cfg!(debug_assertions))
-                .cache_control(CacheControl::Long)
-                .into_router()
-        )
-        .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
         .layer(
             CompressionLayer::new()
                 .br(true)
                 .deflate(true)
                 .gzip(true)
                 .zstd(true)
-                .compress_when(DefaultPredicate::default())
+                .compress_when(SizeAbove::new(32)
+                    .and(NotForContentType::GRPC)
+                    .and(NotForContentType::SSE))
         )
+        .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
         .with_state(app_state);
 
     log!("listening on http://{}", &addr);

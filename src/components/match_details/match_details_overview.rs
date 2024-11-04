@@ -23,11 +23,13 @@ pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolM
                 won=summoner_team_won
                 team_id=summoner_team
                 participants=first_team
+                summoner_id
             />
             <MatchDetailsOverviewTable
                 won=!summoner_team_won
                 team_id=other_team
                 participants=second_team
+                summoner_id
             />
         </div>
     }
@@ -35,7 +37,7 @@ pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolM
 
 
 #[component]
-pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, participants: Vec<LolMatchParticipantMatchesDetailPage>) -> impl IntoView {
+pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, participants: Vec<LolMatchParticipantMatchesDetailPage>) -> impl IntoView {
     view! {
         <table class="table-fixed text-xs w-full border-collapse">
             <colgroup>
@@ -75,7 +77,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, participants: Vec<LolM
                         let item6_id = participant.item6_id;
 
                         view! {
-                            <tr class=("bg-rose-800", !won) class=("bg-blue-800", won)>
+                            <tr class=("bg-rose-800", !won && participant.summoner_id != summoner_id) class=("bg-blue-800", won && participant.summoner_id != summoner_id) class=("bg-rose-700", !won && participant.summoner_id == summoner_id) class=("bg-blue-700", won && participant.summoner_id == summoner_id)>
                                 <td class="pl-2.5 py-1">
                                     <div class="relative w-8">
                                         <img

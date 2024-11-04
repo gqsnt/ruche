@@ -115,20 +115,20 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
         <div class="flex flex-col">
             <div class="min-h-24 w-full flex rounded text-xs">
                 <div
-                    class=("bg-rose-500", !match_.won)
-                    class=("bg-blue-500", match_.won)
+                    class:bg-rose-500=move || !match_.won
+                    class:bg-blue-500=move || match_.won
                     class="min-w-1.5 w-1.5"
                 ></div>
                 <div
-                    class=("bg-rose-800", !match_.won)
-                    class=("bg-blue-800", match_.won)
+                    class:bg-rose-800= move ||!match_.won
+                    class:bg-blue-800=move || match_.won
                     class="flex gap-2 py-0 px-3 w-full items-center"
                 >
                     <div class="flex flex-col w-[108px] gap-2">
                         <div class="flex flex-col items-start">
                             <div
-                                class=("text-rose-500", !match_.won)
-                                class=("text-blue-500", match_.won)
+                                class:text-rose-500= move ||!match_.won
+                                class:text-blue-500=move || match_.won
                                 class="uppercase font-bold text-ellipsis max-w-[90%] overflow-hidden whitespace-nowrap"
                             >
                                 {match_.queue.clone()}
@@ -136,8 +136,8 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                             <div>{match_.match_ended_since.clone()}</div>
                         </div>
                         <hr
-                            class=("border-rose-600", !match_.won)
-                            class=("border-blue-600", match_.won)
+                            class:border-rose-600= move ||!match_.won
+                            class:border-blue-600= move ||match_.won
                             class="w-1/2"
                         />
                         <div class="flex flex-col items-start">
@@ -232,8 +232,8 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                 <div>{match_.kda}:1 KDA</div>
                             </div>
                             <div
-                                class=("border-rose-600", !match_.won)
-                                class=("border-blue-600", match_.won)
+                                class:border-rose-600= move||!match_.won
+                                class:border-blue-600= move||match_.won
                                 class="flex flex-col h-[58px] pl-2 border-l-2"
                             >
                                 <div class="text-rose-500">P/Kill {match_.kill_participation}%</div>
@@ -339,10 +339,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                                 participant.summoner_name,
                                                 participant.summoner_tag_line,
                                             )
-                                            class=(
-                                                "text-white",
-                                                participant.summoner_id == match_.summoner_id,
-                                            )
+                                            class:text-white=move || participant.summoner_id == match_.summoner_id
                                             class="text-ellipsis overflow-hidden whitespace-nowrap max-w-[60px]"
                                         >
                                             {participant.summoner_name.clone()}
@@ -355,15 +352,15 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                 </div>
                 <div class="w-[40px] flex relative flex-col">
                     <button
-                        class=("bg-rose-600", !match_.won)
-                        class=("bg-blue-600", match_.won)
+                        class:bg-rose-600=move || !match_.won
+                        class:bg-blue-600=move || match_.won
                         class="p-2 flex flex-col items-center justify-end h-full"
                         on:click=move |_| set_show_details(!show_details())
                     >
                         <span
                             class="w-[24px] h-[24px]"
-                            class=("text-rose-500", !match_.won)
-                            class=("text-blue-500", match_.won)
+                            class:text-rose-500 = move ||!match_.won
+                            class:text-blue-500=move || match_.won
                         >
                             <svg
                                 class=move || ("rotate-180", show_details())
