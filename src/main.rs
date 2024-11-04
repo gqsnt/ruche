@@ -14,7 +14,7 @@ async fn main() {
     use dotenv::dotenv;
     use memory_serve::CacheControl;
     use leptos_broken_gg::lol_static;
-
+    use leptos::logging::log;
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
     // For deployment these variables are:

@@ -26,13 +26,12 @@ image = { version = "0.25", optional = true }
 memory-serve = {version = "0.6.0", optional = true}
 
 
-leptos = { version = "0.7.0-rc0", features = ["nightly"] }
-leptos_axum = { version = "0.7.0-rc0", optional = true}
-leptos_meta = { version = "0.7.0-rc0" }
-leptos_router = { version = "0.7.0-rc0", features = ["nightly"] }
+leptos = { git = "https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git", features = ["nightly"] }
+leptos_axum = { git = "https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git", optional = true}
+leptos_meta = { git  = "https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git" }
+leptos_router = { git = "https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git", features = ["nightly"] }
 
 wasm-bindgen = "=0.2.93"
-once_cell = "1.20.2"
 itertools = "0.13.0"
 urlencoding = "2"
 serde = { version = "1.0", features = ["derive"] }
@@ -40,7 +39,6 @@ serde_json = { version = "1.0.132" , features = ["raw_value"]}
 thiserror = "1"
 http = "1"
 console_error_panic_hook = "0.1"
-reactive_stores = "0.1.0-rc0"
 strum_macros = "0.26"
 strum = "0.26"
 num_enum_derive = "0.7.3"
@@ -74,8 +72,8 @@ ssr = [
 [profile.release]
 panic = "abort"
 
-#[profile.dev]
-#rustflags = ["-Awarnings"]
+[profile.dev]
+rustflags = ["-Awarnings"]
 
 
 # Defines a size-optimized profile for the WASM bundle in release mode

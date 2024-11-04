@@ -20,17 +20,15 @@ RUN cargo binstall cargo-leptos -y
 #RUN cargo install cargo-leptos
 
 # Add the WASM target
-RUN rustup target add wasm32-unknown-unknown
+
 
 # Make an /app dir, which everything will eventually live in
 RUN mkdir -p /app
 WORKDIR /app
 COPY . .
 
-# ls the directory to make sure everything is there
-RUN ls
-
 RUN npm install -D tailwindcss
+RUN rustup target add wasm32-unknown-unknown
 
 # Build the app
 RUN cargo leptos build --release -vv
