@@ -1,4 +1,3 @@
-use leptos::prelude::LeptosOptions;
 
 pub mod app;
 pub mod error_template;
@@ -14,6 +13,33 @@ pub mod consts;
 
 #[cfg(feature = "ssr")]
 pub const DB_CHUNK_SIZE: usize = 500;
+
+use std::fs;
+#[cfg(feature = "ssr")]
+use std::net::SocketAddr;
+use std::path::PathBuf;
+#[cfg(feature = "ssr")]
+use axum::extract::Host;
+#[cfg(feature = "ssr")]
+use axum::response::Redirect;
+#[cfg(feature = "ssr")]
+use axum::{BoxError, ServiceExt};
+#[cfg(feature = "ssr")]
+use http::{StatusCode, Uri};
+#[cfg(feature = "ssr")]
+use axum::handler::HandlerWithoutStateExt;
+#[cfg(feature = "ssr")]
+use axum::Router;
+#[cfg(feature = "ssr")]
+use futures::StreamExt;
+use leptos::logging::log;
+#[cfg(feature = "ssr")]
+use leptos::prelude::LeptosOptions;
+#[cfg(feature = "ssr")]
+use rustls_acme::AcmeConfig;
+#[cfg(feature = "ssr")]
+use rustls_acme::caches::DirCache;
+
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
@@ -37,6 +63,13 @@ pub struct AppState {
     pub leptos_options: LeptosOptions,
     pub riot_api: std::sync::Arc<riven::RiotApi>,
     pub db: sqlx::PgPool,
+}
+
+
+#[derive(Clone, Copy)]
+struct Ports {
+    http: u16,
+    https: u16,
 }
 
 
@@ -64,3 +97,86 @@ pub async fn init_database() -> sqlx::PgPool {
     pool
 }
 
+
+#[cfg(feature = "ssr")]
+pub async fn serve_with_tsl(
+    app: Router,
+    domains: impl IntoIterator<Item = impl AsRef<str>>,
+    email_for_lets_encrypt: &str,
+    cert_cache_dir: impl Into<PathBuf>,
+) -> Result<(), axum::Error> {
+    let ccache: PathBuf = cert_cache_dir.into();
+    if !ccache.exists() {
+        fs::create_dir_all(&ccache).expect("failed to create cache dir");
+    }
+
+    let mut state = AcmeConfig::new(domains)
+        .contact([format!("mailto:{email_for_lets_encrypt}")])
+        .cache(DirCache::new(ccache))
+        .directory_lets_encrypt(true)
+        .state();
+
+    let acceptor = state.axum_acceptor(state.default_rustls_config());
+
+    tokio::spawn(async move {
+        loop {
+            match state.next().await.unwrap() {
+                Ok(ok) => log!("event: {ok:?}"),
+                Err(err) => log!("error: {err}"),
+            }
+        }
+    });
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], 443));
+    let tls_server = axum_server::bind(addr)
+        .acceptor(acceptor)
+        .serve(app.into_make_service());
+    tokio::spawn(redirect_http_to_https());
+    tls_server.await.unwrap();
+    Ok(())
+}
+
+
+#[cfg(feature = "ssr")]
+async fn redirect_http_to_https() {
+    fn make_https(host: String, uri: Uri) -> Result<Uri, BoxError> {
+        let mut parts = uri.into_parts();
+
+        parts.scheme = Some(axum::http::uri::Scheme::HTTPS);
+
+        if parts.path_and_query.is_none() {
+            parts.path_and_query = Some("/".parse().unwrap());
+        }
+
+        let https_host = host.replace("80", "443");
+        parts.authority = Some(https_host.parse()?);
+
+        Ok(Uri::from_parts(parts)?)
+    }
+
+    let redirect = move |Host(host): Host, uri: Uri| async move {
+        match make_https(host, uri) {
+            Ok(uri) => Ok(Redirect::permanent(&uri.to_string())),
+            Err(error) => {
+                tracing::warn!(%error, "failed to convert URI to HTTPS");
+                Err(StatusCode::BAD_REQUEST)
+            }
+        }
+    };
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], 80));
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    tracing::debug!("listening on {}", listener.local_addr().unwrap());
+    axum::serve(listener, redirect.into_make_service())
+        .await
+        .unwrap();
+}
+
+#[cfg(feature = "ssr")]
+pub async fn server_locally(app: Router) -> Result<(), axum::Error> {
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let listener = tokio::net::TcpListener::bind(&addr)
+        .await
+        .expect("Creating listener");
+    Ok(axum::serve(listener, app.into_make_service()).await.unwrap())
+}

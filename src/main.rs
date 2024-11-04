@@ -1,11 +1,11 @@
 use tower_http::compression::Predicate;
 use tower_http::compression::predicate::{NotForContentType, SizeAbove};
+use leptos_broken_gg::{serve_with_tsl, server_locally};
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
     use tower_http::compression::{CompressionLayer, DefaultPredicate};
-    use memory_serve::{load_assets, MemoryServe};
     use axum::Router;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
@@ -13,7 +13,6 @@ async fn main() {
     use std::sync::Arc;
     use leptos_broken_gg::{init_database, init_riot_api, AppState};
     use dotenv::dotenv;
-    use memory_serve::CacheControl;
     use leptos_broken_gg::lol_static;
     use leptos::logging::log;
 
@@ -24,9 +23,17 @@ async fn main() {
     // The file would need to be included with the executable when moved to deployment
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
-    let leptos_options = conf.leptos_options;
+    let mut leptos_options = conf.leptos_options;
+    let IS_LOCAL = false;
+    if IS_LOCAL{
+        leptos_options.site_addr = "127.0.0.1:3000".parse().unwrap();
+    }
+    else{
+        leptos_options.site_addr = "0.0.0.0:80".parse().unwrap();
+    }
+
     let _ = leptos_options.site_root.clone();
-    lol_static::init_static_data().await;
+    //lol_static::init_static_data().await;
 
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
@@ -62,12 +69,13 @@ async fn main() {
         )
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
         .with_state(app_state);
-
     log!("listening on http://{}", &addr);
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    axum::serve(listener, app.into_make_service())
-        .await
-        .unwrap();
+    if IS_LOCAL{
+        server_locally(app).await.unwrap();
+    }
+    else{
+        serve_with_tsl(app, ["next-level.xyz"], "gaqu1994@gmail.com", "./tmp/cache").await.unwrap();
+    }
 }
 
 #[cfg(not(feature = "ssr"))]
