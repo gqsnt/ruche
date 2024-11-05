@@ -98,7 +98,7 @@ pub fn Pagination(max_page: usize) -> impl IntoView {
                                         if is_current {
                                             "bg-blue-500 text-white px-3 py-1 rounded"
                                         } else {
-                                            "bg-white text-blue-500 px-3 py-1 rounded hover:bg-blue-100"
+                                            "bg-white text-blue-700 px-3 py-1 rounded hover:bg-blue-100"
                                         }
                                     }
                                     on:click=move |_| set_p(Some(p))
