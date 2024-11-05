@@ -89,7 +89,7 @@ dependencies = [
 [[package]]
 name = "any_spawner"
 version = "0.1.1"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "futures",
  "thiserror",
@@ -828,7 +828,7 @@ dependencies = [
 [[package]]
 name = "const_str_slice_concat"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 
 [[package]]
 name = "convert_case"
@@ -1062,7 +1062,7 @@ dependencies = [
 [[package]]
 name = "either_of"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "pin-project-lite",
 ]
@@ -1650,7 +1650,7 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 [[package]]
 name = "hydration_context"
 version = "0.2.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "futures",
  "js-sys",
@@ -1956,7 +1956,7 @@ checksum = "03087c2bad5e1034e8cace5926dec053fb3790248370865f5117a7d0213354c8"
 [[package]]
 name = "leptos"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "any_spawner",
  "base64 0.22.1",
@@ -2035,7 +2035,7 @@ dependencies = [
 [[package]]
 name = "leptos_axum"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "any_spawner",
  "axum",
@@ -2058,7 +2058,7 @@ dependencies = [
 [[package]]
 name = "leptos_config"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "config",
  "regex",
@@ -2070,7 +2070,7 @@ dependencies = [
 [[package]]
 name = "leptos_dom"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "js-sys",
  "or_poisoned",
@@ -2084,7 +2084,7 @@ dependencies = [
 [[package]]
 name = "leptos_hot_reload"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "anyhow",
  "camino",
@@ -2101,7 +2101,7 @@ dependencies = [
 [[package]]
 name = "leptos_integration_utils"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "futures",
  "hydration_context",
@@ -2115,7 +2115,7 @@ dependencies = [
 [[package]]
 name = "leptos_macro"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "attribute-derive",
  "cfg-if",
@@ -2136,7 +2136,7 @@ dependencies = [
 [[package]]
 name = "leptos_meta"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "futures",
  "indexmap",
@@ -2151,7 +2151,7 @@ dependencies = [
 [[package]]
 name = "leptos_router"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "any_spawner",
  "either_of",
@@ -2175,7 +2175,7 @@ dependencies = [
 [[package]]
 name = "leptos_router_macro"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "proc-macro-error2",
  "proc-macro2",
@@ -2185,7 +2185,7 @@ dependencies = [
 [[package]]
 name = "leptos_server"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "any_spawner",
  "base64 0.22.1",
@@ -2485,7 +2485,7 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 [[package]]
 name = "next_tuple"
 version = "0.1.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 
 [[package]]
 name = "nom"
@@ -2652,7 +2652,7 @@ dependencies = [
 [[package]]
 name = "oco_ref"
 version = "0.2.0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "serde",
  "thiserror",
@@ -2720,7 +2720,7 @@ dependencies = [
 [[package]]
 name = "or_poisoned"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 
 [[package]]
 name = "overload"
@@ -3247,7 +3247,7 @@ dependencies = [
 [[package]]
 name = "reactive_graph"
 version = "0.1.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "any_spawner",
  "async-lock",
@@ -3267,7 +3267,7 @@ dependencies = [
 [[package]]
 name = "reactive_stores"
 version = "0.1.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "guardian",
  "itertools 0.13.0",
@@ -3281,7 +3281,7 @@ dependencies = [
 [[package]]
 name = "reactive_stores_macro"
 version = "0.1.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "convert_case",
  "proc-macro-error2",
@@ -3782,7 +3782,7 @@ dependencies = [
 [[package]]
 name = "server_fn"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "axum",
  "bytes",
@@ -3817,7 +3817,7 @@ dependencies = [
 [[package]]
 name = "server_fn_macro"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "const_format",
  "convert_case",
@@ -3830,7 +3830,7 @@ dependencies = [
 [[package]]
 name = "server_fn_macro_default"
 version = "0.7.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "server_fn_macro",
  "syn 2.0.85",
@@ -4354,7 +4354,7 @@ dependencies = [
 [[package]]
 name = "tachys"
 version = "0.1.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "any_spawner",
  "const_str_slice_concat",
@@ -4434,7 +4434,7 @@ dependencies = [
 [[package]]
 name = "throw_error"
 version = "0.2.0-rc0"
-source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93.git#2ef1723607644f2484d2c115b89df54947f8f124"
+source = "git+https://github.com/gqsnt/leptos_rc0_wasm0_2_93?rev=13ccb1f#13ccb1fc65ac16e3fd6a2dd8e62a214d5b0eb1f1"
 dependencies = [
  "pin-project-lite",
 ]
