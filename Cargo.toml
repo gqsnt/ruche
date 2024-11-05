@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 axum = { version = "0.7", optional = true, features = ["macros", "http2"]}
 rustls-acme = { version = "0.11.1", optional = true, features = ["axum"] }
-axum-server = { version = "0.7", optional = true }
+axum-server = { version = "0.7", optional = true}
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 tower = { version = "0.4", optional = true, features = ["util"] }
 tower-http = { version = "0.5", features = ["fs", "compression-full"], optional = true }
@@ -111,7 +111,8 @@ tailwind-config-file = "tailwind.config.js"
 assets-dir = "public"
 
 # The IP and port (ex: 127.0.0.1:3000) where the server serves the content. Use it in your server setup.
-site-addr = "0.0.0.0:80"
+#site-addr = "0.0.0.0:80"
+site-addr = "127.0.0.1:3000"
 
 # The port to use for automatic reload monitoring
 reload-port = 3001

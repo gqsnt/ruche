@@ -26,7 +26,7 @@ async fn main() {
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
     let mut leptos_options = conf.leptos_options;
-    let IS_LOCAL = false;
+    let IS_LOCAL = true;
     if IS_LOCAL{
         leptos_options.site_addr = "127.0.0.1:3000".parse().unwrap();
     }
