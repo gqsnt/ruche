@@ -1,4 +1,4 @@
-use tower::ServiceBuilder;
+
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
@@ -17,7 +17,8 @@ async fn main() {
     use tower_http::compression::Predicate;
     use tower_http::compression::predicate::{NotForContentType, SizeAbove};
     use leptos_broken_gg::{serve_with_tsl, server_locally};
-
+    use memory_serve::{load_assets, CacheControl, MemoryServe};
+    use tower::ServiceBuilder;
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
     // For deployment these variables are:
     // <https://github.com/leptos-rs/start-axum#executing-a-server-on-a-remote-machine-without-the-toolchain>
@@ -56,6 +57,21 @@ async fn main() {
                 let leptos_options = leptos_options.clone();
                 move || shell(leptos_options.clone())
             },
+        )
+        .merge(
+            MemoryServe::new(load_assets!("./target/site/assets"))
+                .enable_brotli(!cfg!(debug_assertions))
+                .cache_control(CacheControl::Long)
+                .into_router()
+        )
+        .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
+        .layer(
+            CompressionLayer::new()
+                .br(true)
+                .deflate(true)
+                .gzip(true)
+                .zstd(true)
+                .compress_when(DefaultPredicate::default())
         )
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
         .with_state(app_state);
