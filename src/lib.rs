@@ -33,6 +33,7 @@ use axum::Router;
 #[cfg(feature = "ssr")]
 use futures::StreamExt;
 use leptos::logging::log;
+use leptos::prelude::BindAttribute;
 #[cfg(feature = "ssr")]
 use leptos::prelude::LeptosOptions;
 #[cfg(feature = "ssr")]
@@ -64,14 +65,6 @@ pub struct AppState {
     pub riot_api: std::sync::Arc<riven::RiotApi>,
     pub db: sqlx::PgPool,
 }
-
-
-#[derive(Clone, Copy)]
-struct Ports {
-    http: u16,
-    https: u16,
-}
-
 
 #[cfg(feature = "ssr")]
 pub fn init_riot_api() -> riven::RiotApi {
@@ -116,7 +109,7 @@ pub async fn serve_with_tsl(
         .directory_lets_encrypt(true)
         .state();
 
-    let acceptor = state.axum_acceptor(state.default_rustls_config());
+    let acceptor = state.axum_acceptor(state.challenge_rustls_config());
 
     tokio::spawn(async move {
         loop {
@@ -127,11 +120,14 @@ pub async fn serve_with_tsl(
         }
     });
 
+
     let addr = SocketAddr::from(([0, 0, 0, 0], 443));
+    tokio::spawn(redirect_http_to_https());
+
     let tls_server = axum_server::bind(addr)
         .acceptor(acceptor)
         .serve(app.into_make_service());
-    tokio::spawn(redirect_http_to_https());
+
     tls_server.await.unwrap();
     Ok(())
 }

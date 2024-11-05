@@ -15,8 +15,6 @@ pub fn get_assets_path() -> std::path::PathBuf {
     let ex_path = std::env::current_exe().unwrap();
     let parent_path = ex_path.parent().unwrap();// release or debug
     let parent_path = parent_path.parent().unwrap(); // target
-    println!("parent_path: {:?}", parent_path);
-    panic!("stop");
     parent_path.join("site").join("assets")
 }
 

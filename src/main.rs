@@ -1,6 +1,4 @@
-use tower_http::compression::Predicate;
-use tower_http::compression::predicate::{NotForContentType, SizeAbove};
-use leptos_broken_gg::{serve_with_tsl, server_locally};
+use tower::ServiceBuilder;
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
@@ -15,6 +13,10 @@ async fn main() {
     use dotenv::dotenv;
     use leptos_broken_gg::lol_static;
     use leptos::logging::log;
+    use leptos::html::tr;
+    use tower_http::compression::Predicate;
+    use tower_http::compression::predicate::{NotForContentType, SizeAbove};
+    use leptos_broken_gg::{serve_with_tsl, server_locally};
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
     // For deployment these variables are:
@@ -31,9 +33,8 @@ async fn main() {
     else{
         leptos_options.site_addr = "0.0.0.0:80".parse().unwrap();
     }
-
     let _ = leptos_options.site_root.clone();
-    //lol_static::init_static_data().await;
+    lol_static::init_static_data().await;
 
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
@@ -44,7 +45,6 @@ async fn main() {
     let routes = generate_route_list(App);
     // build our application with a route
     let app = Router::<AppState>::new()
-
         .leptos_routes_with_context(
             &app_state,
             routes,
@@ -56,16 +56,6 @@ async fn main() {
                 let leptos_options = leptos_options.clone();
                 move || shell(leptos_options.clone())
             },
-        )
-        .layer(
-            CompressionLayer::new()
-                .br(true)
-                .deflate(true)
-                .gzip(true)
-                .zstd(true)
-                .compress_when(SizeAbove::new(32)
-                    .and(NotForContentType::GRPC)
-                    .and(NotForContentType::SSE))
         )
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
         .with_state(app_state);
