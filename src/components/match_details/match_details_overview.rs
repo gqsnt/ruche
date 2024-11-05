@@ -79,15 +79,9 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
 
                         view! {
                             <tr
-                                class=(
-                                    "bg-red-900",
-                                    !won && participant.summoner_id != summoner_id,
-                                )
+                                class=("bg-red-900", !won && participant.summoner_id != summoner_id)
                                 class=("bg-blue-900", won && participant.summoner_id != summoner_id)
-                                class=(
-                                    "bg-red-800",
-                                    !won && participant.summoner_id == summoner_id,
-                                )
+                                class=("bg-red-800", !won && participant.summoner_id == summoner_id)
                                 class=("bg-blue-800", won && participant.summoner_id == summoner_id)
                             >
                                 <td class="pl-2.5 py-1">

@@ -92,7 +92,7 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
     }).collect::<Vec<_>>();
 
     view! {
-        <div >
+        <div>
             <div class="my-card">
                 <div class="flex text-left space-x-2">
                     <div>

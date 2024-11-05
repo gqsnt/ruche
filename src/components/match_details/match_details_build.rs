@@ -43,7 +43,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                     .collect::<Vec<_>>()}
             </select>
             <div class="my-card w-fit my-2">
-                <div >Items Build</div>
+                <div>Items Build</div>
                 <div class="flex mt-2 flex-wrap text-xs">
                     {move || {
                         let total = selected_participant().items_event_timeline.len();

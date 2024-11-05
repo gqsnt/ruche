@@ -77,7 +77,7 @@ pub fn MatchDetails(match_id: i32, riot_match_id: String, platform: String, summ
                     Build
                 </button>
             </div>
-            <div >
+            <div>
                 <Suspense fallback=move || {
                     view! { <p>"Loading..."</p> }
                 }>{match_detail_view}</Suspense>
