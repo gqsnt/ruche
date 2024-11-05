@@ -85,7 +85,7 @@ pub fn Pagination(max_page: usize) -> impl IntoView {
                     if p == 0 {
                         Either::Left(
                             // Render ellipsis
-                            view! { <li class="ellipsis">{"..."}</li> },
+                            view! { <div class="ellipsis">{"..."}</div> },
                         )
                     } else {
                         let is_current = p == current_page();
@@ -118,7 +118,7 @@ pub fn Pagination(max_page: usize) -> impl IntoView {
                     if current_page() >= max_page {
                         "bg-gray-300 text-gray-500 px-4 py-2 rounded cursor-not-allowed"
                     } else {
-                        "bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                        "active-tab"
                     }
                 }
                 on:click=move |_| go_to_next_page()

@@ -46,6 +46,12 @@ async fn main() {
     let routes = generate_route_list(App);
     // build our application with a route
     let app = Router::<AppState>::new()
+        .merge(
+            MemoryServe::new(load_assets!("target/site"))
+                .enable_brotli(!cfg!(debug_assertions))
+                .cache_control(CacheControl::Long)
+                .into_router()
+        )
         .leptos_routes_with_context(
             &app_state,
             routes,
@@ -58,12 +64,6 @@ async fn main() {
                 move || shell(leptos_options.clone())
             },
         )
-        .merge(
-            MemoryServe::new(load_assets!("./target/site/assets"))
-                .enable_brotli(!cfg!(debug_assertions))
-                .cache_control(CacheControl::Long)
-                .into_router()
-        )
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
         .layer(
             CompressionLayer::new()
@@ -71,7 +71,9 @@ async fn main() {
                 .deflate(true)
                 .gzip(true)
                 .zstd(true)
-                .compress_when(DefaultPredicate::default())
+                .compress_when(SizeAbove::new(32)
+                    .and(NotForContentType::GRPC)
+                    .and(NotForContentType::SSE)),
         )
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
         .with_state(app_state);

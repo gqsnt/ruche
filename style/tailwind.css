@@ -12,10 +12,27 @@
     }
 
     .active-tab {
-        @apply bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 text-blue-700 font-semibold;
+        @apply text-center block border border-blue-500 rounded py-2 px-4 bg-blue-500 hover:bg-blue-700 text-gray-900;
     }
 
     .default-tab{
-        @apply bg-white inline-block py-2 px-4 text-blue-500 hover:text-blue-800 font-semibold;
+        @apply text-center block border bg-gray-200 border-white rounded hover:border-gray-200 text-gray-900 hover:bg-gray-300 py-2 px-4;
     }
+
+    .my-select{
+        @apply bg-gray-200 border border-gray-200 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500;
+    }
+
+    .my-input{
+        @apply shadow bg-gray-200 border rounded  py-2 px-3 text-gray-700 leading-tight focus:outline-none;
+    }
+
+    .my-button{
+        @apply bg-blue-500 hover:bg-blue-700 text-gray-900 font-bold py-2 px-4 rounded focus:outline-none;
+    }
+
+    .my-card{
+        @apply border-gray-950 bg-gray-800 rounded p-2;
+    }
+
 }

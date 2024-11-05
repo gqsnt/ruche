@@ -6,18 +6,22 @@ use crate::components::summoner_live_page::SummonerLivePage;
 use crate::components::summoner_matches_page::SummonerMatchesPage;
 use leptos::context::provide_context;
 use leptos::either::Either;
-use leptos::prelude::OnAttribute;
+use leptos::prelude::{expect_context, OnAttribute, Set};
 use leptos::prelude::{signal, ElementChild, Show};
 use leptos::prelude::{ActionForm, ClassAttribute, Get, Read, ServerAction, Suspend, Transition};
 use leptos::server::Resource;
 use leptos::{component, view, IntoView};
+use leptos_meta::{provide_meta_context, Link, Meta, Title};
 use leptos_router::hooks::{query_signal_with_options, use_params_map};
 use leptos_router::NavigateOptions;
+use crate::app::{MetaStore, MetaStoreStoreFields};
 
 #[component]
 pub fn SummonerPage() -> impl IntoView {
     let update_summoner_action = ServerAction::<UpdateSummoner>::new();
+    let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
     let params = use_params_map();
+
     let platform_type = move || {
         params.read().get("platform_type").clone().unwrap_or_default()
     };
@@ -44,10 +48,12 @@ pub fn SummonerPage() -> impl IntoView {
                         let (summoner_signal, _) = signal(summoner.clone());
                         provide_context(summoner_signal);
                         provide_context(update_summoner_action.version());
+                        meta_store.image().set(format!("/assets/profile_icons/{}.webp", summoner.profile_icon_id));
                         view! {
-                            <div class="flex justify-between">
-                                <div class="flex justify-center items-center mt-2">
+                            <div class="flex justify-between mb-2">
+                                <div class="flex justify-center items-center mt-2 space-x-2">
                                     <img
+                                        alt="Profile Icon"
                                         src=format!(
                                             "/assets/profile_icons/{}.webp",
                                             summoner_signal().profile_icon_id,
@@ -76,7 +82,7 @@ pub fn SummonerPage() -> impl IntoView {
                                             name="platform_type"
                                             value=move || summoner_signal().platform.as_region_str()
                                         />
-                                        <button class="ml-2 bg-green-500 px-3 py-1" type="submit">
+                                        <button class="my-button" type="submit">
                                             Update
                                         </button>
                                     </ActionForm>
@@ -109,8 +115,8 @@ pub fn SummonerNav() -> impl IntoView {
 
     view! {
         <nav>
-            <ul class="flex ">
-                <li class="-mb-px mr-1">
+            <ul class="flex justify-start space-x-2">
+                <li class="-mb-px">
                     <button
                         on:click=move |_| set_tab(Some(Tabs::Matches.to_string()))
                         class=move || {
@@ -124,7 +130,7 @@ pub fn SummonerNav() -> impl IntoView {
                         Matches
                     </button>
                 </li>
-                <li class="-mb-px mr-1">
+                <li class="-mb-px">
                     <button
                         on:click=move |_| set_tab(Some(Tabs::Champions.to_string()))
                         class=move || {
@@ -138,7 +144,7 @@ pub fn SummonerNav() -> impl IntoView {
                         Champions
                     </button>
                 </li>
-                <li class="-mb-px mr-1">
+                <li class="-mb-px">
                     <button
                         on:click=move |_| set_tab(Some(Tabs::Encounters.to_string()))
                         class=move || {
@@ -152,7 +158,7 @@ pub fn SummonerNav() -> impl IntoView {
                         Encounters
                     </button>
                 </li>
-                <li class="-mb-px mr-1">
+                <li class="-mb-px">
                     <button
                         on:click=move |_| set_tab(Some(Tabs::Live.to_string()))
                         class=move || {
@@ -168,7 +174,7 @@ pub fn SummonerNav() -> impl IntoView {
                 </li>
             </ul>
         </nav>
-        <div class="my-4">
+        <div class="my-4 w-[768px] inline-block align-top justify-center">
             <Show when=move || tab().is_none() || tab() == Some(Tabs::Matches.to_string())>
                 <MatchFilters>
                     <SummonerMatchesPage />

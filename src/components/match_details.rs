@@ -51,7 +51,7 @@ pub fn MatchDetails(match_id: i32, riot_match_id: String, platform: String, summ
 
     view! {
         <div class="mt-2 w-full">
-            <div class="flex">
+            <div class="flex space-x-2 mb-2">
                 <button
                     on:click=move |_| set_match_detail_tab("overview".to_string())
                     class=move || {
@@ -77,7 +77,7 @@ pub fn MatchDetails(match_id: i32, riot_match_id: String, platform: String, summ
                     Build
                 </button>
             </div>
-            <div>
+            <div >
                 <Suspense fallback=move || {
                     view! { <p>"Loading..."</p> }
                 }>{match_detail_view}</Suspense>

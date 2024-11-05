@@ -2010,6 +2010,8 @@ dependencies = [
  "memory-serve",
  "num_enum 0.7.3",
  "num_enum_derive 0.7.3",
+ "reactive_stores",
+ "reactive_stores_macro",
  "reqwest 0.12.8",
  "riven",
  "rustls-acme",

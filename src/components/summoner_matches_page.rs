@@ -5,17 +5,21 @@ use crate::components::match_details::MatchDetails;
 use crate::components::pagination::Pagination;
 use crate::models::entities::summoner::Summoner;
 use leptos::either::Either;
-use leptos::prelude::ElementChild;
+use leptos::prelude::{ElementChild, Set};
 use leptos::prelude::{expect_context, ClassAttribute, Get, ReadSignal, Resource, RwSignal, Show, StyleAttribute, Suspend, Suspense};
 use leptos::prelude::{signal, CustomAttribute, Effect, OnAttribute};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 use serde::{Deserialize, Serialize};
+use leptos::prelude::AriaAttributes;
+use crate::app::{MetaStore, MetaStoreStoreFields};
+use crate::consts::{Champion, Perk, SummonerSpell};
 
 #[component]
 pub fn SummonerMatchesPage() -> impl IntoView {
     let summoner = expect_context::<ReadSignal<Summoner>>();
+    let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
     let match_filters_updated = expect_context::<RwSignal<MatchFiltersSearch>>();
     let (page_number, set_page_number) = query_signal_with_options::<i32>(
@@ -44,10 +48,12 @@ pub fn SummonerMatchesPage() -> impl IntoView {
         },
     );
 
-
+    meta_store.title().set(format!("{}#{} | Matches | Broken.gg", summoner().game_name, summoner().tag_line));
+    meta_store.description().set(format!("Explore {}#{}'s match history on Broken.gg. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner().game_name, summoner().tag_line));
+    meta_store.url().set(format!("{}",summoner().to_route_path()));
     view! {
         <div class="flex">
-            <div class="w-[740px] inline-block align-top justify-center">
+            <div class="">
                 <Suspense fallback=move || {
                     view! { <p>"Loading..."</p> }
                 }>
@@ -69,18 +75,32 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                                     Ok(
                                         Either::Right(
                                             view! {
-                                                <div class="my-2 flex">
+                                                <div class="my-2 flex my-card w-fit">
                                                     <div class="flex flex-col">
-                                                        <div>{matches_result.matches_result_info.total_matches}G {matches_result.matches_result_info.total_wins}W {matches_result.matches_result_info.total_losses}L</div>
-                                                        <div>{ (matches_result.matches_result_info.total_wins * 100 / matches_result.matches_result_info.total_matches.max(1)) }%</div>
+                                                        <div>
+                                                            {matches_result.matches_result_info.total_matches}G
+                                                            {matches_result.matches_result_info.total_wins}W
+                                                            {matches_result.matches_result_info.total_losses}L
+                                                        </div>
+                                                        <div>
+                                                            {(matches_result.matches_result_info.total_wins * 100
+                                                                / matches_result.matches_result_info.total_matches.max(1))}%
+                                                        </div>
                                                     </div>
                                                     <div class="flex flex-col ml-2">
-                                                        <div>{matches_result.matches_result_info.avg_kills} / {matches_result.matches_result_info.avg_deaths} / {matches_result.matches_result_info.avg_assists}</div>
+                                                        <div>
+                                                            {matches_result.matches_result_info.avg_kills}/
+                                                            {matches_result.matches_result_info.avg_deaths}/
+                                                            {matches_result.matches_result_info.avg_assists}
+                                                        </div>
                                                         <div>{matches_result.matches_result_info.avg_kda}:1</div>
-                                                        <div>P/kill {matches_result.matches_result_info.avg_kill_participation}%</div>
+                                                        <div>
+                                                            P/kill
+                                                            {matches_result.matches_result_info.avg_kill_participation}%
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div class="text-gray-400 space-y-2">
+                                                <div class="text-gray-200 space-y-2">
                                                     {matches_result
                                                         .matches
                                                         .into_iter()
@@ -115,20 +135,20 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
         <div class="flex flex-col">
             <div class="min-h-24 w-full flex rounded text-xs">
                 <div
-                    class:bg-rose-500=move || !match_.won
-                    class:bg-blue-500=move || match_.won
+                    class:bg-red-400=move || !match_.won
+                    class:bg-blue-400=move || match_.won
                     class="min-w-1.5 w-1.5"
                 ></div>
                 <div
-                    class:bg-rose-800= move ||!match_.won
-                    class:bg-blue-800=move || match_.won
+                    class:bg-red-900=move || !match_.won
+                    class:bg-blue-900=move || match_.won
                     class="flex gap-2 py-0 px-3 w-full items-center"
                 >
                     <div class="flex flex-col w-[108px] gap-2">
                         <div class="flex flex-col items-start">
                             <div
-                                class:text-rose-500= move ||!match_.won
-                                class:text-blue-500=move || match_.won
+                                class:text-red-300=move || !match_.won
+                                class:text-blue-300=move || match_.won
                                 class="uppercase font-bold text-ellipsis max-w-[90%] overflow-hidden whitespace-nowrap"
                             >
                                 {match_.queue.clone()}
@@ -136,8 +156,8 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                             <div>{match_.match_ended_since.clone()}</div>
                         </div>
                         <hr
-                            class:border-rose-600= move ||!match_.won
-                            class:border-blue-600= move ||match_.won
+                            class:border-red-500=move || !match_.won
+                            class:border-blue-500=move || match_.won
                             class="w-1/2"
                         />
                         <div class="flex flex-col items-start">
@@ -151,11 +171,14 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                 <img
                                     width="48"
                                     height="48"
+                                    alt=Champion::try_from(match_.champion_id as i16)
+                                        .unwrap()
+                                        .to_string()
                                     src=format!("/assets/champions/{}.webp", match_.champion_id)
                                     class="w-12 h-12 rounded-full"
                                 />
                                 <span
-                                    class="absolute right-0 bottom-0 flex w-[20px] h-[20px] justify-center items-center bg-gray-700 text-white rounded-full"
+                                    class="absolute right-0 bottom-0 flex w-[20px] h-[20px] justify-center items-center bg-gray-800 text-white rounded-full"
                                     style="font-size:11px"
                                 >
                                     {match_.champ_level}
@@ -167,6 +190,11 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                         <img
                                             width="22"
                                             height="22"
+                                            alt=SummonerSpell::try_from(
+                                                    match_.summoner_spell1_id as u16,
+                                                )
+                                                .unwrap()
+                                                .to_string()
                                             src=format!(
                                                 "/assets/summoner_spells/{}.webp",
                                                 match_.summoner_spell1_id,
@@ -178,6 +206,11 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                         <img
                                             width="22"
                                             height="22"
+                                            alt=SummonerSpell::try_from(
+                                                    match_.summoner_spell2_id as u16,
+                                                )
+                                                .unwrap()
+                                                .to_string()
                                             src=format!(
                                                 "/assets/summoner_spells/{}.webp",
                                                 match_.summoner_spell2_id,
@@ -195,6 +228,9 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                             <img
                                                 width="22"
                                                 height="22"
+                                                alt=Perk::try_from(match_.perk_primary_selection_id as u16)
+                                                    .unwrap()
+                                                    .to_string()
                                                 src=format!(
                                                     "/assets/perks/{}.png",
                                                     match_.perk_primary_selection_id,
@@ -211,6 +247,9 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                             <img
                                                 width="22"
                                                 height="22"
+                                                alt=Perk::try_from(match_.perk_sub_style_id as u16)
+                                                    .unwrap()
+                                                    .to_string()
                                                 src=format!(
                                                     "/assets/perks/{}.png",
                                                     match_.perk_sub_style_id,
@@ -225,24 +264,25 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                 <div class="text-base">
                                     <span class="text-white">{match_.kills}</span>
                                     /
-                                    <span class="text-rose-400">{match_.deaths}</span>
+                                    <span class="text-red-300">{match_.deaths}</span>
                                     /
                                     <span class="text-white">{match_.assists}</span>
                                 </div>
                                 <div>{match_.kda}:1 KDA</div>
                             </div>
                             <div
-                                class:border-rose-600= move||!match_.won
-                                class:border-blue-600= move||match_.won
+                                class:border-red-500=move || !match_.won
+                                class:border-blue-500=move || match_.won
                                 class="flex flex-col h-[58px] pl-2 border-l-2"
                             >
-                                <div class="text-rose-500">P/Kill {match_.kill_participation}%</div>
+                                <div class="text-red-300">P/Kill {match_.kill_participation}%</div>
                             </div>
                         </div>
                         <div class="flex gap-0.5">
                             <Show when=move || match_.item0_id != 0 fallback=|| view! {}>
                                 <div class="relative rounded">
                                     <img
+                                        alt=format!("Item {}", match_.item0_id)
                                         width="22"
                                         height="22"
                                         src=format!("/assets/items/{}.webp", match_.item0_id)
@@ -253,6 +293,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                             <Show when=move || match_.item1_id != 0 fallback=|| view! {}>
                                 <div class="relative rounded">
                                     <img
+                                        alt=format!("Item {}", match_.item1_id)
                                         width="22"
                                         height="22"
                                         src=format!("/assets/items/{}.webp", match_.item1_id)
@@ -263,6 +304,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                             <Show when=move || match_.item2_id != 0 fallback=|| view! {}>
                                 <div class="relative rounded">
                                     <img
+                                        alt=format!("Item {}", match_.item2_id)
                                         width="22"
                                         height="22"
                                         src=format!("/assets/items/{}.webp", match_.item2_id)
@@ -273,6 +315,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                             <Show when=move || match_.item3_id != 0 fallback=|| view! {}>
                                 <div class="relative rounded">
                                     <img
+                                        alt=format!("Item {}", match_.item3_id)
                                         width="22"
                                         height="22"
                                         src=format!("/assets/items/{}.webp", match_.item3_id)
@@ -283,6 +326,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                             <Show when=move || match_.item4_id != 0 fallback=|| view! {}>
                                 <div class="relative rounded">
                                     <img
+                                        alt=format!("Item {}", match_.item4_id)
                                         width="22"
                                         height="22"
                                         src=format!("/assets/items/{}.webp", match_.item4_id)
@@ -293,6 +337,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                             <Show when=move || match_.item5_id != 0 fallback=|| view! {}>
                                 <div class="relative rounded">
                                     <img
+                                        alt=format!("Item {}", match_.item5_id)
                                         width="22"
                                         height="22"
                                         src=format!("/assets/items/{}.webp", match_.item5_id)
@@ -303,6 +348,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                             <Show when=move || match_.item6_id != 0 fallback=|| view! {}>
                                 <div class="relative rounded">
                                     <img
+                                        alt=format!("Item {}", match_.item6_id)
                                         width="22"
                                         height="22"
                                         src=format!("/assets/items/{}.webp", match_.item6_id)
@@ -313,7 +359,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                         </div>
                     </div>
                     <div
-                        class="flex gap-x-2 gap-y-0.5 w-[168px] max-h-[89px]"
+                        class="flex gap-x-2 gap-y-0.5 w-[196px] max-h-[89px]"
                         style="flex-flow:column wrap"
                     >
                         {match_
@@ -325,6 +371,9 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                         <img
                                             width="16"
                                             height="16"
+                                            alt=Champion::try_from(participant.champion_id as i16)
+                                                .unwrap()
+                                                .to_string()
                                             src=format!(
                                                 "/assets/champions/{}.webp",
                                                 participant.champion_id,
@@ -339,8 +388,10 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                                 participant.summoner_name,
                                                 participant.summoner_tag_line,
                                             )
-                                            class:text-white=move || participant.summoner_id == match_.summoner_id
-                                            class="text-ellipsis overflow-hidden whitespace-nowrap max-w-[60px]"
+                                            class:text-white=move || {
+                                                participant.summoner_id == match_.summoner_id
+                                            }
+                                            class="text-ellipsis overflow-hidden whitespace-nowrap max-w-[74px]"
                                         >
                                             {participant.summoner_name.clone()}
                                         </a>
@@ -352,15 +403,16 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                 </div>
                 <div class="w-[40px] flex relative flex-col">
                     <button
-                        class:bg-rose-600=move || !match_.won
+                        aria-label="Show Details"
+                        class:bg-red-600=move || !match_.won
                         class:bg-blue-600=move || match_.won
                         class="p-2 flex flex-col items-center justify-end h-full"
                         on:click=move |_| set_show_details(!show_details())
                     >
                         <span
                             class="w-[24px] h-[24px]"
-                            class:text-rose-500 = move ||!match_.won
-                            class:text-blue-500=move || match_.won
+                            class:text-red-400=move || !match_.won
+                            class:text-blue-400=move || match_.won
                         >
                             <svg
                                 class=move || ("rotate-180", show_details())

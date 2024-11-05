@@ -15,6 +15,17 @@ pub struct Summoner {
 }
 
 impl Summoner {
+
+
+    pub fn to_route_path(&self) -> String {
+        format!(
+            "/{}/summoners/{}-{}",
+            self.platform.as_region_str(),
+            self.game_name,
+            self.tag_line,
+        )
+    }
+
     /// Generates a URL-friendly slug.
     pub fn slug(&self) -> String {
         Self::generate_slug(&self.game_name, &self.tag_line)

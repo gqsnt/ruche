@@ -1,7 +1,7 @@
 use crate::apis::MatchFiltersSearch;
 use crate::consts::{Champion, QUEUE_OPTIONS};
 use leptos::context::provide_context;
-use leptos::prelude::ElementChild;
+use leptos::prelude::{ElementChild, GlobalAttributes};
 use leptos::prelude::{event_target_value, Children, ClassAttribute, OnAttribute, PropAttribute, RwSignal, Set};
 use leptos::reactive::wrappers::write::SignalSetter;
 use leptos::{component, view, IntoView};
@@ -92,13 +92,15 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
     }).collect::<Vec<_>>();
 
     view! {
-        <div>
-            <div>
-                <div class="flex mb-4 text-left">
+        <div >
+            <div class="my-card">
+                <div class="flex text-left space-x-2">
                     <div>
-                        <label>Champion</label>
+                        <label for="champion_id">Champion</label>
                         <select
                             name="champion_id"
+                            class="my-select"
+                            id="champion_id"
                             prop:value=move || champion_id().unwrap_or_default()
                             on:change=move |e| set_optional_value(
                                 set_champion_id,
@@ -113,9 +115,11 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
                         </select>
                     </div>
                     <div>
-                        <label>Queue</label>
+                        <label for="queue_id">Queue</label>
                         <select
+                            class="my-select"
                             name="queue_id"
+                            id="queue_id"
                             prop:value=move || queue_id().unwrap_or_default()
                             on:change=move |e| set_optional_value(
                                 set_queue_id,
@@ -130,11 +134,13 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
                         </select>
                     </div>
                     <div>
-                        <label>Start Date</label>
+                        <label for="start_date">Start Date</label>
                         <input
+                            class="my-input"
                             placeholder="dd-mm-yyyy"
                             type="date"
                             name="start_date"
+                            id="start_date"
                             value=start_date()
                             prop:value=move || start_date().unwrap_or_default()
                             on:input=move |e| set_optional_value(
@@ -145,11 +151,13 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
                         />
                     </div>
                     <div>
-                        <label>End Date</label>
+                        <label for="end_date">End Date</label>
                         <input
+                            class="my-input"
                             placeholder="dd-mm-yyyy"
                             type="date"
                             name="end_date"
+                            id="end_date"
                             value=end_date()
                             prop:value=move || end_date().unwrap_or_default()
                             on:input=move |e| set_optional_value(

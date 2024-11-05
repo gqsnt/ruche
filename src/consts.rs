@@ -8,7 +8,7 @@ use strum_macros::{Display, EnumIter, EnumString, IntoStaticStr, VariantNames};
 #[repr(u16)]
 #[derive(Debug, Clone, Copy)]
 #[derive(Eq, PartialEq, Hash)]
-#[derive(EnumIter, Display)]
+#[derive(EnumIter, Display, IntoPrimitive, TryFromPrimitive)]
 pub enum SummonerSpell {
     UNKNOWN = 0,
     SummonerBarrier = 21,
@@ -41,7 +41,7 @@ impl SummonerSpell {
 
 
 #[repr(u16)]
-#[derive(EnumIter, Display, Eq, PartialEq, Hash, Debug, Clone, Copy)]
+#[derive(EnumIter, Display, Eq, PartialEq, Hash, Debug, Clone, Copy, IntoPrimitive, TryFromPrimitive)]
 pub enum Perk {
     UNKNOWN = 0,
     Domination = 8100,

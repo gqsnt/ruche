@@ -2,6 +2,7 @@ use crate::models::entities::lol_match_participant::LolMatchParticipantMatchesDe
 use leptos::prelude::{ClassAttribute, ReadSignal};
 use leptos::prelude::{ElementChild, Show};
 use leptos::{component, view, IntoView};
+use crate::consts::{Champion, Perk, SummonerSpell};
 
 #[component]
 pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantMatchesDetailPage>>) -> impl IntoView {
@@ -77,12 +78,26 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                         let item6_id = participant.item6_id;
 
                         view! {
-                            <tr class=("bg-rose-800", !won && participant.summoner_id != summoner_id) class=("bg-blue-800", won && participant.summoner_id != summoner_id) class=("bg-rose-700", !won && participant.summoner_id == summoner_id) class=("bg-blue-700", won && participant.summoner_id == summoner_id)>
+                            <tr
+                                class=(
+                                    "bg-red-900",
+                                    !won && participant.summoner_id != summoner_id,
+                                )
+                                class=("bg-blue-900", won && participant.summoner_id != summoner_id)
+                                class=(
+                                    "bg-red-800",
+                                    !won && participant.summoner_id == summoner_id,
+                                )
+                                class=("bg-blue-800", won && participant.summoner_id == summoner_id)
+                            >
                                 <td class="pl-2.5 py-1">
                                     <div class="relative w-8">
                                         <img
                                             width="32"
                                             height="32"
+                                            alt=Champion::try_from(participant.champion_id as i16)
+                                                .unwrap()
+                                                .to_string()
                                             src=format!(
                                                 "/assets/champions/{}.webp",
                                                 participant.champion_id,
@@ -99,6 +114,11 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                         <img
                                             width="16"
                                             height="16"
+                                            alt=SummonerSpell::try_from(
+                                                    participant.summoner_spell1_id as u16,
+                                                )
+                                                .unwrap()
+                                                .to_string()
                                             src=format!(
                                                 "/assets/summoner_spells/{}.webp",
                                                 participant.summoner_spell1_id,
@@ -110,6 +130,11 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                         <img
                                             width="16"
                                             height="16"
+                                            alt=SummonerSpell::try_from(
+                                                    participant.summoner_spell2_id as u16,
+                                                )
+                                                .unwrap()
+                                                .to_string()
                                             src=format!(
                                                 "/assets/summoner_spells/{}.webp",
                                                 participant.summoner_spell2_id,
@@ -121,6 +146,11 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                 <td class="py-1">
                                     <div class="relative">
                                         <img
+                                            alt=Perk::try_from(
+                                                    participant.perk_primary_selection_id as u16,
+                                                )
+                                                .unwrap()
+                                                .to_string()
                                             width="16"
                                             height="16"
                                             src=format!(
@@ -134,6 +164,9 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                         <img
                                             width="16"
                                             height="16"
+                                            alt=Perk::try_from(participant.perk_sub_style_id as u16)
+                                                .unwrap()
+                                                .to_string()
                                             src=format!(
                                                 "/assets/perks/{}.png",
                                                 participant.perk_sub_style_id,
@@ -193,6 +226,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                         <Show when=move || item0_id != 0 fallback=|| view! {}>
                                             <div class="relative rounded">
                                                 <img
+                                                    alt=format!("Item {}", item0_id)
                                                     width="22"
                                                     height="22"
                                                     src=format!("/assets/items/{}.webp", item0_id)
@@ -203,6 +237,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                         <Show when=move || item1_id != 0 fallback=|| view! {}>
                                             <div class="relative rounded">
                                                 <img
+                                                    alt=format!("Item {}", item1_id)
                                                     width="22"
                                                     height="22"
                                                     src=format!("/assets/items/{}.webp", item1_id)
@@ -213,6 +248,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                         <Show when=move || item2_id != 0 fallback=|| view! {}>
                                             <div class="relative rounded">
                                                 <img
+                                                    alt=format!("Item {}", item2_id)
                                                     width="22"
                                                     height="22"
                                                     src=format!("/assets/items/{}.webp", item2_id)
@@ -223,6 +259,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                         <Show when=move || item3_id != 0 fallback=|| view! {}>
                                             <div class="relative rounded">
                                                 <img
+                                                    alt=format!("Item {}", item3_id)
                                                     width="22"
                                                     height="22"
                                                     src=format!("/assets/items/{}.webp", item3_id)
@@ -233,6 +270,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                         <Show when=move || item4_id != 0 fallback=|| view! {}>
                                             <div class="relative rounded">
                                                 <img
+                                                    alt=format!("Item {}", item4_id)
                                                     width="22"
                                                     height="22"
                                                     src=format!("/assets/items/{}.webp", item4_id)
@@ -243,6 +281,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                         <Show when=move || item5_id != 0 fallback=|| view! {}>
                                             <div class="relative rounded">
                                                 <img
+                                                    alt=format!("Item {}", item5_id)
                                                     width="22"
                                                     height="22"
                                                     src=format!("/assets/items/{}.webp", item5_id)
@@ -253,6 +292,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                         <Show when=move || item6_id != 0 fallback=|| view! {}>
                                             <div class="relative rounded">
                                                 <img
+                                                    alt=format!("Item {}", item6_id)
                                                     width="22"
                                                     height="22"
                                                     src=format!("/assets/items/{}.webp", item6_id)

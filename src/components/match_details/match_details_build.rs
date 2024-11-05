@@ -3,6 +3,8 @@ use leptos::prelude::ElementChild;
 use leptos::prelude::{event_target_value, signal, ClassAttribute, OnAttribute, PropAttribute, Read, ReadSignal, Show};
 use leptos::{component, view, IntoView};
 use std::collections::HashMap;
+use leptos::prelude::AriaAttributes;
+
 
 use crate::consts::Champion;
 use crate::models::entities::lol_match_participant::LolMatchParticipantMatchesDetailPage;
@@ -17,8 +19,10 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
     let find_participant = move |summoner_id: i32| match_details.read().iter().find(|x| x.summoner_id == summoner_id).cloned().unwrap();
     let (selected_participant, set_selected_participant) = signal(find_participant(summoner_id));
     view! {
-        <div class="text-left mt-1 ">
+        <div class="text-left">
             <select
+                class="my-select"
+                aria-label="Select a participant"
                 prop:value=summoner_id
                 on:change=move |e| set_selected_participant(
                     find_participant(event_target_value(&e).parse::<i32>().unwrap()),
@@ -38,8 +42,8 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                     })
                     .collect::<Vec<_>>()}
             </select>
-            <div>
-                <div>Item Builds</div>
+            <div class="my-card w-fit my-2">
+                <div >Items Build</div>
                 <div class="flex mt-2 flex-wrap text-xs">
                     {move || {
                         let total = selected_participant().items_event_timeline.len();
@@ -50,7 +54,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             .map(|(idx, (minute, item_event))| {
                                 view! {
                                     <div class="flex flex-col items-center relative mb-6">
-                                        <div class="flex items-center border-gray-900 border-4 rounded text-xs">
+                                        <div class="flex items-center border-gray-950 border-4 rounded text-xs">
                                             {item_event
                                                 .iter()
                                                 .filter(|e| {
@@ -67,7 +71,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                                                     view! {
                                                         <div
                                                             class=("rounded", is_sold_item)
-                                                            class="relative border-gray-900 border-4"
+                                                            class="relative border-gray-950 border-4"
                                                         >
                                                             <img
                                                                 height="30"
@@ -105,22 +109,22 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                     }}
                 </div>
             </div>
-            <div class="my-2">
-                <div>Skill Order</div>
+            <div class="my-2 my-card w-fit">
+                <div class="">Skill Order</div>
                 <div class="flex mt-2 space-x-2 text-xs">
                     {move || {
                         selected_participant()
                             .skills_timeline
-                        .clone()
+                            .clone()
                             .into_iter()
                             .map(|skill_id| {
                                 view! {
                                     <div
-                                        class:text-blue-400= move || skill_id == 1
-                                        class:text-green-400= move || skill_id == 2
-                                        class:text-orange-400= move || skill_id == 3
-                                        class:bg-indigo-500= move || skill_id == 4
-                                        class:bg-zinc-700= move || skill_id != 4
+                                        class:text-blue-400=move || skill_id == 1
+                                        class:text-green-400=move || skill_id == 2
+                                        class:text-orange-400=move || skill_id == 3
+                                        class:bg-indigo-500=move || skill_id == 4
+                                        class:bg-zinc-700=move || skill_id != 4
                                         class=" font-bold rounded w-4 h-4 text-center"
                                     >
 

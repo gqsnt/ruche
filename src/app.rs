@@ -3,9 +3,24 @@ use crate::components::summoner_page::SummonerPage;
 use leptos::config::LeptosOptions;
 use leptos::prelude::GlobalAttributes;
 use leptos::prelude::*;
-use leptos_meta::{provide_meta_context, Meta, MetaTags, Stylesheet, Title};
+use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, Title};
 use leptos_router::components::{ParentRoute, Redirect};
 use leptos_router::{components::{Route, Router, Routes}, ParamSegment, StaticSegment};
+use serde::{Deserialize, Serialize};
+
+
+pub const SITE_URL : &str = "https://next-level.xyz";
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, reactive_stores_macro::Store, Default)]
+pub struct MetaStore{
+    pub title: String,
+    pub description: String,
+    pub image: String,
+    pub url: String,
+}
+
+
 
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -28,7 +43,8 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 
 #[component]
 pub fn App() -> impl IntoView {
-
+    let meta_store= reactive_stores::Store::new(MetaStore::default());
+    provide_context(meta_store);
 
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
@@ -37,13 +53,22 @@ pub fn App() -> impl IntoView {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
         <Stylesheet id="leptos" href="/pkg/leptos-broken-gg.css" />
-
         // sets the document title
-        <Title text="Broken.gg" />
+        <Title text=move || meta_store.title().get() />
         <Meta name="color-scheme" content="dark light" />
+        <Meta name="og:type" content="website" />
+        <Meta name="og:site_name" content="Broken.gg" />
+        <Meta name="robots" content="index,follow" />
+
+        <Meta name="description" content=move || meta_store.description().get() />
+        <Meta name="og:title" content=move || meta_store.title().get() />
+        <Meta name="og:description" content=move || meta_store.description().get() />
+        <Meta name="og:image" content=move || meta_store.image().get() />
+        <Meta name="og:url" content=move || meta_store.url().get() />
+        <Link rel="canonical" prop:href=move || format!("{}{}",SITE_URL, meta_store.url().get()) />
         // content for this welcome page
         <Router>
-            <main>
+            <main class="bg-gray-900 flex items-start justify-center min-h-screen w-full">
                 <Routes transition=true fallback=|| "Page not found.".into_view()>
                     <Route path=StaticSegment("") view=move || view! { <Redirect path="EUW" /> } />
                     <ParentRoute path=ParamSegment("platform_type") view=PlatformTypePage>
