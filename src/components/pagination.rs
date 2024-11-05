@@ -70,7 +70,7 @@ pub fn Pagination(max_page: usize) -> impl IntoView {
                     if current_page() <= 1 {
                         "bg-gray-300 text-gray-500 px-4 py-2 rounded cursor-not-allowed"
                     } else {
-                        "bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                        "active-tab"cd
                     }
                 }
                 disabled=move || (current_page() <= 1)

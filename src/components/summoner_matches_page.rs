@@ -54,7 +54,9 @@ pub fn SummonerMatchesPage() -> impl IntoView {
     view! {
         <div class="flex">
             <div class="">
-                <Suspense  fallback=move ||{view!{<p>"Loading matches ..."</p>}}>
+                <Suspense fallback=move || {
+                    view! { <p>"Loading matches ..."</p> }
+                }>
                     {move || Suspend::new(async move {
                         match matches_resource.await {
                             Ok(matches_result) => {

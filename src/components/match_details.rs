@@ -78,7 +78,9 @@ pub fn MatchDetails(match_id: i32, riot_match_id: String, platform: String, summ
                 </button>
             </div>
             <div>
-                <Transition fallback=move ||view!{<p>"Loading match details ..."</p>}>{match_detail_view}</Transition>
+                <Transition fallback=move || {
+                    view! { <p>"Loading match details ..."</p> }
+                }>{match_detail_view}</Transition>
             </div>
         </div>
     }

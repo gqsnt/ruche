@@ -31,7 +31,7 @@ pub fn PlatformTypePage() -> impl IntoView {
             <a href="/" class="p-6 text-4xl my-4">
                 "Welcome to Broken.gg"
             </a>
-            <Show when= move || !req_include_summoner()>
+            <Show when=move || !req_include_summoner()>
                 <img src="/logo.webp" class="w-[420px] h-[420px] mx-auto" />
             </Show>
             <SummonerSearchPage />
