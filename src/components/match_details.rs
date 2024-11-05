@@ -3,7 +3,7 @@ use crate::components::match_details::match_details_build::MatchDetailsBuild;
 use crate::components::match_details::match_details_overview::MatchDetailsOverview;
 use crate::components::match_details::match_details_team::MatchDetailsTeam;
 use leptos::either::Either;
-use leptos::prelude::ElementChild;
+use leptos::prelude::{ElementChild, Transition};
 use leptos::prelude::{signal, ClassAttribute, OnAttribute, Resource, Show, Suspend, Suspense};
 use leptos::{component, view, IntoView};
 
@@ -78,9 +78,7 @@ pub fn MatchDetails(match_id: i32, riot_match_id: String, platform: String, summ
                 </button>
             </div>
             <div>
-                <Suspense fallback=move || {
-                    view! { <p>"Loading..."</p> }
-                }>{match_detail_view}</Suspense>
+                <Transition fallback=move ||view!{<p>"Loading match details ..."</p>}>{match_detail_view}</Transition>
             </div>
         </div>
     }

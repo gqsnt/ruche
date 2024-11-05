@@ -120,12 +120,6 @@ pub async fn process_match_timeline(
                     })?;
                     push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent::Sold { item_id });
                 }
-                EventType::ItemDestroyed => {
-                    let item_id = event.item_id.ok_or_else(|| {
-                        AppError::CustomError("Missing item_id in ITEM_DESTROYED event".into())
-                    })?;
-                    push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent::Destroyed { item_id });
-                }
                 EventType::ItemUndo => {
                     let participant_id = event.participant_id.ok_or_else(|| {
                         AppError::CustomError("Missing participant_id in event".into())
@@ -170,7 +164,7 @@ pub async fn process_match_timeline(
                         }
                     }
                 }
-                EventType::Other(_) => {}
+                _ => {}
             }
         }
     }
@@ -179,8 +173,6 @@ pub async fn process_match_timeline(
         .into_iter()
         .map(|(_, mut v)| {
             v.items_event_timeline.sort_by_key(|(timestamp, _)| *timestamp);
-            // remove if empty the vec in the hashmap is empty
-            v.items_event_timeline.retain(|(_, item)| matches!(item, ItemEvent::Purchased{..} | ItemEvent::Sold{..} | ItemEvent::Destroyed{..}));
             v
         })
         .collect::<Vec<_>>();

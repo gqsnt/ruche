@@ -5,7 +5,7 @@ use crate::components::match_details::MatchDetails;
 use crate::components::pagination::Pagination;
 use crate::models::entities::summoner::Summoner;
 use leptos::either::Either;
-use leptos::prelude::{ElementChild, Set};
+use leptos::prelude::{ElementChild, Set, Transition};
 use leptos::prelude::{expect_context, ClassAttribute, Get, ReadSignal, Resource, RwSignal, Show, StyleAttribute, Suspend, Suspense};
 use leptos::prelude::{signal, CustomAttribute, Effect, OnAttribute};
 use leptos::{component, view, IntoView};
@@ -54,9 +54,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
     view! {
         <div class="flex">
             <div class="">
-                <Suspense fallback=move || {
-                    view! { <p>"Loading..."</p> }
-                }>
+                <Suspense  fallback=move ||{view!{<p>"Loading matches ..."</p>}}>
                     {move || Suspend::new(async move {
                         match matches_resource.await {
                             Ok(matches_result) => {

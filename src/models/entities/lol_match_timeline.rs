@@ -19,9 +19,6 @@ pub enum ItemEvent {
     Sold {
         item_id: i32,
     },
-    Destroyed {
-        item_id: i32,
-    },
 }
 
 impl ItemEvent {
@@ -29,7 +26,6 @@ impl ItemEvent {
         match self {
             ItemEvent::Purchased { item_id } => *item_id,
             ItemEvent::Sold { item_id } => *item_id,
-            ItemEvent::Destroyed { item_id } => *item_id,
         }
     }
 }
