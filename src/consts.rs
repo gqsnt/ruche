@@ -5,6 +5,22 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString, IntoStaticStr, VariantNames};
 
 
+pub struct Item{}
+impl Item{
+    pub fn get_static_url(id:i32) -> String {
+        format!("/assets/items/{}.avif", id)
+    }
+}
+
+pub struct ProfileIcon {}
+impl ProfileIcon {
+    pub fn get_static_url(id:i32) -> String {
+        format!("/assets/profile_icons/{}.avif", id)
+    }
+}
+
+
+
 #[repr(u16)]
 #[derive(Debug, Clone, Copy)]
 #[derive(Eq, PartialEq, Hash)]
@@ -24,7 +40,8 @@ pub enum SummonerSpell {
     SummonerPoroRecall = 30,
     SummonerPoroThrow = 31,
     SummonerSmite = 11,
-    SummonerSnowURFSnowballMark = 39,
+    #[allow(non_camel_case_types)]
+    SummonerSnowURFSnowball_Mark = 39,
     SummonerSnowball = 32,
     SummonerTeleport = 12,
     #[allow(non_camel_case_types)]
@@ -37,6 +54,11 @@ impl SummonerSpell {
     pub fn get_url(&self, version: String) -> String {
         format!("https://ddragon.leagueoflegends.com/cdn/{}/img/spell/{}.png", version, self)
     }
+
+    pub fn get_static_url(id:i32) -> String {
+        format!("/assets/summoner_spells/{}.avif", id)
+    }
+
 }
 
 
@@ -115,6 +137,11 @@ pub enum Perk {
 
 
 impl Perk {
+
+    pub fn get_static_url(id:i32) -> String {
+        format!("/assets/perks/{}.avif", id)
+    }
+
     pub fn get_primary(&self) -> Option<Self> {
         match self {
             | Perk::UNKNOWN
@@ -994,6 +1021,12 @@ pub enum Champion {
     Zilean = 26,
     Zoe = 142,
     Zyra = 143,
+}
+
+impl Champion{
+    pub fn get_static_url(id:i32) -> String{
+        format!("/assets/champions/{}.avif",id)
+    }
 }
 
 

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use leptos::prelude::AriaAttributes;
 
 
-use crate::consts::Champion;
+use crate::consts::{Champion, Item};
 use crate::models::entities::lol_match_participant::LolMatchParticipantMatchesDetailPage;
 use crate::models::entities::lol_match_timeline::ItemEvent;
 
@@ -74,9 +74,10 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                                                             class="relative border-gray-950 border-4"
                                                         >
                                                             <img
+                                                                alt=format!("Item {}", item_event.get_id())
                                                                 height="30"
                                                                 width="30"
-                                                                src=format!("/assets/items/{}.webp", item_event.get_id())
+                                                                src=Item::get_static_url(item_event.get_id())
                                                                 class=("opacity-75", is_sold_item)
                                                                 class="h-[30px] w-[30px]"
                                                             />

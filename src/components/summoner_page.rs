@@ -15,6 +15,7 @@ use leptos_meta::{provide_meta_context, Link, Meta, Title};
 use leptos_router::hooks::{query_signal_with_options, use_params_map};
 use leptos_router::NavigateOptions;
 use crate::app::{MetaStore, MetaStoreStoreFields};
+use crate::consts::ProfileIcon;
 
 #[component]
 pub fn SummonerPage() -> impl IntoView {
@@ -48,16 +49,13 @@ pub fn SummonerPage() -> impl IntoView {
                         let (summoner_signal, _) = signal(summoner.clone());
                         provide_context(summoner_signal);
                         provide_context(update_summoner_action.version());
-                        meta_store.image().set(format!("/assets/profile_icons/{}.webp", summoner.profile_icon_id));
+                        meta_store.image().set(ProfileIcon::get_static_url(summoner.profile_icon_id));
                         view! {
                             <div class="flex justify-between mb-2">
                                 <div class="flex justify-center items-center mt-2 space-x-2">
                                     <img
                                         alt="Profile Icon"
-                                        src=format!(
-                                            "/assets/profile_icons/{}.webp",
-                                            summoner_signal().profile_icon_id,
-                                        )
+                                        src=ProfileIcon::get_static_url(summoner.profile_icon_id)
                                         class="w-16 h-16"
                                     />
                                     <div class="flex flex-col items-start">

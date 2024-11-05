@@ -1,15 +1,15 @@
 use crate::consts::{Champion, SummonerSpell};
 use futures::StreamExt;
-use image::DynamicImage;
+use image::{DynamicImage, EncodableLayout};
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
+use ravif::{Encoder, Img};
 use strum::IntoEnumIterator;
-use webp::Encoder;
-
+use rgb::{ComponentSlice, FromSlice};
 
 pub fn get_assets_path() -> std::path::PathBuf {
     Path::new("public").join("assets")
@@ -20,11 +20,17 @@ pub struct ImageToDownload {
     url: String,
     path: PathBuf,
     size: (u32, u32),
-    to_webp: bool,
+    to_avif: bool,
 }
 
 
 pub async fn init_static_data() {
+    let default_assets_path = get_assets_path();
+    create_dir_all(default_assets_path.join("items")).unwrap();
+    create_dir_all(default_assets_path.join("profile_icons")).unwrap();
+    create_dir_all(default_assets_path.join("perks")).unwrap();
+    create_dir_all(default_assets_path.join("champions")).unwrap();
+    create_dir_all(default_assets_path.join("summoner_spells")).unwrap();
     let version = get_current_version().await.unwrap();
     let t = std::time::Instant::now();
     let (
@@ -45,7 +51,7 @@ pub async fn init_static_data() {
         if champion == Champion::UNKNOWN {
             continue;
         }
-        let path = get_assets_path().join("champions").join(format!("{}.webp", champion as i16));
+        let path = get_assets_path().join("champions").join(format!("{}.avif", champion as i16));
         if !path.exists() {
             let image_url = format!(
                 "https://cdn.communitydragon.org/{}/champion/{}/square",
@@ -56,7 +62,7 @@ pub async fn init_static_data() {
                 url: image_url,
                 path: path.clone(),
                 size: (60, 60),
-                to_webp: true,
+                to_avif: true,
             });
         }
     }
@@ -65,13 +71,13 @@ pub async fn init_static_data() {
         if summoner_spell == SummonerSpell::UNKNOWN {
             continue;
         }
-        let path = get_assets_path().join("summoner_spells").join(format!("{}.webp", summoner_spell as u16));
+        let path = get_assets_path().join("summoner_spells").join(format!("{}.avif", summoner_spell as u16));
         if !path.exists() {
             images_to_download.push(ImageToDownload {
                 url: summoner_spell.get_url(version.clone()),
                 path,
                 size: (22, 22),
-                to_webp: true,
+                to_avif: true,
             });
         }
     }
@@ -86,16 +92,19 @@ pub async fn init_static_data() {
 }
 
 
-pub async fn encode_and_save_image(image_data: &[u8], file_path: &Path, size: (u32, u32), to_webp: bool) {
+pub async fn encode_and_save_image(image_data: &[u8], file_path: &Path, size: (u32, u32), to_avif: bool) {
     println!("Saving image: {:?}", file_path);
     let img = image::load_from_memory_with_format(image_data, image::ImageFormat::Png).unwrap();
     let resized = img.resize_exact(size.0, size.1, image::imageops::FilterType::Lanczos3);
     //tokio::fs::create_dir_all(file_path.parent().unwrap()).await.unwrap();
-    if to_webp {
-        let rgb8 = DynamicImage::ImageRgb8(resized.to_rgb8());
-        let encoder = Encoder::from_image(&rgb8).unwrap();
+    if to_avif {
+        let result = Encoder::new()
+            .with_quality(75.0)
+            .with_speed(1)
+            .encode_rgba(Img::new(resized.to_rgba8().as_bytes().as_rgba(), resized.width() as usize, resized.height() as usize)).unwrap();
 
-        tokio::fs::write(file_path, encoder.encode(100.0).to_vec()).await.unwrap();
+
+        tokio::fs::write(file_path, result.avif_file).await.unwrap();
     } else {
         resized.save(file_path).unwrap();
     }
@@ -117,8 +126,8 @@ async fn download_and_save_images(images_to_download: Vec<ImageToDownload>) {
                                 let image_data_vec = image_data.to_vec();
                                 let path = image.path.clone();
                                 let size = image.size;
-                                let to_webp = image.to_webp;
-                                encode_and_save_image(&image_data_vec, &path, size, to_webp).await;
+                                let to_avif = image.to_avif;
+                                encode_and_save_image(&image_data_vec, &path, size, to_avif).await;
                             }
                             Err(e) => {
                                 eprintln!("Error getting image data: {}", e);
@@ -142,26 +151,26 @@ pub async fn get_perks(version: String) -> Result<Vec<ImageToDownload>, reqwest:
     for main_perk in main_perks {
         for slot in main_perk.slots {
             for rune in slot.runes {
-                let path = get_assets_path().join("perks").join(format!("{}.png", rune.id));
+                let path = get_assets_path().join("perks").join(format!("{}.avif", rune.id));
                 if !path.exists() {
                     let image_url = format!("https://ddragon.leagueoflegends.com/cdn/img/{}", rune.icon);
                     images_to_download.push(ImageToDownload {
                         url: image_url,
                         path,
                         size: (22, 22),
-                        to_webp: false,
+                        to_avif: true,
                     });
                 }
             }
         }
-        let path = get_assets_path().join("perks").join(format!("{}.png", main_perk.id));
+        let path = get_assets_path().join("perks").join(format!("{}.avif", main_perk.id));
         if !path.exists() {
             let image_url = format!("https://ddragon.leagueoflegends.com/cdn/img/{}", main_perk.icon);
             images_to_download.push(ImageToDownload {
                 url: image_url,
                 path,
                 size: (22, 22),
-                to_webp: false,
+                to_avif: true,
             });
         }
     }
@@ -175,7 +184,7 @@ pub async fn get_items(version: String) -> Result<Vec<ImageToDownload>, reqwest:
     for (key, value) in items_json {
         let item: JsonItem = serde_json::from_value(value.clone()).unwrap();
         let id = key.parse::<i32>().unwrap();
-        let path = get_assets_path().join("items").join(format!("{}.webp", id));
+        let path = get_assets_path().join("items").join(format!("{}.avif", id));
         if !path.exists() {
             let image_url = format!(
                 "https://ddragon.leagueoflegends.com/cdn/{}/img/item/{}",
@@ -186,7 +195,7 @@ pub async fn get_items(version: String) -> Result<Vec<ImageToDownload>, reqwest:
                 url: image_url,
                 path: path.clone(),
                 size: (22, 22),
-                to_webp: true,
+                to_avif: true,
             });
         }
     }
@@ -212,7 +221,7 @@ pub async fn update_profile_icons_image(version: String) -> Result<Vec<ImageToDo
     let data = raw_champions["data"].as_object().unwrap();
     for (k, _) in data {
         let id = k.clone().parse::<i64>().unwrap() as i32;
-        let path = get_assets_path().join("profile_icons").join(format!("{}.webp", id));
+        let path = get_assets_path().join("profile_icons").join(format!("{}.avif", id));
         if !path.exists() {
             let image_url = format!(
                 "https://ddragon.leagueoflegends.com/cdn/{}/img/profileicon/{}.png",
@@ -223,7 +232,7 @@ pub async fn update_profile_icons_image(version: String) -> Result<Vec<ImageToDo
                 url: image_url,
                 path: path.clone(),
                 size: (64, 64),
-                to_webp: true,
+                to_avif: true,
             });
         }
     }

@@ -2,7 +2,7 @@ use crate::models::entities::lol_match_participant::LolMatchParticipantMatchesDe
 use leptos::prelude::{ClassAttribute, ReadSignal};
 use leptos::prelude::{ElementChild, Show};
 use leptos::{component, view, IntoView};
-use crate::consts::{Champion, Perk, SummonerSpell};
+use crate::consts::{Champion, Item, Perk, SummonerSpell};
 
 #[component]
 pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantMatchesDetailPage>>) -> impl IntoView {
@@ -92,10 +92,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                             alt=Champion::try_from(participant.champion_id as i16)
                                                 .unwrap()
                                                 .to_string()
-                                            src=format!(
-                                                "/assets/champions/{}.webp",
-                                                participant.champion_id,
-                                            )
+                                            src=Champion::get_static_url(participant.champion_id)
                                             class="w-8 h-8 rounded-full block"
                                         />
                                         <span class="absolute left-[-3px] bottom-[-3px] w-[15px] h-[15px] bg-gray-600 rounded-full text-[10px] text-center">
@@ -113,8 +110,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                                 )
                                                 .unwrap()
                                                 .to_string()
-                                            src=format!(
-                                                "/assets/summoner_spells/{}.webp",
+                                            src=SummonerSpell::get_static_url(
                                                 participant.summoner_spell1_id,
                                             )
                                             class="w-4 h-4 rounded"
@@ -129,8 +125,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                                 )
                                                 .unwrap()
                                                 .to_string()
-                                            src=format!(
-                                                "/assets/summoner_spells/{}.webp",
+                                            src=SummonerSpell::get_static_url(
                                                 participant.summoner_spell2_id,
                                             )
                                             class="w-4 h-4 rounded"
@@ -147,8 +142,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                                 .to_string()
                                             width="16"
                                             height="16"
-                                            src=format!(
-                                                "/assets/perks/{}.png",
+                                            src=Perk::get_static_url(
                                                 participant.perk_primary_selection_id,
                                             )
                                             class="w-4 h-4 rounded"
@@ -161,10 +155,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                             alt=Perk::try_from(participant.perk_sub_style_id as u16)
                                                 .unwrap()
                                                 .to_string()
-                                            src=format!(
-                                                "/assets/perks/{}.png",
-                                                participant.perk_sub_style_id,
-                                            )
+                                            src=Perk::get_static_url(participant.perk_sub_style_id)
                                             class="w-4 h-4 rounded"
                                         />
                                     </div>
@@ -223,7 +214,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                                     alt=format!("Item {}", item0_id)
                                                     width="22"
                                                     height="22"
-                                                    src=format!("/assets/items/{}.webp", item0_id)
+                                                    src=Item::get_static_url(item0_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>
@@ -234,7 +225,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                                     alt=format!("Item {}", item1_id)
                                                     width="22"
                                                     height="22"
-                                                    src=format!("/assets/items/{}.webp", item1_id)
+                                                    src=Item::get_static_url(item1_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>
@@ -245,7 +236,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                                     alt=format!("Item {}", item2_id)
                                                     width="22"
                                                     height="22"
-                                                    src=format!("/assets/items/{}.webp", item2_id)
+                                                    src=Item::get_static_url(item2_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>
@@ -256,7 +247,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                                     alt=format!("Item {}", item3_id)
                                                     width="22"
                                                     height="22"
-                                                    src=format!("/assets/items/{}.webp", item3_id)
+                                                    src=Item::get_static_url(item3_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>
@@ -267,7 +258,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                                     alt=format!("Item {}", item4_id)
                                                     width="22"
                                                     height="22"
-                                                    src=format!("/assets/items/{}.webp", item4_id)
+                                                    src=Item::get_static_url(item4_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>
@@ -278,7 +269,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                                     alt=format!("Item {}", item5_id)
                                                     width="22"
                                                     height="22"
-                                                    src=format!("/assets/items/{}.webp", item5_id)
+                                                    src=Item::get_static_url(item5_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>
@@ -289,7 +280,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id:i32, parti
                                                     alt=format!("Item {}", item6_id)
                                                     width="22"
                                                     height="22"
-                                                    src=format!("/assets/items/{}.webp", item6_id)
+                                                    src=Item::get_static_url(item6_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>

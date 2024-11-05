@@ -14,7 +14,7 @@ use leptos_router::NavigateOptions;
 use serde::{Deserialize, Serialize};
 use leptos::prelude::AriaAttributes;
 use crate::app::{MetaStore, MetaStoreStoreFields};
-use crate::consts::{Champion, Perk, SummonerSpell};
+use crate::consts::{Champion, Item, Perk, SummonerSpell};
 
 #[component]
 pub fn SummonerMatchesPage() -> impl IntoView {
@@ -174,7 +174,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                     alt=Champion::try_from(match_.champion_id as i16)
                                         .unwrap()
                                         .to_string()
-                                    src=format!("/assets/champions/{}.webp", match_.champion_id)
+                                    src=Champion::get_static_url(match_.champion_id)
                                     class="w-12 h-12 rounded-full"
                                 />
                                 <span
@@ -195,10 +195,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                                 )
                                                 .unwrap()
                                                 .to_string()
-                                            src=format!(
-                                                "/assets/summoner_spells/{}.webp",
-                                                match_.summoner_spell1_id,
-                                            )
+                                            src=SummonerSpell::get_static_url(match_.summoner_spell1_id)
                                             class="w-[22px] w-[22px]"
                                         />
                                     </div>
@@ -211,10 +208,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                                 )
                                                 .unwrap()
                                                 .to_string()
-                                            src=format!(
-                                                "/assets/summoner_spells/{}.webp",
-                                                match_.summoner_spell2_id,
-                                            )
+                                            src=SummonerSpell::get_static_url(match_.summoner_spell2_id)
                                             class="w-[22px] w-[22px]"
                                         />
                                     </div>
@@ -231,10 +225,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                                 alt=Perk::try_from(match_.perk_primary_selection_id as u16)
                                                     .unwrap()
                                                     .to_string()
-                                                src=format!(
-                                                    "/assets/perks/{}.png",
-                                                    match_.perk_primary_selection_id,
-                                                )
+                                                src=Perk::get_static_url(match_.perk_primary_selection_id)
                                                 class="w-[22px] w-[22px]"
                                             />
                                         </div>
@@ -250,10 +241,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                                 alt=Perk::try_from(match_.perk_sub_style_id as u16)
                                                     .unwrap()
                                                     .to_string()
-                                                src=format!(
-                                                    "/assets/perks/{}.png",
-                                                    match_.perk_sub_style_id,
-                                                )
+                                                src=Perk::get_static_url(match_.perk_sub_style_id)
                                                 class="w-[22px] w-[22px]"
                                             />
                                         </div>
@@ -285,7 +273,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                         alt=format!("Item {}", match_.item0_id)
                                         width="22"
                                         height="22"
-                                        src=format!("/assets/items/{}.webp", match_.item0_id)
+                                        src=Item::get_static_url(match_.item0_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -296,7 +284,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                         alt=format!("Item {}", match_.item1_id)
                                         width="22"
                                         height="22"
-                                        src=format!("/assets/items/{}.webp", match_.item1_id)
+                                        src=Item::get_static_url(match_.item1_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -307,7 +295,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                         alt=format!("Item {}", match_.item2_id)
                                         width="22"
                                         height="22"
-                                        src=format!("/assets/items/{}.webp", match_.item2_id)
+                                        src=Item::get_static_url(match_.item2_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -318,7 +306,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                         alt=format!("Item {}", match_.item3_id)
                                         width="22"
                                         height="22"
-                                        src=format!("/assets/items/{}.webp", match_.item3_id)
+                                        src=Item::get_static_url(match_.item3_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -329,7 +317,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                         alt=format!("Item {}", match_.item4_id)
                                         width="22"
                                         height="22"
-                                        src=format!("/assets/items/{}.webp", match_.item4_id)
+                                        src=Item::get_static_url(match_.item4_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -340,7 +328,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                         alt=format!("Item {}", match_.item5_id)
                                         width="22"
                                         height="22"
-                                        src=format!("/assets/items/{}.webp", match_.item5_id)
+                                        src=Item::get_static_url(match_.item5_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -351,7 +339,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                         alt=format!("Item {}", match_.item6_id)
                                         width="22"
                                         height="22"
-                                        src=format!("/assets/items/{}.webp", match_.item6_id)
+                                        src=Item::get_static_url(match_.item6_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -374,10 +362,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                                             alt=Champion::try_from(participant.champion_id as i16)
                                                 .unwrap()
                                                 .to_string()
-                                            src=format!(
-                                                "/assets/champions/{}.webp",
-                                                participant.champion_id,
-                                            )
+                                            src=Champion::get_static_url(participant.champion_id)
                                             class="w-4 h-4 rounded"
                                         />
                                         <a
@@ -411,7 +396,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
                     >
                         <span
                             class="w-[24px] h-[24px]"
-                            class:text-red-400=move || !match_.won
+                            class:text-red-300=move || !match_.won
                             class:text-blue-400=move || match_.won
                         >
                             <svg
