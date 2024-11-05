@@ -21,6 +21,7 @@ module.exports = {
         'bg-blue-600',
         'border-red-500',
         'border-blue-500',
+        'text-red-300'
     ],
     "colors": {
         "red": {

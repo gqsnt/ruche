@@ -27,13 +27,6 @@ async fn main() {
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
     let mut leptos_options = conf.leptos_options;
-    let IS_LOCAL = true;
-    if IS_LOCAL{
-        leptos_options.site_addr = "127.0.0.1:3000".parse().unwrap();
-    }
-    else{
-        leptos_options.site_addr = "0.0.0.0:80".parse().unwrap();
-    }
     let _ = leptos_options.site_root.clone();
     lol_static::init_static_data().await;
 
@@ -78,12 +71,10 @@ async fn main() {
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
         .with_state(app_state);
     log!("listening on http://{}", &addr);
-    if IS_LOCAL{
-        server_locally(app).await.unwrap();
-    }
-    else{
-        serve_with_tsl(app, ["next-level.xyz"], "gaqu1994@gmail.com", "./tmp/cache").await.unwrap();
-    }
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+    axum::serve(listener, app.into_make_service())
+        .await
+        .unwrap();
 }
 
 #[cfg(not(feature = "ssr"))]
