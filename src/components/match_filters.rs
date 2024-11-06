@@ -1,11 +1,11 @@
 use crate::apis::MatchFiltersSearch;
 use crate::consts::{Champion, QUEUE_OPTIONS};
 use leptos::context::provide_context;
-use leptos::prelude::{ElementChild, GlobalAttributes};
 use leptos::prelude::{event_target_value, Children, ClassAttribute, OnAttribute, PropAttribute, RwSignal, Set};
+use leptos::prelude::{ElementChild, GlobalAttributes};
 use leptos::reactive::wrappers::write::SignalSetter;
 use leptos::{component, view, IntoView};
-use leptos_router::hooks::{query_signal_with_options};
+use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 use strum::IntoEnumIterator;
 

@@ -5,20 +5,19 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString, IntoStaticStr, VariantNames};
 
 
-pub struct Item{}
-impl Item{
-    pub fn get_static_url(id:i32) -> String {
+pub struct Item {}
+impl Item {
+    pub fn get_static_url(id: i32) -> String {
         format!("/assets/items/{}.avif", id)
     }
 }
 
 pub struct ProfileIcon {}
 impl ProfileIcon {
-    pub fn get_static_url(id:i32) -> String {
+    pub fn get_static_url(id: i32) -> String {
         format!("/assets/profile_icons/{}.avif", id)
     }
 }
-
 
 
 #[repr(u16)]
@@ -55,15 +54,25 @@ impl SummonerSpell {
         format!("https://ddragon.leagueoflegends.com/cdn/{}/img/spell/{}.png", version, self)
     }
 
-    pub fn get_static_url(id:i32) -> String {
+    pub fn get_static_url(id: i32) -> String {
         format!("/assets/summoner_spells/{}.avif", id)
     }
-
 }
 
 
 #[repr(u16)]
-#[derive(EnumIter, Display, Eq, PartialEq, Hash, Debug, Clone, Copy, IntoPrimitive, TryFromPrimitive)]
+#[derive(
+    EnumIter,
+    Display,
+    Eq,
+    PartialEq,
+    Hash,
+    Debug,
+    Clone,
+    Copy,
+    IntoPrimitive,
+    TryFromPrimitive
+)]
 pub enum Perk {
     UNKNOWN = 0,
     Domination = 8100,
@@ -137,8 +146,7 @@ pub enum Perk {
 
 
 impl Perk {
-
-    pub fn get_static_url(id:i32) -> String {
+    pub fn get_static_url(id: i32) -> String {
         format!("/assets/perks/{}.avif", id)
     }
 
@@ -1023,9 +1031,9 @@ pub enum Champion {
     Zyra = 143,
 }
 
-impl Champion{
-    pub fn get_static_url(id:i32) -> String{
-        format!("/assets/champions/{}.avif",id)
+impl Champion {
+    pub fn get_static_url(id: i32) -> String {
+        format!("/assets/champions/{}.avif", id)
     }
 }
 
@@ -1190,7 +1198,6 @@ pub enum PlatformRoute {
 }
 
 impl PlatformRoute {
-
     #[cfg(feature = "ssr")]
     pub fn to_riven(&self) -> riven::consts::PlatformRoute {
         riven::consts::PlatformRoute::from_str(self.to_string().as_str()).unwrap()

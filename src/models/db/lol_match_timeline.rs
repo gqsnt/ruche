@@ -1,23 +1,14 @@
 use crate::error_template::AppResult;
+use crate::models::db::db_model::LolMatchTimelineQueryResult;
 use crate::models::entities::lol_match_timeline::LolMatchTimeline;
 use crate::models::update::process_match_timeline::TempLolMatchTimeline;
 use serde_json::json;
-use sqlx::types::JsonValue;
-use sqlx::{FromRow, PgPool, QueryBuilder};
+use sqlx::{PgPool, QueryBuilder};
 use std::collections::HashMap;
 use unzip_n::unzip_n;
 
 unzip_n!(4);
 
-
-#[derive(FromRow)]
-pub struct LolMatchTimelineQueryResult {
-    pub id: i32,
-    pub lol_match_id: i32,
-    pub summoner_id: i32,
-    pub items_event_timeline: JsonValue,
-    pub skills_timeline: Vec<i32>,
-}
 
 impl LolMatchTimeline {
     pub async fn get_match_timeline(db: &PgPool, match_id: i32) -> AppResult<Vec<LolMatchTimeline>> {

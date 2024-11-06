@@ -9,18 +9,16 @@ use leptos_router::{components::{Route, Router, Routes}, ParamSegment, StaticSeg
 use serde::{Deserialize, Serialize};
 
 
-pub const SITE_URL : &str = "https://next-level.xyz";
+pub const SITE_URL: &str = "https://next-level.xyz";
 
 
 #[derive(Debug, Clone, Serialize, Deserialize, reactive_stores_macro::Store, Default)]
-pub struct MetaStore{
+pub struct MetaStore {
     pub title: String,
     pub description: String,
     pub image: String,
     pub url: String,
 }
-
-
 
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -43,7 +41,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 
 #[component]
 pub fn App() -> impl IntoView {
-    let meta_store= reactive_stores::Store::new(MetaStore::default());
+    let meta_store = reactive_stores::Store::new(MetaStore::default());
     provide_context(meta_store);
 
     // Provides context that manages stylesheets, titles, meta tags, etc.

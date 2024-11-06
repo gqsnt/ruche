@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use crate::components::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo};
 use crate::consts::PlatformRoute;
 use crate::models::entities::lol_match_participant::{LolMatchParticipant, LolMatchParticipantMatchesDetailPage};
@@ -14,6 +13,7 @@ use leptos::prelude::{expect_context, use_context, ServerFnError};
 use leptos::{server, Params};
 use leptos_router::params::Params;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[server]
 pub async fn get_summoner(
@@ -37,14 +37,13 @@ pub async fn get_summoner(
 #[server]
 pub async fn update_summoner(puuid: String, platform_type: String) -> Result<Option<Summoner>, ServerFnError> {
     let platform_route = PlatformRoute::from_region_str(platform_type.as_str()).unwrap();
-    let riven_pr = platform_route.to_riven();
     let state = expect_context::<AppState>();
     let riot_api = state.riot_api.clone();
     match riot_api.account_v1()
-        .get_by_puuid(riven_pr.to_regional(), puuid.as_str())
+        .get_by_puuid(platform_route.to_riven().to_regional(), puuid.as_str())
         .await {
         Ok(account) => {
-            match riot_api.summoner_v4().get_by_puuid(riven_pr, account.puuid.as_str()).await {
+            match riot_api.summoner_v4().get_by_puuid(platform_route.to_riven(), account.puuid.as_str()).await {
                 Ok(summoner) => {
                     let db = state.db.clone();
                     let puuid = summoner.puuid.clone();
@@ -52,7 +51,7 @@ pub async fn update_summoner(puuid: String, platform_type: String) -> Result<Opt
                     leptos_axum::redirect(format!("/{}/summoners/{}", platform_route.as_region_str(), slug).as_str());
                     let summoner = Summoner::insert_or_update_account_and_summoner(&db, platform_route, account, summoner).await?;
                     tokio::spawn(async move {
-                        let _ = update_summoner_matches(db.clone(), riot_api, puuid, riven_pr, 1500).await;
+                        let _ = update_summoner_matches(db.clone(), riot_api, puuid, platform_route.to_riven(), 1500).await;
                     });
                     Ok(Some(summoner))
                 }
@@ -77,7 +76,7 @@ pub async fn find_summoner(
     let state = expect_context::<AppState>();
     let db = state.db.clone();
     let platform_route = PlatformRoute::from_region_str(platform_type.as_str()).unwrap();
-    let riven_pr = riven::consts::PlatformRoute::from_str(platform_route.to_string().as_str())?;
+    let riven_pr = platform_route.to_riven();
     match Summoner::find_by_details(&db, &platform_route, game_name.as_str(), tag_line.as_str()).await {
         Ok(summoner) => {
             // Generate slug for URL
@@ -150,7 +149,6 @@ pub struct MatchFiltersSearch {
 
 impl MatchFiltersSearch {
     pub fn from_signals(queue_id: Option<String>, champion_id: Option<String>, start_date: Option<String>, end_date: Option<String>) -> Self {
-
         Self {
             queue_id: queue_id.map(|x| x.parse::<i32>().unwrap_or_default()),
             champion_id: champion_id.map(|x| x.parse::<i32>().unwrap_or_default()),

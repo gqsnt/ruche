@@ -1,9 +1,9 @@
+use crate::models::db::db_model::LolMatchNotUpdated;
 use crate::models::db::Id;
 use crate::models::entities::lol_match::LolMatch;
 use crate::version_to_major_minor;
 use riven::models::match_v5::Match;
 use sqlx::types::chrono;
-use sqlx::FromRow;
 
 impl LolMatch {
     pub async fn get_not_updated(db: &sqlx::PgPool, limit: i32) -> Option<Vec<LolMatchNotUpdated>> {
@@ -100,12 +100,4 @@ impl LolMatch {
 
         rows.into_iter().map(|r| r.id).collect()
     }
-}
-
-#[derive(FromRow)]
-pub struct LolMatchNotUpdated {
-    pub id: i32,
-    pub match_id: String,
-    pub platform: String,
-    pub updated: bool,
 }

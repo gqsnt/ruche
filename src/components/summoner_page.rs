@@ -1,9 +1,11 @@
 use crate::apis::{get_summoner, UpdateSummoner};
+use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::components::match_filters::MatchFilters;
 use crate::components::summoner_champions_page::SummonerChampionsPage;
 use crate::components::summoner_encounters_page::SummonerEncountersPage;
 use crate::components::summoner_live_page::SummonerLivePage;
 use crate::components::summoner_matches_page::SummonerMatchesPage;
+use crate::consts::ProfileIcon;
 use leptos::context::provide_context;
 use leptos::either::Either;
 use leptos::prelude::{expect_context, OnAttribute, Set};
@@ -11,11 +13,8 @@ use leptos::prelude::{signal, ElementChild, Show};
 use leptos::prelude::{ActionForm, ClassAttribute, Get, Read, ServerAction, Suspend, Transition};
 use leptos::server::Resource;
 use leptos::{component, view, IntoView};
-use leptos_meta::{provide_meta_context, Link, Meta, Title};
 use leptos_router::hooks::{query_signal_with_options, use_params_map};
 use leptos_router::NavigateOptions;
-use crate::app::{MetaStore, MetaStoreStoreFields};
-use crate::consts::ProfileIcon;
 
 #[component]
 pub fn SummonerPage() -> impl IntoView {

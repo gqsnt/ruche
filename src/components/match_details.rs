@@ -3,8 +3,8 @@ use crate::components::match_details::match_details_build::MatchDetailsBuild;
 use crate::components::match_details::match_details_overview::MatchDetailsOverview;
 use crate::components::match_details::match_details_team::MatchDetailsTeam;
 use leptos::either::Either;
+use leptos::prelude::{signal, ClassAttribute, OnAttribute, Resource, Show, Suspend};
 use leptos::prelude::{ElementChild, Transition};
-use leptos::prelude::{signal, ClassAttribute, OnAttribute, Resource, Show, Suspend, Suspense};
 use leptos::{component, view, IntoView};
 
 pub mod match_details_overview;

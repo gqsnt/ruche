@@ -1,15 +1,15 @@
 use crate::consts::{Champion, SummonerSpell};
 use futures::StreamExt;
-use image::{DynamicImage, EncodableLayout};
+use image::EncodableLayout;
+use ravif::{Encoder, Img};
 use reqwest;
+use rgb::FromSlice;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
-use ravif::{Encoder, Img};
 use strum::IntoEnumIterator;
-use rgb::{ComponentSlice, FromSlice};
 
 pub fn get_assets_path() -> std::path::PathBuf {
     Path::new("public").join("assets")

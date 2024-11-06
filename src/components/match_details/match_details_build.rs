@@ -1,9 +1,9 @@
+use leptos::prelude::AriaAttributes;
 use leptos::prelude::CustomAttribute;
 use leptos::prelude::ElementChild;
 use leptos::prelude::{event_target_value, signal, ClassAttribute, OnAttribute, PropAttribute, Read, ReadSignal, Show};
 use leptos::{component, view, IntoView};
 use std::collections::HashMap;
-use leptos::prelude::AriaAttributes;
 
 
 use crate::consts::{Champion, Item};

@@ -1,7 +1,7 @@
 use http::status::StatusCode;
 use leptos::prelude::ServerFnError;
-use thiserror::Error;
 use std::sync::Arc;
+use thiserror::Error;
 
 pub type AppResult<T> = Result<T, AppError>;
 

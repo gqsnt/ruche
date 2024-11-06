@@ -1,12 +1,9 @@
-use crate::components::summoner_search_page::SummonerSearchPage;
-use leptos::prelude::{expect_context, signal, use_context, ClassAttribute, Get, Set, Show};
-use leptos::prelude::ElementChild;
-use leptos::{component, view, IntoView};
-use leptos::context::provide_context;
-use leptos_meta::{provide_meta_context, Link, Meta, Title};
-use leptos_router::components::Outlet;
-use leptos_router::location::RequestUrl;
 use crate::app::{MetaStore, MetaStoreStoreFields};
+use crate::components::summoner_search_page::SummonerSearchPage;
+use leptos::prelude::ElementChild;
+use leptos::prelude::{expect_context, use_context, ClassAttribute, Get, Set, Show};
+use leptos::{component, view, IntoView};
+use leptos_router::components::Outlet;
 
 #[component]
 pub fn PlatformTypePage() -> impl IntoView {

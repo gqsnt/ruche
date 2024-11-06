@@ -1,125 +1,22 @@
 use crate::apis::MatchFiltersSearch;
+use crate::components::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo};
 use crate::consts::Queue;
 use crate::error_template::{AppError, AppResult};
+use crate::models::db::db_model::{LolMatchParticipantDetailsQueryResult, LolMatchParticipantMatchesChildQueryResult, LolMatchParticipantMatchesQueryAggregateResult, LolMatchParticipantMatchesQueryResult};
 use crate::models::entities::lol_match_participant::{LolMatchDefaultParticipantMatchesPage, LolMatchParticipant, LolMatchParticipantMatchesDetailPage, LolMatchParticipantMatchesPage};
 use crate::models::update::summoner_matches::TempParticipant;
-use bigdecimal::{BigDecimal, ToPrimitive};
+use bigdecimal::ToPrimitive;
 use chrono::{Duration, NaiveDateTime, Utc};
 use itertools::Itertools;
 use leptos::prelude::BindAttribute;
-use sqlx::{Execute, FromRow, PgPool, QueryBuilder, Row};
+use sqlx::{PgPool, QueryBuilder, Row};
 use unzip_n::unzip_n;
-use crate::components::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo};
 
 unzip_n!(19);
 unzip_n!(11);
 unzip_n!(7);
 
 
-#[derive(FromRow)]
-struct LolMatchParticipantDetailsQueryResult {
-    id: i32,
-    lol_match_id: i32,
-    summoner_id: i32,
-    summoner_name: String,
-    summoner_tag_line: String,
-    summoner_platform: String,
-    summoner_icon_id: i32,
-    summoner_level: i64,
-    champion_id: i32,
-    team_id: i32,
-    won: bool,
-    kills: i32,
-    deaths: i32,
-    assists: i32,
-    champ_level: i32,
-    kda: Option<BigDecimal>,
-    kill_participation: Option<BigDecimal>,
-    damage_dealt_to_champions: i32,
-    damage_taken: i32,
-    gold_earned: i32,
-    wards_placed: i32,
-    cs: i32,
-    summoner_spell1_id: Option<i32>,
-    summoner_spell2_id: Option<i32>,
-    perk_defense_id: Option<i32>,
-    perk_flex_id: Option<i32>,
-    perk_offense_id: Option<i32>,
-    perk_primary_style_id: Option<i32>,
-    perk_sub_style_id: Option<i32>,
-    perk_primary_selection_id: Option<i32>,
-    perk_primary_selection1_id: Option<i32>,
-    perk_primary_selection2_id: Option<i32>,
-    perk_primary_selection3_id: Option<i32>,
-    perk_sub_selection1_id: Option<i32>,
-    perk_sub_selection2_id: Option<i32>,
-    item0_id: Option<i32>,
-    item1_id: Option<i32>,
-    item2_id: Option<i32>,
-    item3_id: Option<i32>,
-    item4_id: Option<i32>,
-    item5_id: Option<i32>,
-    item6_id: Option<i32>,
-}
-
-
-#[derive(FromRow)]
-struct LolMatchParticipantMatchesQueryAggregateResult{
-    #[allow(dead_code)]
-    total_count: Option<i64>,
-    total_wins: Option<i64>,
-    avg_kills: Option<BigDecimal>,
-    avg_deaths: Option<BigDecimal>,
-    avg_assists: Option<BigDecimal>,
-    avg_kda: Option<BigDecimal>,
-    avg_kill_participation: Option<BigDecimal>,
-}
-
-
-#[derive(FromRow)]
-struct LolMatchParticipantMatchesQueryResult {
-    #[allow(dead_code)]
-    id: i32,
-    lol_match_id: i32,
-    riot_match_id: String,
-    platform: Option<String>,
-    champion_id: i32,
-    summoner_id: i32,
-    summoner_spell1_id: Option<i32>,
-    summoner_spell2_id: Option<i32>,
-    #[allow(dead_code)]
-    team_id: i32,
-    won: bool,
-    champ_level: i32,
-    kill_participation: Option<BigDecimal>,
-    kda: Option<BigDecimal>,
-    kills: i32,
-    deaths: i32,
-    assists: i32,
-    perk_primary_selection_id: Option<i32>,
-    perk_sub_style_id: Option<i32>,
-    item0_id: Option<i32>,
-    item1_id: Option<i32>,
-    item2_id: Option<i32>,
-    item3_id: Option<i32>,
-    item4_id: Option<i32>,
-    item5_id: Option<i32>,
-    item6_id: Option<i32>,
-    lol_match_queue_id: Option<i32>,
-    lol_match_match_end: Option<NaiveDateTime>,
-    lol_match_match_duration: Option<i32>,
-}
-
-#[derive(FromRow)]
-pub struct LolMatchParticipantMatchesChildQueryResult {
-    pub team_id: i32,
-    pub lol_match_id: i32,
-    pub summoner_id: i32,
-    pub summoner_name: String,
-    pub champion_id: i32,
-    pub summoner_tag_line: String,
-    pub summoner_platform: String,
-}
 
 impl LolMatchParticipant {
     pub async fn get_details(db: &PgPool, match_id: i32) -> AppResult<Vec<LolMatchParticipantMatchesDetailPage>> {
@@ -246,8 +143,8 @@ impl LolMatchParticipant {
                 NaiveDateTime::parse_from_str(&format!("{} 00:00:00", s), "%Y-%m-%d %H:%M:%S").ok()
             }
         });
-        let  per_page = 20;
-        let  offset = (page.max(1) - 1) * per_page;
+        let per_page = 20;
+        let offset = (page.max(1) - 1) * per_page;
         let mut aggregate_query = QueryBuilder::new(r#"
             SELECT
                 count(lmp.lol_match_id) as total_count,
@@ -302,14 +199,14 @@ impl LolMatchParticipant {
         participant_query.push_bind(summoner_id);
 
 
-        if let Some(champion_id) = filters.champion_id{
+        if let Some(champion_id) = filters.champion_id {
             let sql_filter = " AND lmp.champion_id = ";
             participant_query.push(&sql_filter);
             participant_query.push_bind(champion_id);
             aggregate_query.push(&sql_filter);
             aggregate_query.push_bind(champion_id);
         }
-        if let Some(queue_id) = filters.queue_id{
+        if let Some(queue_id) = filters.queue_id {
             let sql_filter = " AND lm.queue_id = ";
             participant_query.push(&sql_filter);
             participant_query.push_bind(queue_id);
@@ -317,14 +214,14 @@ impl LolMatchParticipant {
             aggregate_query.push_bind(queue_id);
         }
 
-        if let Some(start_date) = start_date{
+        if let Some(start_date) = start_date {
             let sql_filter = " AND lm.match_end >= ";
             participant_query.push(&sql_filter);
             participant_query.push_bind(start_date);
             aggregate_query.push(&sql_filter);
             aggregate_query.push_bind(start_date);
         }
-        if let Some(end_date) = end_date{
+        if let Some(end_date) = end_date {
             let sql_filter = " AND lm.match_end <= ";
             participant_query.push(&sql_filter);
             participant_query.push_bind(end_date);
@@ -342,7 +239,7 @@ impl LolMatchParticipant {
             .fetch_one(db)
             .await
             .unwrap();
-        let results =  participant_query
+        let results = participant_query
             .build_query_as::<LolMatchParticipantMatchesQueryResult>()
             .fetch_all(db)
             .await
@@ -354,11 +251,11 @@ impl LolMatchParticipant {
             let total_wins = aggregate_result.total_wins.unwrap_or_default() as i32;
             let total_losses = total_matches - total_wins;
             let round_2 = |x: f64| (x * 100.0).round() / 100.0;
-            MatchesResultInfo{
+            MatchesResultInfo {
                 total_matches,
                 total_wins,
                 total_losses,
-                avg_kills:round_2(aggregate_result.avg_kills.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_kills: round_2(aggregate_result.avg_kills.clone().unwrap_or_default().to_f64().unwrap_or_default()),
                 avg_deaths: round_2(aggregate_result.avg_deaths.clone().unwrap_or_default().to_f64().unwrap_or_default()),
                 avg_assists: round_2(aggregate_result.avg_assists.clone().unwrap_or_default().to_f64().unwrap_or_default()),
                 avg_kda: round_2(aggregate_result.avg_kda.clone().unwrap_or_default().to_f64().unwrap_or_default()),
@@ -466,7 +363,7 @@ impl LolMatchParticipant {
             }
         }
 
-        Ok(GetSummonerMatchesResult { matches, total_pages: total_pages as i64, matches_result_info})
+        Ok(GetSummonerMatchesResult { matches, total_pages: total_pages as i64, matches_result_info })
     }
 
     pub async fn bulk_insert(db: &sqlx::PgPool, participants: &[TempParticipant]) -> AppResult<()> {

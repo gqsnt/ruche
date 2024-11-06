@@ -1,20 +1,20 @@
 use crate::models::entities::lol_match_participant::LolMatchDefaultParticipantMatchesPage;
 
 use crate::apis::{get_summoner_matches, MatchFiltersSearch};
+use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::components::match_details::MatchDetails;
 use crate::components::pagination::Pagination;
+use crate::consts::{Champion, Item, Perk, SummonerSpell};
 use crate::models::entities::summoner::Summoner;
 use leptos::either::Either;
-use leptos::prelude::{ElementChild, Set, Transition};
+use leptos::prelude::AriaAttributes;
 use leptos::prelude::{expect_context, ClassAttribute, Get, ReadSignal, Resource, RwSignal, Show, StyleAttribute, Suspend, Suspense};
 use leptos::prelude::{signal, CustomAttribute, Effect, OnAttribute};
+use leptos::prelude::{ElementChild, Set};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 use serde::{Deserialize, Serialize};
-use leptos::prelude::AriaAttributes;
-use crate::app::{MetaStore, MetaStoreStoreFields};
-use crate::consts::{Champion, Item, Perk, SummonerSpell};
 
 #[component]
 pub fn SummonerMatchesPage() -> impl IntoView {
@@ -50,7 +50,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
 
     meta_store.title().set(format!("{}#{} | Matches | Broken.gg", summoner().game_name, summoner().tag_line));
     meta_store.description().set(format!("Explore {}#{}'s match history on Broken.gg. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner().game_name, summoner().tag_line));
-    meta_store.url().set(format!("{}",summoner().to_route_path()));
+    meta_store.url().set(format!("{}", summoner().to_route_path()));
     view! {
         <div class="flex">
             <div class="">
@@ -440,7 +440,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
 pub struct GetSummonerMatchesResult {
     pub matches: Vec<LolMatchDefaultParticipantMatchesPage>,
     pub total_pages: i64,
-    pub matches_result_info:MatchesResultInfo,
+    pub matches_result_info: MatchesResultInfo,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]

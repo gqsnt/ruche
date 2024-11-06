@@ -10,10 +10,9 @@ use crate::{consts, DB_CHUNK_SIZE};
 use futures::stream::{FuturesUnordered, StreamExt};
 use leptos::logging::log;
 use riven::consts::{Champion, PlatformRoute, RegionalRoute};
-use riven::models::account_v1::Account;
 use riven::RiotApi;
 use sqlx::types::chrono::{DateTime, Utc};
-use crate::models::db::lol_match::LolMatchNotUpdated;
+use crate::models::db::db_model::LolMatchNotUpdated;
 
 pub async fn update_summoner_matches(
     db: sqlx::PgPool,
@@ -41,10 +40,9 @@ pub async fn update_summoner_matches(
         .collect();
 
     log!("New {} match ids for puuid {}", new_riot_match_ids.len(), puuid);
-    let t = std::time::Instant::now();
+    //let t = std::time::Instant::now();
     if !new_riot_match_ids.is_empty() {
         LolMatch::bulk_default_insert(&db, &new_riot_match_ids).await;
-
     }
     //println!("Updated {} matches in {:?} for {}", new_riot_match_ids.len(), t.elapsed(), puuid);
 
@@ -59,7 +57,7 @@ pub async fn update_matches_task(
     let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(10));
     loop {
         interval.tick().await;
-        let start = std::time::Instant::now();
+        //let start = std::time::Instant::now();
         //log!("Starting update matches task at {}", Utc::now());
         while let Some(matches) = LolMatch::get_not_updated(&db, 100).await {
             let before = std::time::Instant::now();
@@ -77,7 +75,7 @@ async fn update_matches(
 ) -> AppResult<()> {
     let match_data_futures = matches_to_update.iter().map(|match_| {
         let api = Arc::clone(&api);
-        let pt  = consts::PlatformRoute::from_str(&match_.platform).unwrap().to_riven();
+        let pt = consts::PlatformRoute::from_str(&match_.platform).unwrap().to_riven();
         async move {
             api.match_v5().get_match(pt.to_regional(), &match_.match_id).await
         }
@@ -101,7 +99,7 @@ async fn update_matches(
         let match_platform = consts::PlatformRoute::from_str(platform_code).unwrap();
 
         for participant in &match_data.info.participants {
-            if participant.puuid == "BOT"{
+            if participant.puuid == "BOT" {
                 continue;
             }
             participants_map
@@ -117,7 +115,6 @@ async fn update_matches(
                         match_data.info.game_end_timestamp.unwrap_or(0)
                     ).unwrap(),
                 });
-
         }
     }
 
@@ -132,27 +129,27 @@ async fn update_matches(
     for summoner in participants_map.values() {
         if let Some((_, existing_timestamp)) = existing_summoners.get(&summoner.puuid) {
             if summoner.updated_at.timestamp() > *existing_timestamp as i64 {
-                if  summoner.game_name.is_empty() || summoner.tag_line.is_empty(){
+                if summoner.game_name.is_empty() || summoner.tag_line.is_empty() {
                     panic!("on update matches data already present , newest but data is empty");
                 }
                 summoners_to_update.push(summoner.clone());
             }
         } else {
-            if summoner.game_name.is_empty() || summoner.tag_line.is_empty(){
+            if summoner.game_name.is_empty() || summoner.tag_line.is_empty() {
                 summoners_to_dl.push(summoner.clone());
-            }else{
+            } else {
                 summoners_to_insert.push(summoner.clone());
             }
         }
     }
 
-    if !summoners_to_dl.is_empty(){
+    if !summoners_to_dl.is_empty() {
         log!("Summoners to download: {}", summoners_to_dl.len());
     }
     // dl summoners
     let summoners_futures = summoners_to_dl.into_iter().map(|summoner| {
         let api = Arc::clone(&api);
-        let pt  = consts::PlatformRoute::from_str(&summoner.platform).unwrap().to_riven();
+        let pt = consts::PlatformRoute::from_str(&summoner.platform).unwrap().to_riven();
         let puuid = summoner.puuid.clone();
         async move {
             (summoner, api.account_v1().get_by_puuid(pt.to_regional(), &puuid).await)
@@ -164,7 +161,7 @@ async fn update_matches(
         .await;
 
     for (mut summoner, summoner_data) in summoners_data {
-        match summoner_data{
+        match summoner_data {
             Ok(account) => {
                 summoner.game_name = account.game_name.unwrap();
                 summoner.tag_line = account.tag_line.unwrap();

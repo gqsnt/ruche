@@ -15,8 +15,6 @@ pub struct Summoner {
 }
 
 impl Summoner {
-
-
     pub fn to_route_path(&self) -> String {
         format!(
             "/{}/summoners/{}-{}",

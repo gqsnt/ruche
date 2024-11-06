@@ -1,52 +1,15 @@
 use crate::consts::PlatformRoute;
 use crate::error_template::{AppError, AppResult};
+use crate::models::db::db_model::{IdPuuidUpdatedAt, SummonerDb};
 use crate::models::db::{Id, DATE_FORMAT};
 use crate::models::entities::summoner::Summoner;
 use crate::models::update::summoner_matches::TempSummoner;
-use chrono::NaiveDateTime;
+use riven::RiotApi;
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::Row;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
-use riven::RiotApi;
-
-#[derive(sqlx::FromRow, Debug)]
-pub struct IdPuuidUpdatedAt {
-    id: i32,
-    puuid: String,
-    #[sqlx(default)]
-    updated_at: Option<NaiveDateTime>,
-}
-
-
-#[derive(sqlx::FromRow)]
-pub struct SummonerDb {
-    pub id: i32,
-    pub game_name: String,
-    pub tag_line: String,
-    pub puuid: String,
-    pub platform: String,
-    pub updated_at: NaiveDateTime,
-    pub summoner_level: i64,
-    pub profile_icon_id: i32,
-}
-
-impl SummonerDb{
-    pub fn map_to_summoner(&self) -> Summoner {
-        Summoner {
-            id: self.id,
-            game_name: self.game_name.clone(),
-            tag_line: self.tag_line.clone(),
-            puuid: self.puuid.clone(),
-            platform: PlatformRoute::from_str(self.platform.as_str()).unwrap(),
-            updated_at: self.updated_at.format(DATE_FORMAT).to_string(),
-            summoner_level: self.summoner_level,
-            profile_icon_id: self.profile_icon_id,
-        }
-    }
-}
-
 
 impl Summoner {
     pub async fn find_by_exact_details(
@@ -209,7 +172,7 @@ impl Summoner {
             .bind(id)
             .fetch_one(db)
             .await
-            .map(|x|  x.map_to_summoner())
+            .map(|x| x.map_to_summoner())
             .map_err(AppError::from)
     }
 
@@ -383,7 +346,7 @@ impl Summoner {
                     Summoner::update_summoner_account_by_id(
                         db,
                         record.id,
-                        account
+                        account,
                     )
                         .await?;
                 }
@@ -392,5 +355,4 @@ impl Summoner {
 
         Ok(())
     }
-
 }

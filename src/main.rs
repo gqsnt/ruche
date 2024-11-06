@@ -1,5 +1,3 @@
-
-
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
@@ -16,11 +14,9 @@ async fn main() {
     use leptos::html::tr;
     use tower_http::compression::Predicate;
     use tower_http::compression::predicate::{NotForContentType, SizeAbove};
-    use leptos_broken_gg::{serve_with_tsl, server_locally};
     use memory_serve::{load_assets, CacheControl, MemoryServe};
     use tower::ServiceBuilder;
     use leptos_broken_gg::models::update::summoner_matches::update_matches_task;
-
 
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
@@ -28,7 +24,7 @@ async fn main() {
     let _ = leptos_options.site_root.clone();
     lol_static::init_static_data().await;
     let db = init_database().await;
-    let riot_api =Arc::new(init_riot_api());
+    let riot_api = Arc::new(init_riot_api());
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
         riot_api: riot_api.clone(),
@@ -39,7 +35,7 @@ async fn main() {
     // because of mass update/inserts and limiting usage of account_v1 request.
     // we dont want n concurrent thread updating matches and summoners
     tokio::spawn(async move {
-       update_matches_task(db, riot_api).await;
+        update_matches_task(db, riot_api).await;
     });
 
     let addr = leptos_options.site_addr;
