@@ -8,9 +8,10 @@ use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::Row;
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::Arc;
+use riven::RiotApi;
 
-
-#[derive(sqlx::FromRow)]
+#[derive(sqlx::FromRow, Debug)]
 pub struct IdPuuidUpdatedAt {
     id: i32,
     puuid: String,
@@ -212,6 +213,22 @@ impl Summoner {
             .map_err(AppError::from)
     }
 
+    pub async fn update_summoner_account_by_id(
+        db: &sqlx::PgPool,
+        id: i32,
+        account: riven::models::account_v1::Account,
+    ) -> AppResult<()> {
+        sqlx::query(
+            "UPDATE summoners SET game_name = $1, tag_line = $2 , updated_at = NOW() WHERE id = $5"
+        )
+            .bind(account.game_name.unwrap_or_default())
+            .bind(account.tag_line.unwrap_or_default())
+            .bind(id)
+            .execute(db)
+            .await?;
+        Ok(())
+    }
+
 
     pub async fn update_summoner_by_id(
         db: &sqlx::PgPool,
@@ -221,7 +238,7 @@ impl Summoner {
         summoner: riven::models::summoner_v4::Summoner,
     ) -> AppResult<Summoner> {
         sqlx::query(
-            "UPDATE summoners SET game_name = $1, tag_line = $2, puuid = $3, summoner_level = $4, profile_icon_id = $5, platform = $6 WHERE id = $7"
+            "UPDATE summoners SET game_name = $1, tag_line = $2, puuid = $3, summoner_level = $4, profile_icon_id = $5, platform = $6, updated_at = NOW() WHERE id = $8"
         )
             .bind(account.game_name.clone())
             .bind(account.tag_line.clone())
@@ -229,6 +246,7 @@ impl Summoner {
             .bind(summoner.summoner_level as i32)
             .bind(summoner.profile_icon_id)
             .bind(platform_route.as_region_str())
+            .bind(Utc::now().naive_utc())
             .bind(id)
             .execute(db)
             .await?;
@@ -253,7 +271,7 @@ impl Summoner {
         summoner: riven::models::summoner_v4::Summoner,
     ) -> AppResult<Summoner> {
         let rec = sqlx::query_as::<_, Id>(
-            "INSERT INTO summoners(game_name, tag_line, puuid, platform, summoner_level, profile_icon_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
+            "INSERT INTO summoners(game_name, tag_line, puuid, platform, summoner_level, profile_icon_id, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING id"
         )
             .bind(account.game_name.clone())
             .bind(account.tag_line.clone())
@@ -261,6 +279,7 @@ impl Summoner {
             .bind(platform_route.as_region_str())
             .bind(summoner.summoner_level as i32)
             .bind(summoner.profile_icon_id)
+            .bind(Utc::now().naive_utc())
             .fetch_one(db)
             .await?;
         Ok(Summoner {
@@ -315,4 +334,63 @@ impl Summoner {
             }
         }
     }
+
+    pub async fn find_conflicting_summoners(
+        db: &sqlx::PgPool,
+    ) -> AppResult<Vec<(String, String, String, Vec<IdPuuidUpdatedAt>)>> {
+        Ok(sqlx::query_as::<_, SummonerDb>(
+            "SELECT *
+        FROM summoners
+        WHERE (game_name, tag_line, platform) IN (
+            SELECT game_name, tag_line, platform
+            FROM summoners
+            GROUP BY game_name, tag_line, platform
+            HAVING COUNT(*) > 1
+        )
+        ORDER BY game_name, tag_line, platform, updated_at DESC"
+        )
+            .fetch_all(db)
+            .await?
+            .into_iter()
+            .fold(HashMap::new(), |mut acc, row| {
+                acc.entry((row.game_name.clone(), row.tag_line.clone(), row.platform.clone()))
+                    .or_insert_with(Vec::new)
+                    .push(IdPuuidUpdatedAt {
+                        id: row.id,
+                        puuid: row.puuid,
+                        updated_at: Some(row.updated_at),
+                    });
+                acc
+            })
+            .into_iter()
+            .map(|((game_name, tag_line, platform), ids)| (game_name, tag_line, platform, ids))
+            .collect())
+    }
+
+
+    pub async fn resolve_conflicts(
+        db: &sqlx::PgPool,
+        api: &Arc<RiotApi>,
+    ) -> AppResult<()> {
+        let conflicts = Summoner::find_conflicting_summoners(db).await?;
+        for (game_name, tag_line, platform, conflict_records) in conflicts {
+            println!("Resolving conflict for {}#{} on {} with {:?}", game_name, tag_line, platform, conflict_records);
+            for record in conflict_records {
+                // Obtenir les informations actuelles pour chaque `puuid`
+                let platform_route = PlatformRoute::from_str(&platform).unwrap();
+                let riven_ptr = riven::consts::PlatformRoute::from_str(&platform_route.to_string()).unwrap();
+                if let Ok(account) = api.account_v1().get_by_puuid(riven_ptr.to_regional(), &record.puuid).await {
+                    Summoner::update_summoner_account_by_id(
+                        db,
+                        record.id,
+                        account
+                    )
+                        .await?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
 }

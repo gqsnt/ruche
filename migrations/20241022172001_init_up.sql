@@ -8,8 +8,7 @@ CREATE TABLE IF NOT EXISTS summoners
     profile_icon_id INTEGER      NOT NULL,
     summoner_level  BIGINT       NOT NULL,
     updated_at      TIMESTAMP  NOT NULL DEFAULT NOW(),
-    platform        VARCHAR(4) NOT NULL,
-    UNIQUE (game_name, tag_line, platform)
+    platform        VARCHAR(4) NOT NULL
 );
 
 

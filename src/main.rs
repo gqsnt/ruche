@@ -19,22 +19,29 @@ async fn main() {
     use leptos_broken_gg::{serve_with_tsl, server_locally};
     use memory_serve::{load_assets, CacheControl, MemoryServe};
     use tower::ServiceBuilder;
-    // Setting get_configuration(None) means we'll be using cargo-leptos's env values
-    // For deployment these variables are:
-    // <https://github.com/leptos-rs/start-axum#executing-a-server-on-a-remote-machine-without-the-toolchain>
-    // Alternately a file can be specified such as Some("Cargo.toml")
-    // The file would need to be included with the executable when moved to deployment
+    use leptos_broken_gg::models::update::summoner_matches::update_matches_task;
+
+
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
     let mut leptos_options = conf.leptos_options;
     let _ = leptos_options.site_root.clone();
     lol_static::init_static_data().await;
-
+    let db = init_database().await;
+    let riot_api =Arc::new(init_riot_api());
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
-        riot_api: Arc::new(init_riot_api()),
-        db: init_database().await,
+        riot_api: riot_api.clone(),
+        db: db.clone(),
     };
+
+    // thread to update matches data and add summoners related.
+    // because of mass update/inserts and limiting usage of account_v1 request.
+    // we dont want n concurrent thread updating matches and summoners
+    tokio::spawn(async move {
+       update_matches_task(db, riot_api).await;
+    });
+
     let addr = leptos_options.site_addr;
     let routes = generate_route_list(App);
     // build our application with a route

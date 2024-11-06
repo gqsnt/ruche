@@ -37,7 +37,7 @@ pub async fn get_summoner(
 #[server]
 pub async fn update_summoner(puuid: String, platform_type: String) -> Result<Option<Summoner>, ServerFnError> {
     let platform_route = PlatformRoute::from_region_str(platform_type.as_str()).unwrap();
-    let riven_pr = riven::consts::PlatformRoute::from_str(platform_route.to_string().as_str())?;
+    let riven_pr = platform_route.to_riven();
     let state = expect_context::<AppState>();
     let riot_api = state.riot_api.clone();
     match riot_api.account_v1()
@@ -52,7 +52,7 @@ pub async fn update_summoner(puuid: String, platform_type: String) -> Result<Opt
                     leptos_axum::redirect(format!("/{}/summoners/{}", platform_route.as_region_str(), slug).as_str());
                     let summoner = Summoner::insert_or_update_account_and_summoner(&db, platform_route, account, summoner).await?;
                     tokio::spawn(async move {
-                        let _ = update_summoner_matches(db.clone(), riot_api, puuid, riven_pr, 1000).await;
+                        let _ = update_summoner_matches(db.clone(), riot_api, puuid, riven_pr, 1500).await;
                     });
                     Ok(Some(summoner))
                 }

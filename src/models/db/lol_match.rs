@@ -3,8 +3,27 @@ use crate::models::entities::lol_match::LolMatch;
 use crate::version_to_major_minor;
 use riven::models::match_v5::Match;
 use sqlx::types::chrono;
+use sqlx::FromRow;
 
 impl LolMatch {
+    pub async fn get_not_updated(db: &sqlx::PgPool, limit: i32) -> Option<Vec<LolMatchNotUpdated>> {
+        let sql = r"
+        SELECT id, match_id, platform, updated FROM lol_matches
+        WHERE updated = false
+        ORDER BY match_id DESC
+        LIMIT $1;
+        ";
+        Some(
+            sqlx::query_as::<_, LolMatchNotUpdated>(sql)
+                .bind(limit)
+                .fetch_all(db)
+
+                .await
+                .unwrap()
+        ).filter(|r| !r.is_empty())
+    }
+
+
     pub async fn bulk_default_insert(db: &sqlx::PgPool, match_ids: &[String]) -> Vec<i32> {
         let match_ids = match_ids.iter().map(|x| x.clone()).collect::<Vec<String>>();
         let platforms = match_ids.iter().map(|x| {
@@ -81,4 +100,12 @@ impl LolMatch {
 
         rows.into_iter().map(|r| r.id).collect()
     }
+}
+
+#[derive(FromRow)]
+pub struct LolMatchNotUpdated {
+    pub id: i32,
+    pub match_id: String,
+    pub platform: String,
+    pub updated: bool,
 }

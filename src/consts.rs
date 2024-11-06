@@ -1190,6 +1190,13 @@ pub enum PlatformRoute {
 }
 
 impl PlatformRoute {
+
+    #[cfg(feature = "ssr")]
+    pub fn to_riven(&self) -> riven::consts::PlatformRoute {
+        riven::consts::PlatformRoute::from_str(self.to_string().as_str()).unwrap()
+    }
+
+
     /// Converts this [`PlatformRoute`] into its corresponding
     /// [`RegionalRoute`] for LoL and TFT match endpoints.
     /// For example, [`match-v5`](crate::endpoints::MatchV5).
