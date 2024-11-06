@@ -6,7 +6,8 @@ use crate::models::update::summoner_matches::TempParticipant;
 use bigdecimal::{BigDecimal, ToPrimitive};
 use chrono::{Duration, NaiveDateTime, Utc};
 use itertools::Itertools;
-use sqlx::{FromRow, PgPool, Row};
+use leptos::prelude::BindAttribute;
+use sqlx::{Execute, FromRow, PgPool, QueryBuilder, Row};
 use unzip_n::unzip_n;
 use crate::components::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo};
 
@@ -63,7 +64,7 @@ struct LolMatchParticipantDetailsQueryResult {
 
 
 #[derive(FromRow)]
-struct LolMatchParticipantMatchesQueryResult {
+struct LolMatchParticipantMatchesQueryAggregateResult{
     #[allow(dead_code)]
     total_count: Option<i64>,
     total_wins: Option<i64>,
@@ -72,6 +73,11 @@ struct LolMatchParticipantMatchesQueryResult {
     avg_assists: Option<BigDecimal>,
     avg_kda: Option<BigDecimal>,
     avg_kill_participation: Option<BigDecimal>,
+}
+
+
+#[derive(FromRow)]
+struct LolMatchParticipantMatchesQueryResult {
     #[allow(dead_code)]
     id: i32,
     lol_match_id: i32,
@@ -240,19 +246,26 @@ impl LolMatchParticipant {
                 NaiveDateTime::parse_from_str(&format!("{} 00:00:00", s), "%Y-%m-%d %H:%M:%S").ok()
             }
         });
-        let per_page = 20;
-        let offset = (page.max(1) - 1) * per_page;
+        let  per_page = 20;
+        let  offset = (page.max(1) - 1) * per_page;
+        let mut aggregate_query = QueryBuilder::new(r#"
+            SELECT
+                count(lmp.lol_match_id) as total_count,
+                count(case when     lmp.won then 1 end) as total_wins,
+                avg(lmp.kills)  as avg_kills,
+                avg(lmp.deaths)  as avg_deaths,
+                avg(lmp.assists)  as avg_assists,
+                avg(lmp.kda)  as avg_kda,
+                avg(lmp.kill_participation) as avg_kill_participation
+            FROM lol_match_participants as lmp
+            INNER JOIN lol_matches as lm ON lm.id = lmp.lol_match_id
+            WHERE
+                lmp.summoner_id =
+        "#);
+        aggregate_query.push_bind(summoner_id);
 
-
-        let results = sqlx::query_as::<_, LolMatchParticipantMatchesQueryResult>(
-            "SELECT
-                count(lmp.lol_match_id) over() as total_count,
-                count(case when     lmp.won then 1 end) over() as total_wins,
-                avg(lmp.kills) over() as avg_kills,
-                avg(lmp.deaths) over() as avg_deaths,
-                avg(lmp.assists) over() as avg_assists,
-                avg(lmp.kda) over() as avg_kda,
-                avg(lmp.kill_participation) over() as avg_kill_participation,
+        let mut participant_query = QueryBuilder::new(r#"
+            SELECT
                 lmp.id,
                 lmp.lol_match_id,
                 lmp.champion_id,
@@ -284,40 +297,75 @@ impl LolMatchParticipant {
             FROM lol_match_participants as lmp
             INNER JOIN lol_matches as lm ON lm.id = lmp.lol_match_id
             WHERE
-                lmp.summoner_id = $1
-                AND ($2::INTEGER IS NULL OR lm.queue_id = $2)
-                AND ($3::INTEGER IS NULL OR lmp.champion_id = $3)
-                AND ($4::TIMESTAMP IS NULL OR lm.match_end >= $4)
-                AND ($5::TIMESTAMP IS NULL OR lm.match_end <= $5)
-            ORDER BY lm.match_end DESC
-            LIMIT $6 OFFSET $7;"
-        )
-            .bind(summoner_id)
-            .bind(filters.queue_id)
-            .bind(filters.champion_id)
-            .bind(start_date)
-            .bind(end_date)
-            .bind(per_page as i64)
-            .bind(offset as i64)
-            .fetch_all(db).await?;
+                lmp.summoner_id =
+        "#);
+        participant_query.push_bind(summoner_id);
 
-        //println!("{}\n$1:{:?}, $2:{}, $3:{}, $4:{}", query.sql(), matches_ids, summoner_id, per_page, offset);
-        let matches_result_info:MatchesResultInfo = results.first().map_or(MatchesResultInfo::default(), |row| {
-            let total_matches = row.total_count.unwrap_or_default() as i32;
-            let total_wins = row.total_wins.unwrap_or_default() as i32;
+
+        if let Some(champion_id) = filters.champion_id{
+            let sql_filter = " AND lmp.champion_id = ";
+            participant_query.push(&sql_filter);
+            participant_query.push_bind(champion_id);
+            aggregate_query.push(&sql_filter);
+            aggregate_query.push_bind(champion_id);
+        }
+        if let Some(queue_id) = filters.queue_id{
+            let sql_filter = " AND lm.queue_id = ";
+            participant_query.push(&sql_filter);
+            participant_query.push_bind(queue_id);
+            aggregate_query.push(&sql_filter);
+            aggregate_query.push_bind(queue_id);
+        }
+
+        if let Some(start_date) = start_date{
+            let sql_filter = " AND lm.match_end >= ";
+            participant_query.push(&sql_filter);
+            participant_query.push_bind(start_date);
+            aggregate_query.push(&sql_filter);
+            aggregate_query.push_bind(start_date);
+        }
+        if let Some(end_date) = end_date{
+            let sql_filter = " AND lm.match_end <= ";
+            participant_query.push(&sql_filter);
+            participant_query.push_bind(end_date);
+            aggregate_query.push(&sql_filter);
+            aggregate_query.push_bind(end_date);
+        }
+
+        participant_query.push(" ORDER BY lm.match_end DESC LIMIT ");
+        participant_query.push_bind(per_page);
+        participant_query.push(" OFFSET ");
+        participant_query.push_bind(offset);
+        let ag_build = aggregate_query.build_query_as::<LolMatchParticipantMatchesQueryAggregateResult>();
+
+        let aggregate_result = ag_build
+            .fetch_one(db)
+            .await
+            .unwrap();
+        let results =  participant_query
+            .build_query_as::<LolMatchParticipantMatchesQueryResult>()
+            .fetch_all(db)
+            .await
+            .unwrap();
+
+
+        let matches_result_info = {
+            let total_matches = aggregate_result.total_count.unwrap_or_default() as i32;
+            let total_wins = aggregate_result.total_wins.unwrap_or_default() as i32;
             let total_losses = total_matches - total_wins;
             let round_2 = |x: f64| (x * 100.0).round() / 100.0;
             MatchesResultInfo{
                 total_matches,
                 total_wins,
                 total_losses,
-                avg_kills:round_2(row.avg_kills.clone().unwrap_or_default().to_f64().unwrap_or_default()),
-                avg_deaths: round_2(row.avg_deaths.clone().unwrap_or_default().to_f64().unwrap_or_default()),
-                avg_assists: round_2(row.avg_assists.clone().unwrap_or_default().to_f64().unwrap_or_default()),
-                avg_kda: round_2(row.avg_kda.clone().unwrap_or_default().to_f64().unwrap_or_default()),
-                avg_kill_participation: (row.avg_kill_participation.clone().unwrap_or_default().to_f64().unwrap_or_default() * 100.0) as i32,
+                avg_kills:round_2(aggregate_result.avg_kills.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_deaths: round_2(aggregate_result.avg_deaths.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_assists: round_2(aggregate_result.avg_assists.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_kda: round_2(aggregate_result.avg_kda.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_kill_participation: (aggregate_result.avg_kill_participation.clone().unwrap_or_default().to_f64().unwrap_or_default() * 100.0) as i32,
             }
-        });
+        };
+
         let matches_ids: Vec<_> = results.iter().map(|row| row.lol_match_id).collect();
         let mut matches = results.into_iter().map(|row| {
             let match_duration = Duration::seconds(row.lol_match_match_duration.unwrap_or_default() as i64);
