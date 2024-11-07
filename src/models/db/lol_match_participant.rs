@@ -11,7 +11,7 @@ use itertools::Itertools;
 use leptos::prelude::BindAttribute;
 use sqlx::{PgPool, QueryBuilder, Row};
 use unzip_n::unzip_n;
-use crate::models::db::round_to_2_decimal_places;
+use crate::models::db::{parse_date, round_to_2_decimal_places};
 
 unzip_n!(23);
 unzip_n!(11);
@@ -128,20 +128,8 @@ impl LolMatchParticipant {
         summoner_id: i32,
         filters: MatchFiltersSearch,
     ) -> AppResult<Vec<LolSummonerChampionPage>> {
-        let start_date = filters.start_date.as_deref().and_then(|s| {
-            if s.is_empty() {
-                None
-            } else {
-                NaiveDateTime::parse_from_str(&format!("{} 00:00:00", s), "%Y-%m-%d %H:%M:%S").ok()
-            }
-        });
-        let end_date = filters.end_date.as_deref().and_then(|s| {
-            if s.is_empty() {
-                None
-            } else {
-                NaiveDateTime::parse_from_str(&format!("{} 00:00:00", s), "%Y-%m-%d %H:%M:%S").ok()
-            }
-        });
+        let start_date = parse_date(filters.start_date.clone());
+        let end_date = parse_date(filters.end_date.clone());
 
         let mut query = QueryBuilder::new(r#"
             SELECT
@@ -166,23 +154,19 @@ impl LolMatchParticipant {
             WHERE lmp.summoner_id = "#);
         query.push_bind(summoner_id);
         if let Some(champion_id) = filters.champion_id {
-            let sql_filter = " AND lmp.champion_id = ";
-            query.push(&sql_filter);
+            query.push(" AND lmp.champion_id = ");
             query.push_bind(champion_id);
         }
         if let Some(queue_id) = filters.queue_id {
-            let sql_filter = " AND lm.queue_id = ";
-            query.push(&sql_filter);
+            query.push(" AND lm.queue_id = ");
             query.push_bind(queue_id);
         }
         if let Some(start_date) = start_date {
-            let sql_filter = " AND lm.match_end >= ";
-            query.push(&sql_filter);
+            query.push(" AND lm.match_end >= ");
             query.push_bind(start_date);
         }
         if let Some(end_date) = end_date {
-            let sql_filter = " AND lm.match_end <= ";
-            query.push(&sql_filter);
+            query.push(" AND lm.match_end <= ");
             query.push_bind(end_date);
         }
         query.push(" GROUP BY lmp.champion_id ORDER BY total_matches DESC;");
@@ -220,20 +204,8 @@ impl LolMatchParticipant {
         page: i32,
         filters: MatchFiltersSearch,
     ) -> AppResult<GetSummonerMatchesResult> {
-        let start_date = filters.start_date.as_deref().and_then(|s| {
-            if s.is_empty() {
-                None
-            } else {
-                NaiveDateTime::parse_from_str(&format!("{} 00:00:00", s), "%Y-%m-%d %H:%M:%S").ok()
-            }
-        });
-        let end_date = filters.end_date.as_deref().and_then(|s| {
-            if s.is_empty() {
-                None
-            } else {
-                NaiveDateTime::parse_from_str(&format!("{} 00:00:00", s), "%Y-%m-%d %H:%M:%S").ok()
-            }
-        });
+        let start_date = parse_date(filters.start_date.clone());
+        let end_date = parse_date(filters.end_date.clone());
         let per_page = 20;
         let offset = (page.max(1) - 1) * per_page;
         let mut aggregate_query = QueryBuilder::new(r#"

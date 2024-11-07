@@ -3,7 +3,7 @@ use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::consts::Champion;
 use crate::models::entities::summoner::Summoner;
 use leptos::either::Either;
-use leptos::prelude::{expect_context, ClassAttribute, ElementChild, Get, ReadSignal, Resource, RwSignal, Set, Suspend, Suspense};
+use leptos::prelude::{expect_context, ClassAttribute, ElementChild, For, Get, ReadSignal, Resource, RwSignal, Set, Suspend, Suspense};
 use leptos::{component, view, IntoView};
 
 #[component]
@@ -53,38 +53,73 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                 <thead>
                                                     <tr class="bg-gray-800 text-sm h-[32px]">
                                                         <th class="border border-gray-700 text-center">#</th>
-                                                        <th class="border border-gray-700 text-left"><div class="ml-2">Champion</div></th>
+                                                        <th class="border border-gray-700 text-left">
+                                                            <div class="ml-2">Champion</div>
+                                                        </th>
                                                         <th class="border border-gray-700 ">Played</th>
                                                         <th class="border border-gray-700 ">Avg KDA</th>
                                                         <th class="border border-gray-700 ">Avg Gold</th>
                                                         <th class="border border-gray-700 ">Avg Cs</th>
-                                                        <th class="border border-gray-700"><div class="text-ellipsis whitespace-nowrap overflow-hidden">Avg Damage Dealt</div></th>
-                                                        <th class="border border-gray-700"><div class="text-ellipsis whitespace-nowrap overflow-hidden">Avg Damage Taken</div></th>
-                                                        <th class="border border-gray-700"><div class="text-ellipsis whitespace-nowrap overflow-hidden">Double kills</div></th>
-                                                        <th class="border border-gray-700"><div class="text-ellipsis whitespace-nowrap overflow-hidden">Triple kills</div></th>
-                                                        <th class="border border-gray-700"><div class="text-ellipsis whitespace-nowrap overflow-hidden">Quadra kills</div></th>
-                                                        <th class="border border-gray-700"><div class="text-ellipsis whitespace-nowrap overflow-hidden">Penta kills</div></th>
+                                                        <th class="border border-gray-700">
+                                                            <div class="text-ellipsis whitespace-nowrap overflow-hidden">
+                                                                Avg Damage Dealt
+                                                            </div>
+                                                        </th>
+                                                        <th class="border border-gray-700">
+                                                            <div class="text-ellipsis whitespace-nowrap overflow-hidden">
+                                                                Avg Damage Taken
+                                                            </div>
+                                                        </th>
+                                                        <th class="border border-gray-700">
+                                                            <div class="text-ellipsis whitespace-nowrap overflow-hidden">
+                                                                Double kills
+                                                            </div>
+                                                        </th>
+                                                        <th class="border border-gray-700">
+                                                            <div class="text-ellipsis whitespace-nowrap overflow-hidden">
+                                                                Triple kills
+                                                            </div>
+                                                        </th>
+                                                        <th class="border border-gray-700">
+                                                            <div class="text-ellipsis whitespace-nowrap overflow-hidden">
+                                                                Quadra kills
+                                                            </div>
+                                                        </th>
+                                                        <th class="border border-gray-700">
+                                                            <div class="text-ellipsis whitespace-nowrap overflow-hidden">
+                                                                Penta kills
+                                                            </div>
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {champions
-                                                        .into_iter()
-                                                        .enumerate()
-                                                        .map(|(index, champion)| {
+                                                    <For
+                                                        each=move || champions.clone().into_iter().enumerate()
+                                                        key=|(id, champion)| champion.champion_id
+                                                        let:champion_with_index
+                                                    >
+                                                        {
+                                                            let (index, champion) = champion_with_index;
                                                             view! {
                                                                 <tr class="p-1">
-                                                                    <td class="text-center bg-gray-800 border border-gray-800">{index + 1}</td>
+                                                                    <td class="text-center bg-gray-800 border border-gray-800">
+                                                                        {index + 1}
+                                                                    </td>
                                                                     <td class="text-left border border-gray-800">
                                                                         <div class="flex items-center">
                                                                             <div class="py-1">
                                                                                 <img
                                                                                     src=Champion::get_static_url(champion.champion_id)
-                                                                                    alt=Champion::try_from(champion.champion_id as i16)
-                                                                                        .unwrap()
-                                                                                        .to_string()
+                                                                                    alt=format!(
+                                                                                        "Champion {}",
+                                                                                        Champion::try_from(champion.champion_id as i16)
+                                                                                            .unwrap()
+                                                                                            .to_string(),
+                                                                                    )
                                                                                     class="w-[32px] h-[32px] rounded-full"
                                                                                     width="32"
-                                                                                    height="32"/>
+                                                                                    height="32"
+                                                                                />
                                                                             </div>
                                                                             <div class="ml-2 text-center">
                                                                                 {Champion::try_from(champion.champion_id as i16)
@@ -106,25 +141,48 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                             </div>
                                                                         </div>
                                                                     </td>
-                                                                    <td class="border border-gray-800 text-xs">{champion.avg_gold_earned.round()}</td>
-                                                                    <td class="border border-gray-800 text-xs">{champion.avg_cs.round()}</td>
-                                                                    <td class="border border-gray-800 text-xs">{champion.avg_damage_dealt_to_champions.round()}</td>
-                                                                    <td class="border border-gray-800 text-xs">{champion.avg_damage_taken.round()}</td>
-                                                                    <td class="border border-gray-800 text-xs">{champion.total_double_kills}</td>
-                                                                    <td class="border border-gray-800 text-xs">{champion.total_triple_kills}</td>
-                                                                    <td class="border border-gray-800 text-xs">{champion.total_quadra_kills}</td>
-                                                                    <td class="border border-gray-800 text-xs">{champion.total_penta_kills}</td>
+                                                                    <td class="border border-gray-800 text-xs">
+                                                                        {champion.avg_gold_earned.round()}
+                                                                    </td>
+                                                                    <td class="border border-gray-800 text-xs">
+                                                                        {champion.avg_cs.round()}
+                                                                    </td>
+                                                                    <td class="border border-gray-800 text-xs">
+                                                                        {champion.avg_damage_dealt_to_champions.round()}
+                                                                    </td>
+                                                                    <td class="border border-gray-800 text-xs">
+                                                                        {champion.avg_damage_taken.round()}
+                                                                    </td>
+                                                                    <td class="border border-gray-800 text-xs">
+                                                                        {champion.total_double_kills}
+                                                                    </td>
+                                                                    <td class="border border-gray-800 text-xs">
+                                                                        {champion.total_triple_kills}
+                                                                    </td>
+                                                                    <td class="border border-gray-800 text-xs">
+                                                                        {champion.total_quadra_kills}
+                                                                    </td>
+                                                                    <td class="border border-gray-800 text-xs">
+                                                                        {champion.total_penta_kills}
+                                                                    </td>
                                                                 </tr>
                                                             }
-                                                        })
-                                                        .collect::<Vec<_>>()}
+                                                        }
+
+                                                    </For>
+
                                                 </tbody>
                                             </table>
                                         }
                                     }),
                                 )
                             } else {
-                                Ok(Either::Right(view! { <p class="my-2">No Champions found</p> }))
+                                Ok(
+                                    Either::Right(
+
+                                        view! { <p class="my-2">No Champions found</p> },
+                                    ),
+                                )
                             }
                         }
                         Err(e) => Err(e),

@@ -14,14 +14,19 @@ pub struct Summoner {
     pub profile_icon_id: i32,
 }
 
+
+pub fn summoner_route_path(platform: &str, game_name: &str, tag_line: &str) -> String {
+    format!(
+        "/{}/summoners/{}-{}",
+        platform,
+        game_name,
+        tag_line,
+    )
+}
+
 impl Summoner {
     pub fn to_route_path(&self) -> String {
-        format!(
-            "/{}/summoners/{}-{}",
-            self.platform.as_region_str(),
-            self.game_name,
-            self.tag_line,
-        )
+        summoner_route_path(self.platform.as_region_str(), &self.game_name, &self.tag_line)
     }
 
     /// Generates a URL-friendly slug.
@@ -56,4 +61,21 @@ impl Summoner {
             self.profile_icon_id
         )
     }
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LolSummonerEncounterPage{
+    pub id: i32,
+    pub count: i64,
+    pub game_name: String,
+    pub tag_line: String,
+    pub platform: String,
+    pub profile_icon_id: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct LolSummonerEncounterPageResult{
+    pub encounters: Vec<LolSummonerEncounterPage>,
+    pub total_pages: i64,
 }

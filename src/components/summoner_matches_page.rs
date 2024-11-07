@@ -7,7 +7,7 @@ use crate::components::pagination::Pagination;
 use crate::consts::{Champion, Item, Perk, SummonerSpell};
 use crate::models::entities::summoner::Summoner;
 use leptos::either::Either;
-use leptos::prelude::AriaAttributes;
+use leptos::prelude::{AriaAttributes, For};
 use leptos::prelude::{expect_context, ClassAttribute, Get, ReadSignal, Resource, RwSignal, Show, StyleAttribute, Suspend, Suspense};
 use leptos::prelude::{signal, CustomAttribute, Effect, OnAttribute};
 use leptos::prelude::{ElementChild, Set};
@@ -101,13 +101,13 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                                                     </div>
                                                 </div>
                                                 <div class="text-gray-200 space-y-2">
-                                                    {matches_result
-                                                        .matches
-                                                        .into_iter()
-                                                        .map(|match_| {
-                                                            view! { <MatchCard match_=match_ /> }
-                                                        })
-                                                        .collect::<Vec<_>>()}
+                                                    <For
+                                                        each=move || matches_result.matches.clone()
+                                                        key=|match_| match_.match_id
+                                                        let:match_
+                                                    >
+                                                        <MatchCard match_=match_ />
+                                                    </For>
                                                 </div>
                                                 <Show when=move || (total_pages > 1)>
                                                     <Pagination max_page=(move || total_pages as usize)() />
@@ -436,7 +436,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
 }
 
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct GetSummonerMatchesResult {
     pub matches: Vec<LolMatchDefaultParticipantMatchesPage>,
     pub total_pages: i64,

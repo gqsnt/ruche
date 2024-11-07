@@ -63,7 +63,7 @@ pub fn App() -> impl IntoView {
         <Meta name="og:description" content=move || meta_store.description().get() />
         <Meta name="og:image" content=move || meta_store.image().get() />
         <Meta name="og:url" content=move || meta_store.url().get() />
-        <Link rel="canonical" prop:href=move || format!("{}{}",SITE_URL, meta_store.url().get()) />
+        <Link rel="canonical" prop:href=move || format!("{}{}", SITE_URL, meta_store.url().get()) />
         // content for this welcome page
         <Router>
             <main class="bg-gray-900 flex items-start justify-center min-h-screen w-full">

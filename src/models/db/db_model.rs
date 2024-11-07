@@ -37,6 +37,17 @@ pub struct LolMatchNotUpdated {
     pub updated: bool,
 }
 
+#[derive(FromRow)]
+pub struct LolSummonerEncounter{
+    pub id: i32,
+    pub tag_line: String,
+    pub game_name: String,
+    pub platform: String,
+    pub profile_icon_id: i32,
+    pub encounter_count: i64,
+    pub total_count : i64,
+}
+
 
 #[derive(FromRow)]
 pub struct LolMatchParticipantDetailsQueryResult {

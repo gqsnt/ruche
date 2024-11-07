@@ -2,7 +2,7 @@ use crate::components::summoner_matches_page::{GetSummonerMatchesResult, Matches
 use crate::consts::PlatformRoute;
 use crate::models::entities::lol_match_participant::{LolMatchParticipant, LolMatchParticipantMatchesDetailPage, LolSummonerChampionPage};
 use crate::models::entities::lol_match_timeline::LolMatchTimeline;
-use crate::models::entities::summoner::Summoner;
+use crate::models::entities::summoner::{LolSummonerEncounterPage, LolSummonerEncounterPageResult, Summoner};
 #[cfg(feature = "ssr")]
 use crate::models::update::process_match_timeline::process_match_timeline;
 #[cfg(feature = "ssr")]
@@ -198,3 +198,11 @@ pub async fn get_match_details(match_id: i32, riot_match_id: String, platform: S
     Ok(details)
 }
 
+
+#[server]
+pub async fn get_summoner_encounters(summoner_id: i32, page_number: i32, filters: Option<MatchFiltersSearch>, search_summoner:Option<String>) ->Result<LolSummonerEncounterPageResult, ServerFnError>{
+let state = use_context::<AppState>();
+let state = state.unwrap();
+let db = state.db.clone();
+    Summoner::get_encounters(&db, summoner_id, page_number, filters.unwrap_or_default(),search_summoner).await.map_err(|_| ServerFnError::new("Error fetching champions"))
+}
