@@ -866,6 +866,7 @@ pub enum Champion {
     Akali = 84,
     Akshan = 166,
     Alistar = 12,
+    Ambessa= 799,
     Amumu = 32,
     Anivia = 34,
     Annie = 1,

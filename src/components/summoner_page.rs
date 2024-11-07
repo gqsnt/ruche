@@ -50,40 +50,43 @@ pub fn SummonerPage() -> impl IntoView {
                         provide_context(update_summoner_action.version());
                         meta_store.image().set(ProfileIcon::get_static_url(summoner.profile_icon_id));
                         view! {
-                            <div class="flex justify-between mb-2">
-                                <div class="flex justify-center items-center mt-2 space-x-2">
-                                    <img
-                                        alt="Profile Icon"
-                                        src=ProfileIcon::get_static_url(summoner.profile_icon_id)
-                                        class="w-16 h-16"
-                                    />
-                                    <div class="flex flex-col items-start">
-                                        <div>
-                                            {summoner_signal().game_name}#{summoner_signal().tag_line}
+                            <div class="flex justify-center">
+                                <div class="flex justify-between w-[768px] mb-2">
+                                    <div class="flex  mt-2 space-x-2">
+                                        <img
+                                            alt="Profile Icon"
+                                            src=ProfileIcon::get_static_url(summoner.profile_icon_id)
+                                            class="w-16 h-16"
+                                        />
+                                        <div class="flex flex-col items-start">
+                                            <div>
+                                                {summoner_signal().game_name}#{summoner_signal().tag_line}
+                                            </div>
+                                            <div>lvl. {summoner_signal().summoner_level}</div>
                                         </div>
-                                        <div>lvl. {summoner_signal().summoner_level}</div>
+                                        <ActionForm action=update_summoner_action>
+                                            <input
+                                                type="hidden"
+                                                name="id"
+                                                value=move || summoner_signal().id
+                                            />
+                                            <input
+                                                type="hidden"
+                                                name="puuid"
+                                                value=move || summoner_signal().puuid.clone()
+                                            />
+                                            <input
+                                                type="hidden"
+                                                name="platform_type"
+                                                value=move || summoner_signal().platform.as_region_str()
+                                            />
+                                            <button class="my-button" type="submit">
+                                                Update
+                                            </button>
+                                        </ActionForm>
                                     </div>
-                                    <ActionForm action=update_summoner_action>
-                                        <input
-                                            type="hidden"
-                                            name="id"
-                                            value=move || summoner_signal().id
-                                        />
-                                        <input
-                                            type="hidden"
-                                            name="puuid"
-                                            value=move || summoner_signal().puuid.clone()
-                                        />
-                                        <input
-                                            type="hidden"
-                                            name="platform_type"
-                                            value=move || summoner_signal().platform.as_region_str()
-                                        />
-                                        <button class="my-button" type="submit">
-                                            Update
-                                        </button>
-                                    </ActionForm>
                                 </div>
+
                             </div>
                             <SummonerNav />
                         }
@@ -111,77 +114,84 @@ pub fn SummonerNav() -> impl IntoView {
     });
 
     view! {
-        <nav>
-            <ul class="flex justify-start space-x-2">
-                <li class="-mb-px">
-                    <button
-                        on:click=move |_| set_tab(Some(Tabs::Matches.to_string()))
-                        class=move || {
-                            if tab().is_none() || tab() == Some(Tabs::Matches.to_string()) {
-                                "active-tab"
-                            } else {
-                                "default-tab"
+        <div class="flex justify-center">
+            <nav class="w-[768px]">
+                <ul class="flex justify-start space-x-2">
+                    <li class="-mb-px">
+                        <button
+                            on:click=move |_| set_tab(Some(Tabs::Matches.to_string()))
+                            class=move || {
+                                if tab().is_none() || tab() == Some(Tabs::Matches.to_string()) {
+                                    "active-tab"
+                                } else {
+                                    "default-tab"
+                                }
                             }
-                        }
-                    >
-                        Matches
-                    </button>
-                </li>
-                <li class="-mb-px">
-                    <button
-                        on:click=move |_| set_tab(Some(Tabs::Champions.to_string()))
-                        class=move || {
-                            if tab() == Some(Tabs::Champions.to_string()) {
-                                "active-tab"
-                            } else {
-                                "default-tab"
+                        >
+                            Matches
+                        </button>
+                    </li>
+                    <li class="-mb-px">
+                        <button
+                            on:click=move |_| set_tab(Some(Tabs::Champions.to_string()))
+                            class=move || {
+                                if tab() == Some(Tabs::Champions.to_string()) {
+                                    "active-tab"
+                                } else {
+                                    "default-tab"
+                                }
                             }
-                        }
-                    >
-                        Champions
-                    </button>
-                </li>
-                <li class="-mb-px">
-                    <button
-                        on:click=move |_| set_tab(Some(Tabs::Encounters.to_string()))
-                        class=move || {
-                            if tab() == Some(Tabs::Encounters.to_string()) {
-                                "active-tab"
-                            } else {
-                                "default-tab"
+                        >
+                            Champions
+                        </button>
+                    </li>
+                    <li class="-mb-px">
+                        <button
+                            on:click=move |_| set_tab(Some(Tabs::Encounters.to_string()))
+                            class=move || {
+                                if tab() == Some(Tabs::Encounters.to_string()) {
+                                    "active-tab"
+                                } else {
+                                    "default-tab"
+                                }
                             }
-                        }
-                    >
-                        Encounters
-                    </button>
-                </li>
-                <li class="-mb-px">
-                    <button
-                        on:click=move |_| set_tab(Some(Tabs::Live.to_string()))
-                        class=move || {
-                            if tab() == Some(Tabs::Live.to_string()) {
-                                "active-tab"
-                            } else {
-                                "default-tab"
+                        >
+                            Encounters
+                        </button>
+                    </li>
+                    <li class="-mb-px">
+                        <button
+                            on:click=move |_| set_tab(Some(Tabs::Live.to_string()))
+                            class=move || {
+                                if tab() == Some(Tabs::Live.to_string()) {
+                                    "active-tab"
+                                } else {
+                                    "default-tab"
+                                }
                             }
-                        }
-                    >
-                        Live
-                    </button>
-                </li>
-            </ul>
-        </nav>
-        <div class="my-4 w-[768px] inline-block align-top justify-center">
+                        >
+                            Live
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <div class="my-4 ">
             <Show when=move || tab().is_none() || tab() == Some(Tabs::Matches.to_string())>
                 <MatchFilters>
                     <SummonerMatchesPage />
                 </MatchFilters>
             </Show>
             <Show when=move || tab() == Some(Tabs::Champions.to_string())>
-                <SummonerChampionsPage />
+                <MatchFilters>
+                    <SummonerChampionsPage />
+                </MatchFilters>
             </Show>
             <Show when=move || tab() == Some(Tabs::Encounters.to_string())>
-                <SummonerEncountersPage />
+                <MatchFilters>
+                    <SummonerEncountersPage />
+                </MatchFilters>
             </Show>
             <Show when=move || tab() == Some(Tabs::Live.to_string())>
                 <SummonerLivePage />

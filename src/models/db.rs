@@ -10,3 +10,7 @@ struct Id {
 }
 
 pub const DATE_FORMAT: &str = "%d/%m/%Y %H:%M";
+
+pub fn round_to_2_decimal_places(value: f64) -> f64 {
+    (value * 100.0).round() / 100.0
+}

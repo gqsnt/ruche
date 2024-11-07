@@ -4,10 +4,10 @@ use std::sync::Arc;
 
 use crate::error_template::{AppError, AppResult};
 use crate::models::entities::lol_match::LolMatch;
-use crate::models::entities::lol_match_participant::{LolMatchParticipant, LolMatchParticipantStats};
+use crate::models::entities::lol_match_participant::{LolMatchParticipant};
 use crate::models::entities::summoner::Summoner;
 use crate::{consts, DB_CHUNK_SIZE};
-use futures::stream::{FuturesUnordered, StreamExt};
+use futures::stream::{FuturesOrdered, FuturesUnordered, StreamExt};
 use leptos::logging::log;
 use riven::consts::{Champion, PlatformRoute, RegionalRoute};
 use riven::RiotApi;
@@ -61,8 +61,9 @@ pub async fn update_matches_task(
         //log!("Starting update matches task at {}", Utc::now());
         while let Some(matches) = LolMatch::get_not_updated(&db, 100).await {
             let before = std::time::Instant::now();
-            update_matches(&db, &api, &matches).await.unwrap();
-            log!("Updated {} matches in {:?}", matches.len(), before.elapsed());
+            let match_len = matches.len();
+            update_matches(&db, &api, matches).await.unwrap();
+            log!("Updated {} matches in {:?}", match_len, before.elapsed());
         }
         //log!("Finished update matches task after {}s", start.elapsed().as_secs());
     }
@@ -71,7 +72,7 @@ pub async fn update_matches_task(
 async fn update_matches(
     db: &sqlx::PgPool,
     api: &Arc<RiotApi>,
-    matches_to_update: &[LolMatchNotUpdated],
+    matches_to_update: Vec<LolMatchNotUpdated>,
 ) -> AppResult<()> {
     let match_data_futures = matches_to_update.iter().map(|match_| {
         let api = Arc::clone(&api);
@@ -81,15 +82,20 @@ async fn update_matches(
         }
     });
 
-    let mut match_datas: Vec<_> = FuturesUnordered::from_iter(match_data_futures)
+    let mut match_raw_datas: Vec<_> = FuturesOrdered::from_iter(match_data_futures)
         .filter_map(|result| async move { result.ok().flatten() })
         .collect()
         .await;
-    match_datas.sort_by_key(|x| -x.info.game_id);
+
+
+    let (trashed_matches, match_datas): (Vec<_>, Vec<_>) = match_raw_datas.into_iter().zip(matches_to_update.into_iter())
+        .partition(|(match_, db_match_)| match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
+            || match_.info.game_version.is_empty()
+            || match_.info.game_id == 0);
 
     // Collect TempSummoner data from match data
     let mut participants_map = HashMap::new();
-    for match_data in match_datas.iter() {
+    for (match_data, _) in match_datas.iter() {
         let platform_code = match_data
             .metadata
             .match_id
@@ -200,11 +206,7 @@ async fn update_matches(
     // Prepare participants for bulk insert
     let match_participants: Vec<TempParticipant> = match_datas
         .iter()
-        .zip(matches_to_update.iter())
         .flat_map(|(match_data, match_)| {
-            if match_data.info.game_mode == riven::consts::GameMode::STRAWBERRY {
-                return vec![];
-            }
             let won_team_id = match_data
                 .info
                 .teams
@@ -262,14 +264,11 @@ async fn update_matches(
                         gold_earned: participant.gold_earned,
                         wards_placed: participant.wards_placed,
                         cs: participant.total_minions_killed,
-                        stats: LolMatchParticipantStats {
-                            largest_killing_spree: participant.largest_killing_spree,
-                            double_kills: participant.double_kills,
-                            triple_kills: participant.triple_kills,
-                            quadra_kills: participant.quadra_kills,
-                            penta_kills: participant.penta_kills,
-
-                        },
+                        cs_per_minute: participant.total_minions_killed as f64 / (match_data.info.game_duration as f64 / 60.0),
+                        double_kills: participant.double_kills,
+                        triple_kills: participant.triple_kills,
+                        quadra_kills: participant.quadra_kills,
+                        penta_kills: participant.penta_kills,
                         perk_defense_id: participant.perks.stat_perks.defense,
                         perk_flex_id: participant.perks.stat_perks.flex,
                         perk_offense_id: participant.perks.stat_perks.offense,
@@ -337,7 +336,8 @@ async fn update_matches(
         LolMatchParticipant::bulk_insert(db, chunk).await.unwrap();
     }
     // Bulk update matches
-    LolMatch::bulk_update(db, &match_datas).await;
+    LolMatch::bulk_update(db, match_datas).await;
+    LolMatch::bulk_trashed(db, trashed_matches).await;
     Ok(())
 }
 
@@ -411,7 +411,11 @@ pub struct TempParticipant {
     pub gold_earned: i32,
     pub wards_placed: i32,
     pub cs: i32,
-    pub stats: LolMatchParticipantStats,
+    pub cs_per_minute: f64,
+    pub double_kills: i32,
+    pub triple_kills: i32,
+    pub quadra_kills: i32,
+    pub penta_kills: i32,
     pub perk_defense_id: i32,
     pub perk_flex_id: i32,
     pub perk_offense_id: i32,

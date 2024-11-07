@@ -3022,7 +3022,7 @@ dependencies = [
 [[package]]
 name = "riven"
 version = "2.56.0"
-source = "git+https://github.com/gqsnt/RivenBrokengg#133a49c0d8b084c7100bc4af9e93e5cd59fca635"
+source = "git+https://github.com/gqsnt/RivenBrokengg#c5c17ad724586a809bee9a3698078debf57a331b"
 dependencies = [
  "futures",
  "gloo-timers",

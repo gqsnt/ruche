@@ -24,7 +24,7 @@ pub fn PlatformTypePage() -> impl IntoView {
     };
 
     view! {
-        <div class="my-0 mx-auto max-w-3xl text-center">
+        <div class="my-0 mx-auto max-w-5xl text-center">
             <a href="/" class="p-6 text-4xl my-4">
                 "Welcome to Broken.gg"
             </a>

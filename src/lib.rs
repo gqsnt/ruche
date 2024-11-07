@@ -18,6 +18,7 @@ use axum::handler::HandlerWithoutStateExt;
 use axum::{ServiceExt};
 #[cfg(feature = "ssr")]
 use futures::StreamExt;
+use leptos::logging::log;
 use leptos::prelude::BindAttribute;
 #[cfg(feature = "ssr")]
 use leptos::prelude::LeptosOptions;
@@ -33,6 +34,9 @@ pub fn hydrate() {
 
 pub fn version_to_major_minor(version: String) -> String {
     let mut split = version.split(".");
+    if split.clone().count() < 2 {
+        panic!("version_to_major_minor: version: {}", version);
+    }
     let major = split.next().unwrap();
     let minor = split.next().unwrap();
     format!("{}.{}", major, minor)

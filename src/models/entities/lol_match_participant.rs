@@ -1,6 +1,30 @@
 use crate::models::entities::lol_match_timeline::ItemEvent;
 use serde::{Deserialize, Serialize};
 
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LolSummonerChampionPage{
+    pub champion_id: i32,
+    pub total_matches: i64,
+    pub total_wins: i64,
+    pub total_lose: i64,
+    pub win_rate: f64,
+    pub avg_kda: f64,
+    pub avg_kill_participation: f64,
+    pub avg_kills: f64,
+    pub avg_deaths: f64,
+    pub avg_assists: f64,
+    pub avg_gold_earned: f64,
+    pub avg_cs: f64,
+    pub avg_damage_dealt_to_champions: f64,
+    pub avg_damage_taken: f64,
+    pub total_double_kills: i64,
+    pub total_triple_kills: i64,
+    pub total_quadra_kills: i64,
+    pub total_penta_kills: i64,
+}
+
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LolMatchDefaultParticipantMatchesPage {
     pub summoner_id: i32,
@@ -114,7 +138,11 @@ pub struct LolMatchParticipant {
     pub gold_earned: i32,
     pub wards_placed: i32,
     pub cs: i32,
-    pub stats: LolMatchParticipantStats,
+    pub cs_per_minute: f64,
+    pub double_kills: i32,
+    pub triple_kills: i32,
+    pub quadra_kills: i32,
+    pub penta_kills: i32,
     pub perk_defense_id: i32,
     pub perk_flex_id: i32,
     pub perk_offense_id: i32,
@@ -135,12 +163,5 @@ pub struct LolMatchParticipant {
     pub item6_id: i32,
 }
 
-/// Statistics for a match participant.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LolMatchParticipantStats {
-    pub largest_killing_spree: i32,
-    pub double_kills: i32,
-    pub triple_kills: i32,
-    pub quadra_kills: i32,
-    pub penta_kills: i32,
-}
+
+

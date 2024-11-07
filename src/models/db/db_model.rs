@@ -7,6 +7,28 @@ use sqlx::types::JsonValue;
 use sqlx::FromRow;
 use std::str::FromStr;
 
+
+#[derive(FromRow)]
+pub struct LolSummonerChampionResult{
+    pub champion_id: i32,
+    pub total_matches: i64,
+    pub total_wins: i64,
+    pub avg_kda: BigDecimal,
+    pub avg_kill_participation: BigDecimal,
+    pub avg_kills: BigDecimal,
+    pub avg_deaths: BigDecimal,
+    pub avg_assists: BigDecimal,
+    pub avg_gold_earned: BigDecimal,
+    pub avg_cs: BigDecimal,
+    pub avg_damage_dealt_to_champions: BigDecimal,
+    pub avg_damage_taken: BigDecimal,
+    pub total_double_kills: i64,
+    pub total_triple_kills: i64,
+    pub total_quadra_kills: i64,
+    pub total_penta_kills: i64,
+}
+
+
 #[derive(FromRow)]
 pub struct LolMatchNotUpdated {
     pub id: i32,

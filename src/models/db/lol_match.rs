@@ -3,6 +3,7 @@ use crate::models::db::Id;
 use crate::models::entities::lol_match::LolMatch;
 use crate::version_to_major_minor;
 use riven::models::match_v5::Match;
+use sqlx::PgPool;
 use sqlx::types::chrono;
 
 impl LolMatch {
@@ -50,16 +51,35 @@ impl LolMatch {
         rows.into_iter().map(|r| r.id).collect()
     }
 
+    pub async fn bulk_trashed(db:&PgPool, matches:Vec<(Match, LolMatchNotUpdated)>) -> Vec<i32>{
+        let match_ids = matches.iter().map(|(match_,db_match)| db_match.id).collect::<Vec<i32>>();
+        let sql = r"
+        UPDATE lol_matches
+        SET
+            trashed = true,
+            updated = true
+        WHERE id = ANY($1)
+        RETURNING id;
+        ";
+        let rows = sqlx::query_as::<_, Id>(sql)
+            .bind(match_ids)
+            .fetch_all(db)
+            .await
+            .unwrap();
+        rows.into_iter().map(|r| r.id).collect()
+    }
 
-    pub async fn bulk_update(db: &sqlx::PgPool, matches: &[Match]) -> Vec<i32> {
-        let match_ids = matches.iter().map(|x| x.metadata.match_id.clone()).collect::<Vec<String>>();
-        let match_creations = matches.iter().map(|x| chrono::DateTime::from_timestamp_millis(x.info.game_start_timestamp).unwrap()).collect::<Vec<_>>();
-        let match_ends = matches.iter().map(|x| chrono::DateTime::from_timestamp_millis(x.info.game_end_timestamp.unwrap()).unwrap()).collect::<Vec<_>>();
-        let match_durations = matches.iter().map(|x| x.info.game_duration as i32).collect::<Vec<i32>>();
-        let queue_ids = matches.iter().map(|x| x.info.queue_id.0 as i32).collect::<Vec<i32>>();
-        let map_ids = matches.iter().map(|x| x.info.map_id.0 as i32).collect::<Vec<i32>>();
-        let versions = matches.iter().map(|x| version_to_major_minor(x.info.game_version.clone())).collect::<Vec<String>>();
-        let modes = matches.iter().map(|x| x.info.game_mode.to_string()).collect::<Vec<String>>();
+
+
+    pub async fn bulk_update(db: &sqlx::PgPool, matches: Vec<(Match, LolMatchNotUpdated)>) -> Vec<i32> {
+        let match_ids = matches.iter().map(|(x, _)| x.metadata.match_id.clone()).collect::<Vec<String>>();
+        let match_creations = matches.iter().map(|(x, _)| chrono::DateTime::from_timestamp_millis(x.info.game_start_timestamp).unwrap()).collect::<Vec<_>>();
+        let match_ends = matches.iter().map(|(x, _)| chrono::DateTime::from_timestamp_millis(x.info.game_end_timestamp.unwrap()).unwrap()).collect::<Vec<_>>();
+        let match_durations = matches.iter().map(|(x, _)| x.info.game_duration as i32).collect::<Vec<i32>>();
+        let queue_ids = matches.iter().map(|(x, _)| x.info.queue_id.0 as i32).collect::<Vec<i32>>();
+        let map_ids = matches.iter().map(|(x, _)| x.info.map_id.0 as i32).collect::<Vec<i32>>();
+        let versions = matches.iter().map(|(x, _)| version_to_major_minor(x.info.game_version.clone())).collect::<Vec<String>>();
+        let modes = matches.iter().map(|(x, _)| x.info.game_mode.to_string()).collect::<Vec<String>>();
         let sql = r"
         UPDATE lol_matches
         SET

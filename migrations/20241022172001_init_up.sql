@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS lol_matches
     4
 ) ,
     updated BOOLEAN DEFAULT FALSE NOT NULL,
+    trashed BOOLEAN DEFAULT FALSE NOT NULL,
     match_creation TIMESTAMP ,
     match_end TIMESTAMP ,
     match_duration INTEGER
@@ -106,7 +107,11 @@ CREATE TABLE IF NOT EXISTS lol_match_participants
     gold_earned INTEGER NOT NULL,
     wards_placed INTEGER NOT NULL,
     cs INTEGER NOT NULL,
-    stats JSON NOT NULL,
+    cs_per_minute DECIMAL,
+    double_kills INTEGER NOT NULL,
+    triple_kills INTEGER NOT NULL,
+    quadra_kills INTEGER NOT NULL,
+    penta_kills INTEGER NOT NULL,
     summoner_spell1_id INTEGER,
     summoner_spell2_id INTEGER,
     perk_defense_id INTEGER,
@@ -158,10 +163,11 @@ create index lol_match_participants_summoner_id_idx on lol_match_participants (s
 create index lol_match_participants__match_id_idx on lol_match_participants (lol_match_id);
 create index lol_match_participants_summoner_lol_match_id_idx on lol_match_participants (summoner_id, lol_match_id);
 create index lol_match_participants_summoners_champion_id_idx on lol_match_participants (summoner_id, champion_id);
-create index lol_match_match_end_idx on lol_matches(match_end);
-create index lol_match_match_end_queue_id_idx on lol_matches(queue_id, match_end);
-create index lol_match_queue_id_idx on lol_matches(queue_id);
+create index lol_match_participants_lol_match_id_champion_id_idx on lol_match_participants (lol_match_id, champion_id);
+create index lol_match_match_end_idx on lol_matches (match_end);
+create index lol_match_match_end_queue_id_idx on lol_matches (queue_id, match_end);
+create index lol_match_queue_id_idx on lol_matches (queue_id);
 
-CREATE INDEX summoners_game_tag_platform_idx ON summoners (game_name, tag_line,platform);
+CREATE INDEX summoners_game_tag_platform_idx ON summoners (game_name, tag_line, platform);
 
 CREATE INDEX summoners_puuid_idx ON summoners (puuid);

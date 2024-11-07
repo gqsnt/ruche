@@ -92,10 +92,10 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
     }).collect::<Vec<_>>();
 
     view! {
-        <div>
-            <div class="my-card">
+        <div class="flex justify-center">
+            <div class="my-card w-[768px]">
                 <div class="flex text-left space-x-2">
-                    <div>
+                    <div class="flex flex-col">
                         <label for="champion_id">Champion</label>
                         <select
                             name="champion_id"
@@ -114,7 +114,7 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
                             {champion_options}
                         </select>
                     </div>
-                    <div>
+                    <div class="flex flex-col">
                         <label for="queue_id">Queue</label>
                         <select
                             class="my-select"
@@ -133,7 +133,7 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
                             {queue_options}
                         </select>
                     </div>
-                    <div>
+                    <div class="flex flex-col">
                         <label for="start_date">Start Date</label>
                         <input
                             class="my-input"
@@ -150,7 +150,7 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
                             )
                         />
                     </div>
-                    <div>
+                    <div class="flex flex-col">
                         <label for="end_date">End Date</label>
                         <input
                             class="my-input"
@@ -169,7 +169,8 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
                     </div>
                 </div>
             </div>
-            {children()}
+
         </div>
+        {children()}
     }
 }

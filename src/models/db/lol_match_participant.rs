@@ -2,8 +2,8 @@ use crate::apis::MatchFiltersSearch;
 use crate::components::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo};
 use crate::consts::Queue;
 use crate::error_template::{AppError, AppResult};
-use crate::models::db::db_model::{LolMatchParticipantDetailsQueryResult, LolMatchParticipantMatchesChildQueryResult, LolMatchParticipantMatchesQueryAggregateResult, LolMatchParticipantMatchesQueryResult};
-use crate::models::entities::lol_match_participant::{LolMatchDefaultParticipantMatchesPage, LolMatchParticipant, LolMatchParticipantMatchesDetailPage, LolMatchParticipantMatchesPage};
+use crate::models::db::db_model::{LolMatchParticipantDetailsQueryResult, LolMatchParticipantMatchesChildQueryResult, LolMatchParticipantMatchesQueryAggregateResult, LolMatchParticipantMatchesQueryResult, LolSummonerChampionResult};
+use crate::models::entities::lol_match_participant::{LolMatchDefaultParticipantMatchesPage, LolMatchParticipant, LolMatchParticipantMatchesDetailPage, LolMatchParticipantMatchesPage, LolSummonerChampionPage};
 use crate::models::update::summoner_matches::TempParticipant;
 use bigdecimal::ToPrimitive;
 use chrono::{Duration, NaiveDateTime, Utc};
@@ -11,8 +11,9 @@ use itertools::Itertools;
 use leptos::prelude::BindAttribute;
 use sqlx::{PgPool, QueryBuilder, Row};
 use unzip_n::unzip_n;
+use crate::models::db::round_to_2_decimal_places;
 
-unzip_n!(19);
+unzip_n!(23);
 unzip_n!(11);
 unzip_n!(7);
 
@@ -122,6 +123,96 @@ impl LolMatchParticipant {
         }).collect::<Vec<_>>())
     }
 
+    pub async fn get_champions_for_summoner(
+        db: &PgPool,
+        summoner_id: i32,
+        filters: MatchFiltersSearch,
+    ) -> AppResult<Vec<LolSummonerChampionPage>> {
+        let start_date = filters.start_date.as_deref().and_then(|s| {
+            if s.is_empty() {
+                None
+            } else {
+                NaiveDateTime::parse_from_str(&format!("{} 00:00:00", s), "%Y-%m-%d %H:%M:%S").ok()
+            }
+        });
+        let end_date = filters.end_date.as_deref().and_then(|s| {
+            if s.is_empty() {
+                None
+            } else {
+                NaiveDateTime::parse_from_str(&format!("{} 00:00:00", s), "%Y-%m-%d %H:%M:%S").ok()
+            }
+        });
+
+        let mut query = QueryBuilder::new(r#"
+            SELECT
+                lmp.champion_id,
+                count(lmp.lol_match_id) as total_matches,
+                sum(CASE WHEN lmp.won THEN 1 ELSE 0 END) AS total_wins,
+                avg(lmp.kda) as avg_kda,
+                avg(lmp.kill_participation) as avg_kill_participation,
+                avg(lmp.kills) as avg_kills,
+                avg(lmp.deaths) as avg_deaths,
+                avg(lmp.assists) as avg_assists,
+                avg(lmp.gold_earned) as avg_gold_earned,
+                avg(lmp.cs) as avg_cs,
+                avg(lmp.damage_dealt_to_champions) as avg_damage_dealt_to_champions,
+                avg(lmp.damage_taken) as avg_damage_taken,
+                sum(lmp.double_kills) AS total_double_kills,
+                sum(lmp.triple_kills) AS total_triple_kills,
+                sum(lmp.quadra_kills) AS total_quadra_kills,
+                sum(lmp.penta_kills) AS total_penta_kills
+            FROM lol_match_participants as lmp
+                     INNER JOIN  (SELECT id, queue_id, match_end FROM lol_matches) AS lm ON lm.id = lmp.lol_match_id
+            WHERE lmp.summoner_id = "#);
+        query.push_bind(summoner_id);
+        if let Some(champion_id) = filters.champion_id {
+            let sql_filter = " AND lmp.champion_id = ";
+            query.push(&sql_filter);
+            query.push_bind(champion_id);
+        }
+        if let Some(queue_id) = filters.queue_id {
+            let sql_filter = " AND lm.queue_id = ";
+            query.push(&sql_filter);
+            query.push_bind(queue_id);
+        }
+        if let Some(start_date) = start_date {
+            let sql_filter = " AND lm.match_end >= ";
+            query.push(&sql_filter);
+            query.push_bind(start_date);
+        }
+        if let Some(end_date) = end_date {
+            let sql_filter = " AND lm.match_end <= ";
+            query.push(&sql_filter);
+            query.push_bind(end_date);
+        }
+        query.push(" GROUP BY lmp.champion_id ORDER BY total_matches DESC;");
+        let results = query.build_query_as::<LolSummonerChampionResult>().fetch_all(db).await.unwrap();
+       Ok(results.into_iter().map(|r|{
+           let total_lose= r.total_matches - r.total_wins;
+           let win_rate = round_to_2_decimal_places((r.total_wins as f64 / r.total_matches as f64) * 100.0);
+           LolSummonerChampionPage{
+                champion_id: r.champion_id,
+                total_matches: r.total_matches,
+                total_wins: r.total_wins,
+                total_lose,
+                win_rate,
+                avg_kda: round_to_2_decimal_places(r.avg_kda.to_f64().unwrap_or_default()),
+                avg_kill_participation: round_to_2_decimal_places(r.avg_kill_participation.to_f64().unwrap_or_default()),
+                avg_kills: round_to_2_decimal_places(r.avg_kills.to_f64().unwrap_or_default()),
+                avg_deaths: round_to_2_decimal_places(r.avg_deaths.to_f64().unwrap_or_default()),
+                avg_assists: round_to_2_decimal_places(r.avg_assists.to_f64().unwrap_or_default()),
+                avg_gold_earned: round_to_2_decimal_places(r.avg_gold_earned.to_f64().unwrap_or_default()),
+                avg_cs: round_to_2_decimal_places(r.avg_cs.to_f64().unwrap_or_default()),
+                avg_damage_dealt_to_champions: round_to_2_decimal_places(r.avg_damage_dealt_to_champions.to_f64().unwrap_or_default()),
+                avg_damage_taken: round_to_2_decimal_places(r.avg_damage_taken.to_f64().unwrap_or_default()),
+                total_double_kills: r.total_double_kills,
+                total_triple_kills: r.total_triple_kills,
+                total_quadra_kills: r.total_quadra_kills,
+                total_penta_kills: r.total_penta_kills,
+           }
+       }).collect::<Vec<_>>())
+    }
+
 
     pub async fn get_match_participant_for_matches_page(
         db: &PgPool,
@@ -148,14 +239,14 @@ impl LolMatchParticipant {
         let mut aggregate_query = QueryBuilder::new(r#"
             SELECT
                 count(lmp.lol_match_id) as total_count,
-                count(case when     lmp.won then 1 end) as total_wins,
+                sum(CASE WHEN lmp.won THEN 1 ELSE 0 END) as total_wins,
                 avg(lmp.kills)  as avg_kills,
                 avg(lmp.deaths)  as avg_deaths,
                 avg(lmp.assists)  as avg_assists,
                 avg(lmp.kda)  as avg_kda,
                 avg(lmp.kill_participation) as avg_kill_participation
             FROM lol_match_participants as lmp
-            INNER JOIN lol_matches as lm ON lm.id = lmp.lol_match_id
+            INNER JOIN (SELECT id, queue_id, match_end FROM lol_matches) as lm ON lm.id = lmp.lol_match_id
             WHERE
                 lmp.summoner_id =
         "#);
@@ -192,7 +283,7 @@ impl LolMatchParticipant {
                 lm.match_end AS lol_match_match_end,
                 lm.match_duration AS lol_match_match_duration
             FROM lol_match_participants as lmp
-            INNER JOIN lol_matches as lm ON lm.id = lmp.lol_match_id
+            INNER JOIN (SELECT id,match_id,platform, queue_id,match_duration, match_end FROM lol_matches) as lm ON lm.id = lmp.lol_match_id
             WHERE
                 lmp.summoner_id =
         "#);
@@ -368,8 +459,8 @@ impl LolMatchParticipant {
 
     pub async fn bulk_insert(db: &sqlx::PgPool, participants: &[TempParticipant]) -> AppResult<()> {
         // Collect all fields into vectors
-        let (champion_ids, summoner_ids, match_ids, summoner_spell1_ids, summoner_spell2_ids, team_ids, won_flags, champ_levels, kill_participations, kdas, killss, deathss, assistss, damage_dealt_to_championss, damage_takens, gold_earneds, wards_placeds, css, stats_json): (
-            Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>
+        let (champion_ids, summoner_ids, match_ids, summoner_spell1_ids, summoner_spell2_ids, team_ids, won_flags, champ_levels, kill_participations, kdas, killss, deathss, assistss, damage_dealt_to_championss, damage_takens, gold_earneds, wards_placeds, css, css_per_minute, double_kills, triple_kills, quadra_kills, penta_kills): (
+            Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>
         ) = participants.iter().map(|p| {
             (
                 p.champion_id,
@@ -390,7 +481,11 @@ impl LolMatchParticipant {
                 p.gold_earned,
                 p.wards_placed,
                 p.cs,
-                serde_json::to_value(&p.stats).unwrap(),
+                p.cs_per_minute,
+                p.double_kills,
+                p.triple_kills,
+                p.quadra_kills,
+                p.penta_kills,
             )
         }).unzip_n();
 
@@ -445,7 +540,11 @@ impl LolMatchParticipant {
                 gold_earned,
                 wards_placed,
                 cs,
-                stats,
+                cs_per_minute,
+                double_kills,
+                triple_kills,
+                quadra_kills,
+                penta_kills,
                 perk_defense_id,
                 perk_flex_id,
                 perk_offense_id,
@@ -484,7 +583,7 @@ impl LolMatchParticipant {
                 $16::INT[],
                 $17::INT[],
                 $18::INT[],
-                $19::JSONB[],
+                $19::FLOAT8[],
                 $20::INT[],
                 $21::INT[],
                 $22::INT[],
@@ -502,7 +601,11 @@ impl LolMatchParticipant {
                 $34::INT[],
                 $35::INT[],
                 $36::INT[],
-                $37::INT[]
+                $37::INT[],
+                $38::INT[],
+                $39::INT[],
+                $40::INT[],
+                $41::INT[]
             );
         "#;
 
@@ -525,7 +628,11 @@ impl LolMatchParticipant {
             .bind(&gold_earneds)
             .bind(&wards_placeds)
             .bind(&css)
-            .bind(&stats_json)
+            .bind(&css_per_minute)
+            .bind(&double_kills)
+            .bind(&triple_kills)
+            .bind(&quadra_kills)
+            .bind(&penta_kills)
             .bind(&perk_ids.0)
             .bind(&perk_ids.1)
             .bind(&perk_ids.2)

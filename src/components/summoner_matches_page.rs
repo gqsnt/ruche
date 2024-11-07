@@ -52,7 +52,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
     meta_store.description().set(format!("Explore {}#{}'s match history on Broken.gg. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner().game_name, summoner().tag_line));
     meta_store.url().set(format!("{}", summoner().to_route_path()));
     view! {
-        <div class="flex">
+        <div class="w-[768px] inline-block align-top justify-center">
             <div class="">
                 <Suspense fallback=move || {
                     view! { <p>"Loading matches ..."</p> }
