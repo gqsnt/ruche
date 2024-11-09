@@ -1,30 +1,35 @@
 pub mod app;
 pub mod error_template;
-pub mod models;
-
-#[cfg(feature = "ssr")]
-pub mod lol_static;
-
-
-pub mod apis;
 pub mod consts;
-
-#[cfg(feature = "ssr")]
-pub mod live_game_cache;
 pub mod views;
 
 #[cfg(feature = "ssr")]
-pub const DB_CHUNK_SIZE: usize = 500;
+pub mod live_game_cache;
+pub mod backend;
+
+
 #[cfg(feature = "ssr")]
 use axum::handler::HandlerWithoutStateExt;
 #[cfg(feature = "ssr")]
-use axum::{ServiceExt};
+use axum::ServiceExt;
 #[cfg(feature = "ssr")]
 use futures::StreamExt;
 use leptos::prelude::BindAttribute;
 #[cfg(feature = "ssr")]
 use leptos::prelude::LeptosOptions;
 
+
+pub const DB_CHUNK_SIZE: usize = 500;
+pub const DATE_FORMAT: &str = "%d/%m/%Y %H:%M";
+
+#[cfg(feature = "ssr")]
+#[derive(Clone, axum::extract::FromRef)]
+pub struct AppState {
+    pub leptos_options: LeptosOptions,
+    pub riot_api: std::sync::Arc<riven::RiotApi>,
+    pub db: sqlx::PgPool,
+    pub live_game_cache: std::sync::Arc<live_game_cache::LiveGameCache>,
+}
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
@@ -43,16 +48,41 @@ pub fn version_to_major_minor(version: String) -> String {
     let minor = split.next().unwrap();
     format!("{}.{}", major, minor)
 }
-
-
-#[cfg(feature = "ssr")]
-#[derive(Clone, axum::extract::FromRef)]
-pub struct AppState {
-    pub leptos_options: LeptosOptions,
-    pub riot_api: std::sync::Arc<riven::RiotApi>,
-    pub db: sqlx::PgPool,
-    pub live_game_cache: std::sync::Arc<live_game_cache::LiveGameCache>,
+pub fn summoner_route_path(platform: &str, game_name: &str, tag_line: &str) -> String {
+    format!(
+        "/{}/summoners/{}-{}",
+        platform,
+        game_name,
+        tag_line,
+    )
 }
+
+pub fn summoner_to_slug(game_name: &str, tag_line: &str) -> String {
+    format!("{}-{}", game_name, tag_line)
+}
+
+pub fn summoner_url(platform: &str, game_name: &str, tag_line: &str) -> String {
+    format!("/{}/summoners/{}", platform, summoner_to_slug(game_name, tag_line))
+}
+
+pub fn summoner_not_found_url(platform: &str, game_name: &str, tag_line: &str) -> String {
+    format!("/{}/summoners?game_name={}&tag_line={}", platform, game_name, tag_line)
+}
+
+pub fn parse_summoner_slug(slug: &str) -> (String, String) {
+    let parts: Vec<&str> = slug.split('-').collect();
+    let len = parts.len();
+    if len == 2 {
+        (parts[0].to_string(), parts[1].to_string())
+    } else {
+        (parts[0].to_string(), String::new())
+    }
+}
+
+pub fn round_to_2_decimal_places(value: f64) -> f64 {
+    (value * 100.0).round() / 100.0
+}
+
 
 #[cfg(feature = "ssr")]
 pub fn init_riot_api() -> riven::RiotApi {

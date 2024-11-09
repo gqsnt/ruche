@@ -1,4 +1,3 @@
-use crate::apis::FindSummoner;
 use crate::consts::PlatformRoute;
 use leptos::form::ActionForm;
 use leptos::prelude::AriaAttributes;
@@ -8,12 +7,13 @@ use leptos::server::ServerAction;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_params_map, use_query_map};
 use strum::IntoEnumIterator;
+use crate::backend::server_fns::search_summoner::SearchSummoner;
 
 #[component]
 pub fn SummonerSearchPage() -> impl IntoView {
     let query = use_query_map();
     let params = use_params_map();
-    let find_summoner = ServerAction::<FindSummoner>::new();
+    let find_summoner = ServerAction::<SearchSummoner>::new();
 
 
     let game_name = move || {

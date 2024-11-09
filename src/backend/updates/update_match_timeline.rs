@@ -1,53 +1,17 @@
 use crate::consts::PlatformRoute;
 use crate::error_template::{AppError, AppResult};
-use crate::models::entities::lol_match_timeline::{ItemEvent, LolMatchTimeline};
-use crate::models::entities::summoner::Summoner;
+use crate::views::summoner_page::match_details::ItemEvent;
+use chrono::NaiveDateTime;
 use riven::RiotApi;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use sqlx::postgres::PgPool;
+use sqlx::QueryBuilder;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-pub struct TempLolMatchTimeline {
-    pub lol_match_id: i32,
-    pub summoner_id: i32,
-    pub items_event_timeline: Vec<(i64, ItemEvent)>,
-    pub skills_timeline: Vec<i32>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum EventType {
-    SkillLevelUp,
-    ItemPurchased,
-    ItemSold,
-    ItemDestroyed,
-    ItemUndo,
-    Other(String),
-}
-
-impl From<&str> for EventType {
-    fn from(s: &str) -> Self {
-        match s {
-            "SKILL_LEVEL_UP" => EventType::SkillLevelUp,
-            "ITEM_PURCHASED" => EventType::ItemPurchased,
-            "ITEM_SOLD" => EventType::ItemSold,
-            "ITEM_DESTROYED" => EventType::ItemDestroyed,
-            "ITEM_UNDO" => EventType::ItemUndo,
-            other => EventType::Other(other.to_string()),
-        }
-    }
-}
-
-
-pub fn push_item_event_into_participant_id(participants: &mut HashMap<i32, TempLolMatchTimeline>, participant_id: i32, timestamp: i64, event: ItemEvent) {
-    let participant = participants.get_mut(&participant_id).unwrap();
-    participant.items_event_timeline.push((timestamp, event));
-}
-
-
-pub async fn process_match_timeline(
+pub async fn update_match_timeline(
     db: &PgPool,
     api: Arc<RiotApi>,
     match_id: i32,
@@ -66,7 +30,7 @@ pub async fn process_match_timeline(
     let db_platform = PlatformRoute::from_region_str(riven_pr.as_region_str())
         .ok_or_else(|| AppError::CustomError(riven_pr.as_region_str().to_string()))?;
 
-    let puuids_summoner_ids = Summoner::find_summoner_ids_by_puuids(
+    let puuids_summoner_ids = find_summoner_ids_by_puuids(
         db,
         db_platform,
         &timeline.metadata.participants,
@@ -177,9 +141,101 @@ pub async fn process_match_timeline(
         })
         .collect::<Vec<_>>();
 
-    LolMatchTimeline::bulk_insert(db, timelines).await?;
+    bulk_insert_match_timeline(db, timelines).await?;
 
     Ok(())
 }
+
+
+pub fn push_item_event_into_participant_id(participants: &mut HashMap<i32, TempLolMatchTimeline>, participant_id: i32, timestamp: i64, event: ItemEvent) {
+    let participant = participants.get_mut(&participant_id).unwrap();
+    participant.items_event_timeline.push((timestamp, event));
+}
+
+
+pub struct TempLolMatchTimeline {
+    pub lol_match_id: i32,
+    pub summoner_id: i32,
+    pub items_event_timeline: Vec<(i64, ItemEvent)>,
+    pub skills_timeline: Vec<i32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum EventType {
+    SkillLevelUp,
+    ItemPurchased,
+    ItemSold,
+    ItemDestroyed,
+    ItemUndo,
+    Other(String),
+}
+
+impl From<&str> for EventType {
+    fn from(s: &str) -> Self {
+        match s {
+            "SKILL_LEVEL_UP" => EventType::SkillLevelUp,
+            "ITEM_PURCHASED" => EventType::ItemPurchased,
+            "ITEM_SOLD" => EventType::ItemSold,
+            "ITEM_DESTROYED" => EventType::ItemDestroyed,
+            "ITEM_UNDO" => EventType::ItemUndo,
+            other => EventType::Other(other.to_string()),
+        }
+    }
+}
+
+
+pub async fn find_summoner_ids_by_puuids(db: &PgPool, platform_route: PlatformRoute, puuids: &[String]) -> AppResult<HashMap<String, i32>> {
+    Ok(sqlx::query_as::<_, SummonerTimeLineInfo>(
+        "SELECT id, puuid FROM summoners WHERE puuid = ANY($1) and platform = $2"
+    )
+        .bind(puuids)
+        .bind(platform_route.as_region_str())
+
+        .fetch_all(db)
+        .await?
+        .into_iter()
+        .map(|x| (x.puuid, x.id))
+        .collect::<HashMap<String, i32>>())
+}
+
+async fn bulk_insert_match_timeline(db: &PgPool, timelines: Vec<TempLolMatchTimeline>) -> AppResult<()> {
+    // Check if timelines vector is empty
+    if timelines.is_empty() {
+        return Ok(());
+    }
+
+    // Prepare the insert SQL with placeholders
+    let mut qb = QueryBuilder::new(
+        "INSERT INTO lol_match_timelines (lol_match_id, summoner_id, items_event_timeline, skills_timeline) ",
+    );
+
+    qb.push_values(timelines.into_iter(), |mut b, rec| {
+        let mut items_event_timeline = HashMap::new();
+        for (timestamp, event) in rec.items_event_timeline {
+            let frame_idx = (timestamp / 60000) as i32;
+            items_event_timeline.entry(frame_idx).or_insert_with(Vec::new).push(event);
+        }
+        // convert to vec
+        let mut items_event_timeline: Vec<_> = items_event_timeline.into_iter().collect();
+        items_event_timeline.sort_by_key(|x| x.0);
+        b.push_bind(rec.lol_match_id);
+        b.push_bind(rec.summoner_id);
+        b.push_bind(json!(items_event_timeline));
+        b.push_bind(rec.skills_timeline.clone());
+    });
+    qb.build().fetch_all(db).await?;
+    Ok(())
+}
+
+
+#[derive(sqlx::FromRow)]
+struct SummonerTimeLineInfo {
+    pub id: i32,
+    pub puuid: String,
+    #[sqlx(default)]
+    pub updated_at: Option<NaiveDateTime>,
+}
+
 
 

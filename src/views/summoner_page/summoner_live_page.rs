@@ -1,11 +1,12 @@
-use crate::apis::get_live_game;
 use crate::app::{MetaStore, MetaStoreStoreFields};
-use crate::models::entities::summoner::{LiveGameResultParticipant, Summoner};
 use leptos::prelude::{expect_context, ReadSignal, Set};
 use leptos::prelude::{signal, ClassAttribute, ElementChild, Get, OnAttribute, Resource, Suspend, Suspense};
 use leptos::{component, view, IntoView};
 use leptos::either::Either;
+use serde::{Deserialize, Serialize};
+use crate::backend::server_fns::get_live_game::get_live_game;
 use crate::consts::{Champion, Perk, SummonerSpell};
+use crate::views::summoner_page::Summoner;
 
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {
@@ -39,7 +40,7 @@ pub fn SummonerLivePage() -> impl IntoView {
             }>
                 {move || Suspend::new(async move {
                     match live_game_resource.await {
-                        Ok(result) => {
+                        Ok(Some(result)) => {
                             let first_team = result
                                 .participants
                                 .iter()
@@ -73,7 +74,7 @@ pub fn SummonerLivePage() -> impl IntoView {
                                 },
                             )
                         }
-                        Err(e) => {
+                        _=> {
                             Either::Left(
 
                                 view! { <p>"Not in Live Game"</p> },
@@ -89,8 +90,8 @@ pub fn SummonerLivePage() -> impl IntoView {
 
 
 #[component]
-pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameResultParticipant>) -> impl IntoView {
-    let is_blue_team = team_id == 100;
+pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> impl IntoView {
+    let is_blue_team = ||  team_id == 100;
     view! {
         <table class="table-fixed text-xs w-full">
             <colgroup>
@@ -108,10 +109,10 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameResultParticipant>
                 <tr>
                     <th
                         colspan="3"
-                        class=("text-blue-800", is_blue_team)
-                        class=("text-red-800", !is_blue_team)
+                        class=("text-blue-800",  is_blue_team())
+                        class=("text-red-800",  !is_blue_team())
                     >
-                        {if is_blue_team { "Blue Team" } else { "Red Team" }}
+                        {if is_blue_team() { "Blue Team" } else { "Red Team" }}
                     </th>
                     <th class="text-left"></th>
                     <th></th>
@@ -128,9 +129,10 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameResultParticipant>
                         view! {
                             <tr>
                                 <td
-                                    class=("border-red-500", !is_blue_team)
-                                    class=("border-blue-500", is_blue_team)
-                                    class=" border-l-2 pl-2.5 py-1"
+                                    class="border-l-2 pl-2.5 py-1 "
+                                    class=("border-red-500",  !is_blue_team())
+                                    class=("border-blue-500",is_blue_team())
+
                                 >
 
                                     <div class="relative w-8">
@@ -302,4 +304,55 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameResultParticipant>
             </tbody>
         </table>
     }
+}
+
+
+
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct LiveGame {
+    pub game_id:String,
+    pub game_length: i64,
+    pub game_map: String,
+    pub queue_name: String,
+    pub participants:Vec<LiveGameParticipant>
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct LiveGameParticipant {
+    pub puuid: String,
+    pub champion_id: i32,
+    pub summoner_spell1_id: i32,
+    pub summoner_spell2_id: i32,
+    pub perk_primary_selection_id : i32,
+    pub perk_sub_style_id : i32,
+    pub game_name: String,
+    pub tag_line: String,
+    pub platform: String,
+    pub summoner_level : i64,
+    pub team_id : i32,
+    pub ranked_stats: Option<LiveGameParticipantRankedStats>,
+    pub champion_stats: Option<LiveGameParticipantChampionStats>,
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct LiveGameParticipantRankedStats {
+    pub total_ranked: i32,
+    pub total_ranked_wins: i32,
+    pub total_ranked_losses: i32,
+    pub ranked_win_rate: f64,
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct LiveGameParticipantChampionStats {
+    pub total_champion_played :i32,
+    pub total_champion_wins :i32,
+    pub total_champion_losses :i32,
+    pub champion_win_rate :f64,
+    pub avg_kills: f64,
+    pub avg_deaths: f64,
+    pub avg_assists: f64,
 }

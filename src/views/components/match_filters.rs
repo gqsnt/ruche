@@ -1,5 +1,5 @@
-use crate::apis::MatchFiltersSearch;
 use crate::consts::{Champion, QUEUE_OPTIONS};
+use crate::views::MatchFiltersSearch;
 use leptos::context::provide_context;
 use leptos::prelude::{event_target_value, Children, ClassAttribute, OnAttribute, PropAttribute, RwSignal, Set};
 use leptos::prelude::{ElementChild, GlobalAttributes};

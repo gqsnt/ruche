@@ -1,6 +1,3 @@
-use tokio::task;
-use leptos_broken_gg::live_game_cache::cache_cleanup_task;
-
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
@@ -12,21 +9,23 @@ async fn main() {
     use std::sync::Arc;
     use leptos_broken_gg::{init_database, init_riot_api, AppState};
     use dotenv::dotenv;
-    use leptos_broken_gg::lol_static;
     use leptos::logging::log;
     use leptos::html::tr;
     use tower_http::compression::Predicate;
     use tower_http::compression::predicate::{NotForContentType, SizeAbove};
     use memory_serve::{load_assets, CacheControl, MemoryServe};
     use tower::ServiceBuilder;
-    use leptos_broken_gg::models::update::summoner_matches::update_matches_task;
     use leptos_broken_gg::live_game_cache;
+    use tokio::task;
+    use leptos_broken_gg::backend;
+    use leptos_broken_gg::backend::updates::update_matches_task::update_matches_task;
+    use leptos_broken_gg::live_game_cache::cache_cleanup_task;
 
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
     let mut leptos_options = conf.leptos_options;
     let _ = leptos_options.site_root.clone();
-    lol_static::init_static_data().await;
+    backend::lol_static::init_static_data().await;
     let db = init_database().await;
     let riot_api = Arc::new(init_riot_api());
 
@@ -34,7 +33,7 @@ async fn main() {
     let expiration_duration = std::time::Duration::from_secs(60);
     let cleanup_interval = std::time::Duration::from_secs(30);
     let live_game_cache = Arc::new(live_game_cache::LiveGameCache::new(expiration_duration));
-    let cache_for_cleanup =Arc::clone(&live_game_cache);
+    let cache_for_cleanup = Arc::clone(&live_game_cache);
 
     let app_state = AppState {
         leptos_options: leptos_options.clone(),

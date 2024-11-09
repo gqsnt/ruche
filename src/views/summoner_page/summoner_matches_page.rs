@@ -1,15 +1,14 @@
-use crate::models::entities::lol_match_participant::LolMatchDefaultParticipantMatchesPage;
-
-use crate::apis::{get_summoner_matches, MatchFiltersSearch};
 use crate::app::{MetaStore, MetaStoreStoreFields};
-use crate::views::summoner_page::match_details::MatchDetails;
-use crate::views::components::pagination::Pagination;
+use crate::backend::server_fns::get_matches::get_matches;
 use crate::consts::{Champion, Item, Perk, SummonerSpell};
-use crate::models::entities::summoner::Summoner;
+use crate::views::components::pagination::Pagination;
+use crate::views::summoner_page::match_details::MatchDetails;
+use crate::views::summoner_page::Summoner;
+use crate::views::MatchFiltersSearch;
 use leptos::either::Either;
-use leptos::prelude::{AriaAttributes, For};
 use leptos::prelude::{expect_context, ClassAttribute, Get, ReadSignal, Resource, RwSignal, Show, StyleAttribute, Suspend, Suspense};
 use leptos::prelude::{signal, CustomAttribute, Effect, OnAttribute};
+use leptos::prelude::{AriaAttributes, For};
 use leptos::prelude::{ElementChild, Set};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
@@ -44,7 +43,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
         move || (match_filters_updated.get(), summoner(), page_number()),
         |(filters, summoner, page_number)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_summoner_matches(summoner.id, page_number.unwrap_or(1), Some(filters)).await
+            get_matches(summoner.id, page_number.unwrap_or(1), Some(filters)).await
         },
     );
 
@@ -83,8 +82,8 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                                                             {matches_result.matches_result_info.total_losses}L
                                                         </div>
                                                         <div>
-                                                            {(matches_result.matches_result_info.total_wins * 100
-                                                                / matches_result.matches_result_info.total_matches.max(1))}%
+                                                            {matches_result.matches_result_info.total_wins * 100
+                                                                / matches_result.matches_result_info.total_matches.max(1)}%
                                                         </div>
                                                     </div>
                                                     <div class="flex flex-col ml-2">
@@ -128,7 +127,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
 
 
 #[component]
-pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView {
+pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
     let (show_details, set_show_details) = signal(false);
 
     view! {
@@ -438,7 +437,7 @@ pub fn MatchCard(match_: LolMatchDefaultParticipantMatchesPage) -> impl IntoView
 
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct GetSummonerMatchesResult {
-    pub matches: Vec<LolMatchDefaultParticipantMatchesPage>,
+    pub matches: Vec<SummonerMatch>,
     pub total_pages: i64,
     pub matches_result_info: MatchesResultInfo,
 }
@@ -454,11 +453,44 @@ pub struct MatchesResultInfo {
     pub avg_kda: f64,
     pub avg_kill_participation: i32,
 }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SummonerMatch {
+    pub summoner_id: i32,
+    pub match_id: i32,
+    pub riot_match_id: String,
+    pub match_ended_since: String,
+    pub match_duration: String,
+    pub queue: String,
+    pub platform: String,
+    pub champion_id: i32,
+    pub won: bool,
+    pub champ_level: i32,
+    pub kda: f64,
+    pub kill_participation: f64,
+    pub kills: i32,
+    pub deaths: i32,
+    pub assists: i32,
+    pub summoner_spell1_id: i32,
+    pub summoner_spell2_id: i32,
+    pub perk_primary_selection_id: i32,
+    pub perk_sub_style_id: i32,
+    pub item0_id: i32,
+    pub item1_id: i32,
+    pub item2_id: i32,
+    pub item3_id: i32,
+    pub item4_id: i32,
+    pub item5_id: i32,
+    pub item6_id: i32,
+    pub participants: Vec<SummonerMatchParticipant>,
+}
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-struct PageItem {
-    label: String,
-    page: i64,
-    disabled: bool,
-    is_current: bool,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SummonerMatchParticipant {
+    pub lol_match_id: i32,
+    pub summoner_id: i32,
+    pub summoner_name: String,
+    pub summoner_tag_line: String,
+    pub summoner_platform: String,
+    pub champion_id: i32,
+    pub team_id: i32,
 }

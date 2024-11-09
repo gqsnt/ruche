@@ -1,14 +1,17 @@
-use crate::apis::{get_summoner_encounters, MatchFiltersSearch};
 use crate::app::{MetaStore, MetaStoreStoreFields};
+use crate::backend::server_fns::get_encounters::get_encounters;
+use crate::consts::ProfileIcon;
+use crate::summoner_route_path;
 use crate::views::components::pagination::Pagination;
-use crate::models::entities::summoner::{summoner_route_path, Summoner};
+use crate::views::summoner_page::Summoner;
+use crate::views::MatchFiltersSearch;
 use leptos::either::Either;
 use leptos::prelude::{event_target_value, expect_context, OnAttribute, ReadSignal, Set, Suspend, Suspense};
 use leptos::prelude::{signal, ClassAttribute, Effect, ElementChild, For, Get, Resource, RwSignal, Show};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
-use crate::consts::ProfileIcon;
+use serde::{Deserialize, Serialize};
 
 #[component]
 pub fn SummonerEncountersPage() -> impl IntoView {
@@ -46,9 +49,9 @@ pub fn SummonerEncountersPage() -> impl IntoView {
 
     let encounters_resource = Resource::new(
         move || (search_summoner.get(), match_filters_updated.get(), summoner(), page_number()),
-        |(search_summoner,filters, summoner, page_number)| async move {
+        |(search_summoner, filters, summoner, page_number)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_summoner_encounters(summoner.id, page_number.unwrap_or(1), Some(filters), search_summoner).await
+            get_encounters(summoner.id, page_number.unwrap_or(1), Some(filters), search_summoner).await
         },
     );
 
@@ -166,4 +169,22 @@ pub fn SummonerEncountersPage() -> impl IntoView {
 
         </div>
     }
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SummonerEncounters {
+    pub encounters: Vec<SummonerEncounter>,
+    pub total_pages: i64,
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SummonerEncounter {
+    pub id: i32,
+    pub count: i64,
+    pub game_name: String,
+    pub tag_line: String,
+    pub platform: String,
+    pub profile_icon_id: i32,
 }

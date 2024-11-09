@@ -1,20 +1,18 @@
-use crate::apis::{get_summoner, UpdateSummoner};
 use crate::app::{MetaStore, MetaStoreStoreFields};
-use crate::views::components::match_filters::MatchFilters;
-use summoner_champions_page::SummonerChampionsPage;
-use summoner_encounters_page::SummonerEncountersPage;
-use summoner_live_page::SummonerLivePage;
-use summoner_matches_page::SummonerMatchesPage;
-use crate::consts::ProfileIcon;
+use crate::consts::{PlatformRoute, ProfileIcon};
 use leptos::context::provide_context;
 use leptos::either::Either;
 use leptos::prelude::{expect_context, OnAttribute, Set};
-use leptos::prelude::{signal, ElementChild, Show};
+use leptos::prelude::{signal, ElementChild};
 use leptos::prelude::{ActionForm, ClassAttribute, Get, Read, ServerAction, Suspend, Transition};
 use leptos::server::Resource;
 use leptos::{component, view, IntoView};
-use leptos_router::hooks::{query_signal_with_options, use_params_map};
-use leptos_router::NavigateOptions;
+use leptos_router::hooks::{use_params_map};
+use serde::{Deserialize, Serialize};
+use crate::backend::server_fns::get_summoner::get_summoner;
+use crate::backend::server_fns::update_summoner::UpdateSummoner;
+use crate::summoner_route_path;
+use crate::views::summoner_page::summoner_nav::SummonerNav;
 
 pub mod summoner_search_page;
 pub mod summoner_matches_page;
@@ -22,6 +20,7 @@ pub mod summoner_champions_page;
 pub mod summoner_encounters_page;
 pub mod summoner_live_page;
 pub mod match_details;
+mod summoner_nav;
 
 #[component]
 pub fn SummonerPage() -> impl IntoView {
@@ -112,120 +111,55 @@ pub fn SummonerPage() -> impl IntoView {
 }
 
 
-#[component]
-pub fn SummonerNav() -> impl IntoView {
-    let (tab, set_tab) = query_signal_with_options::<String>("tab", NavigateOptions {
-        scroll: false,
-        replace: true,
-        ..Default::default()
-    });
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq,Eq)]
+pub struct Summoner {
+    pub id: i32,
+    pub game_name: String,
+    pub tag_line: String,
+    pub puuid: String,
+    pub platform: PlatformRoute,
+    pub updated_at: String,
+    pub summoner_level: i64,
+    pub profile_icon_id: i32,
+}
 
-    view! {
-        <div class="flex justify-center">
-            <nav class="w-[768px]">
-                <ul class="flex justify-start space-x-2">
-                    <li class="-mb-px">
-                        <button
-                            on:click=move |_| set_tab(Some(Tabs::Matches.to_string()))
-                            class=move || {
-                                if tab().is_none() || tab() == Some(Tabs::Matches.to_string()) {
-                                    "active-tab"
-                                } else {
-                                    "default-tab"
-                                }
-                            }
-                        >
-                            Matches
-                        </button>
-                    </li>
-                    <li class="-mb-px">
-                        <button
-                            on:click=move |_| set_tab(Some(Tabs::Champions.to_string()))
-                            class=move || {
-                                if tab() == Some(Tabs::Champions.to_string()) {
-                                    "active-tab"
-                                } else {
-                                    "default-tab"
-                                }
-                            }
-                        >
-                            Champions
-                        </button>
-                    </li>
-                    <li class="-mb-px">
-                        <button
-                            on:click=move |_| set_tab(Some(Tabs::Encounters.to_string()))
-                            class=move || {
-                                if tab() == Some(Tabs::Encounters.to_string()) {
-                                    "active-tab"
-                                } else {
-                                    "default-tab"
-                                }
-                            }
-                        >
-                            Encounters
-                        </button>
-                    </li>
-                    <li class="-mb-px">
-                        <button
-                            on:click=move |_| set_tab(Some(Tabs::Live.to_string()))
-                            class=move || {
-                                if tab() == Some(Tabs::Live.to_string()) {
-                                    "active-tab"
-                                } else {
-                                    "default-tab"
-                                }
-                            }
-                        >
-                            Live
-                        </button>
-                    </li>
-                </ul>
-            </nav>
-        </div>
 
-        <div class="my-4 ">
-            <Show when=move || tab().is_none() || tab() == Some(Tabs::Matches.to_string())>
-                <MatchFilters>
-                    <SummonerMatchesPage />
-                </MatchFilters>
-            </Show>
-            <Show when=move || tab() == Some(Tabs::Champions.to_string())>
-                <MatchFilters>
-                    <SummonerChampionsPage />
-                </MatchFilters>
-            </Show>
-            <Show when=move || tab() == Some(Tabs::Encounters.to_string())>
-                <MatchFilters>
-                    <SummonerEncountersPage />
-                </MatchFilters>
-            </Show>
-            <Show when=move || tab() == Some(Tabs::Live.to_string())>
-                <SummonerLivePage />
-            </Show>
 
-        </div>
+impl Summoner{
+    pub fn to_route_path(&self) -> String {
+        summoner_route_path(self.platform.as_region_str(), &self.game_name, &self.tag_line)
     }
-}
 
+    /// Generates a URL-friendly slug.
+    pub fn slug(&self) -> String {
+        Self::generate_slug(&self.game_name, &self.tag_line)
+    }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub enum Tabs {
-    #[default]
-    Matches,
-    Champions,
-    Encounters,
-    Live,
-}
+    /// Generates a slug from the game name and tag line.
+    pub fn generate_slug(game_name: &str, tag_line: &str) -> String {
+        format!(
+            "{}-{}",
+            urlencoding::encode(game_name),
+            urlencoding::encode(tag_line)
+        )
+    }
 
-impl std::fmt::Display for Tabs {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Tabs::Matches => write!(f, "matches"),
-            Tabs::Champions => write!(f, "champions"),
-            Tabs::Encounters => write!(f, "encounters"),
-            Tabs::Live => write!(f, "live"),
+    pub fn parse_slug(slug: &str) -> Option<(String, String)> {
+        let parts: Vec<&str> = slug.split('-').collect();
+        if parts.len() != 2 {
+            return None;
         }
+        let game_name = urlencoding::decode(parts[0]).ok()?.into_owned();
+        let tag_line = urlencoding::decode(parts[1]).ok()?.into_owned();
+        Some((game_name, tag_line))
+    }
+
+    /// Returns the URL of the summoner's profile icon.
+    pub fn profile_icon_url(&self) -> String {
+        format!(
+            "https://raw.communitydragon.org/latest/game/assets/ux/summonericons/profileicon{}.png",
+            self.profile_icon_id
+        )
     }
 }
 

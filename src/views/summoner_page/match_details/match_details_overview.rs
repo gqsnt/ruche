@@ -1,11 +1,11 @@
 use crate::consts::{Champion, Item, Perk, SummonerSpell};
-use crate::models::entities::lol_match_participant::LolMatchParticipantMatchesDetailPage;
 use leptos::prelude::{ClassAttribute, ReadSignal};
 use leptos::prelude::{ElementChild, Show};
 use leptos::{component, view, IntoView};
+use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 
 #[component]
-pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantMatchesDetailPage>>) -> impl IntoView {
+pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantDetails>>) -> impl IntoView {
     let details = match_details();
     let (summoner_team, summoner_team_won) = {
         let detail = details.iter().find(|participant| participant.summoner_id == summoner_id).unwrap();
@@ -38,7 +38,7 @@ pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolM
 
 
 #[component]
-pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, participants: Vec<LolMatchParticipantMatchesDetailPage>) -> impl IntoView {
+pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, participants: Vec<LolMatchParticipantDetails>) -> impl IntoView {
     view! {
         <table class="table-fixed text-xs w-full border-collapse">
             <colgroup>

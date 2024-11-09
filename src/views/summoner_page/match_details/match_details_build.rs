@@ -7,12 +7,11 @@ use std::collections::HashMap;
 
 
 use crate::consts::{Champion, Item, Perk};
-use crate::models::entities::lol_match_participant::LolMatchParticipantMatchesDetailPage;
-use crate::models::entities::lol_match_timeline::ItemEvent;
+use crate::views::summoner_page::match_details::{ItemEvent, LolMatchParticipantDetails};
 
 #[component]
-pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantMatchesDetailPage>>) -> impl IntoView {
-    let summoner_name_with_champion = |participant: &LolMatchParticipantMatchesDetailPage| {
+pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantDetails>>) -> impl IntoView {
+    let summoner_name_with_champion = |participant: &LolMatchParticipantDetails| {
         format!("{}({})", participant.summoner_name, Champion::try_from(participant.champion_id as i16).unwrap())
     };
     let participant_ids = match_details.read().iter().map(|x| (x.summoner_id, summoner_name_with_champion(x))).collect::<HashMap<i32, String>>();

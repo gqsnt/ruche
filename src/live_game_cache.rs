@@ -1,14 +1,15 @@
 use dashmap::DashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use crate::models::entities::summoner::LiveGameResult;
 use tokio::time::sleep;
+use crate::views::summoner_page::summoner_live_page::LiveGame;
+
 type GameId = String;
 type PUUID = String;
 
 
 pub struct LiveGameCache {
-    game_cache: DashMap<GameId, (LiveGameResult, Instant)>,
+    game_cache: DashMap<GameId, (LiveGame, Instant)>,
     puuid_to_game: DashMap<PUUID, GameId>,
     expiration_duration: Duration,
 }
@@ -23,7 +24,7 @@ impl LiveGameCache {
     }
 
     // Attempt to retrieve game data from the cache
-    pub fn get_game_data(&self, puuid: &PUUID) -> Option<LiveGameResult> {
+    pub fn get_game_data(&self, puuid: &PUUID) -> Option<LiveGame> {
         if let Some(game_id_entry) = self.puuid_to_game.get(puuid) {
             let game_id = game_id_entry.value().clone();
             if let Some(game_entry) = self.game_cache.get(&game_id) {
@@ -47,7 +48,7 @@ impl LiveGameCache {
     }
 
     // Update the cache with new game data
-    pub fn set_game_data(&self, game_id: GameId, puuids: Vec<PUUID>, game_data: LiveGameResult) {
+    pub fn set_game_data(&self, game_id: GameId, puuids: Vec<PUUID>, game_data: LiveGame) {
         let now = Instant::now();
         self.game_cache.insert(game_id.clone(), (game_data, now));
         for puuid in puuids {

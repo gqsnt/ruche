@@ -1,10 +1,12 @@
-use crate::apis::{get_summoner_champions, MatchFiltersSearch};
 use crate::app::{MetaStore, MetaStoreStoreFields};
+use crate::backend::server_fns::get_champions::get_champions;
 use crate::consts::Champion;
-use crate::models::entities::summoner::Summoner;
+use crate::views::summoner_page::Summoner;
+use crate::views::MatchFiltersSearch;
 use leptos::either::Either;
 use leptos::prelude::{expect_context, ClassAttribute, ElementChild, For, Get, ReadSignal, Resource, RwSignal, Set, Suspend, Suspense};
 use leptos::{component, view, IntoView};
+use serde::{Deserialize, Serialize};
 
 #[component]
 pub fn SummonerChampionsPage() -> impl IntoView {
@@ -16,7 +18,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
         move || (match_filters_updated.get(), summoner()),
         |(filters, summoner)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_summoner_champions(summoner.id, Some(filters)).await
+            get_champions(summoner.id, Some(filters)).await
         },
     );
 
@@ -191,4 +193,27 @@ pub fn SummonerChampionsPage() -> impl IntoView {
             </Suspense>
         </div>
     }
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChampionStats {
+    pub champion_id: i32,
+    pub total_matches: i64,
+    pub total_wins: i64,
+    pub total_lose: i64,
+    pub win_rate: f64,
+    pub avg_kda: f64,
+    pub avg_kill_participation: f64,
+    pub avg_kills: f64,
+    pub avg_deaths: f64,
+    pub avg_assists: f64,
+    pub avg_gold_earned: f64,
+    pub avg_cs: f64,
+    pub avg_damage_dealt_to_champions: f64,
+    pub avg_damage_taken: f64,
+    pub total_double_kills: i64,
+    pub total_triple_kills: i64,
+    pub total_quadra_kills: i64,
+    pub total_penta_kills: i64,
 }
