@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::components::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo};
+use crate::views::summoner_page::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo};
 use crate::consts::{Map, PlatformRoute, Queue};
 use crate::models::entities::lol_match_participant::{LolMatchParticipant, LolMatchParticipantMatchesDetailPage, LolSummonerChampionPage};
 use crate::models::entities::lol_match_timeline::LolMatchTimeline;

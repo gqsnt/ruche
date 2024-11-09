@@ -6,7 +6,6 @@ use leptos::prelude::{signal, ClassAttribute, ElementChild, Get, OnAttribute, Re
 use leptos::{component, view, IntoView};
 use leptos::either::Either;
 use crate::consts::{Champion, Perk, SummonerSpell};
-use crate::models::entities::lol_match_participant::LolMatchParticipantMatchesDetailPage;
 
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {

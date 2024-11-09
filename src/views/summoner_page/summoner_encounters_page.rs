@@ -1,6 +1,6 @@
 use crate::apis::{get_summoner_encounters, MatchFiltersSearch};
 use crate::app::{MetaStore, MetaStoreStoreFields};
-use crate::components::pagination::Pagination;
+use crate::views::components::pagination::Pagination;
 use crate::models::entities::summoner::{summoner_route_path, Summoner};
 use leptos::either::Either;
 use leptos::prelude::{event_target_value, expect_context, OnAttribute, ReadSignal, Set, Suspend, Suspense};

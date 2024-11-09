@@ -1,5 +1,5 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
-use crate::components::summoner_search_page::SummonerSearchPage;
+use crate::views::summoner_page::summoner_search_page::SummonerSearchPage;
 use leptos::prelude::ElementChild;
 use leptos::prelude::{expect_context, use_context, ClassAttribute, Get, Set, Show};
 use leptos::{component, view, IntoView};

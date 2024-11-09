@@ -1,7 +1,7 @@
 use crate::apis::get_match_details;
-use crate::components::match_details::match_details_build::MatchDetailsBuild;
-use crate::components::match_details::match_details_overview::MatchDetailsOverview;
-use crate::components::match_details::match_details_team::MatchDetailsTeam;
+use crate::views::summoner_page::match_details::match_details_build::MatchDetailsBuild;
+use crate::views::summoner_page::match_details::match_details_overview::MatchDetailsOverview;
+use crate::views::summoner_page::match_details::match_details_team::MatchDetailsTeam;
 use leptos::either::Either;
 use leptos::prelude::{signal, ClassAttribute, OnAttribute, Resource, Show, Suspend};
 use leptos::prelude::{ElementChild, Transition};

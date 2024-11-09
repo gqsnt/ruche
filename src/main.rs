@@ -49,6 +49,8 @@ async fn main() {
     tokio::spawn(async move {
         update_matches_task(db, riot_api).await;
     });
+
+    // thread to cleanup live game cache data
     task::spawn(async move {
         cache_cleanup_task(cache_for_cleanup, cleanup_interval).await;
     });

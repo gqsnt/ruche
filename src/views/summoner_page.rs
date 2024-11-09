@@ -1,10 +1,10 @@
 use crate::apis::{get_summoner, UpdateSummoner};
 use crate::app::{MetaStore, MetaStoreStoreFields};
-use crate::components::match_filters::MatchFilters;
-use crate::components::summoner_champions_page::SummonerChampionsPage;
-use crate::components::summoner_encounters_page::SummonerEncountersPage;
-use crate::components::summoner_live_page::SummonerLivePage;
-use crate::components::summoner_matches_page::SummonerMatchesPage;
+use crate::views::components::match_filters::MatchFilters;
+use summoner_champions_page::SummonerChampionsPage;
+use summoner_encounters_page::SummonerEncountersPage;
+use summoner_live_page::SummonerLivePage;
+use summoner_matches_page::SummonerMatchesPage;
 use crate::consts::ProfileIcon;
 use leptos::context::provide_context;
 use leptos::either::Either;
@@ -15,6 +15,13 @@ use leptos::server::Resource;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{query_signal_with_options, use_params_map};
 use leptos_router::NavigateOptions;
+
+pub mod summoner_search_page;
+pub mod summoner_matches_page;
+pub mod summoner_champions_page;
+pub mod summoner_encounters_page;
+pub mod summoner_live_page;
+pub mod match_details;
 
 #[component]
 pub fn SummonerPage() -> impl IntoView {

@@ -2,8 +2,8 @@ use crate::models::entities::lol_match_participant::LolMatchDefaultParticipantMa
 
 use crate::apis::{get_summoner_matches, MatchFiltersSearch};
 use crate::app::{MetaStore, MetaStoreStoreFields};
-use crate::components::match_details::MatchDetails;
-use crate::components::pagination::Pagination;
+use crate::views::summoner_page::match_details::MatchDetails;
+use crate::views::components::pagination::Pagination;
 use crate::consts::{Champion, Item, Perk, SummonerSpell};
 use crate::models::entities::summoner::Summoner;
 use leptos::either::Either;

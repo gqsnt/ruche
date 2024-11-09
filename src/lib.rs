@@ -4,7 +4,6 @@ pub mod models;
 
 #[cfg(feature = "ssr")]
 pub mod lol_static;
-pub mod components;
 
 
 pub mod apis;
@@ -12,6 +11,7 @@ pub mod consts;
 
 #[cfg(feature = "ssr")]
 pub mod live_game_cache;
+pub mod views;
 
 #[cfg(feature = "ssr")]
 pub const DB_CHUNK_SIZE: usize = 500;
@@ -21,7 +21,6 @@ use axum::handler::HandlerWithoutStateExt;
 use axum::{ServiceExt};
 #[cfg(feature = "ssr")]
 use futures::StreamExt;
-use leptos::logging::log;
 use leptos::prelude::BindAttribute;
 #[cfg(feature = "ssr")]
 use leptos::prelude::LeptosOptions;

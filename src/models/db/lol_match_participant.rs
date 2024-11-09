@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::apis::MatchFiltersSearch;
-use crate::components::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo};
+use crate::views::summoner_page::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo};
 use crate::consts::Queue;
 use crate::error_template::{AppError, AppResult};
 use crate::models::db::db_model::{LolMatchParticipantDetailsQueryResult, LolMatchParticipantLiveGameDb, LolMatchParticipantMatchesChildQueryResult, LolMatchParticipantMatchesQueryAggregateResult, LolMatchParticipantMatchesQueryResult, LolSummonerChampionResult};

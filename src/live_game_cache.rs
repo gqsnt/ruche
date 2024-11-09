@@ -69,7 +69,7 @@ pub async fn cache_cleanup_task(cache: Arc<LiveGameCache>, interval: Duration) {
             .game_cache
             .iter()
             .filter_map(|entry| {
-                let (game_data, timestamp) = entry.value();
+                let (_, timestamp) = entry.value();
                 if now.duration_since(*timestamp) >= cache.expiration_duration {
                     Some(entry.key().clone())
                 } else {

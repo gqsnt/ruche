@@ -6,7 +6,7 @@ use leptos::{component, view, IntoView};
 use std::collections::HashMap;
 
 
-use crate::consts::{Champion, Item, Perk, SummonerSpell};
+use crate::consts::{Champion, Item, Perk};
 use crate::models::entities::lol_match_participant::LolMatchParticipantMatchesDetailPage;
 use crate::models::entities::lol_match_timeline::ItemEvent;
 
