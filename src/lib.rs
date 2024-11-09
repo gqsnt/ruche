@@ -93,7 +93,8 @@ pub fn init_riot_api() -> riven::RiotApi {
 #[cfg(feature = "ssr")]
 pub async fn init_database() -> sqlx::PgPool {
     let database_url = dotenv::var("DATABASE_URL").expect("no database url specify");
-
+    let max_connections = dotenv::var("MAX_PG_CONNECTIONS").unwrap_or("10".to_string());
+    let max_connections = max_connections.parse::<u32>().unwrap_or(10);
     let pool = sqlx::postgres::PgPoolOptions::new()
         .max_connections(100)
         .connect(database_url.as_str())
