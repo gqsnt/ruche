@@ -1,3 +1,6 @@
+use tokio::task;
+use leptos_broken_gg::live_game_cache::cache_cleanup_task;
+
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
@@ -17,6 +20,7 @@ async fn main() {
     use memory_serve::{load_assets, CacheControl, MemoryServe};
     use tower::ServiceBuilder;
     use leptos_broken_gg::models::update::summoner_matches::update_matches_task;
+    use leptos_broken_gg::live_game_cache;
 
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
@@ -25,10 +29,18 @@ async fn main() {
     lol_static::init_static_data().await;
     let db = init_database().await;
     let riot_api = Arc::new(init_riot_api());
+
+    // live game caching
+    let expiration_duration = std::time::Duration::from_secs(60);
+    let cleanup_interval = std::time::Duration::from_secs(30);
+    let live_game_cache = Arc::new(live_game_cache::LiveGameCache::new(expiration_duration));
+    let cache_for_cleanup =Arc::clone(&live_game_cache);
+
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
         riot_api: riot_api.clone(),
         db: db.clone(),
+        live_game_cache,
     };
 
     // thread to update matches data and add summoners related.
@@ -36,6 +48,9 @@ async fn main() {
     // we dont want n concurrent thread updating matches and summoners
     tokio::spawn(async move {
         update_matches_task(db, riot_api).await;
+    });
+    task::spawn(async move {
+        cache_cleanup_task(cache_for_cleanup, cleanup_interval).await;
     });
 
     let addr = leptos_options.site_addr;

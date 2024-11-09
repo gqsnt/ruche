@@ -79,3 +79,52 @@ pub struct LolSummonerEncounterPageResult{
     pub encounters: Vec<LolSummonerEncounterPage>,
     pub total_pages: i64,
 }
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct LiveGameResult{
+    pub game_id:String,
+    pub game_length: i64,
+    pub game_map: String,
+    pub queue_name: String,
+    pub participants:Vec<LiveGameResultParticipant>
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct LiveGameResultParticipant{
+    pub puuid: String,
+    pub champion_id: i32,
+    pub summoner_spell1_id: i32,
+    pub summoner_spell2_id: i32,
+    pub perk_primary_selection_id : i32,
+    pub perk_sub_style_id : i32,
+    pub game_name: String,
+    pub tag_line: String,
+    pub platform: String,
+    pub summoner_level : i64,
+    pub team_id : i32,
+    pub ranked_stats: Option<LiveGameResultParticipantRankedStats>,
+    pub champion_stats: Option<LiveGameResultParticipantChampionStats>,
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct LiveGameResultParticipantRankedStats{
+    pub total_ranked: i32,
+    pub total_ranked_wins: i32,
+    pub total_ranked_losses: i32,
+    pub ranked_win_rate: f64,
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct LiveGameResultParticipantChampionStats{
+    pub total_champion_played :i32,
+    pub total_champion_wins :i32,
+    pub total_champion_losses :i32,
+    pub champion_win_rate :f64,
+    pub avg_kills: f64,
+    pub avg_deaths: f64,
+    pub avg_assists: f64,
+}
+

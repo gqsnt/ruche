@@ -75,6 +75,16 @@ impl SummonerSpell {
 )]
 pub enum Perk {
     UNKNOWN = 0,
+    StatsHealScaling = 5001,
+    StatsArmor = 5002,
+    StatsMagicResist = 5003,
+    StatsAttackSpeed = 5005,
+    StatsAbilityHaste = 5007,
+    StatsAdaptiveForce = 5008,
+    StatsMovementSpeed = 5010,
+    StatsHealth = 5011,
+    StatsResistScaling = 5012,
+    StatsTenacitySlowResist = 5013,
     Domination = 8100,
     Electrocute = 8112,
     DarkHarvest = 8128,
@@ -220,7 +230,22 @@ impl Perk {
             | Perk::Scorch
             | Perk::Waterwalking
             | Perk::GatheringStorm => Some(Perk::Sorcery),
+            _ => None
         }
+    }
+    pub fn get_stats() -> &'static [Self] {
+        &[
+            Perk::StatsHealScaling,
+            Perk::StatsArmor,
+            Perk::StatsMagicResist,
+            Perk::StatsAttackSpeed,
+            Perk::StatsAbilityHaste,
+            Perk::StatsAdaptiveForce,
+            Perk::StatsMovementSpeed,
+            Perk::StatsHealth,
+            Perk::StatsResistScaling,
+            Perk::StatsTenacitySlowResist,
+        ]
     }
 }
 
@@ -228,7 +253,7 @@ impl Perk {
 #[repr(u8)]
 #[derive(Debug, Clone, Copy)]
 #[derive(Eq, PartialEq, Hash)]
-#[derive(EnumIter, Display)]
+#[derive(EnumIter, Display, IntoPrimitive, TryFromPrimitive)]
 pub enum Map {
     SummonersRiftOriginalSummerVariant = 1,
     SummonersRiftOriginalAutumnVariant = 2,
@@ -247,6 +272,30 @@ pub enum Map {
     Convergence = 22,
     Arena = 30,
     Swarm = 33,
+}
+
+impl Map {
+    pub const fn get_static_name(&self) -> &'static str {
+        match self {
+            Map::SummonersRiftOriginalSummerVariant => "Summoner's Rift Original Summer Variant",
+            Map::SummonersRiftOriginalAutumnVariant => "Summoner's Rift Original Autumn Variant",
+            Map::TheProvingGrounds => "The Proving Grounds",
+            Map::TwistedTreelineOriginalVersion => "Twisted Treeline Original Version",
+            Map::TheCrystalScar => "The Crystal Scar",
+            Map::TwistedTreeline => "Twisted Treeline",
+            Map::SummonersRift => "Summoner's Rift",
+            Map::HowlingAbyss => "Howling Abyss",
+            Map::ButchersBridge => "Butcher's Bridge",
+            Map::CosmicsRuin => "Cosmic Ruins",
+            Map::ValoranCityPark => "Valoran City Park",
+            Map::Substructure43 => "Substructure 43",
+            Map::CrashSite => "Crash Site",
+            Map::NexusBlitz => "Nexus Blitz",
+            Map::Convergence => "Convergence",
+            Map::Arena => "Arena",
+            Map::Swarm => "Swarm",
+        }
+    }
 }
 
 
@@ -763,22 +812,44 @@ pub enum Queue {
     ConvergenceTeamfightTacticsSet35Revival = 6000,
 }
 
+impl Queue {
+    pub const fn get_static_name(&self) -> &'static str {
+        match self {
+            Queue::SummonersRift5v5DraftPick => "Normal Draft Pick",
+            Queue::SummonersRift5v5BlindPick => "Normal Blind Pick",
+            Queue::SummonersRift5v5RankedSolo => "Ranked Solo/Duo",
+            Queue::SummonersRift5v5RankedFlex => "Ranked Flex",
+            Queue::HowlingAbyss5v5Aram => "ARAM",
+            Queue::SummonersRiftArurf => "ARURF",
+            Queue::SummonersRiftOneForAll => "One for All",
+            Queue::Arena2v2v2v2Cherry => "2v2v2v2 Cherry",
+            Queue::SummonersRiftPickUrf => "Pick URF",
+            Queue::SummonersRiftUltimateSpellbook => "Ultimate Spellbook",
+            Queue::SummonersRiftNexusSiege => "Nexus Siege",
+            Queue::SummonersRiftClash => "Clash",
+            Queue::SummonersRiftNormalQuickplay => "Normal Quickplay",
+            Queue::NexusBlitz => "Nexus Blitz",
+            _ => "Unknown"
+        }
+    }
+}
 
-pub static QUEUE_OPTIONS: &[(u16, &str)] = &[
-    (Queue::SummonersRift5v5DraftPick as u16, "Normal Draft Pick"),
-    (Queue::SummonersRift5v5BlindPick as u16, "Normal Blind Pick"),
-    (Queue::SummonersRift5v5RankedSolo as u16, "Ranked Solo/Duo"),
-    (Queue::SummonersRift5v5RankedFlex as u16, "Ranked Flex"),
-    (Queue::HowlingAbyss5v5Aram as u16, "ARAM"),
-    (Queue::SummonersRiftArurf as u16, "ARURF"),
-    (Queue::SummonersRiftOneForAll as u16, "One for All"),
-    (Queue::Arena2v2v2v2Cherry as u16, "2v2v2v2 Cherry"),
-    (Queue::SummonersRiftPickUrf as u16, "Pick URF"),
-    (Queue::SummonersRiftUltimateSpellbook as u16, "Ultimate Spellbook"),
-    (Queue::SummonersRiftNexusSiege as u16, "Nexus Siege"),
-    (Queue::SummonersRiftClash as u16, "Clash"),
-    (Queue::SummonersRiftNormalQuickplay as u16, "Normal Quickplay"),
-    (Queue::NexusBlitz as u16, "Nexus Blitz"),
+
+pub static QUEUE_OPTIONS: &[(u16, &'static str)] = &[
+    (Queue::SummonersRift5v5DraftPick as u16, Queue::SummonersRift5v5DraftPick.get_static_name()),
+    (Queue::SummonersRift5v5BlindPick as u16, Queue::SummonersRift5v5BlindPick.get_static_name()),
+    (Queue::SummonersRift5v5RankedSolo as u16, Queue::SummonersRift5v5RankedSolo.get_static_name()),
+    (Queue::SummonersRift5v5RankedFlex as u16, Queue::SummonersRift5v5RankedFlex.get_static_name()),
+    (Queue::HowlingAbyss5v5Aram as u16, Queue::HowlingAbyss5v5Aram.get_static_name()),
+    (Queue::SummonersRiftArurf as u16, Queue::SummonersRiftArurf.get_static_name()),
+    (Queue::SummonersRiftOneForAll as u16, Queue::SummonersRiftOneForAll.get_static_name()),
+    (Queue::Arena2v2v2v2Cherry as u16, Queue::Arena2v2v2v2Cherry.get_static_name()),
+    (Queue::SummonersRiftPickUrf as u16, Queue::SummonersRiftPickUrf.get_static_name()),
+    (Queue::SummonersRiftUltimateSpellbook as u16, Queue::SummonersRiftUltimateSpellbook.get_static_name()),
+    (Queue::SummonersRiftNexusSiege as u16, Queue::SummonersRiftNexusSiege.get_static_name()),
+    (Queue::SummonersRiftClash as u16, Queue::SummonersRiftClash.get_static_name()),
+    (Queue::SummonersRiftNormalQuickplay as u16, Queue::SummonersRiftNormalQuickplay.get_static_name()),
+    (Queue::NexusBlitz as u16, Queue::NexusBlitz.get_static_name()),
 ];
 
 #[derive(Debug, Clone)]
@@ -866,7 +937,7 @@ pub enum Champion {
     Akali = 84,
     Akshan = 166,
     Alistar = 12,
-    Ambessa= 799,
+    Ambessa = 799,
     Amumu = 32,
     Anivia = 34,
     Annie = 1,

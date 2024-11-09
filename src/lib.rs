@@ -11,6 +11,9 @@ pub mod apis;
 pub mod consts;
 
 #[cfg(feature = "ssr")]
+pub mod live_game_cache;
+
+#[cfg(feature = "ssr")]
 pub const DB_CHUNK_SIZE: usize = 500;
 #[cfg(feature = "ssr")]
 use axum::handler::HandlerWithoutStateExt;
@@ -49,6 +52,7 @@ pub struct AppState {
     pub leptos_options: LeptosOptions,
     pub riot_api: std::sync::Arc<riven::RiotApi>,
     pub db: sqlx::PgPool,
+    pub live_game_cache: std::sync::Arc<live_game_cache::LiveGameCache>,
 }
 
 #[cfg(feature = "ssr")]

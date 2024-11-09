@@ -185,6 +185,26 @@ pub struct SummonerDb {
     pub summoner_level: i64,
     pub profile_icon_id: i32,
 }
+#[derive(sqlx::FromRow)]
+pub struct LolMatchParticipantLiveGameDb {
+    pub summoner_id:i32,
+    pub champion_id:i32,
+    pub total_match:i64,
+    pub total_win:i64,
+    pub avg_kills:BigDecimal,
+    pub avg_deaths:BigDecimal,
+    pub avg_assists:BigDecimal,
+}
+
+#[derive(sqlx::FromRow)]
+pub struct SummonerLiveGameDb {
+    pub id: i32,
+    pub game_name: String,
+    pub tag_line: String,
+    pub puuid: String,
+    pub platform: String,
+    pub summoner_level: i64,
+}
 
 impl SummonerDb {
     pub fn map_to_summoner(&self) -> Summoner {

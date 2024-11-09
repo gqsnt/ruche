@@ -6,7 +6,7 @@ use leptos::{component, view, IntoView};
 use std::collections::HashMap;
 
 
-use crate::consts::{Champion, Item};
+use crate::consts::{Champion, Item, Perk, SummonerSpell};
 use crate::models::entities::lol_match_participant::LolMatchParticipantMatchesDetailPage;
 use crate::models::entities::lol_match_timeline::ItemEvent;
 
@@ -82,7 +82,9 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                                                                 class="h-[30px] w-[30px]"
                                                             />
                                                             <Show when=move || is_sold_item>
-                                                                <div class="absolute -bottom-0.5 -right-0.5">X</div>
+                                                                <div class="absolute -bottom-[0.1rem] right-2 text-red-500 font-extrabold text-2xl">
+                                                                    X
+                                                                </div>
                                                             </Show>
                                                         </div>
                                                     }
@@ -141,6 +143,135 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             })
                             .collect::<Vec<_>>()
                     }}
+                </div>
+            </div>
+            <div class="my-2 my-card w-fit">
+                <div class="">Runes</div>
+                <div class="flex justify-center mt-2 space-x-2 text-xs">
+                    <div class="flex flex-col space-y-1.5 ">
+                        <img
+                            width="28"
+                            height="28"
+                            alt=Perk::try_from(selected_participant().perk_primary_style_id as u16)
+                                .unwrap()
+                                .to_string()
+                            src=Perk::get_static_url(selected_participant().perk_primary_style_id)
+                            class="w-[28px] h-[28px] rounded"
+                        />
+                        <img
+                            width="28"
+                            height="28"
+                            alt=Perk::try_from(
+                                    selected_participant().perk_primary_selection_id as u16,
+                                )
+                                .unwrap()
+                                .to_string()
+                            src=Perk::get_static_url(
+                                selected_participant().perk_primary_selection_id,
+                            )
+                            class="w-[28px] h-[28px] rounded"
+                        />
+                        <img
+                            width="28"
+                            height="28"
+                            alt=Perk::try_from(
+                                    selected_participant().perk_primary_selection1_id as u16,
+                                )
+                                .unwrap()
+                                .to_string()
+                            src=Perk::get_static_url(
+                                selected_participant().perk_primary_selection1_id,
+                            )
+                            class="w-[28px] h-[28px] rounded"
+                        />
+                        <img
+                            width="28"
+                            height="28"
+                            alt=Perk::try_from(
+                                    selected_participant().perk_primary_selection2_id as u16,
+                                )
+                                .unwrap()
+                                .to_string()
+                            src=Perk::get_static_url(
+                                selected_participant().perk_primary_selection2_id,
+                            )
+                            class="w-[28px] h-[28px] rounded"
+                        />
+                        <img
+                            width="28"
+                            height="28"
+                            alt=Perk::try_from(
+                                    selected_participant().perk_primary_selection3_id as u16,
+                                )
+                                .unwrap()
+                                .to_string()
+                            src=Perk::get_static_url(
+                                selected_participant().perk_primary_selection3_id,
+                            )
+                            class="w-[28px] h-[28px] rounded"
+                        />
+                    </div>
+                    <div class="border-l-2 flex flex-col space-y-1 border-gray-900 h-fit pl-1.5">
+
+                        <img
+                            width="28"
+                            height="28"
+                            alt=Perk::try_from(selected_participant().perk_sub_style_id as u16)
+                                .unwrap()
+                                .to_string()
+                            src=Perk::get_static_url(selected_participant().perk_sub_style_id)
+                            class="w-[28px] h-[28px] rounded"
+                        />
+                        <img
+                            width="28"
+                            height="28"
+                            alt=Perk::try_from(selected_participant().perk_sub_selection1_id as u16)
+                                .unwrap()
+                                .to_string()
+                            src=Perk::get_static_url(selected_participant().perk_sub_selection1_id)
+                            class="w-[28px] h-[28px] rounded"
+                        />
+                        <img
+                            width="28"
+                            height="28"
+                            alt=Perk::try_from(selected_participant().perk_sub_selection2_id as u16)
+                                .unwrap()
+                                .to_string()
+                            src=Perk::get_static_url(selected_participant().perk_sub_selection2_id)
+                            class="w-[28px] h-[28px] rounded"
+                        />
+                    </div>
+
+                    <div class="border-l-2 flex flex-col space-y-1 border-gray-900 h-fit pl-1.5">
+                        <img
+                            width="28"
+                            height="28"
+                            alt=Perk::try_from(selected_participant().perk_offense_id as u16)
+                                .unwrap()
+                                .to_string()
+                            src=Perk::get_static_url(selected_participant().perk_offense_id)
+                            class="w-[28px] h-[28px] rounded"
+                        />
+                        <img
+                            width="28"
+                            height="28"
+                            alt=Perk::try_from(selected_participant().perk_flex_id as u16)
+                                .unwrap()
+                                .to_string()
+                            src=Perk::get_static_url(selected_participant().perk_flex_id)
+                            class="w-[28px] h-[28px] rounded"
+                        />
+
+                        <img
+                            width="28"
+                            height="28"
+                            alt=Perk::try_from(selected_participant().perk_defense_id as u16)
+                                .unwrap()
+                                .to_string()
+                            src=Perk::get_static_url(selected_participant().perk_defense_id)
+                            class="w-[28px] h-[28px] rounded"
+                        />
+                    </div>
                 </div>
             </div>
         </div>

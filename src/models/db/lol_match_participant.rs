@@ -1,8 +1,9 @@
+use std::collections::HashMap;
 use crate::apis::MatchFiltersSearch;
 use crate::components::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo};
 use crate::consts::Queue;
 use crate::error_template::{AppError, AppResult};
-use crate::models::db::db_model::{LolMatchParticipantDetailsQueryResult, LolMatchParticipantMatchesChildQueryResult, LolMatchParticipantMatchesQueryAggregateResult, LolMatchParticipantMatchesQueryResult, LolSummonerChampionResult};
+use crate::models::db::db_model::{LolMatchParticipantDetailsQueryResult, LolMatchParticipantLiveGameDb, LolMatchParticipantMatchesChildQueryResult, LolMatchParticipantMatchesQueryAggregateResult, LolMatchParticipantMatchesQueryResult, LolSummonerChampionResult};
 use crate::models::entities::lol_match_participant::{LolMatchDefaultParticipantMatchesPage, LolMatchParticipant, LolMatchParticipantMatchesDetailPage, LolMatchParticipantMatchesPage, LolSummonerChampionPage};
 use crate::models::update::summoner_matches::TempParticipant;
 use bigdecimal::ToPrimitive;
@@ -122,6 +123,42 @@ impl LolMatchParticipant {
             }
         }).collect::<Vec<_>>())
     }
+
+    pub async fn get_live_game_stats(
+        db:&PgPool,
+        summoner_ids: &[i32],
+    )->AppResult<HashMap<i32, HashMap<i32, LolMatchParticipantLiveGameDb>>>{
+        let query_results = sqlx::query_as::<_,LolMatchParticipantLiveGameDb>(r#"
+            select
+                summoner_id,
+                champion_id,
+                count(lmp.lol_match_id) as total_match,
+                sum(CASE WHEN won THEN 1 ELSE 0 END) as total_win,
+                avg(lmp.kills) as avg_kills,
+                avg(lmp.deaths) as avg_deaths,
+                avg(lmp.assists) as avg_assists
+            from lol_match_participants as lmp
+                inner join (select id, queue_id,match_end  from lol_matches) as lm on lmp.lol_match_id = lm.id
+            where lmp.summoner_id = ANY($1) and lm.queue_id = 420 and lm.match_end >= '2024-09-25 12:00:00'
+            group by lmp.summoner_id, lmp.champion_id;
+        "#)  // 420 is the queue id for ranked solo/duo and 2024-09-25 is the split 3 s14 start date
+            .bind(summoner_ids)
+            .fetch_all(db)
+            .await
+            .unwrap();
+        let mut nested_map= HashMap::new();
+
+        for participant in query_results {
+            // Insert a new HashMap for this summoner_id if it doesn't already exist
+            nested_map
+                .entry(participant.summoner_id)
+                .or_insert_with(HashMap::new)
+                // Insert the participant data into the inner HashMap by champion_id
+                .insert(participant.champion_id, participant);
+        }
+        Ok(nested_map)
+    }
+
 
     pub async fn get_champions_for_summoner(
         db: &PgPool,

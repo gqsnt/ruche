@@ -145,27 +145,27 @@ async fn download_and_save_images(images_to_download: Vec<ImageToDownload>) {
 
 
 pub async fn get_perks(version: String) -> Result<Vec<ImageToDownload>, reqwest::Error> {
-    let raw_perks = StaticUrl::Perks { version: version.clone() }.get().await?;
-    let main_perks: Vec<JsonParentPerk> = serde_json::from_value(raw_perks).unwrap();
+    let raw_perks = StaticUrl::Perks.get().await?;
+    let all_perks: Vec<JsonPerk> = serde_json::from_value(raw_perks).unwrap();
     let mut images_to_download = Vec::new();
-    for main_perk in main_perks {
-        for slot in main_perk.slots {
-            for rune in slot.runes {
-                let path = get_assets_path().join("perks").join(format!("{}.avif", rune.id));
-                if !path.exists() {
-                    let image_url = format!("https://ddragon.leagueoflegends.com/cdn/img/{}", rune.icon);
-                    images_to_download.push(ImageToDownload {
-                        url: image_url,
-                        path,
-                        size: (22, 22),
-                        to_avif: true,
-                    });
-                }
-            }
-        }
-        let path = get_assets_path().join("perks").join(format!("{}.avif", main_perk.id));
+    for perk in all_perks {
+        let path = get_assets_path().join("perks").join(format!("{}.avif", perk.id));
         if !path.exists() {
-            let image_url = format!("https://ddragon.leagueoflegends.com/cdn/img/{}", main_perk.icon);
+            let image_url = format!("https://raw.communitydragon.org/latest/game/assets/perks/{}", perk.icon_path.replace("/lol-game-data/assets/v1/perk-images/", "").to_lowercase());
+            images_to_download.push(ImageToDownload {
+                url: image_url,
+                path,
+                size: (22, 22),
+                to_avif: true,
+            });
+        }
+    }
+    let main_perks = StaticUrl::Perks2 { version }.get().await?;
+    let main_perks: Vec<JsonPerk2> = serde_json::from_value(main_perks).unwrap();
+    for perk in main_perks {
+        let path = get_assets_path().join("perks").join(format!("{}.avif", perk.id));
+        if !path.exists() {
+            let image_url = format!("https://ddragon.leagueoflegends.com/cdn/img/{}", perk.icon);
             images_to_download.push(ImageToDownload {
                 url: image_url,
                 path,
@@ -203,11 +203,6 @@ pub async fn get_items(version: String) -> Result<Vec<ImageToDownload>, reqwest:
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProfileIcon {
-    pub id: i32,
-}
-
 
 pub async fn get_current_version() -> Result<String, reqwest::Error> {
     let versions: Vec<String> = serde_json::from_value(StaticUrl::Versions.get().await?).unwrap();
@@ -240,42 +235,14 @@ pub async fn update_profile_icons_image(version: String) -> Result<Vec<ImageToDo
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SummonerIcon {
-    pub id: i32,
-    pub img_url: String,
-}
-
-
-#[derive(Serialize, Deserialize)]
-struct JsonParentPerk {
-    id: i32,
-    key: String,
-    name: String,
-    icon: String,
-    slots: Vec<JsonPerkSlot>,
-}
-
-#[derive(Serialize, Deserialize)]
-struct JsonPerkSlot {
-    runes: Vec<JsonChildPerk>,
-}
-
-#[derive(Serialize, Deserialize)]
-struct JsonChildPerk {
-    id: i32,
-    key: String,
-    icon: String,
-    name: String,
-}
-
 
 pub enum StaticUrl {
     Versions,
     Champions { version: String },
     Items { version: String },
     SummonerSpells { version: String },
-    Perks { version: String },
+    Perks,
+    Perks2{ version: String },
     ProfileIcons { version: String },
     Maps,
     Queues,
@@ -289,7 +256,8 @@ impl StaticUrl {
             StaticUrl::Champions { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/champion.json", version),
             StaticUrl::Items { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/item.json", version),
             StaticUrl::SummonerSpells { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/summoner.json", version),
-            StaticUrl::Perks { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/runesReforged.json", version),
+            StaticUrl::Perks  => "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perks.json".to_string(),
+            StaticUrl::Perks2 { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/runesReforged.json", version),
             StaticUrl::ProfileIcons { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/profileicon.json", version).to_string(),
             StaticUrl::Maps => "https://static.developer.riotgames.com/docs/lol/maps.json".to_string(),
             StaticUrl::Queues => "https://static.developer.riotgames.com/docs/lol/queues.json".to_string(),
@@ -352,4 +320,29 @@ pub struct JsonItem {
 
 
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SummonerIconJson {
+    pub id: i32,
+    pub img_url: String,
+}
 
+
+#[derive(Serialize, Deserialize)]
+struct JsonPerk {
+    id: i32,
+    #[serde(rename = "iconPath")]
+    icon_path: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonPerk2 {
+    id: i32,
+    icon: String,
+}
+
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProfileIconJson {
+    pub id: i32,
+}

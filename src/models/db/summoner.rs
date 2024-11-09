@@ -1,7 +1,7 @@
 use crate::apis::MatchFiltersSearch;
 use crate::consts::PlatformRoute;
 use crate::error_template::{AppError, AppResult};
-use crate::models::db::db_model::{IdPuuidUpdatedAt, LolSummonerEncounter, SummonerDb};
+use crate::models::db::db_model::{IdPuuidUpdatedAt, LolSummonerEncounter, SummonerDb, SummonerLiveGameDb};
 use crate::models::db::{parse_date, Id, DATE_FORMAT};
 use crate::models::entities::summoner::{LolSummonerEncounterPage, LolSummonerEncounterPageResult, Summoner};
 use crate::models::update::summoner_matches::TempSummoner;
@@ -11,6 +11,7 @@ use sqlx::{PgPool, QueryBuilder, Row};
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
+use itertools::Itertools;
 
 impl Summoner {
     pub async fn get_encounters(
@@ -301,7 +302,7 @@ impl Summoner {
         account: riven::models::account_v1::Account,
     ) -> AppResult<()> {
         sqlx::query(
-            "UPDATE summoners SET game_name = $1, tag_line = $2 , updated_at = NOW() WHERE id = $5"
+            "UPDATE summoners SET game_name = $1, tag_line = $2 , updated_at = NOW() WHERE id = $3"
         )
             .bind(account.game_name.unwrap_or_default())
             .bind(account.tag_line.unwrap_or_default())
@@ -389,6 +390,23 @@ impl Summoner {
             .into_iter()
             .map(|x| (x.puuid, x.id))
             .collect::<HashMap<String, i32>>())
+    }
+
+    pub async fn find_summoner_live_details_by_puuids(db: &sqlx::PgPool, puuids: &[String]) -> AppResult<HashMap<String, SummonerLiveGameDb>> {
+        Ok(sqlx::query_as::<_, SummonerLiveGameDb>(
+            "SELECT  id,
+                    puuid,
+                    game_name,
+                    tag_line,
+                    platform,
+                    summoner_level  FROM summoners WHERE puuid = ANY($1)"
+        )
+            .bind(puuids)
+            .fetch_all(db)
+            .await?
+            .into_iter()
+            .map(|x| (x.puuid.clone(), x))
+            .collect::<HashMap<String, SummonerLiveGameDb>>())
     }
 
     pub async fn find_summoner_id_by_puuid(db: &sqlx::PgPool, platform_route: PlatformRoute, puuid: &str) -> AppResult<i32> {
