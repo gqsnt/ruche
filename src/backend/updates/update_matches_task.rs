@@ -7,17 +7,17 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use crate::backend::server_fns::get_summoner::SummonerModel;
+use crate::backend::updates::update_matches_task::bulk_lol_match_participants::bulk_insert_lol_match_participants;
+use crate::backend::updates::update_matches_task::bulk_lol_matches::{bulk_trashed_matches, bulk_update_matches};
+use crate::backend::updates::update_matches_task::bulk_summoners::{bulk_insert_summoners, bulk_update_summoners};
 use crate::error_template::AppResult;
 use crate::{consts, DB_CHUNK_SIZE};
 use futures::stream::{FuturesOrdered, FuturesUnordered, StreamExt};
 use leptos::logging::log;
 use riven::consts::{Champion, PlatformRoute};
 use riven::RiotApi;
-use sqlx::FromRow;
 use sqlx::types::chrono::{DateTime, Utc};
-use crate::backend::updates::update_matches_task::bulk_lol_match_participants::bulk_insert_lol_match_participants;
-use crate::backend::updates::update_matches_task::bulk_lol_matches::{bulk_trashed_matches, bulk_update_matches};
-use crate::backend::updates::update_matches_task::bulk_summoners::{bulk_insert_summoners, bulk_update_summoners};
+use sqlx::FromRow;
 
 pub async fn update_matches_task(
     db: sqlx::PgPool,
@@ -368,7 +368,6 @@ pub struct TempParticipant {
 }
 
 
-
 pub async fn get_not_updated_match(db: &sqlx::PgPool, limit: i32) -> Option<Vec<LolMatchNotUpdated>> {
     Some(
         sqlx::query_as::<_, LolMatchNotUpdated>(r#"
@@ -404,7 +403,6 @@ pub async fn fetch_existing_summoners(
         })
         .collect::<HashMap<String, (i32, i32)>>())
 }
-
 
 
 pub async fn resolve_summoner_conflicts(

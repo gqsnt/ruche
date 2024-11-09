@@ -1,14 +1,12 @@
+use crate::backend::updates::update_matches_task::LolMatchNotUpdated;
+use crate::backend::Id;
+use crate::version_to_major_minor;
 use riven::models::match_v5::Match;
 use sqlx::PgPool;
-use unzip_n::unzip_n;
-use crate::backend::Id;
-use crate::backend::updates::update_matches_task::LolMatchNotUpdated;
-use crate::version_to_major_minor;
 
 
-
-pub async fn bulk_trashed_matches(db:&PgPool, matches:Vec<(Match, LolMatchNotUpdated)>) -> Vec<i32>{
-    let match_ids = matches.iter().map(|(match_,db_match)| db_match.id).collect::<Vec<i32>>();
+pub async fn bulk_trashed_matches(db: &PgPool, matches: Vec<(Match, LolMatchNotUpdated)>) -> Vec<i32> {
+    let match_ids = matches.iter().map(|(match_, db_match)| db_match.id).collect::<Vec<i32>>();
     let sql = r"
         UPDATE lol_matches
         SET
@@ -24,7 +22,6 @@ pub async fn bulk_trashed_matches(db:&PgPool, matches:Vec<(Match, LolMatchNotUpd
         .unwrap();
     rows.into_iter().map(|r| r.id).collect()
 }
-
 
 
 pub async fn bulk_update_matches(db: &sqlx::PgPool, matches: Vec<(Match, LolMatchNotUpdated)>) -> Vec<i32> {

@@ -1,13 +1,13 @@
 #[cfg(feature = "ssr")]
-use chrono::Utc;
-use leptos::prelude::{expect_context, ServerFnError};
-use leptos::server;
-#[cfg(feature = "ssr")]
-use crate::{summoner_not_found_url, summoner_url, AppState};
-#[cfg(feature = "ssr")]
 use crate::backend::Id;
 use crate::consts::PlatformRoute;
 use crate::error_template::{AppError, AppResult};
+#[cfg(feature = "ssr")]
+use crate::{summoner_not_found_url, summoner_url, AppState};
+#[cfg(feature = "ssr")]
+use chrono::Utc;
+use leptos::prelude::{expect_context, ServerFnError};
+use leptos::server;
 
 #[server]
 pub async fn search_summoner(

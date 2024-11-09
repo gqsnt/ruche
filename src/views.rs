@@ -1,6 +1,6 @@
 use leptos::Params;
-use serde::{Deserialize, Serialize};
 use leptos_router::params::Params;
+use serde::{Deserialize, Serialize};
 
 pub mod platform_type_page;
 pub mod summoner_page;

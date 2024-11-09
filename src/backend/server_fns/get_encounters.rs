@@ -1,15 +1,15 @@
+#[cfg(feature = "ssr")]
+use crate::backend::parse_date;
+use crate::error_template::AppResult;
+use crate::views::summoner_page::summoner_encounters_page::{SummonerEncounter, SummonerEncounters};
+use crate::views::MatchFiltersSearch;
+#[cfg(feature = "ssr")]
+use crate::AppState;
 use leptos::context::use_context;
 use leptos::prelude::ServerFnError;
 use leptos::server;
 #[cfg(feature = "ssr")]
 use sqlx::{FromRow, PgPool, QueryBuilder};
-#[cfg(feature = "ssr")]
-use crate::AppState;
-#[cfg(feature = "ssr")]
-use crate::backend::parse_date;
-use crate::error_template::AppResult;
-use crate::views::MatchFiltersSearch;
-use crate::views::summoner_page::summoner_encounters_page::{SummonerEncounter, SummonerEncounters};
 
 #[server]
 pub async fn get_encounters(summoner_id: i32, page_number: i32, filters: Option<MatchFiltersSearch>, search_summoner: Option<String>) -> Result<SummonerEncounters, ServerFnError> {
@@ -69,7 +69,7 @@ async fn inner_get_encounters(
 
 
     // conditional join for search_summoner
-    if search_summoner.is_some() && !search_summoner.as_ref().unwrap().is_empty(){
+    if search_summoner.is_some() && !search_summoner.as_ref().unwrap().is_empty() {
         query.push("inner join (select id, game_name from summoners) as s1 on lmp.summoner_id = s1.id");
     }
 
@@ -80,7 +80,7 @@ async fn inner_get_encounters(
         "#);
     query.push_bind(summoner_id);
     if let Some(search_summoner) = search_summoner {
-        if !search_summoner.is_empty(){
+        if !search_summoner.is_empty() {
             query.push(" AND s1.game_name ILIKE ");
             query.push_bind(format!("%{}%", search_summoner));
         }
@@ -117,7 +117,7 @@ async fn inner_get_encounters(
     query.push(" ) AS encounter_data ON ss.id = encounter_data.summoner_id ORDER BY encounter_count DESC");
 
     let results = query.build_query_as::<LolSummonerEncounterModel>().fetch_all(db).await.unwrap();
-    let total_pages = if results.is_empty(){
+    let total_pages = if results.is_empty() {
         0
     } else {
         (results.get(0).unwrap().total_count as f64 / per_page as f64).ceil() as i64
@@ -133,19 +133,19 @@ async fn inner_get_encounters(
                 tag_line: encounter.tag_line,
                 platform: encounter.platform,
             }
-        }).collect::<Vec<_>>()
+        }).collect::<Vec<_>>(),
     })
 }
 
 
 #[cfg(feature = "ssr")]
 #[derive(FromRow)]
-struct LolSummonerEncounterModel{
+struct LolSummonerEncounterModel {
     pub id: i32,
     pub tag_line: String,
     pub game_name: String,
     pub platform: String,
     pub profile_icon_id: i32,
     pub encounter_count: i64,
-    pub total_count : i64,
+    pub total_count: i64,
 }

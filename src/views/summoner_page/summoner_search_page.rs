@@ -1,3 +1,4 @@
+use crate::backend::server_fns::search_summoner::SearchSummoner;
 use crate::consts::PlatformRoute;
 use leptos::form::ActionForm;
 use leptos::prelude::AriaAttributes;
@@ -7,7 +8,6 @@ use leptos::server::ServerAction;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_params_map, use_query_map};
 use strum::IntoEnumIterator;
-use crate::backend::server_fns::search_summoner::SearchSummoner;
 
 #[component]
 pub fn SummonerSearchPage() -> impl IntoView {

@@ -1,3 +1,4 @@
+use crate::backend::server_fns::get_match_details::get_match_details;
 use crate::views::summoner_page::match_details::match_details_build::MatchDetailsBuild;
 use crate::views::summoner_page::match_details::match_details_overview::MatchDetailsOverview;
 use crate::views::summoner_page::match_details::match_details_team::MatchDetailsTeam;
@@ -6,7 +7,6 @@ use leptos::prelude::{signal, ClassAttribute, OnAttribute, Resource, Show, Suspe
 use leptos::prelude::{ElementChild, Transition};
 use leptos::{component, view, IntoView};
 use serde::{Deserialize, Serialize};
-use crate::backend::server_fns::get_match_details::get_match_details;
 
 pub mod match_details_overview;
 pub mod match_details_team;

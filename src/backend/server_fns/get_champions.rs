@@ -1,9 +1,9 @@
 #[cfg(feature = "ssr")]
-use crate::backend::{parse_date};
+use crate::backend::parse_date;
 use crate::error_template::AppResult;
+use crate::round_to_2_decimal_places;
 use crate::views::summoner_page::summoner_champions_page::ChampionStats;
 use crate::views::MatchFiltersSearch;
-use crate::round_to_2_decimal_places;
 #[cfg(feature = "ssr")]
 use crate::AppState;
 #[cfg(feature = "ssr")]

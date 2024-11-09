@@ -1,5 +1,9 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
+use crate::backend::server_fns::get_summoner::get_summoner;
+use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::consts::{PlatformRoute, ProfileIcon};
+use crate::summoner_route_path;
+use crate::views::summoner_page::summoner_nav::SummonerNav;
 use leptos::context::provide_context;
 use leptos::either::Either;
 use leptos::prelude::{expect_context, OnAttribute, Set};
@@ -7,12 +11,8 @@ use leptos::prelude::{signal, ElementChild};
 use leptos::prelude::{ActionForm, ClassAttribute, Get, Read, ServerAction, Suspend, Transition};
 use leptos::server::Resource;
 use leptos::{component, view, IntoView};
-use leptos_router::hooks::{use_params_map};
+use leptos_router::hooks::use_params_map;
 use serde::{Deserialize, Serialize};
-use crate::backend::server_fns::get_summoner::get_summoner;
-use crate::backend::server_fns::update_summoner::UpdateSummoner;
-use crate::summoner_route_path;
-use crate::views::summoner_page::summoner_nav::SummonerNav;
 
 pub mod summoner_search_page;
 pub mod summoner_matches_page;
@@ -111,7 +111,7 @@ pub fn SummonerPage() -> impl IntoView {
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq,Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Summoner {
     pub id: i32,
     pub game_name: String,
@@ -124,8 +124,7 @@ pub struct Summoner {
 }
 
 
-
-impl Summoner{
+impl Summoner {
     pub fn to_route_path(&self) -> String {
         summoner_route_path(self.platform.as_region_str(), &self.game_name, &self.tag_line)
     }

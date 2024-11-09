@@ -1,4 +1,5 @@
-
+use crate::views::platform_type_page::PlatformTypePage;
+use crate::views::summoner_page::SummonerPage;
 use leptos::config::LeptosOptions;
 use leptos::prelude::GlobalAttributes;
 use leptos::prelude::*;
@@ -6,8 +7,6 @@ use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, Title}
 use leptos_router::components::{ParentRoute, Redirect};
 use leptos_router::{components::{Route, Router, Routes}, ParamSegment, StaticSegment};
 use serde::{Deserialize, Serialize};
-use crate::views::platform_type_page::PlatformTypePage;
-use crate::views::summoner_page::SummonerPage;
 
 pub const SITE_URL: &str = "https://next-level.xyz";
 

@@ -1,13 +1,13 @@
-use leptos::{component, view, IntoView};
-use leptos::prelude::{ClassAttribute, OnAttribute, Show};
-use leptos_router::hooks::query_signal_with_options;
-use leptos_router::NavigateOptions;
 use crate::views::components::match_filters::MatchFilters;
 use crate::views::summoner_page::summoner_champions_page::SummonerChampionsPage;
 use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersPage;
 use crate::views::summoner_page::summoner_live_page::SummonerLivePage;
 use crate::views::summoner_page::summoner_matches_page::SummonerMatchesPage;
 use leptos::prelude::ElementChild;
+use leptos::prelude::{ClassAttribute, OnAttribute, Show};
+use leptos::{component, view, IntoView};
+use leptos_router::hooks::query_signal_with_options;
+use leptos_router::NavigateOptions;
 
 
 #[component]

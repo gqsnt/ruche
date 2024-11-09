@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use chrono::{DateTime, Utc};
-use crate::backend::Id;
 use crate::backend::updates::update_matches_task::TempSummoner;
+use crate::backend::Id;
 use crate::error_template::AppResult;
+use chrono::{DateTime, Utc};
+use std::collections::HashMap;
 
 pub async fn bulk_update_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]) -> AppResult<()> {
     let game_names = summoners.iter().map(|x| x.game_name.clone()).collect::<Vec<String>>();

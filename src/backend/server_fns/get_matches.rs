@@ -1,4 +1,12 @@
 #[cfg(feature = "ssr")]
+use crate::backend::{format_duration_since, parse_date};
+use crate::consts::Queue;
+use crate::error_template::AppResult;
+use crate::views::summoner_page::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo, SummonerMatch, SummonerMatchParticipant};
+use crate::views::MatchFiltersSearch;
+#[cfg(feature = "ssr")]
+use crate::AppState;
+#[cfg(feature = "ssr")]
 use bigdecimal::{BigDecimal, ToPrimitive};
 #[cfg(feature = "ssr")]
 use chrono::{Duration, NaiveDateTime};
@@ -8,14 +16,6 @@ use leptos::prelude::ServerFnError;
 use leptos::server;
 #[cfg(feature = "ssr")]
 use sqlx::{FromRow, PgPool, QueryBuilder};
-#[cfg(feature = "ssr")]
-use crate::AppState;
-#[cfg(feature = "ssr")]
-use crate::backend::{format_duration_since, parse_date};
-use crate::consts::Queue;
-use crate::error_template::AppResult;
-use crate::views::MatchFiltersSearch;
-use crate::views::summoner_page::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo, SummonerMatch, SummonerMatchParticipant};
 
 #[server]
 pub async fn get_matches(summoner_id: i32, page_number: i32, filters: Option<MatchFiltersSearch>) -> Result<GetSummonerMatchesResult, ServerFnError> {

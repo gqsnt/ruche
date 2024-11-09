@@ -1,8 +1,8 @@
 use crate::consts::{Champion, Item, Perk, SummonerSpell};
+use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use leptos::prelude::{ClassAttribute, ReadSignal};
 use leptos::prelude::{ElementChild, Show};
 use leptos::{component, view, IntoView};
-use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 
 #[component]
 pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantDetails>>) -> impl IntoView {

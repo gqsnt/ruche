@@ -1,9 +1,19 @@
-use std::collections::HashMap;
-use std::sync::Arc;
+#[cfg(feature = "ssr")]
+use crate::backend::updates::update_matches_task::bulk_summoners::bulk_insert_summoners;
+#[cfg(feature = "ssr")]
+use crate::backend::updates::update_matches_task::TempSummoner;
+use crate::consts::{Map, PlatformRoute, Queue};
+use crate::error_template::AppResult;
+use crate::round_to_2_decimal_places;
+use crate::views::summoner_page::summoner_live_page::{LiveGame, LiveGameParticipant, LiveGameParticipantChampionStats, LiveGameParticipantRankedStats};
+#[cfg(feature = "ssr")]
+use crate::AppState;
 #[cfg(feature = "ssr")]
 use bigdecimal::{BigDecimal, ToPrimitive};
 #[cfg(feature = "ssr")]
 use futures::stream::FuturesUnordered;
+#[cfg(feature = "ssr")]
+use futures::StreamExt;
 use leptos::context::use_context;
 use leptos::prelude::ServerFnError;
 use leptos::server;
@@ -13,47 +23,36 @@ use riven::models::spectator_v5::CurrentGameInfo;
 use riven::RiotApi;
 #[cfg(feature = "ssr")]
 use sqlx::PgPool;
-#[cfg(feature = "ssr")]
-use futures::StreamExt;
-#[cfg(feature = "ssr")]
-use crate::AppState;
-use crate::round_to_2_decimal_places;
-#[cfg(feature = "ssr")]
-use crate::backend::updates::update_matches_task::bulk_summoners::bulk_insert_summoners;
-#[cfg(feature = "ssr")]
-use crate::backend::updates::update_matches_task::TempSummoner;
-use crate::consts::{Map, PlatformRoute, Queue};
-use crate::error_template::AppResult;
-use crate::views::summoner_page::summoner_live_page::{LiveGame, LiveGameParticipant, LiveGameParticipantChampionStats, LiveGameParticipantRankedStats};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 #[server]
 pub async fn get_live_game(puuid: String, platform_type: String) -> Result<Option<LiveGame>, ServerFnError> {
     let state = use_context::<AppState>();
     let state = state.unwrap();
     let live_cache = state.live_game_cache.clone();
-    if let Some(game_data)= live_cache.get_game_data(&puuid){
+    if let Some(game_data) = live_cache.get_game_data(&puuid) {
         Ok(Some(game_data))
     } else {
         let db = state.db.clone();
         let riot_api = state.riot_api.clone();
-        match get_live_game_data(&db, riot_api, puuid, platform_type).await{
+        match get_live_game_data(&db, riot_api, puuid, platform_type).await {
             Ok(live_game) => {
                 live_cache.set_game_data(
                     live_game.game_id.clone(),
                     live_game.participants.iter().map(|x| x.puuid.clone()).collect(),
-                    live_game.clone()
+                    live_game.clone(),
                 );
                 Ok(Some(live_game))
             }
-            Err(e) => {Ok(None)}
+            Err(_) => { Ok(None) }
         }
     }
-
 }
 
 
 #[cfg(feature = "ssr")]
-pub async fn get_live_game_data(db:&PgPool, riot_api:Arc<RiotApi>,puuid:String, platform_type:String) -> Result<LiveGame, ServerFnError>{
+pub async fn get_live_game_data(db: &PgPool, riot_api: Arc<RiotApi>, puuid: String, platform_type: String) -> Result<LiveGame, ServerFnError> {
     let platform_route = PlatformRoute::from_region_str(platform_type.as_str()).unwrap();
     let riven_pr = platform_route.to_riven();
     match riot_api
@@ -79,21 +78,21 @@ pub async fn get_live_game_data(db:&PgPool, riot_api:Arc<RiotApi>,puuid:String, 
             let live_game_stats = get_summoners_live_stats(&db, &summoner_ids).await?;
             let mut participants = vec![];
             let default_hashmap = HashMap::new();
-            for participant in current_game_info.participants{
+            for participant in current_game_info.participants {
                 let participant_puuid = participant.puuid.clone();
-                if participant_puuid.is_none() || participant_puuid.unwrap_or_default().is_empty(){
+                if participant_puuid.is_none() || participant_puuid.unwrap_or_default().is_empty() {
                     continue;
                 }
                 let participant_puuid = participant.puuid.clone().unwrap();
                 let summoner_detail = summoner_details.get(participant_puuid.as_str()).unwrap();
                 let stats = live_game_stats.get(&summoner_detail.id).unwrap_or(&default_hashmap);
 
-                let champion_stats= match stats.get(&(participant.champion_id.0 as i32)){
+                let champion_stats = match stats.get(&(participant.champion_id.0 as i32)) {
                     None => {
                         None
                     }
                     Some(champion_stats) => {
-                        Some(LiveGameParticipantChampionStats{
+                        Some(LiveGameParticipantChampionStats {
                             total_champion_played: champion_stats.total_match as i32,
                             total_champion_wins: champion_stats.total_win as i32,
                             total_champion_losses: champion_stats.total_match as i32 - champion_stats.total_win as i32,
@@ -106,14 +105,14 @@ pub async fn get_live_game_data(db:&PgPool, riot_api:Arc<RiotApi>,puuid:String, 
                 };
 
 
-                let (total_wins, total_ranked)  = stats.iter().fold((0,0), |acc, (k,v)| {
+                let (total_wins, total_ranked) = stats.iter().fold((0, 0), |acc, (k, v)| {
                     (acc.0 + v.total_win, acc.1 + v.total_match)
                 });
 
-                let ranked_stats= if total_ranked == 0 {
+                let ranked_stats = if total_ranked == 0 {
                     None
                 } else {
-                    Some(LiveGameParticipantRankedStats{
+                    Some(LiveGameParticipantRankedStats {
                         total_ranked: total_ranked as i32,
                         total_ranked_wins: total_wins as i32,
                         total_ranked_losses: total_ranked as i32 - total_wins as i32,
@@ -121,7 +120,7 @@ pub async fn get_live_game_data(db:&PgPool, riot_api:Arc<RiotApi>,puuid:String, 
                     })
                 };
 
-                participants.push(LiveGameParticipant{
+                participants.push(LiveGameParticipant {
                     puuid: participant_puuid,
                     champion_id: participant.champion_id.0 as i32,
                     summoner_spell1_id: participant.spell1_id as i32,
@@ -142,14 +141,14 @@ pub async fn get_live_game_data(db:&PgPool, riot_api:Arc<RiotApi>,puuid:String, 
                 game_length: current_game_info.game_length,
                 game_map: Map::try_from(current_game_info.map_id.0).unwrap().get_static_name().to_string(),
                 queue_name: current_game_info.game_queue_config_id.map(|x| Queue::try_from(x.0).unwrap().get_static_name().to_string()).unwrap_or_default(),
-                participants
+                participants,
             })
         }
     }
 }
 
 #[cfg(feature = "ssr")]
-pub async fn find_and_insert_new_summoners(db: &sqlx::PgPool, riot_api: Arc<RiotApi>, puuids: &[String], platform_type: String, game_info:&CurrentGameInfo) -> AppResult<()> {
+pub async fn find_and_insert_new_summoners(db: &sqlx::PgPool, riot_api: Arc<RiotApi>, puuids: &[String], platform_type: String, game_info: &CurrentGameInfo) -> AppResult<()> {
     let platform_route = PlatformRoute::from_region_str(platform_type.as_str()).unwrap();
     let riven_pr = platform_route.to_riven();
     let summoners_accounts_futures = puuids.iter().map(|puuid| {
@@ -165,17 +164,17 @@ pub async fn find_and_insert_new_summoners(db: &sqlx::PgPool, riot_api: Arc<Riot
         .await;
     let new_summoners = summoners_accounts.iter().map(|account| {
         let current_participant = game_info.participants.iter().find(|x| x.puuid.clone().unwrap_or_default() == account.puuid).unwrap();
-        TempSummoner{
+        TempSummoner {
             game_name: account.game_name.clone().unwrap_or_default(),
             tag_line: account.tag_line.clone().unwrap_or_default(),
-            puuid:account.puuid.clone(),
+            puuid: account.puuid.clone(),
             platform: platform_type.clone(),
             summoner_level: 0,
             profile_icon_id: current_participant.profile_icon_id as i32,
-            updated_at:  chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
         }
     }).collect::<Vec<_>>();
-    if !new_summoners.is_empty(){
+    if !new_summoners.is_empty() {
         bulk_insert_summoners(&db, &new_summoners).await?;
     }
     Ok(())
@@ -183,9 +182,9 @@ pub async fn find_and_insert_new_summoners(db: &sqlx::PgPool, riot_api: Arc<Riot
 
 #[cfg(feature = "ssr")]
 pub async fn get_summoners_live_stats(
-    db:&PgPool,
+    db: &PgPool,
     summoner_ids: &[i32],
-)->AppResult<HashMap<i32, HashMap<i32, ParticipantLiveStats>>>{
+) -> AppResult<HashMap<i32, HashMap<i32, ParticipantLiveStats>>> {
     let query_results = sqlx::query_as::<_, ParticipantLiveStats>(r#"
             select
                 summoner_id,
@@ -204,7 +203,7 @@ pub async fn get_summoners_live_stats(
         .fetch_all(db)
         .await
         .unwrap();
-    let mut nested_map= HashMap::new();
+    let mut nested_map = HashMap::new();
 
     for participant in query_results {
         // Insert a new HashMap for this summoner_id if it doesn't already exist
@@ -239,13 +238,13 @@ pub async fn find_summoner_live_by_puuids(db: &sqlx::PgPool, puuids: &[String]) 
 #[cfg(feature = "ssr")]
 #[derive(sqlx::FromRow)]
 struct ParticipantLiveStats {
-    pub summoner_id:i32,
-    pub champion_id:i32,
-    pub total_match:i64,
-    pub total_win:i64,
-    pub avg_kills:BigDecimal,
-    pub avg_deaths:BigDecimal,
-    pub avg_assists:BigDecimal,
+    pub summoner_id: i32,
+    pub champion_id: i32,
+    pub total_match: i64,
+    pub total_win: i64,
+    pub avg_kills: BigDecimal,
+    pub avg_deaths: BigDecimal,
+    pub avg_assists: BigDecimal,
 }
 
 #[cfg(feature = "ssr")]

@@ -203,7 +203,6 @@ pub async fn get_items(version: String) -> Result<Vec<ImageToDownload>, reqwest:
 }
 
 
-
 pub async fn get_current_version() -> Result<String, reqwest::Error> {
     let versions: Vec<String> = serde_json::from_value(StaticUrl::Versions.get().await?).unwrap();
     Ok(versions[0].clone())
@@ -235,14 +234,13 @@ pub async fn update_profile_icons_image(version: String) -> Result<Vec<ImageToDo
 }
 
 
-
 pub enum StaticUrl {
     Versions,
     Champions { version: String },
     Items { version: String },
     SummonerSpells { version: String },
     Perks,
-    Perks2{ version: String },
+    Perks2 { version: String },
     ProfileIcons { version: String },
     Maps,
     Queues,
@@ -256,7 +254,7 @@ impl StaticUrl {
             StaticUrl::Champions { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/champion.json", version),
             StaticUrl::Items { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/item.json", version),
             StaticUrl::SummonerSpells { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/summoner.json", version),
-            StaticUrl::Perks  => "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perks.json".to_string(),
+            StaticUrl::Perks => "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perks.json".to_string(),
             StaticUrl::Perks2 { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/runesReforged.json", version),
             StaticUrl::ProfileIcons { version } => format!("https://ddragon.leagueoflegends.com/cdn/{}/data/en_US/profileicon.json", version).to_string(),
             StaticUrl::Maps => "https://static.developer.riotgames.com/docs/lol/maps.json".to_string(),
@@ -317,9 +315,6 @@ pub struct JsonItem {
 }
 
 
-
-
-
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SummonerIconJson {
     pub id: i32,
@@ -339,7 +334,6 @@ struct JsonPerk2 {
     id: i32,
     icon: String,
 }
-
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,8 +1,8 @@
+use crate::views::summoner_page::summoner_live_page::LiveGame;
 use dashmap::DashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
-use crate::views::summoner_page::summoner_live_page::LiveGame;
 
 type GameId = String;
 type PUUID = String;
@@ -15,7 +15,7 @@ pub struct LiveGameCache {
 }
 
 impl LiveGameCache {
-    pub fn new(expiration_duration:Duration) -> Self {
+    pub fn new(expiration_duration: Duration) -> Self {
         LiveGameCache {
             game_cache: DashMap::new(),
             puuid_to_game: DashMap::new(),
@@ -56,8 +56,6 @@ impl LiveGameCache {
         }
     }
 }
-
-
 
 
 pub async fn cache_cleanup_task(cache: Arc<LiveGameCache>, interval: Duration) {

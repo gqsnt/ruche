@@ -1,14 +1,3 @@
-use std::collections::HashSet;
-use std::sync::Arc;
-use leptos::logging::log;
-use leptos::prelude::{expect_context, ServerFnError};
-use leptos::server;
-#[cfg(feature = "ssr")]
-use riven::consts::RegionalRoute;
-#[cfg(feature = "ssr")]
-use riven::RiotApi;
-#[cfg(feature = "ssr")]
-use crate::{summoner_url, AppState};
 #[cfg(feature = "ssr")]
 use crate::backend::server_fns::search_summoner::insert_or_update_account_and_summoner;
 #[cfg(feature = "ssr")]
@@ -16,6 +5,17 @@ use crate::backend::Id;
 use crate::consts::PlatformRoute;
 use crate::error_template::{AppError, AppResult};
 use crate::views::summoner_page::Summoner;
+#[cfg(feature = "ssr")]
+use crate::{summoner_url, AppState};
+use leptos::logging::log;
+use leptos::prelude::{expect_context, ServerFnError};
+use leptos::server;
+#[cfg(feature = "ssr")]
+use riven::consts::RegionalRoute;
+#[cfg(feature = "ssr")]
+use riven::RiotApi;
+use std::collections::HashSet;
+use std::sync::Arc;
 
 #[server]
 pub async fn update_summoner(puuid: String, platform_type: String) -> Result<(), ServerFnError> {
@@ -33,7 +33,7 @@ pub async fn update_summoner(puuid: String, platform_type: String) -> Result<(),
                     leptos_axum::redirect(summoner_url(platform_route.as_region_str(), &account.game_name.clone().unwrap(), &account.tag_line.clone().unwrap()).as_str());
                     insert_or_update_account_and_summoner(&db, platform_route, account, summoner).await?;
                     tokio::spawn(async move {
-                        match update_summoner_default_matches(db.clone(), riot_api, puuid, platform_route.to_riven(), 1500).await{
+                        match update_summoner_default_matches(db.clone(), riot_api, puuid, platform_route.to_riven(), 1500).await {
                             Ok(_) => {}
                             Err(e) => {
                                 log!("Error updating summoner matches: {}", e);
@@ -52,7 +52,6 @@ pub async fn update_summoner(puuid: String, platform_type: String) -> Result<(),
         }
     }
 }
-
 
 
 #[cfg(feature = "ssr")]

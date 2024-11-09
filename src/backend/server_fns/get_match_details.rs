@@ -1,3 +1,5 @@
+#[cfg(feature = "ssr")]
+use crate::backend::updates::update_match_timeline::update_match_timeline;
 use crate::error_template::{AppError, AppResult};
 use crate::views::summoner_page::match_details::{LolMatchParticipantDetails, LolMatchTimeline};
 #[cfg(feature = "ssr")]
@@ -11,8 +13,6 @@ use leptos::server;
 use sqlx::types::JsonValue;
 #[cfg(feature = "ssr")]
 use sqlx::{FromRow, PgPool};
-#[cfg(feature = "ssr")]
-use crate::backend::updates::update_match_timeline::update_match_timeline;
 
 #[server]
 pub async fn get_match_details(match_id: i32, riot_match_id: String, platform: String) -> Result<Vec<LolMatchParticipantDetails>, ServerFnError> {
