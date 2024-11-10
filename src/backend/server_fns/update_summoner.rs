@@ -22,6 +22,7 @@ pub async fn update_summoner(puuid: String, platform_type: String) -> Result<(),
     let platform_route = PlatformRoute::from_region_str(platform_type.as_str()).unwrap();
     let state = expect_context::<AppState>();
     let riot_api = state.riot_api.clone();
+    let max_matches = state.max_matches;
     match riot_api.account_v1()
         .get_by_puuid(platform_route.to_riven().to_regional(), puuid.as_str())
         .await {
@@ -33,7 +34,7 @@ pub async fn update_summoner(puuid: String, platform_type: String) -> Result<(),
                     leptos_axum::redirect(summoner_url(platform_route.as_region_str(), &account.game_name.clone().unwrap(), &account.tag_line.clone().unwrap()).as_str());
                     insert_or_update_account_and_summoner(&db, platform_route, account, summoner).await?;
                     tokio::spawn(async move {
-                        match update_summoner_default_matches(db.clone(), riot_api, puuid, platform_route.to_riven(), 1500).await {
+                        match update_summoner_default_matches(db.clone(), riot_api, puuid, platform_route.to_riven(), max_matches).await {
                             Ok(_) => {}
                             Err(e) => {
                                 log!("Error updating summoner matches: {}", e);

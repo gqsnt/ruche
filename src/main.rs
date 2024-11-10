@@ -36,12 +36,13 @@ async fn main() {
     let cleanup_interval = std::time::Duration::from_secs(30);
     let live_game_cache = Arc::new(live_game_cache::LiveGameCache::new(expiration_duration));
     let cache_for_cleanup = Arc::clone(&live_game_cache);
-
+    let max_matches = dotenv::var("MAX_MATCHES").unwrap_or_else(|_| "1500".to_string()).parse().unwrap();
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
         riot_api: riot_api.clone(),
         db: db.clone(),
         live_game_cache,
+        max_matches,
     };
 
     // generate sitemap
@@ -50,8 +51,10 @@ async fn main() {
     // thread to update matches data and add summoners related.
     // because of mass update/inserts and limiting usage of account_v1 request.
     // we dont want n concurrent thread updating matches and summoners
+    let update_interval = dotenv::var("MATCH_TASK_UPDATE_INTERVAL").unwrap_or_else(|_| "10".to_string());
+    let update_interval_duration = tokio::time::Duration::from_secs(update_interval.parse().unwrap());
     tokio::spawn(async move {
-        update_matches_task(db, riot_api).await;
+        update_matches_task(db, riot_api,update_interval_duration).await;
     });
 
     // thread to cleanup live game cache data

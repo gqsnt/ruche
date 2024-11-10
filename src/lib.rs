@@ -29,6 +29,7 @@ pub struct AppState {
     pub riot_api: std::sync::Arc<riven::RiotApi>,
     pub db: sqlx::PgPool,
     pub live_game_cache: std::sync::Arc<live_game_cache::LiveGameCache>,
+    pub max_matches: usize,
 }
 
 #[cfg(feature = "hydrate")]

@@ -22,8 +22,9 @@ use sqlx::FromRow;
 pub async fn update_matches_task(
     db: sqlx::PgPool,
     api: Arc<RiotApi>,
+    update_interval_duration: tokio::time::Duration,
 ) {
-    let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(10));
+    let mut interval = tokio::time::interval(update_interval_duration);
     loop {
         interval.tick().await;
         //let start = std::time::Instant::now();
