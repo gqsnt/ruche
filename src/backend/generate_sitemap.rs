@@ -16,7 +16,7 @@ pub async fn generate_site_map(db:&PgPool) ->AppResult<()>{
         url_writer.url(UrlEntry::builder().loc(base_url).build().unwrap()).unwrap();
         for platform in  PlatformRoute::iter(){
             let platform_str = platform.as_region_str();
-            url_writer.url(UrlEntry::builder().loc(format!("{}/{}",base_url,platform_str)).build().unwrap()).unwrap();
+            url_writer.url(UrlEntry::builder().loc(format!("{}/platform/{}",base_url,platform_str)).build().unwrap()).unwrap();
         }
         let total_summoners = get_total_summoners(db).await?;
         let per_page = 1000;

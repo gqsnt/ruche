@@ -69,11 +69,11 @@ pub fn parse_summoner_slug(slug: &str) -> (String, String) {
 }
 
 pub fn summoner_url(platform: &str, game_name: &str, tag_line: &str) -> String {
-    format!("/{}/summoners/{}", platform, summoner_to_slug(game_name, tag_line))
+    format!("/platform/{}/summoners/{}", platform, summoner_to_slug(game_name, tag_line))
 }
 
 pub fn summoner_not_found_url(platform: &str, game_name: &str, tag_line: &str) -> String {
-    format!("/{}?game_name={}&tag_line={}", platform, game_name, tag_line)
+    format!("/platform/{}?game_name={}&tag_line={}", platform, game_name, tag_line)
 }
 
 

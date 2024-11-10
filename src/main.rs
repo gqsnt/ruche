@@ -63,12 +63,7 @@ async fn main() {
     let routes = generate_route_list(App);
     // build our application with a route
     let app = Router::<AppState>::new()
-        .merge(
-            MemoryServe::new(load_assets!("target/site"))
-                .enable_brotli(!cfg!(debug_assertions))
-                .cache_control(CacheControl::Long)
-                .into_router()
-        )
+
         .leptos_routes_with_context(
             &app_state,
             routes,
@@ -93,6 +88,12 @@ async fn main() {
                     .and(NotForContentType::SSE)),
         )
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
+        .merge(
+            MemoryServe::new(load_assets!("target/site/assets"))
+                .enable_brotli(!cfg!(debug_assertions))
+                .cache_control(CacheControl::Long)
+                .into_router()
+        )
         .with_state(app_state);
     log!("listening on http://{}", &addr);
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
