@@ -1,3 +1,5 @@
+use leptos_broken_gg::backend::generate_sitemap::generate_site_map;
+
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
@@ -41,6 +43,9 @@ async fn main() {
         db: db.clone(),
         live_game_cache,
     };
+
+    // generate sitemap
+    generate_site_map(&db.clone()).await.unwrap();
 
     // thread to update matches data and add summoners related.
     // because of mass update/inserts and limiting usage of account_v1 request.

@@ -10,6 +10,8 @@ pub mod updates;
 #[cfg(feature = "ssr")]
 pub mod lol_static;
 
+#[cfg(feature = "ssr")]
+pub mod generate_sitemap;
 
 #[cfg(feature = "ssr")]
 fn format_duration_since(dt: NaiveDateTime) -> String {
