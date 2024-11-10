@@ -1,7 +1,7 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_encounters::get_encounters;
 use crate::consts::ProfileIcon;
-use crate::summoner_route_path;
+use crate::summoner_url;
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
 use crate::views::MatchFiltersSearch;
@@ -129,7 +129,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                         </div>
                                                                         <div class="ml-2">
                                                                             <a
-                                                                                href=summoner_route_path(
+                                                                                href=summoner_url(
                                                                                     encounter.platform.clone().as_str(),
                                                                                     encounter.game_name.clone().as_str(),
                                                                                     encounter.tag_line.clone().as_str(),

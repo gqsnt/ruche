@@ -2,7 +2,6 @@ use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_summoner::get_summoner;
 use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::consts::{PlatformRoute, ProfileIcon};
-use crate::summoner_route_path;
 use crate::views::summoner_page::summoner_nav::SummonerNav;
 use leptos::context::provide_context;
 use leptos::either::Either;
@@ -13,6 +12,7 @@ use leptos::server::Resource;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_params_map;
 use serde::{Deserialize, Serialize};
+use crate::summoner_url;
 
 pub mod summoner_search_page;
 pub mod summoner_matches_page;
@@ -126,32 +126,12 @@ pub struct Summoner {
 
 impl Summoner {
     pub fn to_route_path(&self) -> String {
-        summoner_route_path(self.platform.as_region_str(), &self.game_name, &self.tag_line)
+        summoner_url(self.platform.as_region_str(), &self.game_name, &self.tag_line)
     }
 
-    /// Generates a URL-friendly slug.
-    pub fn slug(&self) -> String {
-        Self::generate_slug(&self.game_name, &self.tag_line)
-    }
 
     /// Generates a slug from the game name and tag line.
-    pub fn generate_slug(game_name: &str, tag_line: &str) -> String {
-        format!(
-            "{}-{}",
-            urlencoding::encode(game_name),
-            urlencoding::encode(tag_line)
-        )
-    }
 
-    pub fn parse_slug(slug: &str) -> Option<(String, String)> {
-        let parts: Vec<&str> = slug.split('-').collect();
-        if parts.len() != 2 {
-            return None;
-        }
-        let game_name = urlencoding::decode(parts[0]).ok()?.into_owned();
-        let tag_line = urlencoding::decode(parts[1]).ok()?.into_owned();
-        Some((game_name, tag_line))
-    }
 
     /// Returns the URL of the summoner's profile icon.
     pub fn profile_icon_url(&self) -> String {

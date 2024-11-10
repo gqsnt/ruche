@@ -18,7 +18,7 @@ pub async fn get_summoner(
     let state = expect_context::<AppState>();
     let db = state.db.clone();
     let platform_route = PlatformRoute::from_region_str(platform_type.as_str()).unwrap();
-    let (game_name, tag_line) = Summoner::parse_slug(summoner_slug.as_str()).unwrap();
+    let (game_name, tag_line) = parse_summoner_slug(summoner_slug.as_str());
     match find_summoner_by_exact_game_name_tag_line(&db, &platform_route, game_name.as_str(), tag_line.as_str()).await {
         Ok(summoner) => {
             Ok(summoner)
