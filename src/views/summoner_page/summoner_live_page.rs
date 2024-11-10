@@ -7,6 +7,7 @@ use leptos::prelude::{expect_context, ReadSignal, Set};
 use leptos::prelude::{signal, ClassAttribute, ElementChild, Get, OnAttribute, Resource, Suspend, Suspense};
 use leptos::{component, view, IntoView};
 use serde::{Deserialize, Serialize};
+use crate::summoner_url;
 
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {
@@ -209,11 +210,10 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                     <div>
                                         <a
                                             target="_blank"
-                                            href=format!(
-                                                "/{}/summoners/{}-{}",
-                                                participant.platform,
-                                                participant.game_name,
-                                                participant.tag_line,
+                                            href=summoner_url(
+                                                participant.platform.clone().as_str(),
+                                                &participant.game_name,
+                                                &participant.tag_line,
                                             )
                                         >
                                             {participant.game_name.clone()}

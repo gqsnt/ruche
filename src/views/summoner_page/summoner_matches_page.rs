@@ -14,6 +14,7 @@ use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 use serde::{Deserialize, Serialize};
+use crate::summoner_url;
 
 #[component]
 pub fn SummonerMatchesPage() -> impl IntoView {
@@ -366,12 +367,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         />
                                         <a
                                             target="_blank"
-                                            href=format!(
-                                                "/{}/summoners/{}-{}",
-                                                participant.summoner_platform,
-                                                participant.summoner_name,
-                                                participant.summoner_tag_line,
-                                            )
+                                            href=summoner_url(participant.summoner_platform.clone().as_str(), participant.summoner_name.clone().as_str(), participant.summoner_tag_line.clone().as_str())
                                             class:text-white=move || {
                                                 participant.summoner_id == match_.summoner_id
                                             }
