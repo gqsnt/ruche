@@ -1,3 +1,3 @@
 User-agent: *
 
-SiteMap: https://next-level.xyz/sitemap.xml
+Sitemap: https://next-level.xyz/sitemap.xml
