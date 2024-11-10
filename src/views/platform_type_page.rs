@@ -1,9 +1,11 @@
+use itertools::Itertools;
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::views::summoner_page::summoner_search_page::SummonerSearchPage;
 use leptos::prelude::ElementChild;
 use leptos::prelude::{expect_context, use_context, ClassAttribute, Get, Set, Show};
 use leptos::{component, view, IntoView};
 use leptos_router::components::Outlet;
+use leptos_router::hooks::use_location;
 
 #[component]
 pub fn PlatformTypePage() -> impl IntoView {
@@ -15,12 +17,8 @@ pub fn PlatformTypePage() -> impl IntoView {
     meta_store.url().set("".to_string());
 
     let req_include_summoner = || {
-        let context = use_context::<leptos_router::components::RouterContext>();
-        if let Some(router_context) = context {
-            router_context.current_url.read_only().get().path().contains("summoners")
-        } else {
-            false
-        }
+        let location = use_location();
+        location.pathname.get().contains("summoners")
     };
 
     view! {
