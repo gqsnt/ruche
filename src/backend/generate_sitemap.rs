@@ -42,7 +42,7 @@ pub async fn generate_site_map(db:&PgPool) ->AppResult<()>{
 
 
 pub async fn get_total_summoners(db: &PgPool) -> AppResult<i64> {
-    let total = sqlx::query_scalar("SELECT COUNT(*) FROM summoners")
+    let total = sqlx::query_scalar("SELECT COUNT(*) FROM summoners WHERE tag_line != '' and game_name != ''")
         .fetch_one(db)
         .await?;
     Ok(total)
@@ -52,7 +52,7 @@ pub async fn get_total_summoners(db: &PgPool) -> AppResult<i64> {
 pub async fn get_platforms_summoners_taglines(db: &PgPool, per_page:i64, page:i64) -> AppResult<Vec<(String, String,String, NaiveDateTime)>> {
     let offset = (page - 1) * per_page;
      sqlx::query_as::<_, (String, String, String, NaiveDateTime)>(
-        "SELECT game_name, tag_line, platform, updated_at FROM summoners ORDER BY game_name, tag_line LIMIT $1 OFFSET $2"
+        "SELECT game_name, tag_line, platform, updated_at FROM summoners WHERE tag_line != '' and game_name != '' ORDER BY platform, game_name  LIMIT $1 OFFSET $2"
     ).bind(per_page)
         .bind(offset)
         .fetch_all(db)
