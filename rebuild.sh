@@ -2,6 +2,7 @@
 git pull;
 cargo leptos build --release;
 systemctl stop leptos_broken_gg.service;
+rm -rf /etc/leptos-broken-gg-release/target; ## RM -RF USED !!! Remove the old release
 mkdir -p /etc/leptos-broken-gg-release/target/release;
 mkdir -p /etc/leptos-broken-gg-release/target/site;
 cp -nf /etc/leptos-broken-gg/target/release/leptos-broken-gg /etc/leptos-broken-gg-release/target/release/leptos-broken-gg;
