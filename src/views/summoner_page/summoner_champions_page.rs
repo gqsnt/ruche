@@ -69,7 +69,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                 </colgroup>
                                                 <thead>
                                                     <tr class="bg-gray-800 text-sm h-[32px]">
-                                                        <th class="border border-gray-700 h-full">
+                                                        <th class="border border-gray-700 height-inherit">
                                                             <TableHeaderItem
                                                                 sort_type=TableSortType::Index
                                                                 current_sort_type=move || current_sort_type()
@@ -80,7 +80,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                 #
                                                             </TableHeaderItem>
                                                         </th>
-                                                        <th class="border border-gray-700 h-full">
+                                                        <th class="border border-gray-700 height-inherit">
                                                             <TableHeaderItem
                                                                 sort_type=TableSortType::Champion
                                                                 current_sort_type=move || current_sort_type()
@@ -91,7 +91,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                 Champion
                                                             </TableHeaderItem>
                                                         </th>
-                                                        <th class="border border-gray-700 h-full">
+                                                        <th class="border border-gray-700 height-inherit">
                                                             <TableHeaderItem
                                                                 sort_type=TableSortType::WinRate
                                                                 current_sort_type=move || current_sort_type()
@@ -102,7 +102,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                 Win Rate
                                                             </TableHeaderItem>
                                                         </th>
-                                                        <th class="border border-gray-700 h-full">
+                                                        <th class="border border-gray-700 height-inherit">
                                                             <TableHeaderItem
                                                                 sort_type=TableSortType::AvgKDA
                                                                 current_sort_type=move || current_sort_type()
@@ -113,7 +113,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                 Avg KDA
                                                             </TableHeaderItem>
                                                         </th>
-                                                        <th class="border border-gray-700 h-full">
+                                                        <th class="border border-gray-700 height-inherit">
                                                             <TableHeaderItem
                                                                 sort_type=TableSortType::AvgGold
                                                                 current_sort_type=move || current_sort_type()
@@ -124,7 +124,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                 Avg Gold
                                                             </TableHeaderItem>
                                                         </th>
-                                                        <th class="border border-gray-700 h-full">
+                                                        <th class="border border-gray-700 height-inherit">
                                                             <TableHeaderItem
                                                                 sort_type=TableSortType::AvgCs
                                                                 current_sort_type=move || current_sort_type()
@@ -135,7 +135,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                 Avg Cs
                                                             </TableHeaderItem>
                                                         </th>
-                                                        <th class="border border-gray-700 h-full">
+                                                        <th class="border border-gray-700 height-inherit">
                                                             <TableHeaderItem
                                                                 sort_type=TableSortType::AvgDamageDealt
                                                                 current_sort_type=move || current_sort_type()
@@ -148,7 +148,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                 Avg Damage Dealt
                                                             </TableHeaderItem>
                                                         </th>
-                                                        <th class="border border-gray-700 h-full">
+                                                        <th class="border border-gray-700 height-inherit">
                                                             <TableHeaderItem
                                                                 sort_type=TableSortType::AvgDamageTaken
                                                                 current_sort_type=move || current_sort_type()
@@ -161,7 +161,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                 Avg Damage Taken
                                                             </TableHeaderItem>
                                                         </th>
-                                                        <th class="border border-gray-700 h-full">
+                                                        <th class="border border-gray-700 height-inherit">
                                                             <TableHeaderItem
                                                                 sort_type=TableSortType::DoubleKills
                                                                 current_sort_type=move || current_sort_type()
@@ -174,7 +174,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                 Double kills
                                                             </TableHeaderItem>
                                                         </th>
-                                                        <th class="border border-gray-700 h-full">
+                                                        <th class="border border-gray-700 height-inherit">
                                                             <TableHeaderItem
                                                                 sort_type=TableSortType::TripleKills
                                                                 current_sort_type=move || current_sort_type()
@@ -187,7 +187,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                 Triple kills
                                                             </TableHeaderItem>
                                                         </th>
-                                                        <th class="border border-gray-700 h-full">
+                                                        <th class="border border-gray-700 height-inherit">
                                                             <TableHeaderItem
                                                                 sort_type=TableSortType::QuadraKills
                                                                 current_sort_type=move || current_sort_type()
@@ -200,7 +200,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                 Quadra kills
                                                             </TableHeaderItem>
                                                         </th>
-                                                        <th class="border border-gray-700 h-full">
+                                                        <th class="border border-gray-700 height-inherit">
                                                             <TableHeaderItem
                                                                 sort_type=TableSortType::PentaKills
                                                                 current_sort_type=move || current_sort_type()
@@ -338,13 +338,13 @@ where
 {
     view! {
         <button
-            class=format!(" h-full w-full border-blue-500 {} ", class.unwrap_or_default())
+            class=format!("height-inherit w-full border-blue-500 {} ", class.unwrap_or_default())
             class=(
-                "border-t-2",
+                "border-t-4",
                 move || current_sort_type() == sort_type && current_sort_normal_flow(),
             )
             class=(
-                "border-b-2",
+                "border-b-4",
                 move || current_sort_type() == sort_type && !current_sort_normal_flow(),
             )
             on:click=move |_| toggle_sort(sort_type)
