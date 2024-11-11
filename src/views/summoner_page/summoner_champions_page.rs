@@ -351,8 +351,8 @@ pub enum TableSortType {
 impl TableSortType {
     pub fn sort(&self, idx_a: &usize, a: &ChampionStats, idx_b: &usize, b: &ChampionStats, reverse: bool) -> std::cmp::Ordering {
         let ordering = match self {
-            TableSortType::Index => idx_a.cmp(idx_b),
-            TableSortType::Champion => a.champion_name.cmp(&b.champion_name),
+            TableSortType::Index => idx_b.cmp(idx_a),
+            TableSortType::Champion => b.champion_name.cmp(&a.champion_name),
             TableSortType::WinRate => a.win_rate.partial_cmp(&b.win_rate).unwrap(),
             TableSortType::AvgKDA => a.avg_kda.partial_cmp(&b.avg_kda).unwrap(),
             TableSortType::AvgGold => a.avg_gold_earned.partial_cmp(&b.avg_gold_earned).unwrap(),
