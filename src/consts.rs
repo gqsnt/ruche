@@ -1188,6 +1188,7 @@ pub enum PlatformRoute {
     /// Korea.
     ///
     /// `20` (riotapi-schema ID/repr)
+    #[strum(to_string = "KR1", serialize = "KR")]
     KR = 20,
 
     /// Latin America, North.

@@ -15,6 +15,9 @@ pub async fn generate_site_map(db:&PgPool) ->AppResult<()>{
         let mut url_writer = writer.start_urlset().unwrap();
         url_writer.url(UrlEntry::builder().loc(base_url).build().unwrap()).unwrap();
         for platform in  PlatformRoute::iter(){
+            if platform == PlatformRoute::RU{
+                continue;
+            }
             let platform_str = platform.as_region_str();
             url_writer.url(UrlEntry::builder().loc(format!("{}/platform/{}",base_url,platform_str)).build().unwrap()).unwrap();
         }
