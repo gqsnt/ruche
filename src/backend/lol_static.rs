@@ -14,6 +14,9 @@ use strum::IntoEnumIterator;
 pub fn get_assets_path() -> std::path::PathBuf {
     Path::new("public").join("assets")
 }
+pub fn get_assets_dest_path() -> std::path::PathBuf {
+    Path::new("target").join("site").join("assets")
+}
 
 #[derive(Debug, Clone)]
 pub struct ImageToDownload {
@@ -52,7 +55,8 @@ pub async fn init_static_data() {
             continue;
         }
         let path = get_assets_path().join("champions").join(format!("{}.avif", champion as i16));
-        if !path.exists() {
+        let path_dest = get_assets_dest_path().join("champions").join(format!("{}.avif", champion as i16));
+        if !path_dest.exists() || !path.exists() {
             let image_url = format!(
                 "https://cdn.communitydragon.org/{}/champion/{}/square",
                 version.clone(),
@@ -72,7 +76,8 @@ pub async fn init_static_data() {
             continue;
         }
         let path = get_assets_path().join("summoner_spells").join(format!("{}.avif", summoner_spell as u16));
-        if !path.exists() {
+        let path_dest = get_assets_dest_path().join("summoner_spells").join(format!("{}.avif", summoner_spell as u16));
+        if !path_dest.exists() || !path.exists() {
             images_to_download.push(ImageToDownload {
                 url: summoner_spell.get_url(version.clone()),
                 path,
@@ -150,7 +155,8 @@ pub async fn get_perks(version: String) -> Result<Vec<ImageToDownload>, reqwest:
     let mut images_to_download = Vec::new();
     for perk in all_perks {
         let path = get_assets_path().join("perks").join(format!("{}.avif", perk.id));
-        if !path.exists() {
+        let path_dest = get_assets_dest_path().join("perks").join(format!("{}.avif", perk.id));
+        if !path_dest.exists() ||  !path.exists() {
             let image_url = format!("https://raw.communitydragon.org/latest/game/assets/perks/{}", perk.icon_path.replace("/lol-game-data/assets/v1/perk-images/", "").to_lowercase());
             images_to_download.push(ImageToDownload {
                 url: image_url,
@@ -164,7 +170,8 @@ pub async fn get_perks(version: String) -> Result<Vec<ImageToDownload>, reqwest:
     let main_perks: Vec<JsonPerk2> = serde_json::from_value(main_perks).unwrap();
     for perk in main_perks {
         let path = get_assets_path().join("perks").join(format!("{}.avif", perk.id));
-        if !path.exists() {
+        let path_dest = get_assets_dest_path().join("perks").join(format!("{}.avif", perk.id));
+        if !path.exists() || !path_dest.exists() {
             let image_url = format!("https://ddragon.leagueoflegends.com/cdn/img/{}", perk.icon);
             images_to_download.push(ImageToDownload {
                 url: image_url,
@@ -185,7 +192,8 @@ pub async fn get_items(version: String) -> Result<Vec<ImageToDownload>, reqwest:
         let item: JsonItem = serde_json::from_value(value.clone()).unwrap();
         let id = key.parse::<i32>().unwrap();
         let path = get_assets_path().join("items").join(format!("{}.avif", id));
-        if !path.exists() {
+        let path_dest = get_assets_dest_path().join("items").join(format!("{}.avif", id));
+        if !path_dest.exists() || !path.exists() {
             let image_url = format!(
                 "https://ddragon.leagueoflegends.com/cdn/{}/img/item/{}",
                 version.clone(),
@@ -216,7 +224,9 @@ pub async fn update_profile_icons_image(version: String) -> Result<Vec<ImageToDo
     for (k, _) in data {
         let id = k.clone().parse::<i64>().unwrap() as i32;
         let path = get_assets_path().join("profile_icons").join(format!("{}.avif", id));
-        if !path.exists() {
+        let path_dest = get_assets_dest_path().join("profile_icons").join(format!("{}.avif", id));
+
+        if !path_dest.exists() || !path.exists() {
             let image_url = format!(
                 "https://ddragon.leagueoflegends.com/cdn/{}/img/profileicon/{}.png",
                 version.clone(),

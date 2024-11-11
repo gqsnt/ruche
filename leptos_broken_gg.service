@@ -1,0 +1,12 @@
+[Unit]
+Description=Leptos broken.gg
+After=multi-user.target
+
+[Service]
+Type=simple
+WorkingDirectory=/etc/leptos-broken-gg-release
+ExecStart=/etc/leptos-broken-gg-release/target/release/leptos-broken-gg
+
+
+[Install]
+WantedBy=multi-user.target
