@@ -56,7 +56,7 @@ pub async fn init_static_data() {
         }
         let path = get_assets_path().join("champions").join(format!("{}.avif", champion as i16));
         let path_dest = get_assets_dest_path().join("champions").join(format!("{}.avif", champion as i16));
-        if !path_dest.exists() || !path.exists() {
+        if !path_dest.exists() && !path.exists() {
             let image_url = format!(
                 "https://cdn.communitydragon.org/{}/champion/{}/square",
                 version.clone(),
@@ -77,7 +77,7 @@ pub async fn init_static_data() {
         }
         let path = get_assets_path().join("summoner_spells").join(format!("{}.avif", summoner_spell as u16));
         let path_dest = get_assets_dest_path().join("summoner_spells").join(format!("{}.avif", summoner_spell as u16));
-        if !path_dest.exists() || !path.exists() {
+        if !path_dest.exists() &&  !path.exists() {
             images_to_download.push(ImageToDownload {
                 url: summoner_spell.get_url(version.clone()),
                 path,
@@ -156,7 +156,7 @@ pub async fn get_perks(version: String) -> Result<Vec<ImageToDownload>, reqwest:
     for perk in all_perks {
         let path = get_assets_path().join("perks").join(format!("{}.avif", perk.id));
         let path_dest = get_assets_dest_path().join("perks").join(format!("{}.avif", perk.id));
-        if !path_dest.exists() ||  !path.exists() {
+        if !path_dest.exists() &&  !path.exists() {
             let image_url = format!("https://raw.communitydragon.org/latest/game/assets/perks/{}", perk.icon_path.replace("/lol-game-data/assets/v1/perk-images/", "").to_lowercase());
             images_to_download.push(ImageToDownload {
                 url: image_url,
@@ -171,7 +171,7 @@ pub async fn get_perks(version: String) -> Result<Vec<ImageToDownload>, reqwest:
     for perk in main_perks {
         let path = get_assets_path().join("perks").join(format!("{}.avif", perk.id));
         let path_dest = get_assets_dest_path().join("perks").join(format!("{}.avif", perk.id));
-        if !path.exists() || !path_dest.exists() {
+        if !path.exists() && !path_dest.exists() {
             let image_url = format!("https://ddragon.leagueoflegends.com/cdn/img/{}", perk.icon);
             images_to_download.push(ImageToDownload {
                 url: image_url,
@@ -193,7 +193,7 @@ pub async fn get_items(version: String) -> Result<Vec<ImageToDownload>, reqwest:
         let id = key.parse::<i32>().unwrap();
         let path = get_assets_path().join("items").join(format!("{}.avif", id));
         let path_dest = get_assets_dest_path().join("items").join(format!("{}.avif", id));
-        if !path_dest.exists() || !path.exists() {
+        if !path_dest.exists() && !path.exists() {
             let image_url = format!(
                 "https://ddragon.leagueoflegends.com/cdn/{}/img/item/{}",
                 version.clone(),
@@ -226,7 +226,7 @@ pub async fn update_profile_icons_image(version: String) -> Result<Vec<ImageToDo
         let path = get_assets_path().join("profile_icons").join(format!("{}.avif", id));
         let path_dest = get_assets_dest_path().join("profile_icons").join(format!("{}.avif", id));
 
-        if !path_dest.exists() || !path.exists() {
+        if !path_dest.exists() && !path.exists() {
             let image_url = format!(
                 "https://ddragon.leagueoflegends.com/cdn/{}/img/profileicon/{}.png",
                 version.clone(),
