@@ -1,13 +1,13 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_live_game::get_live_game;
 use crate::consts::{Champion, Perk, SummonerSpell};
+use crate::summoner_url;
 use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
 use leptos::prelude::{expect_context, ReadSignal, Set};
 use leptos::prelude::{signal, ClassAttribute, ElementChild, Get, OnAttribute, Resource, Suspend, Suspense};
 use leptos::{component, view, IntoView};
 use serde::{Deserialize, Serialize};
-use crate::summoner_url;
 
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {

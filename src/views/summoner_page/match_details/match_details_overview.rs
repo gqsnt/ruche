@@ -1,9 +1,9 @@
 use crate::consts::{Champion, Item, Perk, SummonerSpell};
+use crate::summoner_url;
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use leptos::prelude::{ClassAttribute, ReadSignal};
 use leptos::prelude::{ElementChild, Show};
 use leptos::{component, view, IntoView};
-use crate::summoner_url;
 
 #[component]
 pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantDetails>>) -> impl IntoView {
@@ -165,7 +165,11 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                                     <div>
                                         <a
                                             target="_blank"
-                                            href=summoner_url(participant.summoner_platform.clone().as_str(), participant.summoner_name.clone().as_str(), participant.summoner_tag_line.clone().as_str())
+                                            href=summoner_url(
+                                                participant.summoner_platform.clone().as_str(),
+                                                participant.summoner_name.clone().as_str(),
+                                                participant.summoner_tag_line.clone().as_str(),
+                                            )
                                         >
                                             {participant.summoner_name.clone()}
                                         </a>

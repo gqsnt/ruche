@@ -13,6 +13,7 @@ use leptos::prelude::ServerFnError;
 use leptos::server;
 #[cfg(feature = "ssr")]
 use sqlx::{FromRow, PgPool, QueryBuilder};
+use crate::consts::Champion;
 
 #[server]
 pub async fn get_champions(summoner_id: i32, filters: Option<MatchFiltersSearch>) -> Result<Vec<ChampionStats>, ServerFnError> {
@@ -76,6 +77,9 @@ async fn inner_get_champions(
         let win_rate = round_to_2_decimal_places((r.total_wins as f64 / r.total_matches as f64) * 100.0);
         ChampionStats {
             champion_id: r.champion_id,
+            champion_name:Champion::try_from(r.champion_id as i16)
+                .unwrap()
+                .to_string(),
             total_matches: r.total_matches,
             total_wins: r.total_wins,
             total_lose,

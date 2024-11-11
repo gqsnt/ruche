@@ -115,34 +115,39 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                             key=|encounter| encounter.id
                                                             let:encounter
                                                         >
-                                                            <tr>
-                                                                <td class="text-left">
-                                                                    <div class="flex items-center py-0.5">
-                                                                        <div>
-                                                                            <img
-                                                                                alt="Profile Icon"
-                                                                                src=ProfileIcon::get_static_url(encounter.profile_icon_id)
-                                                                                class="w-8 h-8 rounded"
-                                                                                height="32"
-                                                                                width="32"
-                                                                            />
-                                                                        </div>
-                                                                        <div class="ml-2">
-                                                                            <a
-                                                                                href=summoner_url(
-                                                                                    encounter.platform.clone().as_str(),
-                                                                                    encounter.game_name.clone().as_str(),
-                                                                                    encounter.tag_line.clone().as_str(),
-                                                                                )
-                                                                                class="text-blue-300 hover:underline"
-                                                                            >
-                                                                                {encounter.game_name.clone()}
-                                                                            </a>
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
-                                                                <td>{encounter.count}</td>
-                                                            </tr>
+                                                            {
+                                                                let encounter: SummonerEncounter = encounter;
+                                                                view! {
+                                                                    <tr>
+                                                                        <td class="text-left">
+                                                                            <div class="flex items-center py-0.5">
+                                                                                <div>
+                                                                                    <img
+                                                                                        alt="Profile Icon"
+                                                                                        src=ProfileIcon::get_static_url(encounter.profile_icon_id)
+                                                                                        class="w-8 h-8 rounded"
+                                                                                        height="32"
+                                                                                        width="32"
+                                                                                    />
+                                                                                </div>
+                                                                                <div class="ml-2">
+                                                                                    <a
+                                                                                        href=summoner_url(
+                                                                                            encounter.platform.clone().as_str(),
+                                                                                            encounter.game_name.clone().as_str(),
+                                                                                            encounter.tag_line.clone().as_str(),
+                                                                                        )
+                                                                                        class="text-blue-300 hover:underline"
+                                                                                    >
+                                                                                        {encounter.game_name.clone()}
+                                                                                    </a>
+                                                                                </div>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td>{encounter.count}</td>
+                                                                    </tr>
+                                                                }
+                                                            }
                                                         </For>
                                                     </tbody>
                                                 </table>

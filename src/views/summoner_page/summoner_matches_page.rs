@@ -1,6 +1,7 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_matches::get_matches;
 use crate::consts::{Champion, Item, Perk, SummonerSpell};
+use crate::summoner_url;
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
@@ -14,7 +15,6 @@ use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 use serde::{Deserialize, Serialize};
-use crate::summoner_url;
 
 #[component]
 pub fn SummonerMatchesPage() -> impl IntoView {
@@ -367,7 +367,11 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         />
                                         <a
                                             target="_blank"
-                                            href=summoner_url(participant.summoner_platform.clone().as_str(), participant.summoner_name.clone().as_str(), participant.summoner_tag_line.clone().as_str())
+                                            href=summoner_url(
+                                                participant.summoner_platform.clone().as_str(),
+                                                participant.summoner_name.clone().as_str(),
+                                                participant.summoner_tag_line.clone().as_str(),
+                                            )
                                             class:text-white=move || {
                                                 participant.summoner_id == match_.summoner_id
                                             }
