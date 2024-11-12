@@ -9,7 +9,7 @@ pub async fn bulk_update_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
     let puuids = summoners.iter().map(|x| x.puuid.clone()).collect::<Vec<String>>();
     let platforms = summoners.iter().map(|x| x.platform.to_string()).collect::<Vec<String>>();
     let summoner_levels = summoners.iter().map(|x| x.summoner_level).collect::<Vec<i64>>();
-    let profile_icon_ids = summoners.iter().map(|x| x.profile_icon_id).collect::<Vec<i32>>();
+    let profile_icon_ids = summoners.iter().map(|x| x.profile_icon_id as i32).collect::<Vec<i32>>();
     let updated_ats = summoners.iter().map(|x| x.updated_at).collect::<Vec<DateTime<Utc>>>();
 
     let sql = r"
@@ -54,7 +54,7 @@ pub async fn bulk_insert_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
     let puuids = summoners.iter().map(|x| x.puuid.clone()).collect::<Vec<String>>();
     let platforms = summoners.iter().map(|x| x.platform.to_string()).collect::<Vec<String>>();
     let summoner_levels = summoners.iter().map(|x| x.summoner_level).collect::<Vec<i64>>();
-    let profile_icon_ids = summoners.iter().map(|x| x.profile_icon_id).collect::<Vec<i32>>();
+    let profile_icon_ids = summoners.iter().map(|x| x.profile_icon_id as i32).collect::<Vec<i32>>();
     let updated_ats = summoners.iter().map(|x| x.updated_at).collect::<Vec<DateTime<Utc>>>();
     let sql = r"
         INSERT INTO

@@ -1,7 +1,6 @@
 use crate::views::summoner_page::summoner_matches_page::GetSummonerMatchesResult;
 use crate::views::MatchFiltersSearch;
-use leptos::context::use_context;
-use leptos::prelude::{expect_context, ServerFnError};
+use leptos::prelude::*;
 use leptos::server;
 
 #[server]
@@ -15,7 +14,6 @@ pub async fn get_matches(summoner_id: i32, page_number: i32, filters: Option<Mat
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use crate::consts::Queue;
     use crate::views::summoner_page::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo, SummonerMatch, SummonerMatchParticipant};
     use crate::views::MatchFiltersSearch;
     use bigdecimal::{BigDecimal, ToPrimitive};
@@ -23,6 +21,7 @@ pub mod ssr {
     use itertools::Itertools;
 
     use crate::backend::ssr::{format_duration_since, parse_date, AppResult};
+    use crate::consts::queue::Queue;
     use sqlx::{FromRow, PgPool, QueryBuilder};
 
     pub async fn inner_get_matches(
@@ -177,10 +176,8 @@ pub mod ssr {
                 platform: row.platform.unwrap_or_default(),
                 match_ended_since,
                 match_duration: match_duration_str,
-                queue: Queue::try_from(row.lol_match_queue_id.unwrap_or_default() as u16)
-                    .expect("get matches: queue id not found")
-                    .to_string(),
-                champion_id: row.champion_id,
+                queue: row.lol_match_queue_id.map(|q| Queue::from(q as u16).to_str()).unwrap_or_default().to_string(),
+                champion_id: row.champion_id as u16,
                 champ_level: row.champ_level,
                 won: row.won,
                 kda,
@@ -188,17 +185,17 @@ pub mod ssr {
                 deaths: row.deaths,
                 assists: row.assists,
                 kill_participation,
-                summoner_spell1_id: row.summoner_spell1_id.unwrap_or_default(),
-                summoner_spell2_id: row.summoner_spell2_id.unwrap_or_default(),
-                perk_primary_selection_id: row.perk_primary_selection_id.unwrap_or_default(),
-                perk_sub_style_id: row.perk_sub_style_id.unwrap_or_default(),
-                item0_id: row.item0_id.unwrap_or_default(),
-                item1_id: row.item1_id.unwrap_or_default(),
-                item2_id: row.item2_id.unwrap_or_default(),
-                item3_id: row.item3_id.unwrap_or_default(),
-                item4_id: row.item4_id.unwrap_or_default(),
-                item5_id: row.item5_id.unwrap_or_default(),
-                item6_id: row.item6_id.unwrap_or_default(),
+                summoner_spell1_id: row.summoner_spell1_id.unwrap_or_default() as u16,
+                summoner_spell2_id: row.summoner_spell2_id.unwrap_or_default() as u16,
+                perk_primary_selection_id: row.perk_primary_selection_id.unwrap_or_default() as u16,
+                perk_sub_style_id: row.perk_sub_style_id.unwrap_or_default() as u16,
+                item0_id: row.item0_id.unwrap_or_default() as u16,
+                item1_id: row.item1_id.unwrap_or_default() as u16,
+                item2_id: row.item2_id.unwrap_or_default() as u16,
+                item3_id: row.item3_id.unwrap_or_default() as u16,
+                item4_id: row.item4_id.unwrap_or_default() as u16,
+                item5_id: row.item5_id.unwrap_or_default() as u16,
+                item6_id: row.item6_id.unwrap_or_default() as u16,
                 participants: vec![],
             }
         }).collect::<Vec<_>>();
@@ -230,7 +227,7 @@ pub mod ssr {
                     lol_match_id: row.lol_match_id,
                     summoner_id: row.summoner_id,
                     summoner_name: row.summoner_name,
-                    champion_id: row.champion_id,
+                    champion_id: row.champion_id as u16,
                     summoner_tag_line: row.summoner_tag_line,
                     summoner_platform: row.summoner_platform,
                 })

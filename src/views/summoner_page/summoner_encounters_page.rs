@@ -1,17 +1,17 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_encounters::get_encounters;
-use crate::consts::ProfileIcon;
+use crate::consts::profile_icon::ProfileIcon;
+use crate::consts::HasStaticAsset;
 use crate::utils::summoner_url;
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
 use crate::views::MatchFiltersSearch;
 use leptos::either::Either;
-use leptos::prelude::{event_target_value, expect_context, OnAttribute, ReadSignal, Set, Suspend, Suspense};
-use leptos::prelude::{signal, ClassAttribute, Effect, ElementChild, For, Get, Resource, RwSignal, Show};
+use leptos::prelude::*;
+use leptos::server_fn::serde::{Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
-use serde::{Deserialize, Serialize};
 
 #[component]
 pub fn SummonerEncountersPage() -> impl IntoView {
@@ -70,7 +70,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                 />
                 <button
                     class="my-button"
-                    on:click=move |e| {
+                    on:click=move |_| {
                         set_search_summoner(Some(search_summoner_signal.get()));
                     }
                 >
@@ -78,7 +78,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                 </button>
                 <button
                     class="my-button bg-red-700 hover:bg-red-800 text-gray-200"
-                    on:click=move |e| {
+                    on:click=move |_| {
                         set_search_summoner(None);
                         set_search_summoner_signal(String::new());
                     }
@@ -124,7 +124,9 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                                 <div>
                                                                                     <img
                                                                                         alt="Profile Icon"
-                                                                                        src=ProfileIcon::get_static_url(encounter.profile_icon_id)
+                                                                                        src=ProfileIcon::get_static_asset_url(
+                                                                                            encounter.profile_icon_id,
+                                                                                        )
                                                                                         class="w-8 h-8 rounded"
                                                                                         height="32"
                                                                                         width="32"
@@ -154,7 +156,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                             </div>
 
                                             <Show when=move || (total_pages > 1)>
-                                                <Pagination max_page=(move || total_pages as usize)() />
+                                                <Pagination max_page=total_pages as usize />
                                             </Show>
                                         },
                                     ),
@@ -191,5 +193,5 @@ pub struct SummonerEncounter {
     pub game_name: String,
     pub tag_line: String,
     pub platform: String,
-    pub profile_icon_id: i32,
+    pub profile_icon_id: u16,
 }

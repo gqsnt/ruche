@@ -1,14 +1,14 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_champions::get_champions;
-use crate::consts::Champion;
+use crate::consts::champion::Champion;
+use crate::consts::HasStaticAsset;
 use crate::views::summoner_page::Summoner;
 use crate::views::MatchFiltersSearch;
 use itertools::Itertools;
 use leptos::either::Either;
-use leptos::prelude::{expect_context, signal, Children, ClassAttribute, ElementChild, For, Get, OnAttribute, ReadSignal, Resource, RwSignal, Set, Suspend, Suspense};
+use leptos::prelude::*;
+use leptos::server_fn::serde::{Deserialize, Serialize};
 use leptos::{component, view, IntoView};
-use serde::{Deserialize, Serialize};
-
 
 #[component]
 pub fn SummonerChampionsPage() -> impl IntoView {
@@ -227,7 +227,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                     sort_type.sort(idx_a, a, idx_b, b, normal_flow)
                                                                 })
                                                         }
-                                                        key=|(id, champion)| champion.champion_id
+                                                        key=|(_, champion)| champion.champion_id
                                                         let:champion_with_index
                                                     >
                                                         {
@@ -241,12 +241,10 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                         <div class="flex items-center">
                                                                             <div class="py-1">
                                                                                 <img
-                                                                                    src=Champion::get_static_url(champion.champion_id)
+                                                                                    src=Champion::get_static_asset_url(champion.champion_id)
                                                                                     alt=format!(
                                                                                         "Champion {}",
-                                                                                        Champion::try_from(champion.champion_id as i16)
-                                                                                            .expect("Invalid champion id")
-                                                                                            .to_string(),
+                                                                                        Champion::from(champion.champion_id).to_str(),
                                                                                     )
                                                                                     class="w-[32px] h-[32px] rounded-full"
                                                                                     width="32"
@@ -334,7 +332,7 @@ pub fn TableHeaderItem<S, R, T>(
 where
     S: Fn() -> TableSortType + Send + Copy + Sync + 'static,
     R: Fn() -> bool + Send + Sync + Copy + 'static,
-    T: Fn(TableSortType) -> () + Send + Sync + 'static,
+    T: Fn(TableSortType) ->()+ Send + Sync + 'static,
 {
     view! {
         <button
@@ -400,7 +398,7 @@ impl TableSortType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChampionStats {
-    pub champion_id: i32,
+    pub champion_id: u16,
     pub champion_name: String,
     pub total_matches: i64,
     pub total_wins: i64,

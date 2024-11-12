@@ -1,8 +1,6 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::views::summoner_page::summoner_search_page::SummonerSearchPage;
-use itertools::Itertools;
-use leptos::prelude::ElementChild;
-use leptos::prelude::{expect_context, ClassAttribute, Get, Set, Show};
+use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::components::Outlet;
 use leptos_router::hooks::use_location;

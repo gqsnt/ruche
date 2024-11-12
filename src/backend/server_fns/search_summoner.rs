@@ -1,6 +1,8 @@
-use crate::consts::PlatformRoute;
+#[cfg(feature = "ssr")]
+use crate::consts::platform_route::PlatformRoute;
+#[cfg(feature = "ssr")]
 use crate::utils::{summoner_not_found_url, summoner_url};
-use leptos::prelude::{expect_context, ServerFnError};
+use leptos::prelude::*;
 use leptos::server;
 
 #[server]
@@ -12,14 +14,14 @@ pub async fn search_summoner(
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
-    let platform_route = PlatformRoute::from_region_str(platform_type.as_str()).unwrap();
+    let platform_route = PlatformRoute::from(platform_type.as_str());
     let riven_pr = platform_route.to_riven();
     match ssr::find_summoner_by_game_name_tag_line(&db, &platform_route, game_name.as_str(), tag_line.as_str()).await {
         Ok(summoner) => {
-            leptos_axum::redirect(summoner_url(platform_route.as_region_str(), &summoner.game_name, &summoner.tag_line).as_str());
+            leptos_axum::redirect(summoner_url(platform_route.to_string().as_str(), &summoner.game_name, &summoner.tag_line).as_str());
         }
         Err(_) => {
-            let not_found_url = summoner_not_found_url(platform_route.as_region_str(), game_name.as_str(), tag_line.as_str());
+            let not_found_url = summoner_not_found_url(platform_route.to_string().as_str(), game_name.as_str(), tag_line.as_str());
             let riot_api = state.riot_api.clone();
             match riot_api
                 .account_v1()
@@ -33,7 +35,7 @@ pub async fn search_summoner(
                         .await
                     {
                         Ok(summoner_data) => {
-                            let redirect_url = summoner_url(platform_route.as_region_str(), &account.game_name.clone().expect("search summoner: account game name not found"), &account.tag_line.clone().expect("search summoner: account tag line not found"));
+                            let redirect_url = summoner_url(platform_route.to_string().as_str(), &account.game_name.clone().expect("search summoner: account game name not found"), &account.tag_line.clone().expect("search summoner: account tag line not found"));
                             ssr::insert_or_update_account_and_summoner(
                                 &db,
                                 platform_route.into(),
@@ -62,9 +64,8 @@ pub async fn search_summoner(
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::ssr::{AppError, AppResult, Id};
-    use crate::consts::PlatformRoute;
+    use crate::consts::platform_route::PlatformRoute;
     use chrono::Utc;
-
 
     pub async fn find_summoner_by_game_name_tag_line(
         db: &sqlx::PgPool,
@@ -77,7 +78,7 @@ pub mod ssr {
         )
             .bind(game_name)
             .bind(tag_line)
-            .bind(platform_route.as_region_str())
+            .bind(platform_route.to_string())
 
             .fetch_one(db)
             .await.map_err(|e| e.into())
@@ -113,7 +114,7 @@ pub mod ssr {
     async fn find_summoner_id_by_puuid(db: &sqlx::PgPool, platform_route: PlatformRoute, puuid: &str) -> AppResult<i32> {
         sqlx::query_as::<_, Id>("SELECT id FROM summoners WHERE puuid = $1 and platform = $2")
             .bind(puuid)
-            .bind(platform_route.as_region_str())
+            .bind(platform_route.to_string())
             .fetch_one(db)
             .await
             .map(|x| x.id)
@@ -136,7 +137,7 @@ pub mod ssr {
             .bind(summoner.puuid.clone())
             .bind(summoner.summoner_level as i32)
             .bind(summoner.profile_icon_id)
-            .bind(platform_route.as_region_str())
+            .bind(platform_route.to_string())
             .bind(Utc::now().naive_utc())
             .bind(id)
             .execute(db)
@@ -157,7 +158,7 @@ pub mod ssr {
             .bind(account.game_name.clone())
             .bind(account.tag_line.clone())
             .bind(summoner.puuid.clone())
-            .bind(platform_route.as_region_str())
+            .bind(platform_route.to_string())
             .bind(summoner.summoner_level as i32)
             .bind(summoner.profile_icon_id)
             .bind(Utc::now().naive_utc())

@@ -5,7 +5,7 @@ use riven::models::match_v5::Match;
 use sqlx::PgPool;
 
 pub async fn bulk_trashed_matches(db: &PgPool, matches: Vec<(Match, LolMatchNotUpdated)>) -> AppResult<()> {
-    let match_ids = matches.iter().map(|(match_, db_match)| db_match.id).collect::<Vec<i32>>();
+    let match_ids = matches.iter().map(|(_, db_match)| db_match.id).collect::<Vec<i32>>();
     let sql = r"
         UPDATE lol_matches
         SET
@@ -22,7 +22,7 @@ pub async fn bulk_trashed_matches(db: &PgPool, matches: Vec<(Match, LolMatchNotU
 }
 
 
-pub async fn bulk_update_matches(db: &sqlx::PgPool, matches: Vec<(Match, LolMatchNotUpdated)>) -> AppResult<()> {
+pub async fn bulk_update_matches(db: &PgPool, matches: Vec<(Match, LolMatchNotUpdated)>) -> AppResult<()> {
     let match_ids = matches.iter().map(|(x, _)| x.metadata.match_id.clone()).collect::<Vec<String>>();
     let match_creations = matches.iter().map(|(x, _)| chrono::DateTime::from_timestamp_millis(x.info.game_start_timestamp).unwrap_or_default()).collect::<Vec<_>>();
     let match_ends = matches.iter().map(|(x, _)| chrono::DateTime::from_timestamp_millis(x.info.game_end_timestamp.unwrap_or_default()).unwrap_or_default()).collect::<Vec<_>>();

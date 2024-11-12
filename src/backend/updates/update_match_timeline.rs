@@ -1,14 +1,12 @@
 use crate::backend::ssr::{AppError, AppResult};
-use crate::consts::PlatformRoute;
-use crate::views::summoner_page::match_details::ItemEvent;
+use crate::consts::platform_route::PlatformRoute;
+use crate::views::summoner_page::match_details::{ItemEvent, ItemEventType};
 use chrono::NaiveDateTime;
+use leptos::server_fn::serde::{Deserialize, Serialize};
 use riven::RiotApi;
-use serde::{Deserialize, Serialize};
-use serde_json::json;
 use sqlx::postgres::PgPool;
 use sqlx::QueryBuilder;
 use std::collections::HashMap;
-use std::str::FromStr;
 use std::sync::Arc;
 
 pub async fn update_match_timeline(
@@ -19,7 +17,7 @@ pub async fn update_match_timeline(
     platform: String,
 ) -> AppResult<()> {
     // Fetch the match timeline
-    let platform_route = PlatformRoute::from_region_str(platform.as_str()).unwrap();
+    let platform_route = PlatformRoute::from(platform.as_str());
     let riven_pr = platform_route.to_riven();
     let timeline = api
         .match_v5()
@@ -27,8 +25,7 @@ pub async fn update_match_timeline(
         .await?
         .ok_or_else(|| AppError::CustomError("Timeline not found".into()))?;
 
-    let db_platform = PlatformRoute::from_region_str(riven_pr.as_region_str())
-        .ok_or_else(|| AppError::CustomError(riven_pr.as_region_str().to_string()))?;
+    let db_platform = PlatformRoute::from(riven_pr.as_region_str());
 
     let puuids_summoner_ids = find_summoner_ids_by_puuids(
         db,
@@ -75,14 +72,14 @@ pub async fn update_match_timeline(
                 EventType::ItemPurchased => {
                     let item_id = event.item_id.ok_or_else(|| {
                         AppError::CustomError("Missing item_id in ITEM_PURCHASED event".into())
-                    })?;
-                    push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent::Purchased { item_id });
+                    })? as u16;
+                    push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent { item_id, event_type: ItemEventType::Purchased });
                 }
                 EventType::ItemSold => {
                     let item_id = event.item_id.ok_or_else(|| {
                         AppError::CustomError("Missing item_id in ITEM_SOLD event".into())
-                    })?;
-                    push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent::Sold { item_id });
+                    })? as u16;
+                    push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent { item_id, event_type: ItemEventType::Sold });
                 }
                 EventType::ItemUndo => {
                     let participant_id = event.participant_id.ok_or_else(|| {
@@ -92,6 +89,7 @@ pub async fn update_match_timeline(
                         AppError::CustomError(format!("Participant with ID {} not found", participant_id))
                     })?;
                     if let Some(before_id) = event.before_id {
+                        let before_id = before_id as u16;
                         if before_id != 0 {
                             if let Some(pos) = participant
                                 .items_event_timeline
@@ -99,9 +97,9 @@ pub async fn update_match_timeline(
                                 .rev()
                                 .position(|item| {
                                     matches!(
-                                        item.1,
-                                        ItemEvent::Purchased { item_id}
-                                        if item_id == before_id
+                                        item.1.event_type,
+                                        ItemEventType::Purchased
+                                        if item.1.item_id == before_id
                                     )
                                 })
                             {
@@ -110,6 +108,7 @@ pub async fn update_match_timeline(
                         }
                     }
                     if let Some(after_id) = event.after_id {
+                        let after_id = after_id as u16;
                         if after_id != 0 {
                             if let Some(pos) = participant
                                 .items_event_timeline
@@ -117,9 +116,9 @@ pub async fn update_match_timeline(
                                 .rev()
                                 .position(|item| {
                                     matches!(
-                                        item.1,
-                                        ItemEvent::Sold { item_id }
-                                        if item_id == after_id
+                                        item.1.event_type,
+                                        ItemEventType::Sold
+                                        if item.1.item_id == after_id
                                     )
                                 })
                             {
@@ -190,7 +189,7 @@ pub async fn find_summoner_ids_by_puuids(db: &PgPool, platform_route: PlatformRo
         "SELECT id, puuid FROM summoners WHERE puuid = ANY($1) and platform = $2"
     )
         .bind(puuids)
-        .bind(platform_route.as_region_str())
+        .bind(platform_route.to_string())
 
         .fetch_all(db)
         .await?
@@ -221,7 +220,7 @@ async fn bulk_insert_match_timeline(db: &PgPool, timelines: Vec<TempLolMatchTime
         items_event_timeline.sort_by_key(|x| x.0);
         b.push_bind(rec.lol_match_id);
         b.push_bind(rec.summoner_id);
-        b.push_bind(json!(items_event_timeline));
+        b.push_bind(serde_json::to_string(&items_event_timeline).unwrap());
         b.push_bind(rec.skills_timeline.clone());
     });
     qb.build().fetch_all(db).await?;
@@ -233,6 +232,7 @@ async fn bulk_insert_match_timeline(db: &PgPool, timelines: Vec<TempLolMatchTime
 struct SummonerTimeLineInfo {
     pub id: i32,
     pub puuid: String,
+    #[allow(dead_code)]
     #[sqlx(default)]
     pub updated_at: Option<NaiveDateTime>,
 }

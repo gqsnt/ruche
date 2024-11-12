@@ -1,15 +1,14 @@
-use crate::consts::PlatformRoute;
-use crate::views::summoner_page::Summoner;
-
+#[cfg(feature = "ssr")]
 use leptos::logging::log;
-use leptos::prelude::{expect_context, ServerFnError};
+use leptos::prelude::*;
 use leptos::server;
 
 #[cfg(feature = "ssr")]
 use crate::backend::server_fns::search_summoner::ssr::insert_or_update_account_and_summoner;
+#[cfg(feature = "ssr")]
+use crate::consts::platform_route::PlatformRoute;
+#[cfg(feature = "ssr")]
 use crate::utils::summoner_url;
-use std::collections::HashSet;
-use std::sync::Arc;
 
 #[server]
 pub async fn update_summoner(puuid: String, platform_type: String) -> Result<(), ServerFnError> {
@@ -17,7 +16,7 @@ pub async fn update_summoner(puuid: String, platform_type: String) -> Result<(),
     let riot_api = state.riot_api.clone();
     let max_matches = state.max_matches;
 
-    let platform_route = PlatformRoute::from_region_str(platform_type.as_str()).unwrap();
+    let platform_route = PlatformRoute::from(platform_type.as_str());
     match riot_api.account_v1()
         .get_by_puuid(platform_route.to_riven().to_regional(), puuid.as_str())
         .await {
@@ -26,7 +25,7 @@ pub async fn update_summoner(puuid: String, platform_type: String) -> Result<(),
                 Ok(summoner) => {
                     let db = state.db.clone();
                     let puuid = summoner.puuid.clone();
-                    leptos_axum::redirect(summoner_url(platform_route.as_region_str(), &account.game_name.clone().expect("update summoner: game name not found"), &account.tag_line.clone().expect("update summoner: tag line not found")).as_str());
+                    leptos_axum::redirect(summoner_url(platform_route.to_string().as_str(), &account.game_name.clone().expect("update summoner: game name not found"), &account.tag_line.clone().expect("update summoner: tag line not found")).as_str());
                     insert_or_update_account_and_summoner(&db, platform_route, account, summoner).await?;
                     tokio::spawn(async move {
                         match ssr::update_summoner_default_matches(db.clone(), riot_api, puuid, platform_route.to_riven(), max_matches).await {

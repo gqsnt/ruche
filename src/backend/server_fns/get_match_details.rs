@@ -1,7 +1,7 @@
 #[cfg(feature = "ssr")]
 use crate::backend::updates::update_match_timeline::update_match_timeline;
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
-use leptos::prelude::{expect_context, use_context, ServerFnError};
+use leptos::prelude::*;
 use leptos::server;
 
 #[server]
@@ -30,7 +30,6 @@ pub mod ssr {
     use crate::backend::ssr::AppResult;
     use crate::views::summoner_page::match_details::{LolMatchParticipantDetails, LolMatchTimeline};
     use bigdecimal::{BigDecimal, ToPrimitive};
-    use sqlx::types::JsonValue;
     use sqlx::{FromRow, PgPool};
 
     pub async fn get_match_participants_details(db: &PgPool, match_id: i32) -> AppResult<Vec<LolMatchParticipantDetails>> {
@@ -93,9 +92,9 @@ pub mod ssr {
                 summoner_name: lmp.summoner_name,
                 summoner_tag_line: lmp.summoner_tag_line,
                 summoner_platform: lmp.summoner_platform,
-                summoner_icon_id: lmp.summoner_icon_id,
+                summoner_icon_id: lmp.summoner_icon_id as u16,
                 summoner_level: lmp.summoner_level,
-                champion_id: lmp.champion_id,
+                champion_id: lmp.champion_id as u16,
                 team_id: lmp.team_id,
                 won: lmp.won,
                 kills: lmp.kills,
@@ -109,26 +108,26 @@ pub mod ssr {
                 gold_earned: lmp.gold_earned,
                 wards_placed: lmp.wards_placed,
                 cs: lmp.cs,
-                summoner_spell1_id: lmp.summoner_spell1_id.unwrap_or_default(),
-                summoner_spell2_id: lmp.summoner_spell2_id.unwrap_or_default(),
-                perk_defense_id: lmp.perk_defense_id.unwrap_or_default(),
-                perk_flex_id: lmp.perk_flex_id.unwrap_or_default(),
-                perk_offense_id: lmp.perk_offense_id.unwrap_or_default(),
-                perk_primary_style_id: lmp.perk_primary_style_id.unwrap_or_default(),
-                perk_sub_style_id: lmp.perk_sub_style_id.unwrap_or_default(),
-                perk_primary_selection_id: lmp.perk_primary_selection_id.unwrap_or_default(),
-                perk_primary_selection1_id: lmp.perk_primary_selection1_id.unwrap_or_default(),
-                perk_primary_selection2_id: lmp.perk_primary_selection2_id.unwrap_or_default(),
-                perk_primary_selection3_id: lmp.perk_primary_selection3_id.unwrap_or_default(),
-                perk_sub_selection1_id: lmp.perk_sub_selection1_id.unwrap_or_default(),
-                perk_sub_selection2_id: lmp.perk_sub_selection2_id.unwrap_or_default(),
-                item0_id: lmp.item0_id.unwrap_or_default(),
-                item1_id: lmp.item1_id.unwrap_or_default(),
-                item2_id: lmp.item2_id.unwrap_or_default(),
-                item3_id: lmp.item3_id.unwrap_or_default(),
-                item4_id: lmp.item4_id.unwrap_or_default(),
-                item5_id: lmp.item5_id.unwrap_or_default(),
-                item6_id: lmp.item6_id.unwrap_or_default(),
+                summoner_spell1_id: lmp.summoner_spell1_id.unwrap_or_default() as u16,
+                summoner_spell2_id: lmp.summoner_spell2_id.unwrap_or_default() as u16,
+                perk_defense_id: lmp.perk_defense_id.unwrap_or_default() as u16,
+                perk_flex_id: lmp.perk_flex_id.unwrap_or_default() as u16,
+                perk_offense_id: lmp.perk_offense_id.unwrap_or_default() as u16,
+                perk_primary_style_id: lmp.perk_primary_style_id.unwrap_or_default() as u16,
+                perk_sub_style_id: lmp.perk_sub_style_id.unwrap_or_default() as u16,
+                perk_primary_selection_id: lmp.perk_primary_selection_id.unwrap_or_default() as u16,
+                perk_primary_selection1_id: lmp.perk_primary_selection1_id.unwrap_or_default() as u16,
+                perk_primary_selection2_id: lmp.perk_primary_selection2_id.unwrap_or_default() as u16,
+                perk_primary_selection3_id: lmp.perk_primary_selection3_id.unwrap_or_default() as u16,
+                perk_sub_selection1_id: lmp.perk_sub_selection1_id.unwrap_or_default() as u16,
+                perk_sub_selection2_id: lmp.perk_sub_selection2_id.unwrap_or_default() as u16,
+                item0_id: lmp.item0_id.unwrap_or_default() as u16,
+                item1_id: lmp.item1_id.unwrap_or_default() as u16,
+                item2_id: lmp.item2_id.unwrap_or_default() as u16,
+                item3_id: lmp.item3_id.unwrap_or_default() as u16,
+                item4_id: lmp.item4_id.unwrap_or_default() as u16,
+                item5_id: lmp.item5_id.unwrap_or_default() as u16,
+                item6_id: lmp.item6_id.unwrap_or_default() as u16,
                 items_event_timeline: Vec::new(),
                 skills_timeline: vec![],
             }
@@ -147,7 +146,7 @@ pub mod ssr {
                 id: x.id,
                 lol_match_id: x.lol_match_id,
                 summoner_id: x.summoner_id,
-                items_event_timeline: serde_json::from_value(x.items_event_timeline).unwrap_or_default(),
+                items_event_timeline: serde_json::from_str(x.items_event_timeline.as_str()).unwrap(),
                 skills_timeline: x.skills_timeline,
             }).collect();
         Ok(timelines)
@@ -205,7 +204,7 @@ pub mod ssr {
         pub id: i32,
         pub lol_match_id: i32,
         pub summoner_id: i32,
-        pub items_event_timeline: JsonValue,
+        pub items_event_timeline: String,
         pub skills_timeline: Vec<i32>,
     }
 }

@@ -1,6 +1,6 @@
 use crate::views::summoner_page::summoner_encounters_page::SummonerEncounters;
 use crate::views::MatchFiltersSearch;
-use leptos::prelude::{expect_context, use_context, ServerFnError};
+use leptos::prelude::*;
 use leptos::server;
 
 #[server]
@@ -127,7 +127,7 @@ pub mod ssr {
             encounters: results.into_iter().map(|encounter| {
                 SummonerEncounter {
                     id: encounter.id,
-                    profile_icon_id: encounter.profile_icon_id,
+                    profile_icon_id: encounter.profile_icon_id as u16,
                     count: encounter.encounter_count,
                     game_name: encounter.game_name,
                     tag_line: encounter.tag_line,
@@ -144,7 +144,7 @@ pub mod ssr {
         pub tag_line: String,
         pub game_name: String,
         pub platform: String,
-        pub profile_icon_id: i32,
+        pub profile_icon_id: i16,
         pub encounter_count: i64,
         pub total_count: i64,
     }

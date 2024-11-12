@@ -3,15 +3,15 @@ use crate::views::summoner_page::SummonerPage;
 use leptos::config::LeptosOptions;
 use leptos::prelude::GlobalAttributes;
 use leptos::prelude::*;
+use leptos::server_fn::serde::{Deserialize, Serialize};
 use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, Title};
 use leptos_router::components::{ParentRoute, Redirect};
 use leptos_router::{components::{Route, Router, Routes}, ParamSegment, StaticSegment};
-use serde::{Deserialize, Serialize};
 
 pub const SITE_URL: &str = "https://next-level.xyz";
 
 
-#[derive(Debug, Clone, Serialize, Deserialize, reactive_stores_macro::Store, Default)]
+#[derive(Debug, Clone, reactive_stores_macro::Store, Serialize, Deserialize, Default)]
 pub struct MetaStore {
     pub title: String,
     pub description: String,
@@ -45,7 +45,6 @@ pub fn App() -> impl IntoView {
 
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
-
     view! {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
@@ -69,7 +68,7 @@ pub fn App() -> impl IntoView {
                 <Routes transition=true fallback=|| "Page not found.".into_view()>
                     <Route path=StaticSegment("") view=move || view! { <Redirect path="platform/EUW" /> } />
                     <ParentRoute path=(StaticSegment("platform"), ParamSegment("platform_type")) view=PlatformTypePage>
-                        <Route path=StaticSegment("") view=move || view! {} />
+                        <Route path=StaticSegment("") view=move || view! { }/>
                         <Route
                             path=(StaticSegment("summoners"), ParamSegment("summoner_slug"))
                             view=SummonerPage

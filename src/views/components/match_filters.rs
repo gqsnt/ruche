@@ -1,13 +1,12 @@
-use crate::consts::{Champion, QUEUE_OPTIONS};
+use crate::consts::champion::CHAMPION_OPTIONS;
+use crate::consts::queue::QUEUE_OPTIONS;
 use crate::views::MatchFiltersSearch;
 use leptos::context::provide_context;
-use leptos::prelude::{event_target_value, Children, ClassAttribute, OnAttribute, PropAttribute, RwSignal, Set};
-use leptos::prelude::{ElementChild, GlobalAttributes};
+use leptos::prelude::*;
 use leptos::reactive::wrappers::write::SignalSetter;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
-use strum::IntoEnumIterator;
 
 #[component]
 pub fn MatchFilters(children: Children) -> impl IntoView {
@@ -74,12 +73,9 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
         filters_signal.set(filters);
     };
 
-    let champion_options = Champion::iter().filter(|c| c != &Champion::UNKNOWN).map(|champion| view! {
-        <option
-            value=champion as i32
-            selected=move || (champion as i32).to_string() == champion_id().unwrap_or_default()
-        >
-            {format!("{}", champion)}
+    let champion_options = CHAMPION_OPTIONS.iter().map(|(id, champion)| view! {
+        <option value=*id selected=move || *id.to_string() == champion_id().unwrap_or_default()>
+            {champion.to_string()}
         </option>
     }).collect::<Vec<_>>();
     let queue_options = QUEUE_OPTIONS.iter().map(|(inner_queue_id, queue_name)| view! {

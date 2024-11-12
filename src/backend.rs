@@ -51,12 +51,12 @@ pub mod ssr {
         }
     }
 
-    pub fn parse_date(date: Option<String>) -> Option<chrono::NaiveDateTime> {
+    pub fn parse_date(date: Option<String>) -> Option<NaiveDateTime> {
         date.as_deref().and_then(|s| {
             if s.is_empty() {
                 None
             } else {
-                chrono::NaiveDateTime::parse_from_str(&format!("{} 00:00:00", s), "%Y-%m-%d %H:%M:%S").ok()
+                NaiveDateTime::parse_from_str(&format!("{} 00:00:00", s), "%Y-%m-%d %H:%M:%S").ok()
             }
         })
     }
@@ -101,6 +101,7 @@ pub mod ssr {
         }
     }
 
+
     impl From<serde_json::Error> for AppError {
         fn from(e: serde_json::Error) -> Self {
             AppError::SerdeJsonError(Arc::new(e))
@@ -114,7 +115,7 @@ pub mod ssr {
     }
 
     impl From<ParseIntError> for AppError {
-        fn from(e: std::num::ParseIntError) -> Self {
+        fn from(e: ParseIntError) -> Self {
             AppError::ParseIntError(e)
         }
     }

@@ -1,5 +1,5 @@
 use crate::views::summoner_page::summoner_live_page::LiveGame;
-use leptos::prelude::{expect_context, use_context, ServerFnError};
+use leptos::prelude::*;
 use leptos::server;
 
 #[server]
@@ -32,7 +32,10 @@ pub mod ssr {
     use crate::backend::ssr::{AppError, AppResult};
     use crate::backend::updates::update_matches_task::bulk_summoners::bulk_insert_summoners;
     use crate::backend::updates::update_matches_task::TempSummoner;
-    use crate::consts::{Map, PlatformRoute, Queue};
+
+    use crate::consts::map::Map;
+    use crate::consts::platform_route::PlatformRoute;
+    use crate::consts::queue::Queue;
     use crate::utils::round_to_2_decimal_places;
     use crate::views::summoner_page::summoner_live_page::{LiveGame, LiveGameParticipant, LiveGameParticipantChampionStats, LiveGameParticipantRankedStats};
     use bigdecimal::{BigDecimal, ToPrimitive};
@@ -44,9 +47,8 @@ pub mod ssr {
     use std::collections::HashMap;
     use std::sync::Arc;
 
-
     pub async fn get_live_game_data(db: &PgPool, riot_api: Arc<RiotApi>, puuid: String, platform_type: String) -> AppResult<LiveGame> {
-        let platform_route = PlatformRoute::from_region_str(platform_type.as_str()).unwrap();
+        let platform_route = PlatformRoute::from(platform_type.as_str());
         let riven_pr = platform_route.to_riven();
         let current_game_info = riot_api
             .spectator_v5()
@@ -67,7 +69,7 @@ pub mod ssr {
                 summoner_details.extend(new_summoners);
 
 
-                let summoner_ids = summoner_details.iter().map(|(k, x)| x.id).collect::<Vec<i32>>();
+                let summoner_ids = summoner_details.iter().map(|(_, x)| x.id).collect::<Vec<i32>>();
 
                 let live_game_stats = get_summoners_live_stats(&db, &summoner_ids).await?;
                 let mut participants = vec![];
@@ -99,7 +101,7 @@ pub mod ssr {
                     };
 
 
-                    let (total_wins, total_ranked) = stats.iter().fold((0, 0), |acc, (k, v)| {
+                    let (total_wins, total_ranked) = stats.iter().fold((0, 0), |acc, (_, v)| {
                         (acc.0 + v.total_win, acc.1 + v.total_match)
                     });
 
@@ -118,15 +120,15 @@ pub mod ssr {
                         Some(perks) => {
                             let primary = perks.perk_ids.first().cloned().unwrap_or_default();
                             let sub_style = perks.perk_sub_style;
-                            (primary as i32, sub_style as i32)
+                            (primary as u16, sub_style as u16)
                         }
                     };
 
                     participants.push(LiveGameParticipant {
                         puuid: participant_puuid,
-                        champion_id: participant.champion_id.0 as i32,
-                        summoner_spell1_id: participant.spell1_id as i32,
-                        summoner_spell2_id: participant.spell2_id as i32,
+                        champion_id: participant.champion_id.0 as u16,
+                        summoner_spell1_id: participant.spell1_id as u16,
+                        summoner_spell2_id: participant.spell2_id as u16,
                         perk_primary_selection_id,
                         perk_sub_style_id,
                         game_name: summoner_detail.game_name.clone(),
@@ -141,8 +143,8 @@ pub mod ssr {
                 Ok(LiveGame {
                     game_id: format!("{}_{}", current_game_info.game_id, current_game_info.platform_id),
                     game_length: current_game_info.game_length,
-                    game_map: Map::try_from(current_game_info.map_id.0).expect("live game: map id not found").get_static_name().to_string(),
-                    queue_name: current_game_info.game_queue_config_id.map(|x| Queue::try_from(x.0).expect("live game: queue id not found").get_static_name().to_string()).unwrap_or_default(),
+                    game_map: Map::from(current_game_info.map_id.0).get_static_name().to_string(),
+                    queue_name: current_game_info.game_queue_config_id.map(|x| Queue::try_from(x.0).expect("live game: queue id not found").to_str().to_string()).unwrap_or_default(),
                     participants,
                 })
             }
@@ -150,8 +152,8 @@ pub mod ssr {
     }
 
 
-    pub async fn find_and_insert_new_summoners(db: &sqlx::PgPool, riot_api: Arc<RiotApi>, puuids: &[String], platform_type: String, game_info: &CurrentGameInfo) -> AppResult<()> {
-        let platform_route = PlatformRoute::from_region_str(platform_type.as_str()).unwrap();
+    async fn find_and_insert_new_summoners(db: &PgPool, riot_api: Arc<RiotApi>, puuids: &[String], platform_type: String, game_info: &CurrentGameInfo) -> AppResult<()> {
+        let platform_route = PlatformRoute::from(platform_type.as_str());
         let riven_pr = platform_route.to_riven();
         let summoners_accounts_futures = puuids.iter().map(|puuid| {
             let api = riot_api.clone();
@@ -172,7 +174,7 @@ pub mod ssr {
                 puuid: account.puuid.clone(),
                 platform: platform_type.clone(),
                 summoner_level: 0,
-                profile_icon_id: current_participant.profile_icon_id as i32,
+                profile_icon_id: current_participant.profile_icon_id as u16,
                 updated_at: chrono::Utc::now(),
             }
         }).collect::<Vec<_>>();
@@ -183,7 +185,7 @@ pub mod ssr {
     }
 
 
-    pub async fn get_summoners_live_stats(
+    async fn get_summoners_live_stats(
         db: &PgPool,
         summoner_ids: &[i32],
     ) -> AppResult<HashMap<i32, HashMap<i32, ParticipantLiveStats>>> {
@@ -217,7 +219,7 @@ pub mod ssr {
         Ok(nested_map)
     }
 
-    pub async fn find_summoner_live_by_puuids(db: &sqlx::PgPool, puuids: &[String]) -> AppResult<HashMap<String, SummonerLiveModel>> {
+    async fn find_summoner_live_by_puuids(db: &PgPool, puuids: &[String]) -> AppResult<HashMap<String, SummonerLiveModel>> {
         Ok(sqlx::query_as::<_, SummonerLiveModel>(
             "SELECT  id,
                     puuid,

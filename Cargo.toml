@@ -17,7 +17,6 @@ bigdecimal = { version = "0.4", optional = true }
 riven = { git = "https://github.com/gqsnt/RivenBrokengg", optional = true }
 reqwest = { version = "0.12", optional = true, features = ["json", "rustls-tls"] }
 dotenv = { version = "0.15", optional = true }
-unzip-n = { version = "0.1", optional = true }
 futures = { version = "0.3", optional = true }
 chrono = { version = "0.4", optional = true }
 tracing = { version = "0.1", optional = true }
@@ -27,10 +26,13 @@ rgb = { version = "0.8.50", optional = true }
 memory-serve = { version = "0.6.0", optional = true }
 dashmap = {version = "6.1.0", optional = true}
 sitemap = {version = "0.4.1", optional = true}
+thiserror = {version = "2", optional = true}
+serde_json = {version = "1.0.132", optional = true}
 
 
 
 leptos = { version = "0.7.0-rc1" ,features = ["nightly"] }
+
 leptos_axum = { version = "0.7.0-rc1", optional = true}
 leptos_meta ={ version = "0.7.0-rc1"}
 leptos_router = { version = "0.7.0-rc1" ,features = ["nightly"] }
@@ -41,15 +43,9 @@ reactive_stores_macro = { version = "0.1.0-rc1"}
 wasm-bindgen = "=0.2.95"
 itertools = "0.13.0"
 urlencoding = "2"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0.132" , features = ["raw_value"]}
-thiserror = "1"
+serde = {version = "1.0", features = ["derive"]}
 http = "1"
 console_error_panic_hook = "0.1"
-strum_macros = "0.26"
-strum = "0.26"
-num_enum_derive = "0.7.3"
-num_enum = "0.7.3"
 
 
 [features]
@@ -68,7 +64,6 @@ ssr = [
     "dep:riven",
     "dep:reqwest",
     "dep:dotenv",
-    "dep:unzip-n",
     "dep:futures",
     "dep:chrono",
     "dep:bigdecimal",
@@ -78,13 +73,16 @@ ssr = [
     "dep:memory-serve",
     "dep:dashmap",
     "dep:sitemap",
+    "dep:thiserror",
+    "dep:serde_json",
 ]
 
 [profile.release]
 panic = "abort"
 
-[profile.dev]
-rustflags = ["-Awarnings"]
+
+#[profile.dev]
+#rustflags = ["-Awarnings"]
 
 
 # Defines a size-optimized profile for the WASM bundle in release mode

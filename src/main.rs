@@ -4,7 +4,7 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     use leptos_broken_gg::ssr::{init_database, init_riot_api};
     use leptos_broken_gg::backend::generate_sitemap::generate_site_map;
     use leptos_broken_gg::ssr::AppState;
-    use tower_http::compression::{CompressionLayer, DefaultPredicate};
+    use tower_http::compression::CompressionLayer;
     use axum::Router;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
@@ -12,11 +12,9 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     use std::sync::Arc;
     use dotenv::dotenv;
     use leptos::logging::log;
-    use leptos::html::tr;
     use tower_http::compression::Predicate;
     use tower_http::compression::predicate::{NotForContentType, SizeAbove};
     use memory_serve::{load_assets, CacheControl, MemoryServe};
-    use tower::ServiceBuilder;
     use leptos_broken_gg::backend::live_game_cache;
     use tokio::task;
     use leptos_broken_gg::backend;
@@ -25,7 +23,7 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
 
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
-    let mut leptos_options = conf.leptos_options;
+    let leptos_options = conf.leptos_options;
     let _ = leptos_options.site_root.clone();
     backend::lol_static::init_static_data().await?;
     let db = init_database().await;

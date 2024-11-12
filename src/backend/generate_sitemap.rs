@@ -1,25 +1,20 @@
 use crate::backend::ssr::AppResult;
-use crate::consts::PlatformRoute;
+use crate::consts::platform_route::PLATFORM_ROUTE_OPTIONS;
 use crate::utils::summoner_url;
 use chrono::NaiveDateTime;
 use sitemap::structs::UrlEntry;
 use sitemap::writer::SiteMapWriter;
 use sqlx::PgPool;
-use strum::IntoEnumIterator;
 
 pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
     let mut output = Vec::<u8>::new();
     {
-        let mut writer = SiteMapWriter::new(&mut output);
+        let writer = SiteMapWriter::new(&mut output);
         let base_url = "https://next-level.xyz";
         let mut url_writer = writer.start_urlset()?;
         url_writer.url(UrlEntry::builder().loc(base_url).build()?)?;
-        for platform in PlatformRoute::iter() {
-            if platform == PlatformRoute::RU {
-                continue;
-            }
-            let platform_str = platform.as_region_str();
-            url_writer.url(UrlEntry::builder().loc(format!("{}/platform/{}", base_url, platform_str)).build()?)?;
+        for platform in PLATFORM_ROUTE_OPTIONS {
+            url_writer.url(UrlEntry::builder().loc(format!("{}/platform/{}", base_url, platform.to_string())).build()?)?;
         }
         let total_summoners = get_total_summoners(db).await?;
         let per_page = 1000;

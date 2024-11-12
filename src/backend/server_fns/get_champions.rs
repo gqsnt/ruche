@@ -1,7 +1,6 @@
 use crate::views::summoner_page::summoner_champions_page::ChampionStats;
 use crate::views::MatchFiltersSearch;
-use leptos::context::use_context;
-use leptos::prelude::{expect_context, ServerFnError};
+use leptos::prelude::*;
 use leptos::server;
 
 #[server]
@@ -15,13 +14,12 @@ pub async fn get_champions(summoner_id: i32, filters: Option<MatchFiltersSearch>
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::ssr::{parse_date, AppResult};
-    use crate::consts::Champion;
+    use crate::consts::champion::Champion;
     use crate::utils::round_to_2_decimal_places;
     use crate::views::summoner_page::summoner_champions_page::ChampionStats;
     use crate::views::MatchFiltersSearch;
     use bigdecimal::{BigDecimal, ToPrimitive};
     use sqlx::{FromRow, PgPool, QueryBuilder};
-
 
     pub async fn inner_get_champions(
         db: &PgPool,
@@ -75,10 +73,9 @@ pub mod ssr {
             let total_lose = r.total_matches - r.total_wins;
             let win_rate = round_to_2_decimal_places((r.total_wins as f64 / r.total_matches as f64) * 100.0);
             ChampionStats {
-                champion_id: r.champion_id,
-                champion_name: Champion::try_from(r.champion_id as i16)
-                    .expect("inner_get_champions: champion id not found")
-                    .to_string(),
+                champion_id: r.champion_id as u16,
+                champion_name: Champion::from(r.champion_id as u16)
+                    .to_str().to_string(),
                 total_matches: r.total_matches,
                 total_wins: r.total_wins,
                 total_lose,

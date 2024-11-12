@@ -1,13 +1,15 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_live_game::get_live_game;
-use crate::consts::{Champion, Perk, SummonerSpell};
+use crate::consts::champion::Champion;
+use crate::consts::perk::Perk;
+use crate::consts::summoner_spell::SummonerSpell;
+use crate::consts::HasStaticAsset;
 use crate::utils::summoner_url;
 use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
-use leptos::prelude::{expect_context, ReadSignal, Set};
-use leptos::prelude::{signal, ClassAttribute, ElementChild, Get, OnAttribute, Resource, Suspend, Suspense};
+use leptos::prelude::*;
+use leptos::server_fn::serde::{Deserialize, Serialize};
 use leptos::{component, view, IntoView};
-use serde::{Deserialize, Serialize};
 
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {
@@ -17,8 +19,8 @@ pub fn SummonerLivePage() -> impl IntoView {
     let (refresh_signal, set_refresh_signal) = signal(0);
 
     let live_game_resource = Resource::new(
-        move || (refresh_signal.get(), summoner().puuid.clone(), summoner().platform.as_region_str().to_string()),
-        |(refresh_version, puuid, platform_type)| async move {
+        move || (refresh_signal.get(), summoner().puuid.clone(), summoner().platform.to_string()),
+        |(_, puuid, platform_type)| async move {
             get_live_game(puuid, platform_type).await
         },
     );
@@ -31,7 +33,7 @@ pub fn SummonerLivePage() -> impl IntoView {
             <div class="flex justify-start mb-2">
                 <button
                     class="my-button"
-                    on:click=move |e| { set_refresh_signal(refresh_signal() + 1) }
+                    on:click=move |_| { set_refresh_signal(refresh_signal() + 1) }
                 >
                     Refresh
                 </button>
@@ -138,10 +140,8 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                         <img
                                             width="32"
                                             height="32"
-                                            alt=Champion::try_from(participant.champion_id as i16)
-                                                .expect("Invalid champion")
-                                                .to_string()
-                                            src=Champion::get_static_url(participant.champion_id)
+                                            alt=Champion::from(participant.champion_id).to_str()
+                                            src=Champion::get_static_asset_url(participant.champion_id)
                                             class="w-8 h-8 rounded-full block"
                                         />
                                     </div>
@@ -151,12 +151,9 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                         <img
                                             width="16"
                                             height="16"
-                                            alt=SummonerSpell::try_from(
-                                                    participant.summoner_spell1_id as u16,
-                                                )
-                                                .expect("Invalid summoner spell")
+                                            alt=SummonerSpell::from(participant.summoner_spell1_id)
                                                 .to_string()
-                                            src=SummonerSpell::get_static_url(
+                                            src=SummonerSpell::get_static_asset_url(
                                                 participant.summoner_spell1_id,
                                             )
                                             class="w-4 h-4 rounded"
@@ -166,12 +163,9 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                         <img
                                             width="16"
                                             height="16"
-                                            alt=SummonerSpell::try_from(
-                                                    participant.summoner_spell2_id as u16,
-                                                )
-                                                .expect("Invalid summoner spell")
+                                            alt=SummonerSpell::from(participant.summoner_spell2_id)
                                                 .to_string()
-                                            src=SummonerSpell::get_static_url(
+                                            src=SummonerSpell::get_static_asset_url(
                                                 participant.summoner_spell2_id,
                                             )
                                             class="w-4 h-4 rounded"
@@ -181,14 +175,11 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                 <td class="py-1">
                                     <div class="relative">
                                         <img
-                                            alt=Perk::try_from(
-                                                    participant.perk_primary_selection_id as u16,
-                                                )
-                                                .expect("Invalid perk")
+                                            alt=Perk::from(participant.perk_primary_selection_id)
                                                 .to_string()
                                             width="16"
                                             height="16"
-                                            src=Perk::get_static_url(
+                                            src=Perk::get_static_asset_url(
                                                 participant.perk_primary_selection_id,
                                             )
                                             class="w-4 h-4 rounded"
@@ -198,10 +189,10 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                         <img
                                             width="16"
                                             height="16"
-                                            alt=Perk::try_from(participant.perk_sub_style_id as u16)
-                                                .expect("Invalid perk")
-                                                .to_string()
-                                            src=Perk::get_static_url(participant.perk_sub_style_id)
+                                            alt=Perk::from(participant.perk_sub_style_id).to_string()
+                                            src=Perk::get_static_asset_url(
+                                                participant.perk_sub_style_id,
+                                            )
                                             class="w-4 h-4 rounded"
                                         />
                                     </div>
@@ -317,11 +308,11 @@ pub struct LiveGame {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LiveGameParticipant {
     pub puuid: String,
-    pub champion_id: i32,
-    pub summoner_spell1_id: i32,
-    pub summoner_spell2_id: i32,
-    pub perk_primary_selection_id: i32,
-    pub perk_sub_style_id: i32,
+    pub champion_id: u16,
+    pub summoner_spell1_id: u16,
+    pub summoner_spell2_id: u16,
+    pub perk_primary_selection_id: u16,
+    pub perk_sub_style_id: u16,
     pub game_name: String,
     pub tag_line: String,
     pub platform: String,

@@ -1,18 +1,17 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_summoner::get_summoner;
 use crate::backend::server_fns::update_summoner::UpdateSummoner;
-use crate::consts::{PlatformRoute, ProfileIcon};
+use crate::consts::platform_route::PlatformRoute;
+use crate::consts::profile_icon::ProfileIcon;
+use crate::consts::HasStaticAsset;
 use crate::utils::summoner_url;
 use crate::views::summoner_page::summoner_nav::SummonerNav;
 use leptos::context::provide_context;
 use leptos::either::Either;
-use leptos::prelude::{expect_context, OnAttribute, Set};
-use leptos::prelude::{signal, ElementChild};
-use leptos::prelude::{ActionForm, ClassAttribute, Get, Read, ServerAction, Suspend, Transition};
+use leptos::prelude::*;
 use leptos::server::Resource;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_params_map;
-use serde::{Deserialize, Serialize};
 
 pub mod summoner_search_page;
 pub mod summoner_matches_page;
@@ -54,14 +53,16 @@ pub fn SummonerPage() -> impl IntoView {
                         let (summoner_signal, _) = signal(summoner.clone());
                         provide_context(summoner_signal);
                         provide_context(update_summoner_action.version());
-                        meta_store.image().set(ProfileIcon::get_static_url(summoner.profile_icon_id));
+                        meta_store.image().set(ProfileIcon::get_static_asset_url(summoner.profile_icon_id));
                         view! {
                             <div class="flex justify-center">
                                 <div class="flex justify-between w-[768px] mb-2">
                                     <div class="flex  mt-2 space-x-2">
                                         <img
                                             alt="Profile Icon"
-                                            src=ProfileIcon::get_static_url(summoner.profile_icon_id)
+                                            src=ProfileIcon::get_static_asset_url(
+                                                summoner.profile_icon_id,
+                                            )
                                             class="w-16 h-16"
                                         />
                                         <div class="flex flex-col items-start">
@@ -84,7 +85,7 @@ pub fn SummonerPage() -> impl IntoView {
                                             <input
                                                 type="hidden"
                                                 name="platform_type"
-                                                value=move || summoner_signal().platform.as_region_str()
+                                                value=move || summoner_signal().platform.to_string()
                                             />
                                             <button class="my-button" type="submit">
                                                 Update
@@ -111,7 +112,7 @@ pub fn SummonerPage() -> impl IntoView {
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 pub struct Summoner {
     pub id: i32,
     pub game_name: String,
@@ -120,24 +121,13 @@ pub struct Summoner {
     pub platform: PlatformRoute,
     pub updated_at: String,
     pub summoner_level: i64,
-    pub profile_icon_id: i32,
+    pub profile_icon_id: u16,
 }
 
 
 impl Summoner {
     pub fn to_route_path(&self) -> String {
-        summoner_url(self.platform.as_region_str(), &self.game_name, &self.tag_line)
-    }
-
-
-    /// Generates a slug from the game name and tag line.
-
-    /// Returns the URL of the summoner's profile icon.
-    pub fn profile_icon_url(&self) -> String {
-        format!(
-            "https://raw.communitydragon.org/latest/game/assets/ux/summonericons/profileicon{}.png",
-            self.profile_icon_id
-        )
+        summoner_url(self.platform.to_string().as_str(), &self.game_name, &self.tag_line)
     }
 }
 

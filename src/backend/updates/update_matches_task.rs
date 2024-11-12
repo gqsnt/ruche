@@ -52,20 +52,20 @@ async fn update_matches(
 ) -> AppResult<()> {
     let match_data_futures = matches_to_update.iter().map(|match_| {
         let api = Arc::clone(&api);
-        let pt = consts::PlatformRoute::from_str(&match_.platform).unwrap().to_riven();
+        let pt = consts::platform_route::PlatformRoute::from(match_.platform.as_str()).to_riven();
         async move {
             api.match_v5().get_match(pt.to_regional(), &match_.match_id).await
         }
     });
 
-    let mut match_raw_datas: Vec<_> = FuturesOrdered::from_iter(match_data_futures)
+    let match_raw_datas: Vec<_> = FuturesOrdered::from_iter(match_data_futures)
         .filter_map(|result| async move { result.ok().flatten() })
         .collect()
         .await;
 
 
     let (trashed_matches, match_datas): (Vec<_>, Vec<_>) = match_raw_datas.into_iter().zip(matches_to_update.into_iter())
-        .partition(|(match_, db_match_)| match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
+        .partition(|(match_, _)| match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
             || match_.info.game_version.is_empty()
             || match_.info.game_id == 0);
 
@@ -78,7 +78,7 @@ async fn update_matches(
             .split('_')
             .next()
             .unwrap_or_default();
-        let match_platform = consts::PlatformRoute::from_str(platform_code).unwrap();
+        let match_platform = consts::platform_route::PlatformRoute::from(platform_code);
 
         for participant in &match_data.info.participants {
             if participant.puuid == "BOT" {
@@ -90,9 +90,9 @@ async fn update_matches(
                     puuid: participant.puuid.clone(),
                     game_name: participant.riot_id_game_name.clone().unwrap_or_default(),
                     tag_line: participant.riot_id_tagline.clone(),
-                    platform: match_platform.as_region_str().to_string(),
+                    platform: match_platform.to_string(),
                     summoner_level: participant.summoner_level as i64,
-                    profile_icon_id: participant.profile_icon,
+                    profile_icon_id: participant.profile_icon as u16,
                     updated_at: DateTime::from_timestamp_millis(
                         match_data.info.game_end_timestamp.unwrap_or(0)
                     ).expect("update match task:timestamp error"),
@@ -131,14 +131,14 @@ async fn update_matches(
     // dl summoners
     let summoners_futures = summoners_to_dl.into_iter().map(|summoner| {
         let api = Arc::clone(&api);
-        let pt = consts::PlatformRoute::from_str(&summoner.platform).unwrap().to_riven();
+        let pt = consts::platform_route::PlatformRoute::from(summoner.platform.as_str()).to_riven();
         let puuid = summoner.puuid.clone();
         async move {
             (summoner, api.account_v1().get_by_puuid(pt.to_regional(), &puuid).await)
         }
     });
 
-    let mut summoners_data: Vec<_> = FuturesUnordered::from_iter(summoners_futures)
+    let summoners_data: Vec<_> = FuturesUnordered::from_iter(summoners_futures)
         .collect()
         .await;
 
@@ -325,7 +325,7 @@ pub struct TempSummoner {
     pub puuid: String,
     pub platform: String,
     pub summoner_level: i64,
-    pub profile_icon_id: i32,
+    pub profile_icon_id: u16,
     pub updated_at: DateTime<Utc>,
 }
 

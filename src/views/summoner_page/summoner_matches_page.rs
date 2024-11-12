@@ -1,20 +1,21 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_matches::get_matches;
-use crate::consts::{Champion, Item, Perk, SummonerSpell};
+use crate::consts::champion::Champion;
+use crate::consts::item::Item;
+use crate::consts::perk::Perk;
+use crate::consts::summoner_spell::SummonerSpell;
+use crate::consts::HasStaticAsset;
 use crate::utils::summoner_url;
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
 use crate::views::MatchFiltersSearch;
 use leptos::either::Either;
-use leptos::prelude::{expect_context, ClassAttribute, Get, ReadSignal, Resource, RwSignal, Show, StyleAttribute, Suspend, Suspense};
-use leptos::prelude::{signal, CustomAttribute, Effect, OnAttribute};
-use leptos::prelude::{AriaAttributes, For};
-use leptos::prelude::{ElementChild, Set};
+use leptos::prelude::*;
+use leptos::server_fn::serde::{Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
-use serde::{Deserialize, Serialize};
 
 #[component]
 pub fn SummonerMatchesPage() -> impl IntoView {
@@ -50,7 +51,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
 
     meta_store.title().set(format!("{}#{} | Matches | Broken.gg", summoner().game_name, summoner().tag_line));
     meta_store.description().set(format!("Explore {}#{}'s match history on Broken.gg. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner().game_name, summoner().tag_line));
-    meta_store.url().set(format!("{}", summoner().to_route_path()));
+    meta_store.url().set( summoner().to_route_path());
     view! {
         <div class="w-[768px] inline-block align-top justify-center">
             <div class="">
@@ -110,7 +111,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                                                     </For>
                                                 </div>
                                                 <Show when=move || (total_pages > 1)>
-                                                    <Pagination max_page=(move || total_pages as usize)() />
+                                                    <Pagination max_page=total_pages as usize />
                                                 </Show>
                                             },
                                         ),
@@ -171,10 +172,8 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                 <img
                                     width="48"
                                     height="48"
-                                    alt=Champion::try_from(match_.champion_id as i16)
-                                        .expect("Invalid champion")
-                                        .to_string()
-                                    src=Champion::get_static_url(match_.champion_id)
+                                    alt=Champion::from(match_.champion_id).to_str()
+                                    src=Champion::get_static_asset_url(match_.champion_id)
                                     class="w-12 h-12 rounded-full"
                                 />
                                 <span
@@ -190,12 +189,11 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         <img
                                             width="22"
                                             height="22"
-                                            alt=SummonerSpell::try_from(
-                                                    match_.summoner_spell1_id as u16,
-                                                )
-                                                .expect("Invalid summoner spell")
+                                            alt=SummonerSpell::from(match_.summoner_spell1_id)
                                                 .to_string()
-                                            src=SummonerSpell::get_static_url(match_.summoner_spell1_id)
+                                            src=SummonerSpell::get_static_asset_url(
+                                                match_.summoner_spell1_id,
+                                            )
                                             class="w-[22px] w-[22px]"
                                         />
                                     </div>
@@ -203,12 +201,11 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         <img
                                             width="22"
                                             height="22"
-                                            alt=SummonerSpell::try_from(
-                                                    match_.summoner_spell2_id as u16,
-                                                )
-                                                .expect("Invalid summoner spell")
+                                            alt=SummonerSpell::from(match_.summoner_spell2_id)
                                                 .to_string()
-                                            src=SummonerSpell::get_static_url(match_.summoner_spell2_id)
+                                            src=SummonerSpell::get_static_asset_url(
+                                                match_.summoner_spell2_id,
+                                            )
                                             class="w-[22px] w-[22px]"
                                         />
                                     </div>
@@ -216,32 +213,28 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                 <div class="flex flex-col gap-0.5">
                                     <Show
                                         when=move || match_.perk_primary_selection_id != 0
-                                        fallback=|| view! {}
                                     >
                                         <div class="relative rounded-full">
                                             <img
                                                 width="22"
                                                 height="22"
-                                                alt=Perk::try_from(match_.perk_primary_selection_id as u16)
-                                                    .expect("Invalid perk")
-                                                    .to_string()
-                                                src=Perk::get_static_url(match_.perk_primary_selection_id)
+                                                alt=Perk::from(match_.perk_primary_selection_id).to_string()
+                                                src=Perk::get_static_asset_url(
+                                                    match_.perk_primary_selection_id,
+                                                )
                                                 class="w-[22px] w-[22px]"
                                             />
                                         </div>
                                     </Show>
                                     <Show
                                         when=move || match_.perk_sub_style_id != 0
-                                        fallback=|| view! {}
                                     >
                                         <div class="relative rounded-full">
                                             <img
                                                 width="22"
                                                 height="22"
-                                                alt=Perk::try_from(match_.perk_sub_style_id as u16)
-                                                    .expect("Invalid perk")
-                                                    .to_string()
-                                                src=Perk::get_static_url(match_.perk_sub_style_id)
+                                                alt=Perk::from(match_.perk_sub_style_id).to_string()
+                                                src=Perk::get_static_asset_url(match_.perk_sub_style_id)
                                                 class="w-[22px] w-[22px]"
                                             />
                                         </div>
@@ -267,79 +260,79 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                             </div>
                         </div>
                         <div class="flex gap-0.5">
-                            <Show when=move || match_.item0_id != 0 fallback=|| view! {}>
+                            <Show when=move || match_.item0_id != 0 >
                                 <div class="relative rounded">
                                     <img
                                         alt=format!("Item {}", match_.item0_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_url(match_.item0_id)
+                                        src=Item::get_static_asset_url(match_.item0_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
                             </Show>
-                            <Show when=move || match_.item1_id != 0 fallback=|| view! {}>
+                            <Show when=move || match_.item1_id != 0>
                                 <div class="relative rounded">
                                     <img
                                         alt=format!("Item {}", match_.item1_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_url(match_.item1_id)
+                                        src=Item::get_static_asset_url(match_.item1_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
                             </Show>
-                            <Show when=move || match_.item2_id != 0 fallback=|| view! {}>
+                            <Show when=move || match_.item2_id != 0>
                                 <div class="relative rounded">
                                     <img
                                         alt=format!("Item {}", match_.item2_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_url(match_.item2_id)
+                                        src=Item::get_static_asset_url(match_.item2_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
                             </Show>
-                            <Show when=move || match_.item3_id != 0 fallback=|| view! {}>
+                            <Show when=move || match_.item3_id != 0>
                                 <div class="relative rounded">
                                     <img
                                         alt=format!("Item {}", match_.item3_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_url(match_.item3_id)
+                                        src=Item::get_static_asset_url(match_.item3_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
                             </Show>
-                            <Show when=move || match_.item4_id != 0 fallback=|| view! {}>
+                            <Show when=move || match_.item4_id != 0>
                                 <div class="relative rounded">
                                     <img
                                         alt=format!("Item {}", match_.item4_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_url(match_.item4_id)
+                                        src=Item::get_static_asset_url(match_.item4_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
                             </Show>
-                            <Show when=move || match_.item5_id != 0 fallback=|| view! {}>
+                            <Show when=move || match_.item5_id != 0 >
                                 <div class="relative rounded">
                                     <img
                                         alt=format!("Item {}", match_.item5_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_url(match_.item5_id)
+                                        src=Item::get_static_asset_url(match_.item5_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
                             </Show>
-                            <Show when=move || match_.item6_id != 0 fallback=|| view! {}>
+                            <Show when=move || match_.item6_id != 0>
                                 <div class="relative rounded">
                                     <img
                                         alt=format!("Item {}", match_.item6_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_url(match_.item6_id)
+                                        src=Item::get_static_asset_url(match_.item6_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -359,10 +352,8 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         <img
                                             width="16"
                                             height="16"
-                                            alt=Champion::try_from(participant.champion_id as i16)
-                                                .expect("Invalid champion")
-                                                .to_string()
-                                            src=Champion::get_static_url(participant.champion_id)
+                                            alt=Champion::from(participant.champion_id).to_str()
+                                            src=Champion::get_static_asset_url(participant.champion_id)
                                             class="w-4 h-4 rounded"
                                         />
                                         <a
@@ -462,7 +453,7 @@ pub struct SummonerMatch {
     pub match_duration: String,
     pub queue: String,
     pub platform: String,
-    pub champion_id: i32,
+    pub champion_id: u16,
     pub won: bool,
     pub champ_level: i32,
     pub kda: f64,
@@ -470,17 +461,17 @@ pub struct SummonerMatch {
     pub kills: i32,
     pub deaths: i32,
     pub assists: i32,
-    pub summoner_spell1_id: i32,
-    pub summoner_spell2_id: i32,
-    pub perk_primary_selection_id: i32,
-    pub perk_sub_style_id: i32,
-    pub item0_id: i32,
-    pub item1_id: i32,
-    pub item2_id: i32,
-    pub item3_id: i32,
-    pub item4_id: i32,
-    pub item5_id: i32,
-    pub item6_id: i32,
+    pub summoner_spell1_id: u16,
+    pub summoner_spell2_id: u16,
+    pub perk_primary_selection_id: u16,
+    pub perk_sub_style_id: u16,
+    pub item0_id: u16,
+    pub item1_id: u16,
+    pub item2_id: u16,
+    pub item3_id: u16,
+    pub item4_id: u16,
+    pub item5_id: u16,
+    pub item6_id: u16,
     pub participants: Vec<SummonerMatchParticipant>,
 }
 
@@ -491,6 +482,6 @@ pub struct SummonerMatchParticipant {
     pub summoner_name: String,
     pub summoner_tag_line: String,
     pub summoner_platform: String,
-    pub champion_id: i32,
+    pub champion_id: u16,
     pub team_id: i32,
 }

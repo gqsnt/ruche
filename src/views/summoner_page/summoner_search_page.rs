@@ -1,13 +1,9 @@
 use crate::backend::server_fns::search_summoner::SearchSummoner;
-use crate::consts::PlatformRoute;
+use crate::consts::platform_route::PLATFORM_ROUTE_OPTIONS;
 use leptos::form::ActionForm;
-use leptos::prelude::AriaAttributes;
-use leptos::prelude::{ClassAttribute, ElementChild};
-use leptos::prelude::{PropAttribute, Read};
-use leptos::server::ServerAction;
+use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_params_map, use_query_map};
-use strum::IntoEnumIterator;
 
 #[component]
 pub fn SummonerSearchPage() -> impl IntoView {
@@ -51,16 +47,15 @@ pub fn SummonerSearchPage() -> impl IntoView {
                         name="platform_type"
                         prop:value=move || platform_type()
                     >
-                        {PlatformRoute::iter()
+                        {PLATFORM_ROUTE_OPTIONS
+                            .iter()
                             .map(|pt| {
                                 view! {
                                     <option
-                                        value=pt.as_region_str()
-                                        selected=move || {
-                                            platform_type().eq(&pt.as_region_str().to_string())
-                                        }
+                                        value=pt.to_string()
+                                        selected=move || { platform_type().eq(&pt.to_string()) }
                                     >
-                                        {pt.as_region_str()}
+                                        {pt.to_string()}
                                     </option>
                                 }
                             })

@@ -1,10 +1,6 @@
 use crate::backend::ssr::AppResult;
 use crate::backend::updates::update_matches_task::TempParticipant;
-use unzip_n::unzip_n;
 
-unzip_n!(23);
-unzip_n!(11);
-unzip_n!(7);
 
 pub async fn bulk_insert_lol_match_participants(db: &sqlx::PgPool, participants: &[TempParticipant]) -> AppResult<()> {
     let total_items = participants.len();
