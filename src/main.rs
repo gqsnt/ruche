@@ -65,6 +65,22 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     let routes = generate_route_list(App);
     // build our application with a route
     let app = Router::<AppState>::new()
+        .merge(
+            MemoryServe::new(load_assets!("target/site"))
+                .enable_brotli(!cfg!(debug_assertions))
+                .cache_control(CacheControl::Custom("public, max-age=31536000"))
+                .into_router()
+        )
+        .layer(
+            CompressionLayer::new()
+                .br(true)
+                .deflate(true)
+                .gzip(true)
+                .zstd(true)
+                .compress_when(SizeAbove::new(32)
+                    .and(NotForContentType::GRPC)
+                    .and(NotForContentType::SSE)),
+        )
 
         .leptos_routes_with_context(
             &app_state,
@@ -79,23 +95,7 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
             },
         )
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
-        .layer(
-            CompressionLayer::new()
-                .br(true)
-                .deflate(true)
-                .gzip(true)
-                .zstd(true)
-                .compress_when(SizeAbove::new(32)
-                    .and(NotForContentType::GRPC)
-                    .and(NotForContentType::SSE)),
-        )
-        .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
-        .merge(
-            MemoryServe::new(load_assets!("target/site/assets"))
-                .enable_brotli(!cfg!(debug_assertions))
-                .cache_control(CacheControl::Custom("public, max-age=2678400"))
-                .into_router()
-        )
+
         .with_state(app_state);
     log!("listening on http://{}", &addr);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
