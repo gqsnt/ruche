@@ -93,7 +93,7 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
         .merge(
             MemoryServe::new(load_assets!("target/site/assets"))
                 .enable_brotli(!cfg!(debug_assertions))
-                .cache_control(CacheControl::Long)
+                .cache_control(CacheControl::Custom("public, max-age=2678400"))
                 .into_router()
         )
         .with_state(app_state);
