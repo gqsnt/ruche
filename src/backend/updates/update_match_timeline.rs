@@ -72,13 +72,13 @@ pub async fn update_match_timeline(
                 EventType::ItemPurchased => {
                     let item_id = event.item_id.ok_or_else(|| {
                         AppError::CustomError("Missing item_id in ITEM_PURCHASED event".into())
-                    })? as u16;
+                    })? as u32;
                     push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent { item_id, event_type: ItemEventType::Purchased });
                 }
                 EventType::ItemSold => {
                     let item_id = event.item_id.ok_or_else(|| {
                         AppError::CustomError("Missing item_id in ITEM_SOLD event".into())
-                    })? as u16;
+                    })? as u32;
                     push_item_event_into_participant_id(&mut lol_match_timelines, event.participant_id.unwrap(), event.timestamp, ItemEvent { item_id, event_type: ItemEventType::Sold });
                 }
                 EventType::ItemUndo => {
@@ -89,7 +89,7 @@ pub async fn update_match_timeline(
                         AppError::CustomError(format!("Participant with ID {} not found", participant_id))
                     })?;
                     if let Some(before_id) = event.before_id {
-                        let before_id = before_id as u16;
+                        let before_id = before_id as u32;
                         if before_id != 0 {
                             if let Some(pos) = participant
                                 .items_event_timeline
@@ -108,7 +108,7 @@ pub async fn update_match_timeline(
                         }
                     }
                     if let Some(after_id) = event.after_id {
-                        let after_id = after_id as u16;
+                        let after_id = after_id as u32;
                         if after_id != 0 {
                             if let Some(pos) = participant
                                 .items_event_timeline
@@ -220,7 +220,7 @@ async fn bulk_insert_match_timeline(db: &PgPool, timelines: Vec<TempLolMatchTime
         items_event_timeline.sort_by_key(|x| x.0);
         b.push_bind(rec.lol_match_id);
         b.push_bind(rec.summoner_id);
-        b.push_bind(serde_json::to_string(&items_event_timeline).unwrap());
+        b.push_bind(serde_json::to_value(&items_event_timeline).unwrap_or_default());
         b.push_bind(rec.skills_timeline.clone());
     });
     qb.build().fetch_all(db).await?;

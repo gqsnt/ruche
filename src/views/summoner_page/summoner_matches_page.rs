@@ -211,9 +211,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                     </div>
                                 </div>
                                 <div class="flex flex-col gap-0.5">
-                                    <Show
-                                        when=move || match_.perk_primary_selection_id != 0
-                                    >
+                                    <Show when=move || match_.perk_primary_selection_id != 0>
                                         <div class="relative rounded-full">
                                             <img
                                                 width="22"
@@ -226,9 +224,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                             />
                                         </div>
                                     </Show>
-                                    <Show
-                                        when=move || match_.perk_sub_style_id != 0
-                                    >
+                                    <Show when=move || match_.perk_sub_style_id != 0>
                                         <div class="relative rounded-full">
                                             <img
                                                 width="22"
@@ -260,13 +256,13 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                             </div>
                         </div>
                         <div class="flex gap-0.5">
-                            <Show when=move || match_.item0_id != 0 >
+                            <Show when=move || match_.item0_id != 0>
                                 <div class="relative rounded">
                                     <img
                                         alt=format!("Item {}", match_.item0_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_asset_url(match_.item0_id)
+                                        src=Item::get_static_asset_url_u32(match_.item0_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -277,7 +273,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         alt=format!("Item {}", match_.item1_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_asset_url(match_.item1_id)
+                                        src=Item::get_static_asset_url_u32(match_.item1_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -288,7 +284,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         alt=format!("Item {}", match_.item2_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_asset_url(match_.item2_id)
+                                        src=Item::get_static_asset_url_u32(match_.item2_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -299,7 +295,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         alt=format!("Item {}", match_.item3_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_asset_url(match_.item3_id)
+                                        src=Item::get_static_asset_url_u32(match_.item3_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -310,18 +306,18 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         alt=format!("Item {}", match_.item4_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_asset_url(match_.item4_id)
+                                        src=Item::get_static_asset_url_u32(match_.item4_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
                             </Show>
-                            <Show when=move || match_.item5_id != 0 >
+                            <Show when=move || match_.item5_id != 0>
                                 <div class="relative rounded">
                                     <img
                                         alt=format!("Item {}", match_.item5_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_asset_url(match_.item5_id)
+                                        src=Item::get_static_asset_url_u32(match_.item5_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -332,7 +328,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         alt=format!("Item {}", match_.item6_id)
                                         width="22"
                                         height="22"
-                                        src=Item::get_static_asset_url(match_.item6_id)
+                                        src=Item::get_static_asset_url_u32(match_.item6_id)
                                         class="w-[22px] w-[22px]"
                                     />
                                 </div>
@@ -465,13 +461,13 @@ pub struct SummonerMatch {
     pub summoner_spell2_id: u16,
     pub perk_primary_selection_id: u16,
     pub perk_sub_style_id: u16,
-    pub item0_id: u16,
-    pub item1_id: u16,
-    pub item2_id: u16,
-    pub item3_id: u16,
-    pub item4_id: u16,
-    pub item5_id: u16,
-    pub item6_id: u16,
+    pub item0_id: u32,
+    pub item1_id: u32,
+    pub item2_id: u32,
+    pub item3_id: u32,
+    pub item4_id: u32,
+    pub item5_id: u32,
+    pub item6_id: u32,
     pub participants: Vec<SummonerMatchParticipant>,
 }
 

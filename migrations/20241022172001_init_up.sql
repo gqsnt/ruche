@@ -125,13 +125,13 @@ CREATE TABLE IF NOT EXISTS lol_match_participants
     perk_primary_selection3_id INTEGER,
     perk_sub_selection1_id INTEGER,
     perk_sub_selection2_id INTEGER,
-    item0_id INTEGER,
-    item1_id INTEGER,
-    item2_id INTEGER,
-    item3_id INTEGER,
-    item4_id INTEGER,
-    item5_id INTEGER,
-    item6_id INTEGER
+    item0_id BIGINT,
+    item1_id BIGINT,
+    item2_id BIGINT,
+    item3_id BIGINT,
+    item4_id BIGINT,
+    item5_id BIGINT,
+    item6_id BIGINT
     );
 
 CREATE TABLE IF NOT EXISTS lol_match_timelines

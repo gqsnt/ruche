@@ -145,8 +145,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                                         <img
                                             width="16"
                                             height="16"
-                                            alt=Perk::from(participant.perk_sub_style_id)
-                                                .to_string()
+                                            alt=Perk::from(participant.perk_sub_style_id).to_string()
                                             src=Perk::get_static_asset_url(
                                                 participant.perk_sub_style_id,
                                             )
@@ -207,29 +206,29 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                                                     alt=format!("Item {}", item0_id)
                                                     width="22"
                                                     height="22"
-                                                    src=Item::get_static_asset_url(item0_id)
+                                                    src=Item::get_static_asset_url_u32(item0_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>
                                         </Show>
-                                        <Show when=move || item1_id != 0 >
+                                        <Show when=move || item1_id != 0>
                                             <div class="relative rounded">
                                                 <img
                                                     alt=format!("Item {}", item1_id)
                                                     width="22"
                                                     height="22"
-                                                    src=Item::get_static_asset_url(item1_id)
+                                                    src=Item::get_static_asset_url_u32(item1_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>
                                         </Show>
-                                        <Show when=move || item2_id != 0 >
+                                        <Show when=move || item2_id != 0>
                                             <div class="relative rounded">
                                                 <img
                                                     alt=format!("Item {}", item2_id)
                                                     width="22"
                                                     height="22"
-                                                    src=Item::get_static_asset_url(item2_id)
+                                                    src=Item::get_static_asset_url_u32(item2_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>
@@ -240,18 +239,18 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                                                     alt=format!("Item {}", item3_id)
                                                     width="22"
                                                     height="22"
-                                                    src=Item::get_static_asset_url(item3_id)
+                                                    src=Item::get_static_asset_url_u32(item3_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>
                                         </Show>
-                                        <Show when=move || item4_id != 0 >
+                                        <Show when=move || item4_id != 0>
                                             <div class="relative rounded">
                                                 <img
                                                     alt=format!("Item {}", item4_id)
                                                     width="22"
                                                     height="22"
-                                                    src=Item::get_static_asset_url(item4_id)
+                                                    src=Item::get_static_asset_url_u32(item4_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>
@@ -262,18 +261,18 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                                                     alt=format!("Item {}", item5_id)
                                                     width="22"
                                                     height="22"
-                                                    src=Item::get_static_asset_url(item5_id)
+                                                    src=Item::get_static_asset_url_u32(item5_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>
                                         </Show>
-                                        <Show when=move || item6_id != 0  >
+                                        <Show when=move || item6_id != 0>
                                             <div class="relative rounded">
                                                 <img
                                                     alt=format!("Item {}", item6_id)
                                                     width="22"
                                                     height="22"
-                                                    src=Item::get_static_asset_url(item6_id)
+                                                    src=Item::get_static_asset_url_u32(item6_id)
                                                     class="w-[22px] w-[22px]"
                                                 />
                                             </div>

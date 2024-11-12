@@ -124,14 +124,14 @@ pub struct LolMatchParticipantDetails {
     pub perk_primary_selection3_id: u16,
     pub perk_sub_selection1_id: u16,
     pub perk_sub_selection2_id: u16,
-    pub item0_id: u16,
-    pub item1_id: u16,
-    pub item2_id: u16,
-    pub item3_id: u16,
-    pub item4_id: u16,
-    pub item5_id: u16,
-    pub item6_id: u16,
-    pub items_event_timeline: Vec<(u16, Vec<ItemEvent>)>,
+    pub item0_id: u32,
+    pub item1_id: u32,
+    pub item2_id: u32,
+    pub item3_id: u32,
+    pub item4_id: u32,
+    pub item5_id: u32,
+    pub item6_id: u32,
+    pub items_event_timeline: Vec<(u32, Vec<ItemEvent>)>,
     pub skills_timeline: Vec<i32>,
 }
 
@@ -141,14 +141,14 @@ pub struct LolMatchTimeline {
     pub id: i32,
     pub lol_match_id: i32,
     pub summoner_id: i32,
-    pub items_event_timeline: Vec<(u16, Vec<ItemEvent>)>,
+    pub items_event_timeline: Vec<(u32, Vec<ItemEvent>)>,
     pub skills_timeline: Vec<i32>,
 }
 
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ItemEvent {
-    pub item_id: u16,
+    pub item_id: u32,
     pub event_type: ItemEventType,
 }
 

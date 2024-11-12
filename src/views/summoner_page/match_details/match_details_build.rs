@@ -70,7 +70,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                                                                 alt=format!("Item {}", item_event.item_id)
                                                                 height="30"
                                                                 width="30"
-                                                                src=Item::get_static_asset_url(item_event.item_id)
+                                                                src=Item::get_static_asset_url_u32(item_event.item_id)
                                                                 class=("opacity-75", is_sold_item)
                                                                 class="h-[30px] w-[30px]"
                                                             />

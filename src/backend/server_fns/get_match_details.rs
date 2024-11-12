@@ -31,6 +31,7 @@ pub mod ssr {
     use crate::views::summoner_page::match_details::{LolMatchParticipantDetails, LolMatchTimeline};
     use bigdecimal::{BigDecimal, ToPrimitive};
     use sqlx::{FromRow, PgPool};
+    use sqlx::types::JsonValue;
 
     pub async fn get_match_participants_details(db: &PgPool, match_id: i32) -> AppResult<Vec<LolMatchParticipantDetails>> {
         Ok(sqlx::query_as::<_, LolMatchParticipantDetailsModel>(
@@ -121,13 +122,13 @@ pub mod ssr {
                 perk_primary_selection3_id: lmp.perk_primary_selection3_id.unwrap_or_default() as u16,
                 perk_sub_selection1_id: lmp.perk_sub_selection1_id.unwrap_or_default() as u16,
                 perk_sub_selection2_id: lmp.perk_sub_selection2_id.unwrap_or_default() as u16,
-                item0_id: lmp.item0_id.unwrap_or_default() as u16,
-                item1_id: lmp.item1_id.unwrap_or_default() as u16,
-                item2_id: lmp.item2_id.unwrap_or_default() as u16,
-                item3_id: lmp.item3_id.unwrap_or_default() as u16,
-                item4_id: lmp.item4_id.unwrap_or_default() as u16,
-                item5_id: lmp.item5_id.unwrap_or_default() as u16,
-                item6_id: lmp.item6_id.unwrap_or_default() as u16,
+                item0_id: lmp.item0_id.unwrap_or_default() as u32,
+                item1_id: lmp.item1_id.unwrap_or_default() as u32,
+                item2_id: lmp.item2_id.unwrap_or_default() as u32,
+                item3_id: lmp.item3_id.unwrap_or_default() as u32,
+                item4_id: lmp.item4_id.unwrap_or_default() as u32,
+                item5_id: lmp.item5_id.unwrap_or_default() as u32,
+                item6_id: lmp.item6_id.unwrap_or_default() as u32,
                 items_event_timeline: Vec::new(),
                 skills_timeline: vec![],
             }
@@ -146,7 +147,7 @@ pub mod ssr {
                 id: x.id,
                 lol_match_id: x.lol_match_id,
                 summoner_id: x.summoner_id,
-                items_event_timeline: serde_json::from_str(x.items_event_timeline.as_str()).unwrap(),
+                items_event_timeline: serde_json::from_value(x.items_event_timeline).unwrap_or_default(),
                 skills_timeline: x.skills_timeline,
             }).collect();
         Ok(timelines)
@@ -189,13 +190,13 @@ pub mod ssr {
         pub perk_primary_selection3_id: Option<i32>,
         pub perk_sub_selection1_id: Option<i32>,
         pub perk_sub_selection2_id: Option<i32>,
-        pub item0_id: Option<i32>,
-        pub item1_id: Option<i32>,
-        pub item2_id: Option<i32>,
-        pub item3_id: Option<i32>,
-        pub item4_id: Option<i32>,
-        pub item5_id: Option<i32>,
-        pub item6_id: Option<i32>,
+        pub item0_id: Option<i64>,
+        pub item1_id: Option<i64>,
+        pub item2_id: Option<i64>,
+        pub item3_id: Option<i64>,
+        pub item4_id: Option<i64>,
+        pub item5_id: Option<i64>,
+        pub item6_id: Option<i64>,
     }
 
 
@@ -204,7 +205,7 @@ pub mod ssr {
         pub id: i32,
         pub lol_match_id: i32,
         pub summoner_id: i32,
-        pub items_event_timeline: String,
+        pub items_event_timeline: JsonValue,
         pub skills_timeline: Vec<i32>,
     }
 }

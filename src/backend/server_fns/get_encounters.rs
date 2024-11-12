@@ -144,7 +144,7 @@ pub mod ssr {
         pub tag_line: String,
         pub game_name: String,
         pub platform: String,
-        pub profile_icon_id: i16,
+        pub profile_icon_id: i32,
         pub encounter_count: i64,
         pub total_count: i64,
     }

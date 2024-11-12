@@ -14,6 +14,9 @@ pub trait HasStaticAsset {
     fn get_static_asset_url(id: u16) -> String {
         format!("/assets/{}/{}.avif", Self::PATH, id)
     }
+    fn get_static_asset_url_u32(id: u32) -> String {
+        format!("/assets/{}/{}.avif", Self::PATH, id)
+    }
 }
 
 
