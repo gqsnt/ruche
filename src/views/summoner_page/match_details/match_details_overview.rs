@@ -1,5 +1,5 @@
 use crate::consts::{Champion, Item, Perk, SummonerSpell};
-use crate::summoner_url;
+use crate::utils::summoner_url;
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use leptos::prelude::{ClassAttribute, ReadSignal};
 use leptos::prelude::{ElementChild, Show};
@@ -9,7 +9,7 @@ use leptos::{component, view, IntoView};
 pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantDetails>>) -> impl IntoView {
     let details = match_details();
     let (summoner_team, summoner_team_won) = {
-        let detail = details.iter().find(|participant| participant.summoner_id == summoner_id).unwrap();
+        let detail = details.iter().find(|participant| participant.summoner_id == summoner_id).expect("Summoner id not found");
         (detail.team_id, detail.won)
     };
     let other_team = if summoner_team == 100 {
@@ -91,7 +91,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                                             width="32"
                                             height="32"
                                             alt=Champion::try_from(participant.champion_id as i16)
-                                                .unwrap()
+                                                .expect("Champion id")
                                                 .to_string()
                                             src=Champion::get_static_url(participant.champion_id)
                                             class="w-8 h-8 rounded-full block"
@@ -109,7 +109,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                                             alt=SummonerSpell::try_from(
                                                     participant.summoner_spell1_id as u16,
                                                 )
-                                                .unwrap()
+                                                .expect("Summoner spell1 id")
                                                 .to_string()
                                             src=SummonerSpell::get_static_url(
                                                 participant.summoner_spell1_id,
@@ -124,7 +124,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                                             alt=SummonerSpell::try_from(
                                                     participant.summoner_spell2_id as u16,
                                                 )
-                                                .unwrap()
+                                                .expect("Summoner spell2 id")
                                                 .to_string()
                                             src=SummonerSpell::get_static_url(
                                                 participant.summoner_spell2_id,
@@ -139,7 +139,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                                             alt=Perk::try_from(
                                                     participant.perk_primary_selection_id as u16,
                                                 )
-                                                .unwrap()
+                                                .expect("Perk primary selection id")
                                                 .to_string()
                                             width="16"
                                             height="16"
@@ -154,7 +154,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                                             width="16"
                                             height="16"
                                             alt=Perk::try_from(participant.perk_sub_style_id as u16)
-                                                .unwrap()
+                                                .expect("Perk sub style id")
                                                 .to_string()
                                             src=Perk::get_static_url(participant.perk_sub_style_id)
                                             class="w-4 h-4 rounded"

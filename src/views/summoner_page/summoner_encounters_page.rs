@@ -1,7 +1,7 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_encounters::get_encounters;
 use crate::consts::ProfileIcon;
-use crate::summoner_url;
+use crate::utils::summoner_url;
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
 use crate::views::MatchFiltersSearch;

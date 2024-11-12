@@ -1,5 +1,5 @@
+use crate::backend::ssr::{AppError, AppResult};
 use crate::consts::PlatformRoute;
-use crate::error_template::{AppError, AppResult};
 use crate::views::summoner_page::match_details::ItemEvent;
 use chrono::NaiveDateTime;
 use riven::RiotApi;
@@ -20,7 +20,7 @@ pub async fn update_match_timeline(
 ) -> AppResult<()> {
     // Fetch the match timeline
     let platform_route = PlatformRoute::from_region_str(platform.as_str()).unwrap();
-    let riven_pr = riven::consts::PlatformRoute::from_str(platform_route.to_string().as_str()).unwrap();
+    let riven_pr = platform_route.to_riven();
     let timeline = api
         .match_v5()
         .get_timeline(riven_pr.to_regional(), &riot_match_id)
@@ -148,7 +148,7 @@ pub async fn update_match_timeline(
 
 
 pub fn push_item_event_into_participant_id(participants: &mut HashMap<i32, TempLolMatchTimeline>, participant_id: i32, timestamp: i64, event: ItemEvent) {
-    let participant = participants.get_mut(&participant_id).unwrap();
+    let participant = participants.get_mut(&participant_id).expect("Participant not found");
     participant.items_event_timeline.push((timestamp, event));
 }
 

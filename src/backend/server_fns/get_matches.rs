@@ -1,43 +1,41 @@
-#[cfg(feature = "ssr")]
-use crate::backend::{format_duration_since, parse_date};
-use crate::consts::Queue;
-use crate::error_template::AppResult;
-use crate::views::summoner_page::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo, SummonerMatch, SummonerMatchParticipant};
+use crate::views::summoner_page::summoner_matches_page::GetSummonerMatchesResult;
 use crate::views::MatchFiltersSearch;
-#[cfg(feature = "ssr")]
-use crate::AppState;
-#[cfg(feature = "ssr")]
-use bigdecimal::{BigDecimal, ToPrimitive};
-#[cfg(feature = "ssr")]
-use chrono::{Duration, NaiveDateTime};
-use itertools::Itertools;
 use leptos::context::use_context;
-use leptos::prelude::ServerFnError;
+use leptos::prelude::{expect_context, ServerFnError};
 use leptos::server;
-#[cfg(feature = "ssr")]
-use sqlx::{FromRow, PgPool, QueryBuilder};
 
 #[server]
 pub async fn get_matches(summoner_id: i32, page_number: i32, filters: Option<MatchFiltersSearch>) -> Result<GetSummonerMatchesResult, ServerFnError> {
-    let state = use_context::<AppState>();
-    let state = state.unwrap();
+    let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
-    inner_get_matches(&db, summoner_id, page_number, filters.unwrap_or_default()).await.map_err(|_| ServerFnError::new("Error fetching matches"))
+
+    ssr::inner_get_matches(&db, summoner_id, page_number, filters.unwrap_or_default()).await.map_err(|e| e.to_server_fn_error())
 }
 
 
 #[cfg(feature = "ssr")]
-pub async fn inner_get_matches(
-    db: &PgPool,
-    summoner_id: i32,
-    page: i32,
-    filters: MatchFiltersSearch,
-) -> AppResult<GetSummonerMatchesResult> {
-    let start_date = parse_date(filters.start_date.clone());
-    let end_date = parse_date(filters.end_date.clone());
-    let per_page = 20;
-    let offset = (page.max(1) - 1) * per_page;
-    let mut aggregate_query = QueryBuilder::new(r#"
+pub mod ssr {
+    use crate::consts::Queue;
+    use crate::views::summoner_page::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo, SummonerMatch, SummonerMatchParticipant};
+    use crate::views::MatchFiltersSearch;
+    use bigdecimal::{BigDecimal, ToPrimitive};
+    use chrono::{Duration, NaiveDateTime};
+    use itertools::Itertools;
+
+    use crate::backend::ssr::{format_duration_since, parse_date, AppResult};
+    use sqlx::{FromRow, PgPool, QueryBuilder};
+
+    pub async fn inner_get_matches(
+        db: &PgPool,
+        summoner_id: i32,
+        page: i32,
+        filters: MatchFiltersSearch,
+    ) -> AppResult<GetSummonerMatchesResult> {
+        let start_date = parse_date(filters.start_date.clone());
+        let end_date = parse_date(filters.end_date.clone());
+        let per_page = 20;
+        let offset = (page.max(1) - 1) * per_page;
+        let mut aggregate_query = QueryBuilder::new(r#"
             SELECT
                 count(lmp.lol_match_id) as total_count,
                 sum(CASE WHEN lmp.won THEN 1 ELSE 0 END) as total_wins,
@@ -51,9 +49,9 @@ pub async fn inner_get_matches(
             WHERE
                 lmp.summoner_id =
         "#);
-    aggregate_query.push_bind(summoner_id);
+        aggregate_query.push_bind(summoner_id);
 
-    let mut participant_query = QueryBuilder::new(r#"
+        let mut participant_query = QueryBuilder::new(r#"
             SELECT
                 lmp.id,
                 lmp.lol_match_id,
@@ -88,131 +86,129 @@ pub async fn inner_get_matches(
             WHERE
                 lmp.summoner_id =
         "#);
-    participant_query.push_bind(summoner_id);
+        participant_query.push_bind(summoner_id);
 
 
-    if let Some(champion_id) = filters.champion_id {
-        let sql_filter = " AND lmp.champion_id = ";
-        participant_query.push(&sql_filter);
-        participant_query.push_bind(champion_id);
-        aggregate_query.push(&sql_filter);
-        aggregate_query.push_bind(champion_id);
-    }
-    if let Some(queue_id) = filters.queue_id {
-        let sql_filter = " AND lm.queue_id = ";
-        participant_query.push(&sql_filter);
-        participant_query.push_bind(queue_id);
-        aggregate_query.push(&sql_filter);
-        aggregate_query.push_bind(queue_id);
-    }
-
-    if let Some(start_date) = start_date {
-        let sql_filter = " AND lm.match_end >= ";
-        participant_query.push(&sql_filter);
-        participant_query.push_bind(start_date);
-        aggregate_query.push(&sql_filter);
-        aggregate_query.push_bind(start_date);
-    }
-    if let Some(end_date) = end_date {
-        let sql_filter = " AND lm.match_end <= ";
-        participant_query.push(&sql_filter);
-        participant_query.push_bind(end_date);
-        aggregate_query.push(&sql_filter);
-        aggregate_query.push_bind(end_date);
-    }
-
-    participant_query.push(" ORDER BY lm.match_end DESC LIMIT ");
-    participant_query.push_bind(per_page);
-    participant_query.push(" OFFSET ");
-    participant_query.push_bind(offset);
-    let ag_build = aggregate_query.build_query_as::<MatchesResultInfoModel>();
-
-    let aggregate_result = ag_build
-        .fetch_one(db)
-        .await
-        .unwrap();
-    let results = participant_query
-        .build_query_as::<SummonerMatchModel>()
-        .fetch_all(db)
-        .await
-        .unwrap();
-
-
-    let matches_result_info = {
-        let total_matches = aggregate_result.total_count.unwrap_or_default() as i32;
-        let total_wins = aggregate_result.total_wins.unwrap_or_default() as i32;
-        let total_losses = total_matches - total_wins;
-        let round_2 = |x: f64| (x * 100.0).round() / 100.0;
-        MatchesResultInfo {
-            total_matches,
-            total_wins,
-            total_losses,
-            avg_kills: round_2(aggregate_result.avg_kills.clone().unwrap_or_default().to_f64().unwrap_or_default()),
-            avg_deaths: round_2(aggregate_result.avg_deaths.clone().unwrap_or_default().to_f64().unwrap_or_default()),
-            avg_assists: round_2(aggregate_result.avg_assists.clone().unwrap_or_default().to_f64().unwrap_or_default()),
-            avg_kda: round_2(aggregate_result.avg_kda.clone().unwrap_or_default().to_f64().unwrap_or_default()),
-            avg_kill_participation: (aggregate_result.avg_kill_participation.clone().unwrap_or_default().to_f64().unwrap_or_default() * 100.0) as i32,
+        if let Some(champion_id) = filters.champion_id {
+            let sql_filter = " AND lmp.champion_id = ";
+            participant_query.push(&sql_filter);
+            participant_query.push_bind(champion_id);
+            aggregate_query.push(&sql_filter);
+            aggregate_query.push_bind(champion_id);
         }
-    };
-
-    let matches_ids: Vec<_> = results.iter().map(|row| row.lol_match_id).collect();
-    let mut matches = results.into_iter().map(|row| {
-        let match_duration = Duration::seconds(row.lol_match_match_duration.unwrap_or_default() as i64);
-        let match_duration_str = format!(
-            "{:02}:{:02}:{:02}",
-            match_duration.num_hours(),
-            match_duration.num_minutes() % 60,
-            match_duration.num_seconds() % 60
-        );
-
-        // Calculate time since match ended
-        let match_ended_since = row.lol_match_match_end.map_or_else(
-            || "Unknown".to_string(),
-            |dt| format_duration_since(dt),
-        );
-
-        // Safely handle floating point operations
-        let kda = (row.kda.unwrap_or_default().to_f64().unwrap_or(0.0).max(0.0) * 100.0).round() / 100.0;
-        let kill_participation = (row.kill_participation.unwrap_or_default().to_f64().unwrap_or(0.0).max(0.0) * 100.0).round();
-        SummonerMatch {
-            summoner_id: row.summoner_id,
-            match_id: row.lol_match_id,
-            riot_match_id: row.riot_match_id,
-            platform: row.platform.unwrap_or_default(),
-            match_ended_since,
-            match_duration: match_duration_str,
-            queue: Queue::try_from(row.lol_match_queue_id.unwrap_or_default() as u16)
-                .unwrap()
-                .to_string(),
-            champion_id: row.champion_id,
-            champ_level: row.champ_level,
-            won: row.won,
-            kda,
-            kills: row.kills,
-            deaths: row.deaths,
-            assists: row.assists,
-            kill_participation,
-            summoner_spell1_id: row.summoner_spell1_id.unwrap_or_default(),
-            summoner_spell2_id: row.summoner_spell2_id.unwrap_or_default(),
-            perk_primary_selection_id: row.perk_primary_selection_id.unwrap_or_default(),
-            perk_sub_style_id: row.perk_sub_style_id.unwrap_or_default(),
-            item0_id: row.item0_id.unwrap_or_default(),
-            item1_id: row.item1_id.unwrap_or_default(),
-            item2_id: row.item2_id.unwrap_or_default(),
-            item3_id: row.item3_id.unwrap_or_default(),
-            item4_id: row.item4_id.unwrap_or_default(),
-            item5_id: row.item5_id.unwrap_or_default(),
-            item6_id: row.item6_id.unwrap_or_default(),
-            participants: vec![],
+        if let Some(queue_id) = filters.queue_id {
+            let sql_filter = " AND lm.queue_id = ";
+            participant_query.push(&sql_filter);
+            participant_query.push_bind(queue_id);
+            aggregate_query.push(&sql_filter);
+            aggregate_query.push_bind(queue_id);
         }
-    }).collect::<Vec<_>>();
-    let total_pages = (matches_result_info.total_matches as f64 / per_page as f64).ceil() as i32;
 
-    // Fetch participants for the collected match_ids
+        if let Some(start_date) = start_date {
+            let sql_filter = " AND lm.match_end >= ";
+            participant_query.push(&sql_filter);
+            participant_query.push_bind(start_date);
+            aggregate_query.push(&sql_filter);
+            aggregate_query.push_bind(start_date);
+        }
+        if let Some(end_date) = end_date {
+            let sql_filter = " AND lm.match_end <= ";
+            participant_query.push(&sql_filter);
+            participant_query.push_bind(end_date);
+            aggregate_query.push(&sql_filter);
+            aggregate_query.push_bind(end_date);
+        }
 
-    let participants = if !matches_ids.is_empty() {
-        let participant_rows = sqlx::query_as::<_, SummonerMatchParticipantModel>(
-            "SELECT
+        participant_query.push(" ORDER BY lm.match_end DESC LIMIT ");
+        participant_query.push_bind(per_page);
+        participant_query.push(" OFFSET ");
+        participant_query.push_bind(offset);
+        let ag_build = aggregate_query.build_query_as::<MatchesResultInfoModel>();
+
+        let aggregate_result = ag_build
+            .fetch_one(db)
+            .await?;
+        let results = participant_query
+            .build_query_as::<SummonerMatchModel>()
+            .fetch_all(db)
+            .await?;
+
+
+        let matches_result_info = {
+            let total_matches = aggregate_result.total_count.unwrap_or_default() as i32;
+            let total_wins = aggregate_result.total_wins.unwrap_or_default() as i32;
+            let total_losses = total_matches - total_wins;
+            let round_2 = |x: f64| (x * 100.0).round() / 100.0;
+            MatchesResultInfo {
+                total_matches,
+                total_wins,
+                total_losses,
+                avg_kills: round_2(aggregate_result.avg_kills.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_deaths: round_2(aggregate_result.avg_deaths.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_assists: round_2(aggregate_result.avg_assists.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_kda: round_2(aggregate_result.avg_kda.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_kill_participation: (aggregate_result.avg_kill_participation.clone().unwrap_or_default().to_f64().unwrap_or_default() * 100.0) as i32,
+            }
+        };
+
+        let matches_ids: Vec<_> = results.iter().map(|row| row.lol_match_id).collect();
+        let mut matches = results.into_iter().map(|row| {
+            let match_duration = Duration::seconds(row.lol_match_match_duration.unwrap_or_default() as i64);
+            let match_duration_str = format!(
+                "{:02}:{:02}:{:02}",
+                match_duration.num_hours(),
+                match_duration.num_minutes() % 60,
+                match_duration.num_seconds() % 60
+            );
+
+            // Calculate time since match ended
+            let match_ended_since = row.lol_match_match_end.map_or_else(
+                || "Unknown".to_string(),
+                |dt| format_duration_since(dt),
+            );
+
+            // Safely handle floating point operations
+            let kda = (row.kda.unwrap_or_default().to_f64().unwrap_or(0.0).max(0.0) * 100.0).round() / 100.0;
+            let kill_participation = (row.kill_participation.unwrap_or_default().to_f64().unwrap_or(0.0).max(0.0) * 100.0).round();
+            SummonerMatch {
+                summoner_id: row.summoner_id,
+                match_id: row.lol_match_id,
+                riot_match_id: row.riot_match_id,
+                platform: row.platform.unwrap_or_default(),
+                match_ended_since,
+                match_duration: match_duration_str,
+                queue: Queue::try_from(row.lol_match_queue_id.unwrap_or_default() as u16)
+                    .expect("get matches: queue id not found")
+                    .to_string(),
+                champion_id: row.champion_id,
+                champ_level: row.champ_level,
+                won: row.won,
+                kda,
+                kills: row.kills,
+                deaths: row.deaths,
+                assists: row.assists,
+                kill_participation,
+                summoner_spell1_id: row.summoner_spell1_id.unwrap_or_default(),
+                summoner_spell2_id: row.summoner_spell2_id.unwrap_or_default(),
+                perk_primary_selection_id: row.perk_primary_selection_id.unwrap_or_default(),
+                perk_sub_style_id: row.perk_sub_style_id.unwrap_or_default(),
+                item0_id: row.item0_id.unwrap_or_default(),
+                item1_id: row.item1_id.unwrap_or_default(),
+                item2_id: row.item2_id.unwrap_or_default(),
+                item3_id: row.item3_id.unwrap_or_default(),
+                item4_id: row.item4_id.unwrap_or_default(),
+                item5_id: row.item5_id.unwrap_or_default(),
+                item6_id: row.item6_id.unwrap_or_default(),
+                participants: vec![],
+            }
+        }).collect::<Vec<_>>();
+        let total_pages = (matches_result_info.total_matches as f64 / per_page as f64).ceil() as i32;
+
+        // Fetch participants for the collected match_ids
+
+        let participants = if !matches_ids.is_empty() {
+            let participant_rows = sqlx::query_as::<_, SummonerMatchParticipantModel>(
+                "SELECT
                     lol_match_participants.lol_match_id,
                     lol_match_participants.summoner_id,
                     lol_match_participants.champion_id,
@@ -224,97 +220,98 @@ pub async fn inner_get_matches(
                 INNER JOIN summoners ON summoners.id = lol_match_participants.summoner_id
                 WHERE lol_match_participants.lol_match_id = ANY($1)
                 ORDER BY lol_match_participants.team_id ASC;"
-        )
-            .bind(&matches_ids)
-            .fetch_all(db)
-            .await?;
-        participant_rows.into_iter()
-            .map(|row| SummonerMatchParticipant {
-                team_id: row.team_id,
-                lol_match_id: row.lol_match_id,
-                summoner_id: row.summoner_id,
-                summoner_name: row.summoner_name,
-                champion_id: row.champion_id,
-                summoner_tag_line: row.summoner_tag_line,
-                summoner_platform: row.summoner_platform,
-            })
-            .collect::<Vec<_>>()
-    } else {
-        Vec::new()
-    };
+            )
+                .bind(&matches_ids)
+                .fetch_all(db)
+                .await?;
+            participant_rows.into_iter()
+                .map(|row| SummonerMatchParticipant {
+                    team_id: row.team_id,
+                    lol_match_id: row.lol_match_id,
+                    summoner_id: row.summoner_id,
+                    summoner_name: row.summoner_name,
+                    champion_id: row.champion_id,
+                    summoner_tag_line: row.summoner_tag_line,
+                    summoner_platform: row.summoner_platform,
+                })
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
 
-    // Group participants by match_id
-    let participants_grouped = participants
-        .into_iter()
-        .into_group_map_by(|p| p.lol_match_id);
+        // Group participants by match_id
+        let participants_grouped = participants
+            .into_iter()
+            .into_group_map_by(|p| p.lol_match_id);
 
-    // Assign participants to their respective matches
-    for match_ in matches.iter_mut() {
-        if let Some(participants) = participants_grouped.get(&match_.match_id) {
-            match_.participants = participants.clone();
+        // Assign participants to their respective matches
+        for match_ in matches.iter_mut() {
+            if let Some(participants) = participants_grouped.get(&match_.match_id) {
+                match_.participants = participants.clone();
+            }
         }
+
+        Ok(GetSummonerMatchesResult { matches, total_pages: total_pages as i64, matches_result_info })
     }
 
-    Ok(GetSummonerMatchesResult { matches, total_pages: total_pages as i64, matches_result_info })
+
+    #[derive(FromRow)]
+    pub struct MatchesResultInfoModel {
+        #[allow(dead_code)]
+        pub total_count: Option<i64>,
+        pub total_wins: Option<i64>,
+        pub avg_kills: Option<BigDecimal>,
+        pub avg_deaths: Option<BigDecimal>,
+        pub avg_assists: Option<BigDecimal>,
+        pub avg_kda: Option<BigDecimal>,
+        pub avg_kill_participation: Option<BigDecimal>,
+    }
+
+    #[derive(FromRow)]
+    pub struct SummonerMatchModel {
+        #[allow(dead_code)]
+        pub id: i32,
+        pub lol_match_id: i32,
+        pub riot_match_id: String,
+        pub platform: Option<String>,
+        pub champion_id: i32,
+        pub summoner_id: i32,
+        pub summoner_spell1_id: Option<i32>,
+        pub summoner_spell2_id: Option<i32>,
+        #[allow(dead_code)]
+        pub team_id: i32,
+        pub won: bool,
+        pub champ_level: i32,
+        pub kill_participation: Option<BigDecimal>,
+        pub kda: Option<BigDecimal>,
+        pub kills: i32,
+        pub deaths: i32,
+        pub assists: i32,
+        pub perk_primary_selection_id: Option<i32>,
+        pub perk_sub_style_id: Option<i32>,
+        pub item0_id: Option<i32>,
+        pub item1_id: Option<i32>,
+        pub item2_id: Option<i32>,
+        pub item3_id: Option<i32>,
+        pub item4_id: Option<i32>,
+        pub item5_id: Option<i32>,
+        pub item6_id: Option<i32>,
+        pub lol_match_queue_id: Option<i32>,
+        pub lol_match_match_end: Option<NaiveDateTime>,
+        pub lol_match_match_duration: Option<i32>,
+    }
+
+
+    #[derive(FromRow)]
+    pub struct SummonerMatchParticipantModel {
+        pub team_id: i32,
+        pub lol_match_id: i32,
+        pub summoner_id: i32,
+        pub summoner_name: String,
+        pub champion_id: i32,
+        pub summoner_tag_line: String,
+        pub summoner_platform: String,
+    }
 }
 
 
-#[cfg(feature = "ssr")]
-#[derive(FromRow)]
-pub struct MatchesResultInfoModel {
-    #[allow(dead_code)]
-    pub total_count: Option<i64>,
-    pub total_wins: Option<i64>,
-    pub avg_kills: Option<BigDecimal>,
-    pub avg_deaths: Option<BigDecimal>,
-    pub avg_assists: Option<BigDecimal>,
-    pub avg_kda: Option<BigDecimal>,
-    pub avg_kill_participation: Option<BigDecimal>,
-}
-
-#[cfg(feature = "ssr")]
-#[derive(FromRow)]
-pub struct SummonerMatchModel {
-    #[allow(dead_code)]
-    pub id: i32,
-    pub lol_match_id: i32,
-    pub riot_match_id: String,
-    pub platform: Option<String>,
-    pub champion_id: i32,
-    pub summoner_id: i32,
-    pub summoner_spell1_id: Option<i32>,
-    pub summoner_spell2_id: Option<i32>,
-    #[allow(dead_code)]
-    pub team_id: i32,
-    pub won: bool,
-    pub champ_level: i32,
-    pub kill_participation: Option<BigDecimal>,
-    pub kda: Option<BigDecimal>,
-    pub kills: i32,
-    pub deaths: i32,
-    pub assists: i32,
-    pub perk_primary_selection_id: Option<i32>,
-    pub perk_sub_style_id: Option<i32>,
-    pub item0_id: Option<i32>,
-    pub item1_id: Option<i32>,
-    pub item2_id: Option<i32>,
-    pub item3_id: Option<i32>,
-    pub item4_id: Option<i32>,
-    pub item5_id: Option<i32>,
-    pub item6_id: Option<i32>,
-    pub lol_match_queue_id: Option<i32>,
-    pub lol_match_match_end: Option<NaiveDateTime>,
-    pub lol_match_match_duration: Option<i32>,
-}
-
-#[cfg(feature = "ssr")]
-#[derive(FromRow)]
-pub struct SummonerMatchParticipantModel {
-    pub team_id: i32,
-    pub lol_match_id: i32,
-    pub summoner_id: i32,
-    pub summoner_name: String,
-    pub champion_id: i32,
-    pub summoner_tag_line: String,
-    pub summoner_platform: String,
-}

@@ -12,10 +12,10 @@ use crate::views::summoner_page::match_details::{ItemEvent, LolMatchParticipantD
 #[component]
 pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantDetails>>) -> impl IntoView {
     let summoner_name_with_champion = |participant: &LolMatchParticipantDetails| {
-        format!("{}({})", participant.summoner_name, Champion::try_from(participant.champion_id as i16).unwrap())
+        format!("{}({})", participant.summoner_name, Champion::try_from(participant.champion_id as i16).expect("Invalid champion id"))
     };
     let participant_ids = match_details.read().iter().map(|x| (x.summoner_id, summoner_name_with_champion(x))).collect::<HashMap<i32, String>>();
-    let find_participant = move |summoner_id: i32| match_details.read().iter().find(|x| x.summoner_id == summoner_id).cloned().unwrap();
+    let find_participant = move |summoner_id: i32| match_details.read().iter().find(|x| x.summoner_id == summoner_id).cloned().expect("Participant not found");
     let (selected_participant, set_selected_participant) = signal(find_participant(summoner_id));
     view! {
         <div class="text-left">
@@ -24,7 +24,9 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                 aria-label="Select a participant"
                 prop:value=summoner_id
                 on:change=move |e| set_selected_participant(
-                    find_participant(event_target_value(&e).parse::<i32>().unwrap()),
+                    find_participant(
+                        event_target_value(&e).parse::<i32>().expect("Invalid summoner id"),
+                    ),
                 )
             >
                 {participant_ids
@@ -152,7 +154,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             width="28"
                             height="28"
                             alt=Perk::try_from(selected_participant().perk_primary_style_id as u16)
-                                .unwrap()
+                                .expect("Invalid perk id")
                                 .to_string()
                             src=Perk::get_static_url(selected_participant().perk_primary_style_id)
                             class="w-[28px] h-[28px] rounded"
@@ -163,7 +165,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             alt=Perk::try_from(
                                     selected_participant().perk_primary_selection_id as u16,
                                 )
-                                .unwrap()
+                                .expect("Invalid perk id")
                                 .to_string()
                             src=Perk::get_static_url(
                                 selected_participant().perk_primary_selection_id,
@@ -176,7 +178,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             alt=Perk::try_from(
                                     selected_participant().perk_primary_selection1_id as u16,
                                 )
-                                .unwrap()
+                                .expect("Invalid perk id")
                                 .to_string()
                             src=Perk::get_static_url(
                                 selected_participant().perk_primary_selection1_id,
@@ -189,7 +191,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             alt=Perk::try_from(
                                     selected_participant().perk_primary_selection2_id as u16,
                                 )
-                                .unwrap()
+                                .expect("Invalid perk id")
                                 .to_string()
                             src=Perk::get_static_url(
                                 selected_participant().perk_primary_selection2_id,
@@ -202,7 +204,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             alt=Perk::try_from(
                                     selected_participant().perk_primary_selection3_id as u16,
                                 )
-                                .unwrap()
+                                .expect("Invalid perk id")
                                 .to_string()
                             src=Perk::get_static_url(
                                 selected_participant().perk_primary_selection3_id,
@@ -216,7 +218,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             width="28"
                             height="28"
                             alt=Perk::try_from(selected_participant().perk_sub_style_id as u16)
-                                .unwrap()
+                                .expect("Invalid perk id")
                                 .to_string()
                             src=Perk::get_static_url(selected_participant().perk_sub_style_id)
                             class="w-[28px] h-[28px] rounded"
@@ -225,7 +227,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             width="28"
                             height="28"
                             alt=Perk::try_from(selected_participant().perk_sub_selection1_id as u16)
-                                .unwrap()
+                                .expect("Invalid perk id")
                                 .to_string()
                             src=Perk::get_static_url(selected_participant().perk_sub_selection1_id)
                             class="w-[28px] h-[28px] rounded"
@@ -234,7 +236,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             width="28"
                             height="28"
                             alt=Perk::try_from(selected_participant().perk_sub_selection2_id as u16)
-                                .unwrap()
+                                .expect("Invalid perk id")
                                 .to_string()
                             src=Perk::get_static_url(selected_participant().perk_sub_selection2_id)
                             class="w-[28px] h-[28px] rounded"
@@ -246,7 +248,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             width="28"
                             height="28"
                             alt=Perk::try_from(selected_participant().perk_offense_id as u16)
-                                .unwrap()
+                                .expect("Invalid perk id")
                                 .to_string()
                             src=Perk::get_static_url(selected_participant().perk_offense_id)
                             class="w-[28px] h-[28px] rounded"
@@ -255,7 +257,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             width="28"
                             height="28"
                             alt=Perk::try_from(selected_participant().perk_flex_id as u16)
-                                .unwrap()
+                                .expect("Invalid perk id")
                                 .to_string()
                             src=Perk::get_static_url(selected_participant().perk_flex_id)
                             class="w-[28px] h-[28px] rounded"
@@ -265,7 +267,7 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             width="28"
                             height="28"
                             alt=Perk::try_from(selected_participant().perk_defense_id as u16)
-                                .unwrap()
+                                .expect("Invalid perk id")
                                 .to_string()
                             src=Perk::get_static_url(selected_participant().perk_defense_id)
                             class="w-[28px] h-[28px] rounded"

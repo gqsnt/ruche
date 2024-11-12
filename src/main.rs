@@ -1,15 +1,15 @@
-use leptos_broken_gg::backend::generate_sitemap::generate_site_map;
-
 #[cfg(feature = "ssr")]
 #[tokio::main]
-async fn main() {
+async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
+    use leptos_broken_gg::ssr::{init_database, init_riot_api};
+    use leptos_broken_gg::backend::generate_sitemap::generate_site_map;
+    use leptos_broken_gg::ssr::AppState;
     use tower_http::compression::{CompressionLayer, DefaultPredicate};
     use axum::Router;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use leptos_broken_gg::app::*;
     use std::sync::Arc;
-    use leptos_broken_gg::{init_database, init_riot_api, AppState};
     use dotenv::dotenv;
     use leptos::logging::log;
     use leptos::html::tr;
@@ -17,17 +17,17 @@ async fn main() {
     use tower_http::compression::predicate::{NotForContentType, SizeAbove};
     use memory_serve::{load_assets, CacheControl, MemoryServe};
     use tower::ServiceBuilder;
-    use leptos_broken_gg::live_game_cache;
+    use leptos_broken_gg::backend::live_game_cache;
     use tokio::task;
     use leptos_broken_gg::backend;
     use leptos_broken_gg::backend::updates::update_matches_task::update_matches_task;
-    use leptos_broken_gg::live_game_cache::cache_cleanup_task;
+    use leptos_broken_gg::backend::live_game_cache::cache_cleanup_task;
 
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
     let mut leptos_options = conf.leptos_options;
     let _ = leptos_options.site_root.clone();
-    backend::lol_static::init_static_data().await;
+    backend::lol_static::init_static_data().await?;
     let db = init_database().await;
     let riot_api = Arc::new(init_riot_api());
 
@@ -36,7 +36,8 @@ async fn main() {
     let cleanup_interval = std::time::Duration::from_secs(30);
     let live_game_cache = Arc::new(live_game_cache::LiveGameCache::new(expiration_duration));
     let cache_for_cleanup = Arc::clone(&live_game_cache);
-    let max_matches = dotenv::var("MAX_MATCHES").unwrap_or_else(|_| "1500".to_string()).parse().unwrap();
+
+    let max_matches = dotenv::var("MAX_MATCHES").unwrap_or_else(|_| "1500".to_string()).parse()?;
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
         riot_api: riot_api.clone(),
@@ -46,15 +47,15 @@ async fn main() {
     };
 
     // generate sitemap
-    generate_site_map(&db.clone()).await.unwrap();
+    generate_site_map(&db.clone()).await?;
 
     // thread to update matches data and add summoners related.
     // because of mass update/inserts and limiting usage of account_v1 request.
     // we dont want n concurrent thread updating matches and summoners
     let update_interval = dotenv::var("MATCH_TASK_UPDATE_INTERVAL").unwrap_or_else(|_| "10".to_string());
-    let update_interval_duration = tokio::time::Duration::from_secs(update_interval.parse().unwrap());
+    let update_interval_duration = tokio::time::Duration::from_secs(update_interval.parse()?);
     tokio::spawn(async move {
-        update_matches_task(db, riot_api,update_interval_duration).await;
+        update_matches_task(db, riot_api, update_interval_duration).await;
     });
 
     // thread to cleanup live game cache data
@@ -99,10 +100,10 @@ async fn main() {
         )
         .with_state(app_state);
     log!("listening on http://{}", &addr);
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app.into_make_service())
-        .await
-        .unwrap();
+        .await?;
+    Ok(())
 }
 
 #[cfg(not(feature = "ssr"))]

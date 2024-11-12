@@ -1,11 +1,10 @@
+use crate::backend::ssr::AppResult;
 use crate::backend::updates::update_matches_task::LolMatchNotUpdated;
-use crate::backend::Id;
-use crate::version_to_major_minor;
+use crate::utils::version_to_major_minor;
 use riven::models::match_v5::Match;
 use sqlx::PgPool;
 
-
-pub async fn bulk_trashed_matches(db: &PgPool, matches: Vec<(Match, LolMatchNotUpdated)>) -> Vec<i32> {
+pub async fn bulk_trashed_matches(db: &PgPool, matches: Vec<(Match, LolMatchNotUpdated)>) -> AppResult<()> {
     let match_ids = matches.iter().map(|(match_, db_match)| db_match.id).collect::<Vec<i32>>();
     let sql = r"
         UPDATE lol_matches
@@ -15,19 +14,18 @@ pub async fn bulk_trashed_matches(db: &PgPool, matches: Vec<(Match, LolMatchNotU
         WHERE id = ANY($1)
         RETURNING id;
         ";
-    let rows = sqlx::query_as::<_, Id>(sql)
+    sqlx::query(sql)
         .bind(match_ids)
         .fetch_all(db)
-        .await
-        .unwrap();
-    rows.into_iter().map(|r| r.id).collect()
+        .await?;
+    Ok(())
 }
 
 
-pub async fn bulk_update_matches(db: &sqlx::PgPool, matches: Vec<(Match, LolMatchNotUpdated)>) -> Vec<i32> {
+pub async fn bulk_update_matches(db: &sqlx::PgPool, matches: Vec<(Match, LolMatchNotUpdated)>) -> AppResult<()> {
     let match_ids = matches.iter().map(|(x, _)| x.metadata.match_id.clone()).collect::<Vec<String>>();
-    let match_creations = matches.iter().map(|(x, _)| chrono::DateTime::from_timestamp_millis(x.info.game_start_timestamp).unwrap()).collect::<Vec<_>>();
-    let match_ends = matches.iter().map(|(x, _)| chrono::DateTime::from_timestamp_millis(x.info.game_end_timestamp.unwrap()).unwrap()).collect::<Vec<_>>();
+    let match_creations = matches.iter().map(|(x, _)| chrono::DateTime::from_timestamp_millis(x.info.game_start_timestamp).unwrap_or_default()).collect::<Vec<_>>();
+    let match_ends = matches.iter().map(|(x, _)| chrono::DateTime::from_timestamp_millis(x.info.game_end_timestamp.unwrap_or_default()).unwrap_or_default()).collect::<Vec<_>>();
     let match_durations = matches.iter().map(|(x, _)| x.info.game_duration as i32).collect::<Vec<i32>>();
     let queue_ids = matches.iter().map(|(x, _)| x.info.queue_id.0 as i32).collect::<Vec<i32>>();
     let map_ids = matches.iter().map(|(x, _)| x.info.map_id.0 as i32).collect::<Vec<i32>>();
@@ -55,10 +53,9 @@ pub async fn bulk_update_matches(db: &sqlx::PgPool, matches: Vec<(Match, LolMatc
                 UNNEST($7::VARCHAR(15)[]) AS game_mode,
                 UNNEST($8::VARCHAR(5)[]) AS version
         ) AS data
-        WHERE lol_matches.match_id = data.match_id
-        RETURNING lol_matches.id;
+        WHERE lol_matches.match_id = data.match_id;
         ";
-    let rows = sqlx::query_as::<_, Id>(sql)
+    sqlx::query(sql)
         .bind(match_ids)
         .bind(match_creations)
         .bind(match_ends)
@@ -68,8 +65,7 @@ pub async fn bulk_update_matches(db: &sqlx::PgPool, matches: Vec<(Match, LolMatc
         .bind(modes)
         .bind(versions)
         .fetch_all(db)
-        .await
-        .unwrap();
+        .await?;
 
-    rows.into_iter().map(|r| r.id).collect()
+    Ok(())
 }

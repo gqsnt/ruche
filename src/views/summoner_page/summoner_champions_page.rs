@@ -245,7 +245,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                                     alt=format!(
                                                                                         "Champion {}",
                                                                                         Champion::try_from(champion.champion_id as i16)
-                                                                                            .unwrap()
+                                                                                            .expect("Invalid champion id")
                                                                                             .to_string(),
                                                                                     )
                                                                                     class="w-[32px] h-[32px] rounded-full"

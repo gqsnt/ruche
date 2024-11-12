@@ -6,11 +6,11 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use crate::backend::server_fns::get_summoner::SummonerModel;
+use crate::backend::server_fns::get_summoner::ssr::SummonerModel;
+use crate::backend::ssr::{AppError, AppResult};
 use crate::backend::updates::update_matches_task::bulk_lol_match_participants::bulk_insert_lol_match_participants;
 use crate::backend::updates::update_matches_task::bulk_lol_matches::{bulk_trashed_matches, bulk_update_matches};
 use crate::backend::updates::update_matches_task::bulk_summoners::{bulk_insert_summoners, bulk_update_summoners};
-use crate::error_template::AppResult;
 use crate::{consts, DB_CHUNK_SIZE};
 use futures::stream::{FuturesOrdered, FuturesUnordered, StreamExt};
 use leptos::logging::log;
@@ -29,11 +29,17 @@ pub async fn update_matches_task(
         interval.tick().await;
         //let start = std::time::Instant::now();
         //log!("Starting update matches task at {}", Utc::now());
-        while let Some(matches) = get_not_updated_match(&db, 100).await {
+        while let Ok(matches) = get_not_updated_match(&db, 100).await {
             let before = std::time::Instant::now();
             let match_len = matches.len();
-            update_matches(&db, &api, matches).await.unwrap();
-            log!("Updated {} matches in {:?}", match_len, before.elapsed());
+            match update_matches(&db, &api, matches).await {
+                Ok(_) => {
+                    log!("Updated {} matches in {:?}", match_len, before.elapsed());
+                }
+                Err(e) => {
+                    log!("Error updating matches: {:?}", e);
+                }
+            };
         }
         //log!("Finished update matches task after {}s", start.elapsed().as_secs());
     }
@@ -89,14 +95,14 @@ async fn update_matches(
                     profile_icon_id: participant.profile_icon,
                     updated_at: DateTime::from_timestamp_millis(
                         match_data.info.game_end_timestamp.unwrap_or(0)
-                    ).unwrap(),
+                    ).expect("update match task:timestamp error"),
                 });
         }
     }
 
     // Separate summoners into those to insert and update
     let puuids: Vec<String> = participants_map.keys().cloned().collect();
-    let existing_summoners = fetch_existing_summoners(db, &puuids).await.unwrap();
+    let existing_summoners = fetch_existing_summoners(db, &puuids).await?;
 
     let mut summoners_to_insert = Vec::new();
     let mut summoners_to_update = Vec::new();
@@ -139,8 +145,8 @@ async fn update_matches(
     for (mut summoner, summoner_data) in summoners_data {
         match summoner_data {
             Ok(account) => {
-                summoner.game_name = account.game_name.unwrap();
-                summoner.tag_line = account.tag_line.unwrap();
+                summoner.game_name = account.game_name.expect("update match task:game name not set");
+                summoner.tag_line = account.tag_line.expect("update match task:tag line not set");
                 summoners_to_insert.push(summoner);
             }
             Err(e) => {
@@ -160,7 +166,7 @@ async fn update_matches(
     // Bulk Insert new summoners
     if !summoners_to_insert.is_empty() {
         for summoners_to_insert in summoners_to_insert.chunks(DB_CHUNK_SIZE) {
-            let inserted_summoners = bulk_insert_summoners(db, summoners_to_insert).await.unwrap();
+            let inserted_summoners = bulk_insert_summoners(db, summoners_to_insert).await?;
             summoner_map.extend(inserted_summoners);
         }
     }
@@ -168,10 +174,10 @@ async fn update_matches(
     // Bulk update existing summoners
     if !summoners_to_update.is_empty() {
         for chunk in summoners_to_update.chunks(DB_CHUNK_SIZE) {
-            bulk_update_summoners(db, chunk).await.unwrap();
+            bulk_update_summoners(db, chunk).await?;
         }
     }
-    resolve_summoner_conflicts(&db, &api).await.unwrap();
+    resolve_summoner_conflicts(&db, &api).await?;
 
     // Prepare participants for bulk insert
     let match_participants: Vec<TempParticipant> = match_datas
@@ -303,11 +309,11 @@ async fn update_matches(
 
     // Bulk insert participants
     for chunk in match_participants.chunks(DB_CHUNK_SIZE) {
-        bulk_insert_lol_match_participants(db, chunk).await.unwrap();
+        bulk_insert_lol_match_participants(db, chunk).await?;
     }
     // Bulk update matches
-    bulk_update_matches(db, match_datas).await;
-    bulk_trashed_matches(db, trashed_matches).await;
+    bulk_update_matches(db, match_datas).await?;
+    bulk_trashed_matches(db, trashed_matches).await?;
     Ok(())
 }
 
@@ -369,20 +375,21 @@ pub struct TempParticipant {
 }
 
 
-pub async fn get_not_updated_match(db: &sqlx::PgPool, limit: i32) -> Option<Vec<LolMatchNotUpdated>> {
-    Some(
-        sqlx::query_as::<_, LolMatchNotUpdated>(r#"
+pub async fn get_not_updated_match(db: &sqlx::PgPool, limit: i32) -> AppResult<Vec<LolMatchNotUpdated>> {
+    let result = sqlx::query_as::<_, LolMatchNotUpdated>(r#"
             SELECT id, match_id, platform, updated FROM lol_matches
             WHERE updated = false
             ORDER BY match_id DESC
             LIMIT $1;
         "#)
-            .bind(limit)
-            .fetch_all(db)
-
-            .await
-            .unwrap()
-    ).filter(|r| !r.is_empty())
+        .bind(limit)
+        .fetch_all(db)
+        .await?;
+    if !result.is_empty() {
+        Ok(result)
+    } else {
+        Err(AppError::CustomError("No matches to update".to_string()))
+    }
 }
 
 pub async fn fetch_existing_summoners(

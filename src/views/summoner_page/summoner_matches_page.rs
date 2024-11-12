@@ -1,7 +1,7 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_matches::get_matches;
 use crate::consts::{Champion, Item, Perk, SummonerSpell};
-use crate::summoner_url;
+use crate::utils::summoner_url;
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
@@ -172,7 +172,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                     width="48"
                                     height="48"
                                     alt=Champion::try_from(match_.champion_id as i16)
-                                        .unwrap()
+                                        .expect("Invalid champion")
                                         .to_string()
                                     src=Champion::get_static_url(match_.champion_id)
                                     class="w-12 h-12 rounded-full"
@@ -193,7 +193,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                             alt=SummonerSpell::try_from(
                                                     match_.summoner_spell1_id as u16,
                                                 )
-                                                .unwrap()
+                                                .expect("Invalid summoner spell")
                                                 .to_string()
                                             src=SummonerSpell::get_static_url(match_.summoner_spell1_id)
                                             class="w-[22px] w-[22px]"
@@ -206,7 +206,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                             alt=SummonerSpell::try_from(
                                                     match_.summoner_spell2_id as u16,
                                                 )
-                                                .unwrap()
+                                                .expect("Invalid summoner spell")
                                                 .to_string()
                                             src=SummonerSpell::get_static_url(match_.summoner_spell2_id)
                                             class="w-[22px] w-[22px]"
@@ -223,7 +223,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                                 width="22"
                                                 height="22"
                                                 alt=Perk::try_from(match_.perk_primary_selection_id as u16)
-                                                    .unwrap()
+                                                    .expect("Invalid perk")
                                                     .to_string()
                                                 src=Perk::get_static_url(match_.perk_primary_selection_id)
                                                 class="w-[22px] w-[22px]"
@@ -239,7 +239,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                                 width="22"
                                                 height="22"
                                                 alt=Perk::try_from(match_.perk_sub_style_id as u16)
-                                                    .unwrap()
+                                                    .expect("Invalid perk")
                                                     .to_string()
                                                 src=Perk::get_static_url(match_.perk_sub_style_id)
                                                 class="w-[22px] w-[22px]"
@@ -360,7 +360,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                             width="16"
                                             height="16"
                                             alt=Champion::try_from(participant.champion_id as i16)
-                                                .unwrap()
+                                                .expect("Invalid champion")
                                                 .to_string()
                                             src=Champion::get_static_url(participant.champion_id)
                                             class="w-4 h-4 rounded"

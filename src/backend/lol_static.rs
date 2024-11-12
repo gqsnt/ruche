@@ -1,3 +1,4 @@
+use crate::backend::ssr::{AppError, AppResult};
 use crate::consts::{Champion, SummonerSpell};
 use futures::StreamExt;
 use image::EncodableLayout;
@@ -27,14 +28,14 @@ pub struct ImageToDownload {
 }
 
 
-pub async fn init_static_data() {
+pub async fn init_static_data() -> AppResult<()> {
     let default_assets_path = get_assets_path();
-    create_dir_all(default_assets_path.join("items")).unwrap();
-    create_dir_all(default_assets_path.join("profile_icons")).unwrap();
-    create_dir_all(default_assets_path.join("perks")).unwrap();
-    create_dir_all(default_assets_path.join("champions")).unwrap();
-    create_dir_all(default_assets_path.join("summoner_spells")).unwrap();
-    let version = get_current_version().await.unwrap();
+    create_dir_all(default_assets_path.join("items"))?;
+    create_dir_all(default_assets_path.join("profile_icons"))?;
+    create_dir_all(default_assets_path.join("perks"))?;
+    create_dir_all(default_assets_path.join("champions"))?;
+    create_dir_all(default_assets_path.join("summoner_spells"))?;
+    let version = get_current_version().await?;
     let t = std::time::Instant::now();
     let (
         item_images,
@@ -47,9 +48,9 @@ pub async fn init_static_data() {
     );
 
     let mut images_to_download = Vec::new();
-    images_to_download.extend(item_images.unwrap());
-    images_to_download.extend(profile_icons_images.unwrap());
-    images_to_download.extend(perks.unwrap());
+    images_to_download.extend(item_images?);
+    images_to_download.extend(profile_icons_images?);
+    images_to_download.extend(perks?);
     for champion in Champion::iter() {
         if champion == Champion::UNKNOWN {
             continue;
@@ -77,7 +78,7 @@ pub async fn init_static_data() {
         }
         let path = get_assets_path().join("summoner_spells").join(format!("{}.avif", summoner_spell as u16));
         let path_dest = get_assets_dest_path().join("summoner_spells").join(format!("{}.avif", summoner_spell as u16));
-        if !path_dest.exists() &&  !path.exists() {
+        if !path_dest.exists() && !path.exists() {
             images_to_download.push(ImageToDownload {
                 url: summoner_spell.get_url(version.clone()),
                 path,
@@ -94,10 +95,11 @@ pub async fn init_static_data() {
     download_and_save_images(images_to_download).await;
 
     println!("Time to load static data: {:?}", t.elapsed());
+    Ok(())
 }
 
 
-pub async fn encode_and_save_image(image_data: &[u8], file_path: &Path, size: (u32, u32), to_avif: bool) {
+pub async fn encode_and_save_image(image_data: &[u8], file_path: &Path, size: (u32, u32), to_avif: bool) -> AppResult<()> {
     println!("Saving image: {:?}", file_path);
     let img = image::load_from_memory_with_format(image_data, image::ImageFormat::Png).unwrap();
     let resized = img.resize_exact(size.0, size.1, image::imageops::FilterType::Lanczos3);
@@ -113,9 +115,10 @@ pub async fn encode_and_save_image(image_data: &[u8], file_path: &Path, size: (u
     } else {
         resized.save(file_path).unwrap();
     }
+    Ok(())
 }
 
-async fn download_and_save_images(images_to_download: Vec<ImageToDownload>) {
+async fn download_and_save_images(images_to_download: Vec<ImageToDownload>) -> AppResult<()> {
     let client = reqwest::Client::new();
 
     futures::stream::iter(images_to_download)
@@ -125,19 +128,12 @@ async fn download_and_save_images(images_to_download: Vec<ImageToDownload>) {
                 // Download the image
                 match client.get(&image.url).send().await {
                     Ok(response) => {
-                        match response.bytes().await {
-                            Ok(image_data) => {
-                                // Save the image in a blocking task
-                                let image_data_vec = image_data.to_vec();
-                                let path = image.path.clone();
-                                let size = image.size;
-                                let to_avif = image.to_avif;
-                                encode_and_save_image(&image_data_vec, &path, size, to_avif).await;
-                            }
-                            Err(e) => {
-                                eprintln!("Error getting image data: {}", e);
-                            }
-                        }
+                        let image_data = response.bytes().await.unwrap();
+                        let image_data_vec = image_data.to_vec();
+                        let path = image.path.clone();
+                        let size = image.size;
+                        let to_avif = image.to_avif;
+                        encode_and_save_image(&image_data_vec, &path, size, to_avif).await.unwrap()
                     }
                     Err(e) => {
                         eprintln!("Error downloading image: {}", e);
@@ -146,17 +142,18 @@ async fn download_and_save_images(images_to_download: Vec<ImageToDownload>) {
             }
         })
         .await;
+    Ok(())
 }
 
 
-pub async fn get_perks(version: String) -> Result<Vec<ImageToDownload>, reqwest::Error> {
+pub async fn get_perks(version: String) -> AppResult<Vec<ImageToDownload>> {
     let raw_perks = StaticUrl::Perks.get().await?;
-    let all_perks: Vec<JsonPerk> = serde_json::from_value(raw_perks).unwrap();
+    let all_perks: Vec<JsonPerk> = serde_json::from_value(raw_perks)?;
     let mut images_to_download = Vec::new();
     for perk in all_perks {
         let path = get_assets_path().join("perks").join(format!("{}.avif", perk.id));
         let path_dest = get_assets_dest_path().join("perks").join(format!("{}.avif", perk.id));
-        if !path_dest.exists() &&  !path.exists() {
+        if !path_dest.exists() && !path.exists() {
             let image_url = format!("https://raw.communitydragon.org/latest/game/assets/perks/{}", perk.icon_path.replace("/lol-game-data/assets/v1/perk-images/", "").to_lowercase());
             images_to_download.push(ImageToDownload {
                 url: image_url,
@@ -184,13 +181,13 @@ pub async fn get_perks(version: String) -> Result<Vec<ImageToDownload>, reqwest:
     Ok(images_to_download)
 }
 
-pub async fn get_items(version: String) -> Result<Vec<ImageToDownload>, reqwest::Error> {
+pub async fn get_items(version: String) -> AppResult<Vec<ImageToDownload>> {
     let mut images_to_download = Vec::new();
     let raw_items = StaticUrl::Items { version: version.clone() }.get().await?;
-    let items_json = raw_items["data"].as_object().unwrap();
+    let items_json = raw_items["data"].as_object().ok_or(AppError::CustomError("failed to parse items data".to_string()))?;
     for (key, value) in items_json {
-        let item: JsonItem = serde_json::from_value(value.clone()).unwrap();
-        let id = key.parse::<i32>().unwrap();
+        let item: JsonItem = serde_json::from_value(value.clone())?;
+        let id = key.parse::<i32>()?;
         let path = get_assets_path().join("items").join(format!("{}.avif", id));
         let path_dest = get_assets_dest_path().join("items").join(format!("{}.avif", id));
         if !path_dest.exists() && !path.exists() {
@@ -211,18 +208,18 @@ pub async fn get_items(version: String) -> Result<Vec<ImageToDownload>, reqwest:
 }
 
 
-pub async fn get_current_version() -> Result<String, reqwest::Error> {
-    let versions: Vec<String> = serde_json::from_value(StaticUrl::Versions.get().await?).unwrap();
+pub async fn get_current_version() -> AppResult<String> {
+    let versions: Vec<String> = serde_json::from_value(StaticUrl::Versions.get().await?)?;
     Ok(versions[0].clone())
 }
 
 
-pub async fn update_profile_icons_image(version: String) -> Result<Vec<ImageToDownload>, reqwest::Error> {
+pub async fn update_profile_icons_image(version: String) -> AppResult<Vec<ImageToDownload>> {
     let mut images_to_download = Vec::new();
     let raw_champions = StaticUrl::ProfileIcons { version: version.clone() }.get().await?;
-    let data = raw_champions["data"].as_object().unwrap();
+    let data = raw_champions["data"].as_object().ok_or(AppError::CustomError("failed to parse profile icons data".to_string()))?;
     for (k, _) in data {
-        let id = k.clone().parse::<i64>().unwrap() as i32;
+        let id = k.clone().parse::<i64>()? as i32;
         let path = get_assets_path().join("profile_icons").join(format!("{}.avif", id));
         let path_dest = get_assets_dest_path().join("profile_icons").join(format!("{}.avif", id));
 

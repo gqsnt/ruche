@@ -2,6 +2,7 @@ use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_summoner::get_summoner;
 use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::consts::{PlatformRoute, ProfileIcon};
+use crate::utils::summoner_url;
 use crate::views::summoner_page::summoner_nav::SummonerNav;
 use leptos::context::provide_context;
 use leptos::either::Either;
@@ -12,7 +13,6 @@ use leptos::server::Resource;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_params_map;
 use serde::{Deserialize, Serialize};
-use crate::summoner_url;
 
 pub mod summoner_search_page;
 pub mod summoner_matches_page;
@@ -131,7 +131,6 @@ impl Summoner {
 
 
     /// Generates a slug from the game name and tag line.
-
 
     /// Returns the URL of the summoner's profile icon.
     pub fn profile_icon_url(&self) -> String {

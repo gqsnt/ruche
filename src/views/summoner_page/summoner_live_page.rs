@@ -1,7 +1,7 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_live_game::get_live_game;
 use crate::consts::{Champion, Perk, SummonerSpell};
-use crate::summoner_url;
+use crate::utils::summoner_url;
 use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
 use leptos::prelude::{expect_context, ReadSignal, Set};
@@ -139,7 +139,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                             width="32"
                                             height="32"
                                             alt=Champion::try_from(participant.champion_id as i16)
-                                                .unwrap()
+                                                .expect("Invalid champion")
                                                 .to_string()
                                             src=Champion::get_static_url(participant.champion_id)
                                             class="w-8 h-8 rounded-full block"
@@ -154,7 +154,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                             alt=SummonerSpell::try_from(
                                                     participant.summoner_spell1_id as u16,
                                                 )
-                                                .unwrap()
+                                                .expect("Invalid summoner spell")
                                                 .to_string()
                                             src=SummonerSpell::get_static_url(
                                                 participant.summoner_spell1_id,
@@ -169,7 +169,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                             alt=SummonerSpell::try_from(
                                                     participant.summoner_spell2_id as u16,
                                                 )
-                                                .unwrap()
+                                                .expect("Invalid summoner spell")
                                                 .to_string()
                                             src=SummonerSpell::get_static_url(
                                                 participant.summoner_spell2_id,
@@ -184,7 +184,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                             alt=Perk::try_from(
                                                     participant.perk_primary_selection_id as u16,
                                                 )
-                                                .unwrap()
+                                                .expect("Invalid perk")
                                                 .to_string()
                                             width="16"
                                             height="16"
@@ -199,7 +199,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                             width="16"
                                             height="16"
                                             alt=Perk::try_from(participant.perk_sub_style_id as u16)
-                                                .unwrap()
+                                                .expect("Invalid perk")
                                                 .to_string()
                                             src=Perk::get_static_url(participant.perk_sub_style_id)
                                             class="w-4 h-4 rounded"
