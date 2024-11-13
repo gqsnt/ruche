@@ -29,6 +29,7 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     let is_prod = dotenv::var("ENV").unwrap_or("DEV".to_string()) == "PROD";
     if is_prod {
         leptos_options.site_addr = SocketAddr::from(([0, 0, 0, 0], 443));
+        rustls::crypto::ring::default_provider().install_default().expect("Failed to install rustls crypto provider");
     }
     else{
         leptos_options.site_addr = SocketAddr::from(([127, 0, 0, 1], 3000));

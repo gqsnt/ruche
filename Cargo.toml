@@ -29,7 +29,7 @@ sitemap = {version = "0.4.1", optional = true}
 thiserror = {version = "2", optional = true}
 serde_json = {version = "1.0.132", optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
-
+rustls = { version = "0.23.16" , features = ["ring"], optional = true}
 
 
 leptos = { version = "0.7.0-rc1" ,features = ["nightly"] }
@@ -47,6 +47,7 @@ urlencoding = "2"
 serde = {version = "1.0", features = ["derive"]}
 http = "1"
 console_error_panic_hook = "0.1"
+
 
 
 [features]
@@ -76,7 +77,8 @@ ssr = [
     "dep:sitemap",
     "dep:thiserror",
     "dep:serde_json",
-    "dep:axum-server"
+    "dep:axum-server",
+    "dep:rustls"
 ]
 
 [profile.release]
