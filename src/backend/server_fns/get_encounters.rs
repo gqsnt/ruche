@@ -41,20 +41,31 @@ pub mod ssr {
                     ss.game_name,
                     ss.platform,
                     ss.profile_icon_id,
-                    encounter_data.match_count as encounter_count,
-                    total_count
+                    match_count,
+                    total_count,
+                    with_match_count,
+                    with_win_count,
+                    vs_match_count,
+                    vs_win_count
                 FROM
                     summoners AS ss
                         INNER JOIN (
                         SELECT
                             lmp.summoner_id,
-                            COUNT(lmp.id) AS match_count,
-                            COUNT(lmp.summoner_id) OVER() AS total_count
+                            COUNT(lmp.id)                                                            AS match_count,
+                            count(lmp.summoner_id) over ()                                           AS total_count,
+                            COUNT(CASE WHEN lmp1.team_id = lmp.team_id THEN lmp.id END)              AS with_match_count,
+                            SUM(CASE WHEN lmp1.team_id = lmp.team_id AND lmp.won THEN 1 ELSE 0 END)  AS with_win_count,
+                            COUNT(CASE WHEN lmp1.team_id != lmp.team_id THEN lmp.id END)             AS vs_match_count,
+                            SUM(CASE WHEN lmp1.team_id != lmp.team_id AND lmp.won THEN 1 ELSE 0 END) AS vs_win_count
                         FROM
                             lol_match_participants AS lmp
-                        WHERE
-                lmp.summoner_id !=
+                            INNER JOIN lol_match_participants AS lmp1
+                                         ON lmp.lol_match_id = lmp1.lol_match_id
+                                             AND lmp1.summoner_id =
         "#);
+        query.push_bind(summoner_id);
+        query.push(r#" WHERE lmp.summoner_id != "#);
         query.push_bind(summoner_id);
 
         // add inner requests and filters
@@ -114,7 +125,7 @@ pub mod ssr {
         query.push_bind(per_page);
         query.push(" OFFSET ");
         query.push_bind(offset);
-        query.push(" ) AS encounter_data ON ss.id = encounter_data.summoner_id ORDER BY encounter_count DESC");
+        query.push(" ) AS encounter_data ON ss.id = encounter_data.summoner_id ORDER BY match_count DESC");
 
         let results = query.build_query_as::<LolSummonerEncounterModel>().fetch_all(db).await?;
         let total_pages = if results.is_empty() {
@@ -128,7 +139,11 @@ pub mod ssr {
                 SummonerEncounter {
                     id: encounter.id,
                     profile_icon_id: encounter.profile_icon_id as u16,
-                    count: encounter.encounter_count,
+                    match_count: encounter.match_count,
+                    with_match_count: encounter.with_match_count,
+                    with_win_count: encounter.with_win_count,
+                    vs_match_count: encounter.vs_match_count,
+                    vs_win_count: encounter.vs_win_count,
                     game_name: encounter.game_name,
                     tag_line: encounter.tag_line,
                     platform: encounter.platform,
@@ -145,7 +160,11 @@ pub mod ssr {
         pub game_name: String,
         pub platform: String,
         pub profile_icon_id: i32,
-        pub encounter_count: i64,
-        pub total_count: i64,
+        pub match_count:i64,
+        pub total_count:i64,
+        pub with_match_count:i64,
+        pub with_win_count:i64,
+        pub vs_match_count:i64,
+        pub vs_win_count:i64,
     }
 }

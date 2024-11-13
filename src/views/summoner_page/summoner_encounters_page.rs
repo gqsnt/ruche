@@ -102,11 +102,13 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                     Either::Left(
                                         view! {
                                             <div class="flex my-card w-fit">
-                                                <table class="text-gray-200 space-y-2 ">
+                                                <table class="text-gray-200 space-y-2">
                                                     <thead>
                                                         <tr>
-                                                            <th class="text-left">Summoner</th>
-                                                            <th class="text-left">Encounters</th>
+                                                            <th class="text-left px-2">Summoner</th>
+                                                            <th class="text-left px-2">With</th>
+                                                            <th class="text-left px-2">Vs</th>
+                                                            <th class="text-left px-2">Total</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -119,7 +121,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                 let encounter: SummonerEncounter = encounter;
                                                                 view! {
                                                                     <tr>
-                                                                        <td class="text-left">
+                                                                        <td class="text-left w-[200px]">
                                                                             <div class="flex items-center py-0.5">
                                                                                 <div>
                                                                                     <img
@@ -146,7 +148,15 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                                 </div>
                                                                             </div>
                                                                         </td>
-                                                                        <td>{encounter.count}</td>
+                                                                        <td class="px-2 text-left">
+                                                                           {encounter.with_win_count}W {encounter.with_match_count - encounter.with_win_count}L<span class="mx-1">{encounter.with_match_count}G</span>  {format!("{}%", ((encounter.with_win_count as f64 / encounter.with_match_count as f64)*100.0) as i32)}
+                                                                        </td>
+                                                                        <td class="px-2 text-left">
+                                                                           {encounter.vs_win_count}W {encounter.vs_match_count - encounter.vs_win_count}L<span class="mx-1">{encounter.vs_match_count}G</span>  {format!("{}%", ((encounter.vs_win_count as f64 / encounter.vs_match_count as f64)*100.0) as i32)}
+                                                                        </td>
+                                                                <td class="px-2 text-left">
+                                                                    {encounter.match_count}
+                                                                </td>
                                                                     </tr>
                                                                 }
                                                             }
@@ -189,7 +199,11 @@ pub struct SummonerEncounters {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SummonerEncounter {
     pub id: i32,
-    pub count: i64,
+    pub match_count: i64,
+    pub with_match_count: i64,
+    pub with_win_count: i64,
+    pub vs_match_count: i64,
+    pub vs_win_count: i64,
     pub game_name: String,
     pub tag_line: String,
     pub platform: String,

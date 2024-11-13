@@ -2,7 +2,6 @@
 #[tokio::main]
 async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     use std::net::SocketAddr;
-    use tower_http::compression::DefaultPredicate;
     use leptos_broken_gg::ssr::{init_database, init_riot_api};
     use leptos_broken_gg::backend::generate_sitemap::generate_site_map;
     use leptos_broken_gg::ssr::serve;
