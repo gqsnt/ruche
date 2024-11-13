@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use tower_http::compression::DefaultPredicate;
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
@@ -74,8 +75,9 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     let routes = generate_route_list(App);
     // build our application with a route
     let app = Router::<AppState>::new()
-        .merge(
-            MemoryServe::new(load_assets!("target/site"))
+        .nest(
+            "/assets",
+            MemoryServe::new(load_assets!("target/site/assets"))
                 .enable_brotli(!cfg!(debug_assertions))
                 .cache_control(CacheControl::Custom("public, max-age=31536000"))
                 .into_router()
@@ -86,9 +88,7 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
                 .deflate(true)
                 .gzip(true)
                 .zstd(true)
-                .compress_when(SizeAbove::new(32)
-                    .and(NotForContentType::GRPC)
-                    .and(NotForContentType::SSE)),
+                .compress_when(DefaultPredicate::default()),
         )
 
         .leptos_routes_with_context(
