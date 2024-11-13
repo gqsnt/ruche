@@ -1,5 +1,3 @@
-
-
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
@@ -22,6 +20,9 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     use leptos_broken_gg::backend;
     use leptos_broken_gg::backend::updates::update_matches_task::update_matches_task;
     use leptos_broken_gg::backend::live_game_cache::cache_cleanup_task;
+    use tower_http::compression::predicate::SizeAbove;
+    use tower_http::compression::Predicate;
+    use tower_http::compression::predicate::NotForContentType;
 
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
@@ -30,8 +31,7 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     if is_prod {
         leptos_options.site_addr = SocketAddr::from(([0, 0, 0, 0], 443));
         rustls::crypto::ring::default_provider().install_default().expect("Failed to install rustls crypto provider");
-    }
-    else{
+    } else {
         leptos_options.site_addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     }
     let site_address = leptos_options.site_addr;
@@ -79,24 +79,15 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
             MemoryServe::new(load_assets!("target/site/assets"))
                 .enable_brotli(!cfg!(debug_assertions))
                 .cache_control(CacheControl::Custom("public, max-age=31536000"))
-                .into_router()
+                .into_router(),
         )
         .nest(
             "/pkg",
             MemoryServe::new(load_assets!("target/site/pkg"))
                 .enable_brotli(!cfg!(debug_assertions))
                 .cache_control(CacheControl::Custom("public, max-age=31536000"))
-                .into_router()
+                .into_router(),
         )
-        .layer(
-            CompressionLayer::new()
-                .br(true)
-                .deflate(true)
-                .gzip(true)
-                .zstd(true)
-                .compress_when(DefaultPredicate::default()),
-        )
-
         .leptos_routes_with_context(
             &app_state,
             routes,
@@ -110,7 +101,18 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
             },
         )
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
-
+        .layer(
+            CompressionLayer::new()
+                .br(true)
+                .deflate(true)
+                .gzip(true)
+                .zstd(true)
+                .compress_when(
+                    SizeAbove::new(32)
+                        .and(NotForContentType::GRPC)
+                        .and(NotForContentType::SSE)
+                )
+        )
         .with_state(app_state);
 
     serve(app, is_prod, site_address).await.expect("failed to serve");
