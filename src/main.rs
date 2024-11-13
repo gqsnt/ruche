@@ -82,6 +82,13 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
                 .cache_control(CacheControl::Custom("public, max-age=31536000"))
                 .into_router()
         )
+        .nest(
+            "/pkg",
+            MemoryServe::new(load_assets!("target/site/pkg"))
+                .enable_brotli(!cfg!(debug_assertions))
+                .cache_control(CacheControl::Custom("public, max-age=31536000"))
+                .into_router()
+        )
         .layer(
             CompressionLayer::new()
                 .br(true)
