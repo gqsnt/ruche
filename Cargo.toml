@@ -83,6 +83,9 @@ ssr = [
 
 [profile.release]
 panic = "abort"
+lto = true
+codegen-units = 1
+rustflags=["-Ctarget-cpu=native"]
 
 
 #[profile.dev]
@@ -96,6 +99,7 @@ opt-level = 'z'
 lto = true
 codegen-units = 1
 panic = "abort"
+rustflags=["-Zfmt-debug=none", "-Zlocation-detail=none"]
 
 
 
