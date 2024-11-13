@@ -11,7 +11,7 @@ pub fn PlatformTypePage() -> impl IntoView {
 
     meta_store.title().set("Broken.gg | High-Performance League of Legends Stats and Profiles".to_string());
     meta_store.description().set("Experience lightning-fast League of Legends statistics and summoner profiles on Broken.gg. Built with Rust for unmatched performance and efficiency. Search now to elevate your gaming experience.".to_string());
-    meta_store.image().set("https://next-level.xyz/favicon.ico".to_string());
+    meta_store.image().set("https://next-level.xyz/assets/favicon.ico".to_string());
     meta_store.url().set("".to_string());
 
     let req_include_summoner = || {
@@ -25,7 +25,7 @@ pub fn PlatformTypePage() -> impl IntoView {
                 "Welcome to Broken.gg"
             </a>
             <Show when=move || !req_include_summoner()>
-                <img src="/logo.webp" class="w-[420px] h-[420px] mx-auto" />
+                <img src="/assets/logo.webp" class="w-[420px] h-[420px] mx-auto" />
             </Show>
             <SummonerSearchPage />
             <Outlet />

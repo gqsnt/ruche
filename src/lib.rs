@@ -23,7 +23,6 @@ pub mod ssr {
     use leptos::logging::log;
     use crate::backend::live_game_cache;
     use leptos::prelude::*;
-    use tracing::log::debug;
 
     #[derive(Clone, axum::extract::FromRef)]
     pub struct AppState {

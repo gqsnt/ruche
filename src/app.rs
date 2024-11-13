@@ -48,7 +48,7 @@ pub fn App() -> impl IntoView {
     view! {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
-        <Stylesheet id="leptos" href="/pkg/leptos-broken-gg.css" />
+        <Stylesheet id="leptos" href="/assets/leptos-broken-gg.css" />
         // sets the document title
         <Title text=move || meta_store.title().get() />
         <Meta name="color-scheme" content="dark light" />
@@ -62,6 +62,7 @@ pub fn App() -> impl IntoView {
         <Meta name="og:image" content=move || meta_store.image().get() />
         <Meta name="og:url" content=move || meta_store.url().get() />
         <Link rel="canonical" prop:href=move || format!("{}{}", SITE_URL, meta_store.url().get()) />
+        <Link rel="icon" type_="image/x-icon" href="/assets/favicon.ico" />
         // content for this welcome page
         <Router>
             <main class="bg-gray-900 flex items-start justify-center min-h-screen w-full">
