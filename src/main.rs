@@ -1,8 +1,11 @@
+use std::net::SocketAddr;
+
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     use leptos_broken_gg::ssr::{init_database, init_riot_api};
     use leptos_broken_gg::backend::generate_sitemap::generate_site_map;
+    use leptos_broken_gg::ssr::serve;
     use leptos_broken_gg::ssr::AppState;
     use tower_http::compression::CompressionLayer;
     use axum::Router;
@@ -11,7 +14,6 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     use leptos_broken_gg::app::*;
     use std::sync::Arc;
     use dotenv::dotenv;
-    use leptos::logging::log;
     use tower_http::compression::Predicate;
     use tower_http::compression::predicate::{NotForContentType, SizeAbove};
     use memory_serve::{load_assets, CacheControl, MemoryServe};
@@ -23,8 +25,15 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
 
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
-    let leptos_options = conf.leptos_options;
-    let _ = leptos_options.site_root.clone();
+    let mut leptos_options = conf.leptos_options;
+    let is_prod = dotenv::var("ENV").unwrap_or("DEV".to_string()) == "PROD";
+    if is_prod {
+        leptos_options.site_addr = SocketAddr::from(([0, 0, 0, 0], 443));
+    }
+    else{
+        leptos_options.site_addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    }
+    let site_address = leptos_options.site_addr.clone();
     backend::lol_static::init_static_data().await?;
     let db = init_database().await;
     let riot_api = Arc::new(init_riot_api());
@@ -61,7 +70,6 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
         cache_cleanup_task(cache_for_cleanup, cleanup_interval).await;
     });
 
-    let addr = leptos_options.site_addr;
     let routes = generate_route_list(App);
     // build our application with a route
     let app = Router::<AppState>::new()
@@ -97,10 +105,8 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(shell))
 
         .with_state(app_state);
-    log!("listening on http://{}", &addr);
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
-    axum::serve(listener, app.into_make_service())
-        .await?;
+
+    serve(app, is_prod, site_address).await.expect("failed to serve");
     Ok(())
 }
 

@@ -56,19 +56,20 @@ pub mod ssr {
     }
 
 
-    pub async fn serve(app:Router, is_prod:bool) -> Result<(), axum::Error> {
+    pub async fn serve(app:Router, is_prod:bool, socket_addr: SocketAddr) -> Result<(), axum::Error> {
         if is_prod{
             tokio::spawn(redirect_http_to_https());
-            serve_with_tsl(app).await
+            serve_with_tsl(app, socket_addr).await
 
         }else{
-            serve_locally(app).await
+            serve_locally(app, socket_addr).await
         }
     }
 
 
     pub async fn serve_with_tsl(
         app: Router,
+        socket_addr: SocketAddr
     ) -> Result<(), axum::Error> {
 
 
@@ -80,9 +81,8 @@ pub mod ssr {
                 .join("signed_certs")
                 .join("key.pem"),
         ).await.expect("failed to load rustls config");
-        let addr = SocketAddr::from(([127, 0, 0, 1], 443));
-        log!("listening on {}", addr);
-        Ok(axum_server::bind_rustls(addr, config)
+        log!("listening on {}", socket_addr);
+        Ok(axum_server::bind_rustls(socket_addr, config)
             .serve(app.into_make_service())
             .await
             .unwrap())
@@ -96,7 +96,7 @@ pub mod ssr {
             parts.scheme = Some(axum::http::uri::Scheme::HTTPS);
 
             if parts.path_and_query.is_none() {
-                parts.path_and_query = Some("/".parse().unwrap());
+                parts.path_and_query = Some("/".parse()?);
             }
 
             let https_host = host.replace(&"80", &"443");
@@ -117,17 +117,16 @@ pub mod ssr {
 
         let addr = SocketAddr::from(([127, 0, 0, 1], 80));
         let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-        tracing::debug!("listening on {}", listener.local_addr().unwrap());
         axum::serve(listener, redirect.into_make_service())
             .await
             .unwrap();
     }
 
-    pub async fn serve_locally(app: Router) -> Result<(), axum::Error> {
-        let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-        let listener = tokio::net::TcpListener::bind(&addr)
+    pub async fn serve_locally(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
+        let listener = tokio::net::TcpListener::bind(&socket_addr)
             .await
             .expect("Creating listener");
+        log!("listening on {}", socket_addr);
         Ok(axum::serve(listener, app.into_make_service()).await.unwrap())
     }
 
