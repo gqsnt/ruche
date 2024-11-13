@@ -5,12 +5,12 @@ use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
 type GameId = String;
-type PUUID = String;
+type Puuid = String;
 
 
 pub struct LiveGameCache {
     game_cache: DashMap<GameId, (LiveGame, Instant)>,
-    puuid_to_game: DashMap<PUUID, GameId>,
+    puuid_to_game: DashMap<Puuid, GameId>,
     expiration_duration: Duration,
 }
 
@@ -24,7 +24,7 @@ impl LiveGameCache {
     }
 
     // Attempt to retrieve game data from the cache
-    pub fn get_game_data(&self, puuid: &PUUID) -> Option<LiveGame> {
+    pub fn get_game_data(&self, puuid: &Puuid) -> Option<LiveGame> {
         if let Some(game_id_entry) = self.puuid_to_game.get(puuid) {
             let game_id = game_id_entry.value().clone();
             if let Some(game_entry) = self.game_cache.get(&game_id) {
@@ -48,7 +48,7 @@ impl LiveGameCache {
     }
 
     // Update the cache with new game data
-    pub fn set_game_data(&self, game_id: GameId, puuids: Vec<PUUID>, game_data: LiveGame) {
+    pub fn set_game_data(&self, game_id: GameId, puuids: Vec<Puuid>, game_data: LiveGame) {
         let now = Instant::now();
         self.game_cache.insert(game_id.clone(), (game_data, now));
         for puuid in puuids {
@@ -81,7 +81,7 @@ pub async fn cache_cleanup_task(cache: Arc<LiveGameCache>, interval: Duration) {
             cache.game_cache.remove(&game_id);
 
             // Clean up puuid_to_game mappings for this game_id
-            let expired_puuids: Vec<PUUID> = cache
+            let expired_puuids: Vec<Puuid> = cache
                 .puuid_to_game
                 .iter()
                 .filter_map(|entry| {

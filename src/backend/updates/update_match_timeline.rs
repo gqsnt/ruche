@@ -53,7 +53,7 @@ pub async fn update_match_timeline(
         );
     }
 
-    for (_, frame) in timeline.info.frames.iter().enumerate() {
+    for  frame in timeline.info.frames.iter() {
         for event in &frame.events {
             let event_type = EventType::from(event.r#type.as_str());
             match event_type {
@@ -132,9 +132,8 @@ pub async fn update_match_timeline(
         }
     }
 
-    let timelines = lol_match_timelines
-        .into_iter()
-        .map(|(_, mut v)| {
+    let timelines = lol_match_timelines.into_values()
+        .map(|mut v| {
             v.items_event_timeline.sort_by_key(|(timestamp, _)| *timestamp);
             v
         })

@@ -61,17 +61,17 @@ pub mod ssr {
             }
             Some(current_game_info) => {
                 let participant_puuids = current_game_info.participants.iter().filter(|x| !x.puuid.clone().unwrap_or_default().is_empty()).map(|x| x.puuid.clone().expect("puuid not found")).collect::<Vec<String>>();
-                let mut summoner_details = find_summoner_live_by_puuids(&db, &participant_puuids).await?;
+                let mut summoner_details = find_summoner_live_by_puuids(db, &participant_puuids).await?;
 
                 let puuids_not_found = participant_puuids.iter().filter(|&x| !summoner_details.contains_key(x)).cloned().collect::<Vec<String>>();
-                find_and_insert_new_summoners(&db, riot_api.clone(), &puuids_not_found, platform_type.clone(), &current_game_info).await?;
-                let new_summoners = find_summoner_live_by_puuids(&db, &puuids_not_found).await?;
+                find_and_insert_new_summoners(db, riot_api.clone(), &puuids_not_found, platform_type.clone(), &current_game_info).await?;
+                let new_summoners = find_summoner_live_by_puuids(db, &puuids_not_found).await?;
                 summoner_details.extend(new_summoners);
 
 
-                let summoner_ids = summoner_details.iter().map(|(_, x)| x.id).collect::<Vec<i32>>();
+                let summoner_ids = summoner_details.values().map(| x| x.id).collect::<Vec<i32>>();
 
-                let live_game_stats = get_summoners_live_stats(&db, &summoner_ids).await?;
+                let live_game_stats = get_summoners_live_stats(db, &summoner_ids).await?;
                 let mut participants = vec![];
                 let default_hashmap = HashMap::new();
                 for participant in current_game_info.participants {
@@ -82,23 +82,15 @@ pub mod ssr {
                     let participant_puuid = participant.puuid.clone().expect("participant puuid is empty");
                     let summoner_detail = summoner_details.get(participant_puuid.as_str()).expect("summoner not found");
                     let stats = live_game_stats.get(&summoner_detail.id).unwrap_or(&default_hashmap);
-
-                    let champion_stats = match stats.get(&(participant.champion_id.0 as i32)) {
-                        None => {
-                            None
-                        }
-                        Some(champion_stats) => {
-                            Some(LiveGameParticipantChampionStats {
-                                total_champion_played: champion_stats.total_match as i32,
-                                total_champion_wins: champion_stats.total_win as i32,
-                                total_champion_losses: champion_stats.total_match as i32 - champion_stats.total_win as i32,
-                                champion_win_rate: champion_stats.total_win as f64 / champion_stats.total_match as f64,
-                                avg_kills: round_to_2_decimal_places(champion_stats.avg_kills.to_f64().unwrap_or_default()),
-                                avg_deaths: round_to_2_decimal_places(champion_stats.avg_deaths.to_f64().unwrap_or_default()),
-                                avg_assists: round_to_2_decimal_places(champion_stats.avg_assists.to_f64().unwrap_or_default()),
-                            })
-                        }
-                    };
+                    let champion_stats = stats.get(&(participant.champion_id.0 as i32)).map(|champion_stats| LiveGameParticipantChampionStats {
+                        total_champion_played: champion_stats.total_match as i32,
+                        total_champion_wins: champion_stats.total_win as i32,
+                        total_champion_losses: champion_stats.total_match as i32 - champion_stats.total_win as i32,
+                        champion_win_rate: champion_stats.total_win as f64 / champion_stats.total_match as f64,
+                        avg_kills: round_to_2_decimal_places(champion_stats.avg_kills.to_f64().unwrap_or_default()),
+                        avg_deaths: round_to_2_decimal_places(champion_stats.avg_deaths.to_f64().unwrap_or_default()),
+                        avg_assists: round_to_2_decimal_places(champion_stats.avg_assists.to_f64().unwrap_or_default()),
+                    });
 
 
                     let (total_wins, total_ranked) = stats.iter().fold((0, 0), |acc, (_, v)| {
@@ -144,7 +136,7 @@ pub mod ssr {
                     game_id: format!("{}_{}", current_game_info.game_id, current_game_info.platform_id),
                     game_length: current_game_info.game_length,
                     game_map: Map::from(current_game_info.map_id.0).get_static_name().to_string(),
-                    queue_name: current_game_info.game_queue_config_id.map(|x| Queue::try_from(x.0).expect("live game: queue id not found").to_str().to_string()).unwrap_or_default(),
+                    queue_name: current_game_info.game_queue_config_id.map(|x| Queue::from(x.0).to_str().to_string()).unwrap_or_default(),
                     participants,
                 })
             }
@@ -157,9 +149,8 @@ pub mod ssr {
         let riven_pr = platform_route.to_riven();
         let summoners_accounts_futures = puuids.iter().map(|puuid| {
             let api = riot_api.clone();
-            let pt = riven_pr.clone();
             async move {
-                api.account_v1().get_by_puuid(pt.to_regional(), puuid.as_str()).await
+                api.account_v1().get_by_puuid(riven_pr.to_regional(), puuid.as_str()).await
             }
         });
         let summoners_accounts: Vec<_> = FuturesUnordered::from_iter(summoners_accounts_futures)
@@ -179,7 +170,7 @@ pub mod ssr {
             }
         }).collect::<Vec<_>>();
         if !new_summoners.is_empty() {
-            bulk_insert_summoners(&db, &new_summoners).await?;
+            bulk_insert_summoners(db, &new_summoners).await?;
         }
         Ok(())
     }

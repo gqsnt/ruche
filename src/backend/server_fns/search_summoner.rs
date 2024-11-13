@@ -38,7 +38,7 @@ pub async fn search_summoner(
                             let redirect_url = summoner_url(platform_route.to_string().as_str(), &account.game_name.clone().expect("search summoner: account game name not found"), &account.tag_line.clone().expect("search summoner: account tag line not found"));
                             ssr::insert_or_update_account_and_summoner(
                                 &db,
-                                platform_route.into(),
+                                platform_route,
                                 account,
                                 summoner_data,
                             )

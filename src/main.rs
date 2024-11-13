@@ -1,9 +1,10 @@
-use std::net::SocketAddr;
-use tower_http::compression::DefaultPredicate;
+
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
+    use std::net::SocketAddr;
+    use tower_http::compression::DefaultPredicate;
     use leptos_broken_gg::ssr::{init_database, init_riot_api};
     use leptos_broken_gg::backend::generate_sitemap::generate_site_map;
     use leptos_broken_gg::ssr::serve;
@@ -15,8 +16,6 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     use leptos_broken_gg::app::*;
     use std::sync::Arc;
     use dotenv::dotenv;
-    use tower_http::compression::Predicate;
-    use tower_http::compression::predicate::{NotForContentType, SizeAbove};
     use memory_serve::{load_assets, CacheControl, MemoryServe};
     use leptos_broken_gg::backend::live_game_cache;
     use tokio::task;
@@ -35,7 +34,7 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     else{
         leptos_options.site_addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     }
-    let site_address = leptos_options.site_addr.clone();
+    let site_address = leptos_options.site_addr;
     backend::lol_static::init_static_data().await?;
     let db = init_database().await;
     let riot_api = Arc::new(init_riot_api());

@@ -51,7 +51,7 @@ async fn update_matches(
     matches_to_update: Vec<LolMatchNotUpdated>,
 ) -> AppResult<()> {
     let match_data_futures = matches_to_update.iter().map(|match_| {
-        let api = Arc::clone(&api);
+        let api = Arc::clone(api);
         let pt = consts::platform_route::PlatformRoute::from(match_.platform.as_str()).to_riven();
         async move {
             api.match_v5().get_match(pt.to_regional(), &match_.match_id).await
@@ -116,12 +116,10 @@ async fn update_matches(
                 }
                 summoners_to_update.push(summoner.clone());
             }
+        } else if summoner.game_name.is_empty() || summoner.tag_line.is_empty() {
+            summoners_to_dl.push(summoner.clone());
         } else {
-            if summoner.game_name.is_empty() || summoner.tag_line.is_empty() {
-                summoners_to_dl.push(summoner.clone());
-            } else {
-                summoners_to_insert.push(summoner.clone());
-            }
+            summoners_to_insert.push(summoner.clone());
         }
     }
 
@@ -130,7 +128,7 @@ async fn update_matches(
     }
     // dl summoners
     let summoners_futures = summoners_to_dl.into_iter().map(|summoner| {
-        let api = Arc::clone(&api);
+        let api = Arc::clone(api);
         let pt = consts::platform_route::PlatformRoute::from(summoner.platform.as_str()).to_riven();
         let puuid = summoner.puuid.clone();
         async move {
@@ -177,7 +175,7 @@ async fn update_matches(
             bulk_update_summoners(db, chunk).await?;
         }
     }
-    resolve_summoner_conflicts(&db, &api).await?;
+    resolve_summoner_conflicts(db, api).await?;
 
     // Prepare participants for bulk insert
     let match_participants: Vec<TempParticipant> = match_datas
@@ -251,7 +249,7 @@ async fn update_matches(
                         perk_primary_style_id: participant
                             .perks
                             .styles
-                            .get(0)
+                            .first()
                             .map_or(0, |style| style.style),
                         perk_sub_style_id: participant
                             .perks
@@ -261,32 +259,32 @@ async fn update_matches(
                         perk_primary_selection_id: participant
                             .perks
                             .styles
-                            .get(0)
-                            .and_then(|style| style.selections.get(0))
+                            .first()
+                            .and_then(|style| style.selections.first())
                             .map_or(0, |sel| sel.perk),
                         perk_primary_selection1_id: participant
                             .perks
                             .styles
-                            .get(0)
+                            .first()
                             .and_then(|style| style.selections.get(1))
                             .map_or(0, |sel| sel.perk),
                         perk_primary_selection2_id: participant
                             .perks
                             .styles
-                            .get(0)
+                            .first()
                             .and_then(|style| style.selections.get(2))
                             .map_or(0, |sel| sel.perk),
                         perk_primary_selection3_id: participant
                             .perks
                             .styles
-                            .get(0)
+                            .first()
                             .and_then(|style| style.selections.get(3))
                             .map_or(0, |sel| sel.perk),
                         perk_sub_selection1_id: participant
                             .perks
                             .styles
                             .get(1)
-                            .and_then(|style| style.selections.get(0))
+                            .and_then(|style| style.selections.first())
                             .map_or(0, |sel| sel.perk),
                         perk_sub_selection2_id: participant
                             .perks
@@ -456,9 +454,9 @@ pub async fn find_conflicting_summoners(
         .fetch_all(db)
         .await?
         .into_iter()
-        .fold(HashMap::new(), |mut acc, row| {
+        .fold(HashMap::new(), |mut acc:HashMap<(String, String, String), Vec<SummonerModel>>, row| {
             acc.entry((row.game_name.clone(), row.tag_line.clone(), row.platform.clone()))
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(row);
             acc
         })

@@ -79,10 +79,11 @@ pub mod ssr {
                 .join("key.pem"),
         ).await.expect("failed to load rustls config");
         log!("listening on {}", socket_addr);
-        Ok(axum_server::bind_rustls(socket_addr, config)
+        axum_server::bind_rustls(socket_addr, config)
             .serve(app.into_make_service())
             .await
-            .unwrap())
+            .unwrap();
+        Ok(())
     }
 
 
@@ -96,7 +97,7 @@ pub mod ssr {
                 parts.path_and_query = Some("/".parse()?);
             }
 
-            let https_host = host.replace(&"80", &"443");
+            let https_host = host.replace("80", "443");
             parts.authority = Some(https_host.parse()?);
 
             Ok(Uri::from_parts(parts)?)
@@ -124,7 +125,8 @@ pub mod ssr {
             .await
             .expect("Creating listener");
         log!("listening on {}", socket_addr);
-        Ok(axum::serve(listener, app.into_make_service()).await.unwrap())
+        axum::serve(listener, app.into_make_service()).await.unwrap();
+        Ok(())
     }
 
 }

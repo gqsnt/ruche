@@ -133,7 +133,7 @@ pub mod ssr {
 
 
     pub async fn bulk_insert_default_match(db: &sqlx::PgPool, match_ids: &[String]) -> AppResult<()> {
-        let match_ids = match_ids.iter().map(|x| x.clone()).collect::<Vec<String>>();
+        let match_ids = match_ids.to_vec();
         let platforms = match_ids.iter().map(|x| {
             let match_id_split = x.split("_").collect::<Vec<&str>>();
             match_id_split[0].to_string()

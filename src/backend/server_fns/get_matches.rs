@@ -90,31 +90,31 @@ pub mod ssr {
 
         if let Some(champion_id) = filters.champion_id {
             let sql_filter = " AND lmp.champion_id = ";
-            participant_query.push(&sql_filter);
+            participant_query.push(sql_filter);
             participant_query.push_bind(champion_id);
-            aggregate_query.push(&sql_filter);
+            aggregate_query.push(sql_filter);
             aggregate_query.push_bind(champion_id);
         }
         if let Some(queue_id) = filters.queue_id {
             let sql_filter = " AND lm.queue_id = ";
-            participant_query.push(&sql_filter);
+            participant_query.push(sql_filter);
             participant_query.push_bind(queue_id);
-            aggregate_query.push(&sql_filter);
+            aggregate_query.push(sql_filter);
             aggregate_query.push_bind(queue_id);
         }
 
         if let Some(start_date) = start_date {
             let sql_filter = " AND lm.match_end >= ";
-            participant_query.push(&sql_filter);
+            participant_query.push(sql_filter);
             participant_query.push_bind(start_date);
-            aggregate_query.push(&sql_filter);
+            aggregate_query.push(sql_filter);
             aggregate_query.push_bind(start_date);
         }
         if let Some(end_date) = end_date {
             let sql_filter = " AND lm.match_end <= ";
-            participant_query.push(&sql_filter);
+            participant_query.push(sql_filter);
             participant_query.push_bind(end_date);
-            aggregate_query.push(&sql_filter);
+            aggregate_query.push(sql_filter);
             aggregate_query.push_bind(end_date);
         }
 
@@ -163,7 +163,7 @@ pub mod ssr {
             // Calculate time since match ended
             let match_ended_since = row.lol_match_match_end.map_or_else(
                 || "Unknown".to_string(),
-                |dt| format_duration_since(dt),
+                format_duration_since,
             );
 
             // Safely handle floating point operations

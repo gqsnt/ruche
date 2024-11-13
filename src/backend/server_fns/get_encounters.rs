@@ -120,7 +120,7 @@ pub mod ssr {
         let total_pages = if results.is_empty() {
             0
         } else {
-            (results.get(0).unwrap().total_count as f64 / per_page as f64).ceil() as i64
+            (results.first().unwrap().total_count as f64 / per_page as f64).ceil() as i64
         };
         Ok(SummonerEncounters {
             total_pages,
