@@ -74,11 +74,9 @@ pub mod ssr {
 
 
         let config = RustlsConfig::from_pem_file(
-            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .join("signed_certs")
+            PathBuf::from("signed_certs")
                 .join("cert.pem"),
-            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .join("signed_certs")
+            PathBuf::from("signed_certs")
                 .join("key.pem"),
         ).await.expect("failed to load rustls config");
         log!("listening on {}", socket_addr);
