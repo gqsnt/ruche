@@ -60,7 +60,7 @@ pub mod ssr {
                             SUM(CASE WHEN lmp1.team_id != lmp.team_id AND lmp.won THEN 1 ELSE 0 END) AS vs_win_count
                         FROM
                             lol_match_participants AS lmp
-                            INNER JOIN lol_match_participants AS lmp1
+                            INNER JOIN (select id, team_id, won, summoner_id, lol_match_id from lol_match_participants) AS lmp1
                                          ON lmp.lol_match_id = lmp1.lol_match_id
                                              AND lmp1.summoner_id =
         "#);

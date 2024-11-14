@@ -206,17 +206,17 @@ pub mod ssr {
         let participants = if !matches_ids.is_empty() {
             let participant_rows = sqlx::query_as::<_, SummonerMatchParticipantModel>(
                 "SELECT
-                    lol_match_participants.lol_match_id,
-                    lol_match_participants.summoner_id,
-                    lol_match_participants.champion_id,
-                    lol_match_participants.team_id,
-                    summoners.game_name AS summoner_name,
-                    summoners.tag_line AS summoner_tag_line,
-                    summoners.platform AS summoner_platform
-                FROM lol_match_participants
-                INNER JOIN summoners ON summoners.id = lol_match_participants.summoner_id
-                WHERE lol_match_participants.lol_match_id = ANY($1)
-                ORDER BY lol_match_participants.team_id ASC;"
+                    lmp.lol_match_id,
+                    lmp.summoner_id,
+                    lmp.champion_id,
+                    lmp.team_id,
+                    ss.game_name AS summoner_name,
+                    ss.tag_line AS summoner_tag_line,
+                    ss.platform AS summoner_platform
+                FROM lol_match_participants as lmp
+                INNER JOIN (SELECT id, game_name, tag_line, platform FROM summoners) as ss ON ss.id = lmp.summoner_id
+                WHERE lmp.lol_match_id = ANY($1)
+                ORDER BY lmp.team_id ASC;"
             )
                 .bind(&matches_ids)
                 .fetch_all(db)

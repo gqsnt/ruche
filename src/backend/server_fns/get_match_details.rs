@@ -79,7 +79,7 @@ pub mod ssr {
                 lmp.item5_id,
                 lmp.item6_id
             FROM lol_match_participants  as lmp
-            INNER JOIN summoners as ss ON ss.id = lmp.summoner_id
+            INNER JOIN (SELECT id,game_name, tag_line, platform, profile_icon_id, summoner_level FROM summoners) as ss ON ss.id = lmp.summoner_id
             WHERE lmp.lol_match_id = $1;",
         )
             .bind(match_id)
