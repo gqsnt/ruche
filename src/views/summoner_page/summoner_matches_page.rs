@@ -14,7 +14,7 @@ use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::server_fn::serde::{Deserialize, Serialize};
 use leptos::{component, view, IntoView};
-use leptos_router::hooks::query_signal_with_options;
+use leptos_router::hooks::{query_signal_with_options};
 use leptos_router::NavigateOptions;
 
 #[component]
