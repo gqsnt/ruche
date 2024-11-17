@@ -61,7 +61,7 @@ pub async fn update_pro_player_task(
     log!("Found {} Pro players", pro_players.len());
 
     // Define the concurrency limit
-    let concurrency_limit = 50;
+    let concurrency_limit = 4;
 
     // Create a stream of futures with limited concurrency
     let pro_players_data = stream::iter(
