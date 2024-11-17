@@ -67,7 +67,6 @@ pub async fn update_pro_player_task(
     let pro_players_data = stream::iter(
         pro_players
             .into_iter()
-            .take(50)
             .map(|slug| {
                 async move {
                     get_pro_player_info(slug.as_str()).await
