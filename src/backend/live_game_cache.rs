@@ -58,34 +58,19 @@ impl LiveGameCache {
 }
 
 
-pub async fn cache_cleanup_task(cache: Arc<LiveGameCache>, interval: Duration) {
-    loop {
-        sleep(interval).await;
-        let now = Instant::now();
+pub async fn schedule_live_game_cache_cleanup_task(cache: Arc<LiveGameCache>, interval: Duration) {
+    tokio::spawn(async move {
+        loop {
+            sleep(interval).await;
+            let now = Instant::now();
 
-        // Clean up game_cache
-        let expired_game_ids: Vec<GameId> = cache
-            .game_cache
-            .iter()
-            .filter_map(|entry| {
-                let (_, timestamp) = entry.value();
-                if now.duration_since(*timestamp) >= cache.expiration_duration {
-                    Some(entry.key().clone())
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        for game_id in expired_game_ids {
-            cache.game_cache.remove(&game_id);
-
-            // Clean up puuid_to_game mappings for this game_id
-            let expired_puuids: Vec<Puuid> = cache
-                .puuid_to_game
+            // Clean up game_cache
+            let expired_game_ids: Vec<GameId> = cache
+                .game_cache
                 .iter()
                 .filter_map(|entry| {
-                    if entry.value() == &game_id {
+                    let (_, timestamp) = entry.value();
+                    if now.duration_since(*timestamp) >= cache.expiration_duration {
                         Some(entry.key().clone())
                     } else {
                         None
@@ -93,9 +78,26 @@ pub async fn cache_cleanup_task(cache: Arc<LiveGameCache>, interval: Duration) {
                 })
                 .collect();
 
-            for puuid in expired_puuids {
-                cache.puuid_to_game.remove(&puuid);
+            for game_id in expired_game_ids {
+                cache.game_cache.remove(&game_id);
+
+                // Clean up puuid_to_game mappings for this game_id
+                let expired_puuids: Vec<Puuid> = cache
+                    .puuid_to_game
+                    .iter()
+                    .filter_map(|entry| {
+                        if entry.value() == &game_id {
+                            Some(entry.key().clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                for puuid in expired_puuids {
+                    cache.puuid_to_game.remove(&puuid);
+                }
             }
         }
-    }
+    });
 }

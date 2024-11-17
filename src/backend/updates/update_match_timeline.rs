@@ -25,11 +25,8 @@ pub async fn update_match_timeline(
         .await?
         .ok_or_else(|| AppError::CustomError("Timeline not found".into()))?;
 
-    let db_platform = PlatformRoute::from(riven_pr.as_region_str());
-
     let puuids_summoner_ids = find_summoner_ids_by_puuids(
         db,
-        db_platform,
         &timeline.metadata.participants,
     )
         .await?;
@@ -183,12 +180,11 @@ impl From<&str> for EventType {
 }
 
 
-pub async fn find_summoner_ids_by_puuids(db: &PgPool, platform_route: PlatformRoute, puuids: &[String]) -> AppResult<HashMap<String, i32>> {
+pub async fn find_summoner_ids_by_puuids(db: &PgPool, puuids: &[String]) -> AppResult<HashMap<String, i32>> {
     Ok(sqlx::query_as::<_, SummonerTimeLineInfo>(
-        "SELECT id, puuid FROM summoners WHERE puuid = ANY($1) and platform = $2"
+        "SELECT id, puuid FROM summoners WHERE puuid = ANY($1)"
     )
         .bind(puuids)
-        .bind(platform_route.to_string())
 
         .fetch_all(db)
         .await?

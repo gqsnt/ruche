@@ -71,7 +71,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
             </thead>
             <tbody>
                 {participants
-                    .iter()
+                    .into_iter()
                     .map(|participant| {
                         let item0_id = participant.item0_id;
                         let item1_id = participant.item1_id;
@@ -80,7 +80,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                         let item4_id = participant.item4_id;
                         let item5_id = participant.item5_id;
                         let item6_id = participant.item6_id;
-
+                        let is_pro_player = participant.summoner_pro_player_slug.is_some();
                         view! {
                             <tr
                                 class=("bg-red-900", !won && participant.summoner_id != summoner_id)
@@ -154,7 +154,28 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                                     </div>
                                 </td>
                                 <td class="pl-[5px] py-1 text-ellipsis overflow-hidden text-left">
-                                    <div>
+                                    <div class="flex items-center gap-1">
+                                        <Show when=move || (participant.encounter_count > 1)>
+                                            <a
+                                                target="_blank"
+                                                href="#"
+                                                class="text-xs bg-green-800 rounded px-0.5 text-center"
+                                            >
+                                                {participant.encounter_count}
+                                            </a>
+                                        </Show>
+                                        <Show when=move || is_pro_player>
+                                            <a
+                                                target="_blank"
+                                                href=format!(
+                                                    "https://lolpros.gg/player/{}",
+                                                    participant.summoner_pro_player_slug.clone().unwrap(),
+                                                )
+                                                class="text-xs bg-purple-800 rounded px-0.5 text-center"
+                                            >
+                                                pro
+                                            </a>
+                                        </Show>
                                         <a
                                             target="_blank"
                                             href=summoner_url(

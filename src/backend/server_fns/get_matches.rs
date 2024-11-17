@@ -19,6 +19,7 @@ pub mod ssr {
     use bigdecimal::{BigDecimal, ToPrimitive};
     use chrono::{Duration, NaiveDateTime};
     use itertools::Itertools;
+    use std::collections::HashMap;
 
     use crate::backend::ssr::{format_duration_since, parse_date, AppResult};
     use crate::consts::queue::Queue;
@@ -206,32 +207,36 @@ pub mod ssr {
         let participants = if !matches_ids.is_empty() {
             let participant_rows = sqlx::query_as::<_, SummonerMatchParticipantModel>(
                 "SELECT
-                    lmp.lol_match_id,
-                    lmp.summoner_id,
-                    lmp.champion_id,
-                    lmp.team_id,
-                    ss.game_name AS summoner_name,
-                    ss.tag_line AS summoner_tag_line,
-                    ss.platform AS summoner_platform
+                        lmp.lol_match_id,
+                        lmp.summoner_id,
+                        lmp.champion_id,
+                        lmp.team_id
                 FROM lol_match_participants as lmp
-                INNER JOIN (SELECT id, game_name, tag_line, platform FROM summoners) as ss ON ss.id = lmp.summoner_id
                 WHERE lmp.lol_match_id = ANY($1)
                 ORDER BY lmp.team_id ASC;"
             )
                 .bind(&matches_ids)
                 .fetch_all(db)
                 .await?;
-            participant_rows.into_iter()
-                .map(|row| SummonerMatchParticipant {
+            let unique_summoner_ids = participant_rows.iter().map(|p| p.summoner_id).unique().collect::<Vec<_>>();
+            let summoners = get_summoner_infos_by_ids(db, unique_summoner_ids.clone()).await?;
+            let encounter_counts = get_summoner_encounters(db, summoner_id, &unique_summoner_ids).await?;
+
+            participant_rows.into_iter().map(|row| {
+                let (game_name, tag_line, platform, pro_player_slug) = summoners.get(&row.summoner_id).unwrap();
+                let encounter_count = (*encounter_counts.get(&row.summoner_id).unwrap_or(&0)) as i32;
+                SummonerMatchParticipant {
                     team_id: row.team_id,
                     lol_match_id: row.lol_match_id,
                     summoner_id: row.summoner_id,
-                    summoner_name: row.summoner_name,
                     champion_id: row.champion_id as u16,
-                    summoner_tag_line: row.summoner_tag_line,
-                    summoner_platform: row.summoner_platform,
-                })
-                .collect::<Vec<_>>()
+                    summoner_name: game_name.clone(),
+                    summoner_tag_line: tag_line.clone(),
+                    summoner_platform: platform.clone(),
+                    pro_player_slug: pro_player_slug.clone(),
+                    encounter_count,
+                }
+            }).collect_vec()
         } else {
             Vec::new()
         };
@@ -249,6 +254,64 @@ pub mod ssr {
         }
 
         Ok(GetSummonerMatchesResult { matches, total_pages: total_pages as i64, matches_result_info })
+    }
+
+    pub async fn get_summoner_encounters(db: &PgPool, summoner_id: i32, encounters_ids: &Vec<i32>) -> AppResult<HashMap<i32, i32>> {
+        Ok(
+            sqlx::query_as::<_, SummonerEncounterModel>(
+                r#"
+                 SELECT
+                        ss.id as summoner_id,
+                        encounter_data.match_count as encounter_count
+                    FROM summoners AS ss
+                    INNER JOIN (
+                        SELECT
+                            lmp.summoner_id,
+                            COUNT(lmp.id) AS match_count
+                        FROM lol_match_participants AS lmp
+                        WHERE lmp.summoner_id != $1 and lmp.summoner_id = any ($2)
+                       AND EXISTS (SELECT 1
+                                   FROM lol_match_participants AS lmp1
+                                            INNER JOIN (select id, queue_id, match_end from lol_matches) as lm
+                                                       on lmp1.lol_match_id = lm.id
+                                   WHERE lmp1.lol_match_id = lmp.lol_match_id
+                                     AND lmp1.summoner_id = $1)
+                     GROUP BY lmp.summoner_id) AS encounter_data ON ss.id = encounter_data.summoner_id
+            "#
+            )
+                .bind(summoner_id)
+                .bind(encounters_ids)
+                .fetch_all(db)
+                .await?
+                .into_iter()
+                .map(|row| (row.summoner_id, row.encounter_count as i32))
+                .collect::<HashMap<_, _>>()
+        )
+    }
+
+
+    pub async fn get_summoner_infos_by_ids(db: &PgPool, summoner_ids: Vec<i32>) -> AppResult<HashMap<i32, (String, String, String, Option<String>)>> {
+        Ok(
+            sqlx::query_as::<_, (i32, String, String, String, Option<String>)>(
+                "SELECT
+                    ss.id,
+                    ss.game_name,
+                    ss.tag_line,
+                    ss.platform,
+                    pp.slug as pro_player_slug
+            FROM summoners as ss
+                left join (select id, slug from pro_players) as pp on pp.id = ss.pro_player_id
+            WHERE ss.id = ANY($1);"
+            )
+                .bind(&summoner_ids)
+                .fetch_all(db)
+                .await?
+                .into_iter()
+                .map(|(id, game_name, tag_line, platform, pro_player_slug)| {
+                    (id, (game_name, tag_line, platform, pro_player_slug))
+                })
+                .collect::<HashMap<_, _>>()
+        )
     }
 
 
@@ -298,17 +361,24 @@ pub mod ssr {
         pub lol_match_match_duration: Option<i32>,
     }
 
-
+    #[derive(FromRow)]
+    pub struct SummonerEncounterModel {
+        pub summoner_id: i32,
+        pub encounter_count: i64,
+    }
     #[derive(FromRow)]
     pub struct SummonerMatchParticipantModel {
         pub team_id: i32,
         pub lol_match_id: i32,
         pub summoner_id: i32,
-        pub summoner_name: String,
         pub champion_id: i32,
-        pub summoner_tag_line: String,
-        pub summoner_platform: String,
+        // pub summoner_name: String,
+        // pub summoner_tag_line: String,
+        // pub summoner_platform: String,
+        // pub pro_player_slug:Option<String>,
     }
 }
+
+
 
 

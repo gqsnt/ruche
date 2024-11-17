@@ -12,7 +12,7 @@ axum = { version = "0.7", optional = true, features = ["macros", "http2"]}
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 tower = { version = "0.4", optional = true, features = ["util"] }
 tower-http = { version = "0.5", features = ["fs", "compression-full"], optional = true }
-sqlx = { version = "0.8", optional = true, features = ["postgres", "runtime-tokio-rustls", "chrono", "bigdecimal"] }
+sqlx = { version = "0.8", optional = true, features = ["postgres", "runtime-tokio-rustls", "chrono", "bigdecimal", "uuid"] }
 bigdecimal = { version = "0.4", optional = true }
 riven = { git = "https://github.com/gqsnt/RivenBrokengg", optional = true }
 reqwest = { version = "0.12", optional = true, features = ["json", "rustls-tls"] }

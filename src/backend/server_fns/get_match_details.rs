@@ -5,11 +5,11 @@ use leptos::prelude::*;
 use leptos::server;
 
 #[server]
-pub async fn get_match_details(match_id: i32, riot_match_id: String, platform: String) -> Result<Vec<LolMatchParticipantDetails>, ServerFnError> {
+pub async fn get_match_details(match_id: i32, riot_match_id: String, platform: String, summoner_id:Option<i32>) -> Result<Vec<LolMatchParticipantDetails>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
-    let mut details = ssr::get_match_participants_details(&db, match_id).await.map_err(|e| e.to_server_fn_error())?;
+    let mut details = ssr::get_match_participants_details(&db, match_id, summoner_id).await.map_err(|e| e.to_server_fn_error())?;
     let mut match_timelines = ssr::get_match_timeline(&db, match_id).await?;
     if match_timelines.is_empty() {
         update_match_timeline(&db, state.riot_api.clone(), match_id, riot_match_id, platform).await?;
@@ -27,23 +27,21 @@ pub async fn get_match_details(match_id: i32, riot_match_id: String, platform: S
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
+    use crate::backend::server_fns::get_matches::ssr::get_summoner_encounters;
     use crate::backend::ssr::AppResult;
     use crate::views::summoner_page::match_details::{LolMatchParticipantDetails, LolMatchTimeline};
     use bigdecimal::{BigDecimal, ToPrimitive};
-    use sqlx::{FromRow, PgPool};
+    use itertools::Itertools;
     use sqlx::types::JsonValue;
+    use sqlx::{FromRow, PgPool};
+    use std::collections::HashMap;
 
-    pub async fn get_match_participants_details(db: &PgPool, match_id: i32) -> AppResult<Vec<LolMatchParticipantDetails>> {
-        Ok(sqlx::query_as::<_, LolMatchParticipantDetailsModel>(
+    pub async fn get_match_participants_details(db: &PgPool, match_id: i32, summoner_id: Option<i32>) -> AppResult<Vec<LolMatchParticipantDetails>> {
+        let lol_match_participant_details = sqlx::query_as::<_, LolMatchParticipantDetailsModel>(
             "SELECT
                 lmp.id,
                 lmp.lol_match_id,
                 lmp.summoner_id,
-                ss.game_name AS summoner_name,
-                ss.tag_line AS summoner_tag_line,
-                ss.platform AS summoner_platform,
-                ss.profile_icon_id AS summoner_icon_id,
-                ss.summoner_level AS summoner_level,
                 lmp.champion_id,
                 lmp.team_id,
                 lmp.won,
@@ -84,55 +82,95 @@ pub mod ssr {
         )
             .bind(match_id)
             .fetch_all(db)
-            .await?
-            .into_iter().map(|lmp| {
-            LolMatchParticipantDetails {
-                id: lmp.id,
-                lol_match_id: lmp.lol_match_id,
-                summoner_id: lmp.summoner_id,
-                summoner_name: lmp.summoner_name,
-                summoner_tag_line: lmp.summoner_tag_line,
-                summoner_platform: lmp.summoner_platform,
-                summoner_icon_id: lmp.summoner_icon_id as u16,
-                summoner_level: lmp.summoner_level,
-                champion_id: lmp.champion_id as u16,
-                team_id: lmp.team_id,
-                won: lmp.won,
-                kills: lmp.kills,
-                deaths: lmp.deaths,
-                assists: lmp.assists,
-                champ_level: lmp.champ_level,
-                kda: lmp.kda.map_or(0.0, |bd| bd.to_f64().unwrap_or(0.0)),
-                kill_participation: lmp.kill_participation.map_or(0.0, |bd| bd.to_f64().unwrap_or(0.0)),
-                damage_dealt_to_champions: lmp.damage_dealt_to_champions,
-                damage_taken: lmp.damage_taken,
-                gold_earned: lmp.gold_earned,
-                wards_placed: lmp.wards_placed,
-                cs: lmp.cs,
-                summoner_spell1_id: lmp.summoner_spell1_id.unwrap_or_default() as u16,
-                summoner_spell2_id: lmp.summoner_spell2_id.unwrap_or_default() as u16,
-                perk_defense_id: lmp.perk_defense_id.unwrap_or_default() as u16,
-                perk_flex_id: lmp.perk_flex_id.unwrap_or_default() as u16,
-                perk_offense_id: lmp.perk_offense_id.unwrap_or_default() as u16,
-                perk_primary_style_id: lmp.perk_primary_style_id.unwrap_or_default() as u16,
-                perk_sub_style_id: lmp.perk_sub_style_id.unwrap_or_default() as u16,
-                perk_primary_selection_id: lmp.perk_primary_selection_id.unwrap_or_default() as u16,
-                perk_primary_selection1_id: lmp.perk_primary_selection1_id.unwrap_or_default() as u16,
-                perk_primary_selection2_id: lmp.perk_primary_selection2_id.unwrap_or_default() as u16,
-                perk_primary_selection3_id: lmp.perk_primary_selection3_id.unwrap_or_default() as u16,
-                perk_sub_selection1_id: lmp.perk_sub_selection1_id.unwrap_or_default() as u16,
-                perk_sub_selection2_id: lmp.perk_sub_selection2_id.unwrap_or_default() as u16,
-                item0_id: lmp.item0_id.unwrap_or_default() as u32,
-                item1_id: lmp.item1_id.unwrap_or_default() as u32,
-                item2_id: lmp.item2_id.unwrap_or_default() as u32,
-                item3_id: lmp.item3_id.unwrap_or_default() as u32,
-                item4_id: lmp.item4_id.unwrap_or_default() as u32,
-                item5_id: lmp.item5_id.unwrap_or_default() as u32,
-                item6_id: lmp.item6_id.unwrap_or_default() as u32,
-                items_event_timeline: Vec::new(),
-                skills_timeline: vec![],
-            }
-        }).collect::<Vec<_>>())
+            .await?;
+        let unique_summoner_ids = lol_match_participant_details.iter().map(|p| p.summoner_id).unique().collect::<Vec<_>>();
+        let summoners = get_summoner_infos_by_ids(db, unique_summoner_ids.clone()).await?;
+        let encounters = if let Some(summoner_id) = summoner_id {
+            get_summoner_encounters(db, summoner_id, &unique_summoner_ids).await?
+        } else {
+            HashMap::new()
+        };
+        Ok(
+            lol_match_participant_details.into_iter().map(|lmp| {
+                let (game_name, tag_line, platform, summoner_level, profile_icon_id, pro_player_slug) = summoners.get(&lmp.summoner_id).cloned().unwrap();
+                let encounter_count = encounters.get(&lmp.summoner_id).cloned();
+                LolMatchParticipantDetails {
+                    id: lmp.id,
+                    lol_match_id: lmp.lol_match_id,
+                    summoner_id: lmp.summoner_id,
+                    summoner_name: game_name,
+                    summoner_tag_line: tag_line,
+                    summoner_platform: platform,
+                    summoner_pro_player_slug: pro_player_slug,
+                    summoner_icon_id: profile_icon_id as u16,
+                    summoner_level,
+                    encounter_count: encounter_count.unwrap_or_default(),
+                    champion_id: lmp.champion_id as u16,
+                    team_id: lmp.team_id,
+                    won: lmp.won,
+                    kills: lmp.kills,
+                    deaths: lmp.deaths,
+                    assists: lmp.assists,
+                    champ_level: lmp.champ_level,
+                    kda: lmp.kda.map_or(0.0, |bd| bd.to_f64().unwrap_or(0.0)),
+                    kill_participation: lmp.kill_participation.map_or(0.0, |bd| bd.to_f64().unwrap_or(0.0)),
+                    damage_dealt_to_champions: lmp.damage_dealt_to_champions,
+                    damage_taken: lmp.damage_taken,
+                    gold_earned: lmp.gold_earned,
+                    wards_placed: lmp.wards_placed,
+                    cs: lmp.cs,
+                    summoner_spell1_id: lmp.summoner_spell1_id.unwrap_or_default() as u16,
+                    summoner_spell2_id: lmp.summoner_spell2_id.unwrap_or_default() as u16,
+                    perk_defense_id: lmp.perk_defense_id.unwrap_or_default() as u16,
+                    perk_flex_id: lmp.perk_flex_id.unwrap_or_default() as u16,
+                    perk_offense_id: lmp.perk_offense_id.unwrap_or_default() as u16,
+                    perk_primary_style_id: lmp.perk_primary_style_id.unwrap_or_default() as u16,
+                    perk_sub_style_id: lmp.perk_sub_style_id.unwrap_or_default() as u16,
+                    perk_primary_selection_id: lmp.perk_primary_selection_id.unwrap_or_default() as u16,
+                    perk_primary_selection1_id: lmp.perk_primary_selection1_id.unwrap_or_default() as u16,
+                    perk_primary_selection2_id: lmp.perk_primary_selection2_id.unwrap_or_default() as u16,
+                    perk_primary_selection3_id: lmp.perk_primary_selection3_id.unwrap_or_default() as u16,
+                    perk_sub_selection1_id: lmp.perk_sub_selection1_id.unwrap_or_default() as u16,
+                    perk_sub_selection2_id: lmp.perk_sub_selection2_id.unwrap_or_default() as u16,
+                    item0_id: lmp.item0_id.unwrap_or_default() as u32,
+                    item1_id: lmp.item1_id.unwrap_or_default() as u32,
+                    item2_id: lmp.item2_id.unwrap_or_default() as u32,
+                    item3_id: lmp.item3_id.unwrap_or_default() as u32,
+                    item4_id: lmp.item4_id.unwrap_or_default() as u32,
+                    item5_id: lmp.item5_id.unwrap_or_default() as u32,
+                    item6_id: lmp.item6_id.unwrap_or_default() as u32,
+                    items_event_timeline: Vec::new(),
+                    skills_timeline: vec![],
+                }
+            }).collect_vec()
+        )
+    }
+
+
+    pub async fn get_summoner_infos_by_ids(db: &PgPool, summoner_ids: Vec<i32>) -> AppResult<HashMap<i32, (String, String, String, i64, i32, Option<String>)>> {
+        Ok(
+            sqlx::query_as::<_, (i32, String, String, String, i64, i32, Option<String>)>(
+                "SELECT
+                    ss.id,
+                    ss.game_name,
+                    ss.tag_line,
+                    ss.platform,
+                    ss.summoner_level,
+                    ss.profile_icon_id,
+                    pp.slug as pro_player_slug
+            FROM summoners as ss
+                left join (select id, slug from pro_players) as pp on pp.id = ss.pro_player_id
+            WHERE ss.id = ANY($1);"
+            )
+                .bind(&summoner_ids)
+                .fetch_all(db)
+                .await?
+                .into_iter()
+                .map(|(id, game_name, tag_line, platform, level, profile_icon_id, pro_player_slug)| {
+                    (id, (game_name, tag_line, platform, level, profile_icon_id, pro_player_slug))
+                })
+                .collect::<HashMap<_, _>>()
+        )
     }
 
 
@@ -158,11 +196,6 @@ pub mod ssr {
         pub id: i32,
         pub lol_match_id: i32,
         pub summoner_id: i32,
-        pub summoner_name: String,
-        pub summoner_tag_line: String,
-        pub summoner_platform: String,
-        pub summoner_icon_id: i32,
-        pub summoner_level: i64,
         pub champion_id: i32,
         pub team_id: i32,
         pub won: bool,

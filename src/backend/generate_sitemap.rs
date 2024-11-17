@@ -1,10 +1,45 @@
 use crate::backend::ssr::AppResult;
 use crate::consts::platform_route::PLATFORM_ROUTE_OPTIONS;
 use crate::utils::summoner_url;
-use chrono::NaiveDateTime;
+use chrono::{Duration, Local, NaiveDateTime, Timelike};
+use leptos::leptos_dom::log;
 use sitemap::structs::UrlEntry;
 use sitemap::writer::SiteMapWriter;
 use sqlx::PgPool;
+use tokio::time::{sleep_until, Instant};
+
+pub async fn schedule_generate_site_map(
+    db: PgPool,
+) {
+    let start_hour = 3;
+    tokio::spawn(async move {
+        if let Err(e) = generate_site_map(&db).await {
+            log!("Failed to update site map: {:?}", e);
+        }
+        loop {
+            // Calculate the time until the next 2 a.m.
+            let now = Local::now();
+            let target_time = if now.hour() >= start_hour {
+                // If it's past 2 a.m. today, schedule for 2 a.m. the next day
+                (now + Duration::days(1)).with_hour(start_hour).unwrap().with_minute(0).unwrap().with_second(0).unwrap()
+            } else {
+                // Otherwise, schedule for 2 a.m. today
+                now.with_hour(start_hour).unwrap().with_minute(0).unwrap().with_second(0).unwrap()
+            };
+
+            let duration_until_target = target_time - now;
+            let sleep_duration = duration_until_target.to_std().expect("Failed to calculate sleep duration");
+
+            // Wait until the next 2 a.m.
+            sleep_until(Instant::now() + sleep_duration).await;
+
+            // Execute the task
+            if let Err(e) = generate_site_map(&db).await {
+                log!("Failed to update pro player data: {:?}", e);
+            }
+        }
+    });
+}
 
 pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
     let mut output = Vec::<u8>::new();

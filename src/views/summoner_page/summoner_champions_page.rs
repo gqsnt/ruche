@@ -28,9 +28,9 @@ pub fn SummonerChampionsPage() -> impl IntoView {
     );
 
     let toggle_sort = move |sort_type: TableSortType| {
-        let (sort, reverse) = table_sort.get();
+        let (sort, is_desc) = table_sort.get();
         if sort == sort_type {
-            set_table_sort((sort_type, !reverse));
+            set_table_sort((sort_type, !is_desc));
         } else {
             set_table_sort((sort_type, true));
         }
@@ -339,11 +339,11 @@ where
             class=format!("height-inherit w-full border-blue-500 {} ", class.unwrap_or_default())
             class=(
                 "border-t-4",
-                move || current_sort_type() == sort_type && current_sort_normal_flow(),
+                move || current_sort_type() == sort_type && !current_sort_normal_flow(),
             )
             class=(
                 "border-b-4",
-                move || current_sort_type() == sort_type && !current_sort_normal_flow(),
+                move || current_sort_type() == sort_type && current_sort_normal_flow(),
             )
             on:click=move |_| toggle_sort(sort_type)
         >
@@ -371,11 +371,11 @@ pub enum TableSortType {
 }
 
 impl TableSortType {
-    pub fn sort(&self, idx_a: &usize, a: &ChampionStats, idx_b: &usize, b: &ChampionStats, normal_flow: bool) -> std::cmp::Ordering {
+    pub fn sort(&self, idx_a: &usize, a: &ChampionStats, idx_b: &usize, b: &ChampionStats, is_desc: bool) -> std::cmp::Ordering {
         // is reversed because we want to sort in descending order
         let ordering = match self {
             TableSortType::Index => idx_b.cmp(idx_a),
-            TableSortType::Champion => b.champion_name.cmp(&a.champion_name),
+            TableSortType::Champion => a.champion_name.cmp(&b.champion_name),
             TableSortType::WinRate => a.win_rate.partial_cmp(&b.win_rate).unwrap(),
             TableSortType::AvgKDA => a.avg_kda.partial_cmp(&b.avg_kda).unwrap(),
             TableSortType::AvgGold => a.avg_gold_earned.partial_cmp(&b.avg_gold_earned).unwrap(),
@@ -387,7 +387,7 @@ impl TableSortType {
             TableSortType::QuadraKills => a.total_quadra_kills.cmp(&b.total_quadra_kills),
             TableSortType::PentaKills => a.total_penta_kills.cmp(&b.total_penta_kills),
         };
-        if normal_flow {
+        if is_desc {
             ordering.reverse()
         } else {
             ordering

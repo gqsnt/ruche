@@ -166,7 +166,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                             <div>{match_.match_duration.clone()}</div>
                         </div>
                     </div>
-                    <div class="flex flex-col h-full w-[378px]  gap-0.5 justify-start">
+                    <div class="flex flex-col h-full w-[308px]  gap-0.5 justify-start">
                         <div class="flex items-center gap-2.5">
                             <div class="relative flex">
                                 <img
@@ -237,7 +237,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                     </Show>
                                 </div>
                             </div>
-                            <div class="flex flex-col w-[108px] items-start gap-1">
+                            <div class="flex flex-col w-[85px] items-start gap-1">
                                 <div class="text-base">
                                     <span class="text-white">{match_.kills}</span>
                                     /
@@ -336,15 +336,16 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                         </div>
                     </div>
                     <div
-                        class="flex gap-x-2 gap-y-0.5 w-[196px] max-h-[89px]"
+                        class="flex gap-x-2 gap-y-0.5 w-[266px] max-h-[89px]"
                         style="flex-flow:column wrap"
                     >
                         {match_
                             .participants
                             .into_iter()
                             .map(|participant| {
+                                let is_pro_player = participant.pro_player_slug.is_some();
                                 view! {
-                                    <div class="flex items-center gap-1">
+                                    <div class="flex items-center gap-1 w-[130px]">
                                         <img
                                             width="16"
                                             height="16"
@@ -352,6 +353,27 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                             src=Champion::get_static_asset_url(participant.champion_id)
                                             class="w-4 h-4 rounded"
                                         />
+                                        <Show when=move || (participant.encounter_count > 1)>
+                                            <a
+                                                target="_blank"
+                                                href="#"
+                                                class="text-xs bg-green-800 rounded px-0.5 text-center"
+                                            >
+                                                {participant.encounter_count}
+                                            </a>
+                                        </Show>
+                                        <Show when=move || is_pro_player>
+                                            <a
+                                                target="_blank"
+                                                href=format!(
+                                                    "https://lolpros.gg/player/{}",
+                                                    participant.pro_player_slug.clone().unwrap(),
+                                                )
+                                                class="text-xs bg-purple-800 rounded px-0.5 text-center"
+                                            >
+                                                pro
+                                            </a>
+                                        </Show>
                                         <a
                                             target="_blank"
                                             href=summoner_url(
@@ -362,7 +384,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                             class:text-white=move || {
                                                 participant.summoner_id == match_.summoner_id
                                             }
-                                            class="text-ellipsis overflow-hidden whitespace-nowrap max-w-[74px]"
+                                            class="text-ellipsis overflow-hidden whitespace-nowrap "
                                         >
                                             {participant.summoner_name.clone()}
                                         </a>
@@ -480,4 +502,6 @@ pub struct SummonerMatchParticipant {
     pub summoner_platform: String,
     pub champion_id: u16,
     pub team_id: i32,
+    pub pro_player_slug: Option<String>,
+    pub encounter_count:i32,
 }

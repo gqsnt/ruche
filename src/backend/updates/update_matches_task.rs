@@ -2,50 +2,51 @@ pub mod bulk_summoners;
 pub mod bulk_lol_matches;
 pub mod bulk_lol_match_participants;
 
-use std::collections::HashMap;
-use std::str::FromStr;
-use std::sync::Arc;
-
-use crate::backend::server_fns::get_summoner::ssr::SummonerModel;
 use crate::backend::ssr::{AppError, AppResult};
 use crate::backend::updates::update_matches_task::bulk_lol_match_participants::bulk_insert_lol_match_participants;
 use crate::backend::updates::update_matches_task::bulk_lol_matches::{bulk_trashed_matches, bulk_update_matches};
 use crate::backend::updates::update_matches_task::bulk_summoners::{bulk_insert_summoners, bulk_update_summoners};
 use crate::{consts, DB_CHUNK_SIZE};
+use chrono::NaiveDateTime;
 use futures::stream::{FuturesOrdered, FuturesUnordered, StreamExt};
 use leptos::logging::log;
 use riven::consts::{Champion, PlatformRoute};
 use riven::RiotApi;
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::FromRow;
+use std::collections::HashMap;
+use std::str::FromStr;
+use std::sync::Arc;
 
-pub async fn update_matches_task(
+pub async fn schedule_update_matches_task(
     db: sqlx::PgPool,
     api: Arc<RiotApi>,
     update_interval_duration: tokio::time::Duration,
 ) {
-    let mut interval = tokio::time::interval(update_interval_duration);
-    loop {
-        interval.tick().await;
-        //let start = std::time::Instant::now();
-        //log!("Starting update matches task at {}", Utc::now());
-        while let Ok(matches) = get_not_updated_match(&db, 100).await {
-            let before = std::time::Instant::now();
-            let match_len = matches.len();
-            match update_matches(&db, &api, matches).await {
-                Ok(_) => {
-                    log!("Updated {} matches in {:?}", match_len, before.elapsed());
-                }
-                Err(e) => {
-                    log!("Error updating matches: {:?}", e);
-                }
-            };
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(update_interval_duration);
+        loop {
+            interval.tick().await;
+            //let start = std::time::Instant::now();
+            //log!("Starting update matches task at {}", Utc::now());
+            while let Ok(matches) = get_not_updated_match(&db, 100).await {
+                let before = std::time::Instant::now();
+                let match_len = matches.len();
+                match update_matches_task(&db, &api, matches).await {
+                    Ok(_) => {
+                        log!("Updated {} matches in {:?}", match_len, before.elapsed());
+                    }
+                    Err(e) => {
+                        log!("Error updating matches: {:?}", e);
+                    }
+                };
+            }
+            //log!("Finished update matches task after {}s", start.elapsed().as_secs());
         }
-        //log!("Finished update matches task after {}s", start.elapsed().as_secs());
-    }
+    });
 }
 
-async fn update_matches(
+async fn update_matches_task(
     db: &sqlx::PgPool,
     api: &Arc<RiotApi>,
     matches_to_update: Vec<LolMatchNotUpdated>,
@@ -165,7 +166,7 @@ async fn update_matches(
     if !summoners_to_insert.is_empty() {
         for summoners_to_insert in summoners_to_insert.chunks(DB_CHUNK_SIZE) {
             let inserted_summoners = bulk_insert_summoners(db, summoners_to_insert).await?;
-            summoner_map.extend(inserted_summoners);
+            summoner_map.extend(inserted_summoners.into_iter().map(|(puuid, (id, _, _, _))| (puuid, id)).collect::<HashMap<String, i32>>());
         }
     }
 
@@ -394,8 +395,8 @@ pub async fn fetch_existing_summoners(
     db: &sqlx::PgPool,
     puuids: &[String],
 ) -> AppResult<HashMap<String, (i32, i32)>> {
-    Ok(sqlx::query_as::<_, SummonerModel>("
-            SELECT *
+    Ok(sqlx::query_as::<_, SummonerShortModel>("
+            SELECT puuid, id, updated_at
             FROM summoners
             WHERE puuid = ANY($1)
         ")
@@ -454,7 +455,7 @@ pub async fn find_conflicting_summoners(
         .fetch_all(db)
         .await?
         .into_iter()
-        .fold(HashMap::new(), |mut acc:HashMap<(String, String, String), Vec<SummonerModel>>, row| {
+        .fold(HashMap::new(), |mut acc: HashMap<(String, String, String), Vec<SummonerModel>>, row| {
             acc.entry((row.game_name.clone(), row.tag_line.clone(), row.platform.clone()))
                 .or_default()
                 .push(row);
@@ -480,6 +481,26 @@ pub async fn update_summoner_account_by_id(
         .execute(db)
         .await?;
     Ok(())
+}
+
+
+#[derive(sqlx::FromRow, Debug)]
+pub struct SummonerModel {
+    pub id: i32,
+    pub game_name: String,
+    pub tag_line: String,
+    pub puuid: String,
+    pub platform: String,
+    pub updated_at: NaiveDateTime,
+    pub summoner_level: i64,
+    pub profile_icon_id: i32,
+}
+
+#[derive(sqlx::FromRow, Debug)]
+pub struct SummonerShortModel {
+    pub id: i32,
+    pub puuid: String,
+    pub updated_at: NaiveDateTime,
 }
 
 

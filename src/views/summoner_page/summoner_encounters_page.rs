@@ -149,14 +149,26 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                             </div>
                                                                         </td>
                                                                         <td class="px-2 text-left">
-                                                                           {encounter.with_win_count}W {encounter.with_match_count - encounter.with_win_count}L<span class="mx-1">{encounter.with_match_count}G</span>  {format!("{}%", ((encounter.with_win_count as f64 / encounter.with_match_count as f64)*100.0) as i32)}
+                                                                            {encounter.with_win_count}W
+                                                                            {encounter.with_match_count - encounter.with_win_count}L
+                                                                            <span class="mx-1">{encounter.with_match_count}G</span>
+                                                                            {format!(
+                                                                                "{}%",
+                                                                                ((encounter.with_win_count as f64
+                                                                                    / encounter.with_match_count as f64) * 100.0) as i32,
+                                                                            )}
                                                                         </td>
                                                                         <td class="px-2 text-left">
-                                                                           {encounter.vs_win_count}W {encounter.vs_match_count - encounter.vs_win_count}L<span class="mx-1">{encounter.vs_match_count}G</span>  {format!("{}%", ((encounter.vs_win_count as f64 / encounter.vs_match_count as f64)*100.0) as i32)}
+                                                                            {encounter.vs_win_count}W
+                                                                            {encounter.vs_match_count - encounter.vs_win_count}L
+                                                                            <span class="mx-1">{encounter.vs_match_count}G</span>
+                                                                            {format!(
+                                                                                "{}%",
+                                                                                ((encounter.vs_win_count as f64
+                                                                                    / encounter.vs_match_count as f64) * 100.0) as i32,
+                                                                            )}
                                                                         </td>
-                                                                <td class="px-2 text-left">
-                                                                    {encounter.match_count}
-                                                                </td>
+                                                                        <td class="px-2 text-left">{encounter.match_count}</td>
                                                                     </tr>
                                                                 }
                                                             }

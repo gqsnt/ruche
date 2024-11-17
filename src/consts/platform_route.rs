@@ -124,6 +124,32 @@ impl PlatformRoute {
         use std::str::FromStr;
         riven::consts::PlatformRoute::from_str(self.to_string().as_str()).unwrap()
     }
+
+    #[cfg(feature = "ssr")]
+    pub fn from_raw_str(value:&str) -> Self{
+        match value{
+            "BR1" => PlatformRoute::BR1,
+            "EUN1" => PlatformRoute::EUN1,
+            "EUW1" => PlatformRoute::EUW1,
+            "JP1" => PlatformRoute::JP1,
+            "KR" => PlatformRoute::KR,
+            "LA1" => PlatformRoute::LA1,
+            "LA2" => PlatformRoute::LA2,
+            "ME1" => PlatformRoute::ME1,
+            "NA1" => PlatformRoute::NA1,
+            "OC1" => PlatformRoute::OC1,
+            "PH2" => PlatformRoute::PH2,
+            "RU" => PlatformRoute::RU,
+            "SG2" => PlatformRoute::SG2,
+            "TH2" => PlatformRoute::TH2,
+            "TR1" => PlatformRoute::TR1,
+            "TW2" => PlatformRoute::TW2,
+            "VN2" => PlatformRoute::VN2,
+            "PBE1" => PlatformRoute::PBE1,
+            _ => PlatformRoute::EUW1,
+        }
+    }
+
 }
 
 impl From<&str> for PlatformRoute {

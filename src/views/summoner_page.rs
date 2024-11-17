@@ -69,7 +69,23 @@ pub fn SummonerPage() -> impl IntoView {
                                             <div>
                                                 {summoner_signal().game_name}#{summoner_signal().tag_line}
                                             </div>
-                                            <div>lvl. {summoner_signal().summoner_level}</div>
+                                            <div>
+                                                lvl. {summoner_signal().summoner_level}
+                                                <Show when=move || summoner_signal().pro_slug.is_some()>
+
+                                                    <a
+                                                        target="_blank"
+                                                        href=format!(
+                                                            "https://lolpros.gg/player/{}",
+                                                            summoner_signal().pro_slug.clone().unwrap(),
+                                                        )
+                                                        class=" bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
+                                                    >
+                                                        PRO
+                                                    </a>
+                                                </Show>
+
+                                            </div>
                                         </div>
                                         <ActionForm action=update_summoner_action>
                                             <input
@@ -122,6 +138,7 @@ pub struct Summoner {
     pub updated_at: String,
     pub summoner_level: i64,
     pub profile_icon_id: u16,
+    pub pro_slug: Option<String>,
 }
 
 

@@ -19,9 +19,9 @@ pub fn SummonerLivePage() -> impl IntoView {
     let (refresh_signal, set_refresh_signal) = signal(0);
 
     let live_game_resource = Resource::new(
-        move || (refresh_signal.get(), summoner().puuid.clone(), summoner().platform.to_string()),
-        |(_, puuid, platform_type)| async move {
-            get_live_game(puuid, platform_type).await
+        move || (refresh_signal.get(), summoner().puuid.clone(), summoner().id, summoner().platform.to_string()),
+        |(_, puuid, id,platform_type)| async move {
+            get_live_game(puuid, platform_type, id).await
         },
     );
 
@@ -126,8 +126,9 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
             </thead>
             <tbody>
                 {participants
-                    .iter()
+                    .into_iter()
                     .map(|participant| {
+                        let is_pro_player = participant.pro_player_slug.is_some();
                         view! {
                             <tr>
                                 <td
@@ -198,7 +199,28 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                     </div>
                                 </td>
                                 <td class="pl-[5px] py-1 text-ellipsis overflow-hidden text-left">
-                                    <div>
+                                    <div class="flex items-center gap-1">
+                                        <Show when=move || (participant.encounter_count > 1)>
+                                            <a
+                                                target="_blank"
+                                                href="#"
+                                                class="text-xs bg-green-800 rounded px-0.5 text-center"
+                                            >
+                                                {participant.encounter_count}
+                                            </a>
+                                        </Show>
+                                        <Show when=move || is_pro_player>
+                                            <a
+                                                target="_blank"
+                                                href=format!(
+                                                    "https://lolpros.gg/player/{}",
+                                                    participant.pro_player_slug.clone().unwrap(),
+                                                )
+                                                class="text-xs bg-purple-800 rounded px-0.5 text-center"
+                                            >
+                                                pro
+                                            </a>
+                                        </Show>
                                         <a
                                             target="_blank"
                                             href=summoner_url(
@@ -307,8 +329,11 @@ pub struct LiveGame {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LiveGameParticipant {
+    pub summoner_id:i32,
     pub puuid: String,
     pub champion_id: u16,
+    pub pro_player_slug: Option<String>,
+    pub encounter_count:i32,
     pub summoner_spell1_id: u16,
     pub summoner_spell2_id: u16,
     pub perk_primary_selection_id: u16,

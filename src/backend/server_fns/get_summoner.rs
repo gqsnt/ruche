@@ -45,7 +45,24 @@ pub mod ssr {
         tag_line: &str,
     ) -> AppResult<Summoner> {
         sqlx::query_as::<_, SummonerModel>(
-            "SELECT * FROM summoners WHERE game_name = $1 AND tag_line = $2 AND platform = $3 LIMIT 1"
+            r#"
+            SELECT
+                   ss.id              as id,
+                   ss.game_name       as game_name,
+                   ss.tag_line        as tag_line,
+                   ss.platform        as platform,
+                   ss.profile_icon_id as profile_icon_id,
+                   ss.summoner_level  as summoner_level,
+                   ss.puuid           as puuid,
+                   ss.updated_at      as updated_at,
+                   pp.slug            as pro_slug
+            FROM summoners as ss
+                     left join (select id, slug from pro_players) as pp on pp.id = ss.pro_player_id
+            WHERE
+                ss.game_name = $1
+                AND ss.tag_line = $2
+                AND ss.platform = $3
+            LIMIT 1"#
         ).bind(game_name)
             .bind(tag_line)
             .bind(platform_route.to_string())
@@ -61,6 +78,7 @@ pub mod ssr {
                     updated_at: summoner_db.updated_at.format(DATE_FORMAT).to_string(),
                     summoner_level: summoner_db.summoner_level,
                     profile_icon_id: summoner_db.profile_icon_id as u16,
+                    pro_slug: summoner_db.pro_slug,
                 }
             })
             .map_err(|e| e.into())
@@ -77,5 +95,6 @@ pub mod ssr {
         pub updated_at: NaiveDateTime,
         pub summoner_level: i64,
         pub profile_icon_id: i32,
+        pub pro_slug: Option<String>,
     }
 }

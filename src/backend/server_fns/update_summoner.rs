@@ -56,6 +56,7 @@ pub mod ssr {
     use riven::RiotApi;
     use std::collections::HashSet;
     use std::sync::Arc;
+    use crate::consts::platform_route::PlatformRoute;
 
     pub async fn update_summoner_default_matches(
         db: sqlx::PgPool,
@@ -136,7 +137,7 @@ pub mod ssr {
         let match_ids = match_ids.to_vec();
         let platforms = match_ids.iter().map(|x| {
             let match_id_split = x.split("_").collect::<Vec<&str>>();
-            match_id_split[0].to_string()
+            PlatformRoute::from_raw_str(match_id_split[0]).to_string()
         }).collect::<Vec<String>>();
         let sql = r"
         INSERT INTO

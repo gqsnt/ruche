@@ -3,25 +3,33 @@ use leptos::prelude::*;
 use leptos::server;
 
 #[server]
-pub async fn get_live_game(puuid: String, platform_type: String) -> Result<Option<LiveGame>, ServerFnError> {
+pub async fn get_live_game(puuid: String, platform_type: String, summoner_id: i32) -> Result<Option<LiveGame>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let live_cache = state.live_game_cache.clone();
-
-    if let Some(game_data) = live_cache.get_game_data(&puuid) {
-        Ok(Some(game_data))
+    let db = state.db.clone();
+    if let Some(live_data) = live_cache.get_game_data(&puuid) {
+        Ok(Some(ssr::add_encounters(&db,  live_data, summoner_id).await?))
     } else {
-        let db = state.db.clone();
+
         let riot_api = state.riot_api.clone();
         match ssr::get_live_game_data(&db, riot_api, puuid, platform_type).await {
-            Ok(live_game) => {
-                live_cache.set_game_data(
-                    live_game.game_id.clone(),
-                    live_game.participants.iter().map(|x| x.puuid.clone()).collect(),
-                    live_game.clone(),
-                );
-                Ok(Some(live_game))
+            Ok(live_data) => {
+                match live_data{
+                    None => Ok(None),
+                    Some(live_data) => {
+                        live_cache.set_game_data(
+                            live_data.game_id.clone(),
+                            live_data.participants.iter().map(|x| x.puuid.clone()).collect(),
+                            live_data.clone(),
+                        );
+                        Ok(Some(ssr::add_encounters(&db,  live_data, summoner_id).await?))
+                    }
+                }
             }
-            Err(_) => { Ok(None) }
+            Err(er) => {
+                println!("Error getting live game data: {}", er);
+                Ok(None)
+            }
         }
     }
 }
@@ -29,10 +37,11 @@ pub async fn get_live_game(puuid: String, platform_type: String) -> Result<Optio
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use crate::backend::ssr::{AppError, AppResult};
+    use crate::backend::ssr::AppResult;
     use crate::backend::updates::update_matches_task::bulk_summoners::bulk_insert_summoners;
     use crate::backend::updates::update_matches_task::TempSummoner;
 
+    use crate::backend::server_fns::get_matches::ssr::get_summoner_encounters;
     use crate::consts::map::Map;
     use crate::consts::platform_route::PlatformRoute;
     use crate::consts::queue::Queue;
@@ -47,7 +56,21 @@ pub mod ssr {
     use std::collections::HashMap;
     use std::sync::Arc;
 
-    pub async fn get_live_game_data(db: &PgPool, riot_api: Arc<RiotApi>, puuid: String, platform_type: String) -> AppResult<LiveGame> {
+
+    pub async fn add_encounters(db: &PgPool, mut game_data: LiveGame, summoner_id: i32) -> AppResult<LiveGame> {
+        let summoners_ids=  game_data.participants.iter().map(|x| x.summoner_id).collect::<Vec<i32>>();
+        let encounters = get_summoner_encounters(db, summoner_id, &summoners_ids).await?;
+        for participant in game_data.participants.iter_mut() {
+            if let Some(encounter_count) = encounters.get(&participant.summoner_id) {
+                participant.encounter_count = *encounter_count;
+            }
+        }
+        Ok(game_data)
+    }
+
+
+
+    pub async fn get_live_game_data(db: &PgPool, riot_api: Arc<RiotApi>, puuid: String, platform_type: String) -> AppResult<Option<LiveGame>> {
         let platform_route = PlatformRoute::from(platform_type.as_str());
         let riven_pr = platform_route.to_riven();
         let current_game_info = riot_api
@@ -57,7 +80,7 @@ pub mod ssr {
 
         match current_game_info {
             None => {
-                Err(AppError::CustomError("No live game found".to_string()))
+                Ok(None)
             }
             Some(current_game_info) => {
                 let participant_puuids = current_game_info.participants.iter().filter(|x| !x.puuid.clone().unwrap_or_default().is_empty()).map(|x| x.puuid.clone().expect("puuid not found")).collect::<Vec<String>>();
@@ -69,11 +92,12 @@ pub mod ssr {
                 summoner_details.extend(new_summoners);
 
 
-                let summoner_ids = summoner_details.values().map(| x| x.id).collect::<Vec<i32>>();
+                let summoner_ids = summoner_details.values().map(|x| x.id).collect::<Vec<i32>>();
 
                 let live_game_stats = get_summoners_live_stats(db, &summoner_ids).await?;
                 let mut participants = vec![];
                 let default_hashmap = HashMap::new();
+                let mut summoner_ids = vec![];
                 for participant in current_game_info.participants {
                     let participant_puuid = participant.puuid.clone();
                     if participant_puuid.is_none() || participant_puuid.unwrap_or_default().is_empty() {
@@ -115,8 +139,9 @@ pub mod ssr {
                             (primary as u16, sub_style as u16)
                         }
                     };
-
+                    summoner_ids.push(summoner_detail.id);
                     participants.push(LiveGameParticipant {
+                        summoner_id: summoner_detail.id,
                         puuid: participant_puuid,
                         champion_id: participant.champion_id.0 as u16,
                         summoner_spell1_id: participant.spell1_id as u16,
@@ -127,18 +152,21 @@ pub mod ssr {
                         tag_line: summoner_detail.tag_line.clone(),
                         platform: summoner_detail.platform.clone(),
                         summoner_level: summoner_detail.summoner_level,
+
                         team_id: participant.team_id as i32,
                         ranked_stats,
                         champion_stats,
+                        encounter_count:0 ,
+                        pro_player_slug:summoner_detail.pro_slug.clone(),
                     })
                 }
-                Ok(LiveGame {
+                Ok(Some(LiveGame {
                     game_id: format!("{}_{}", current_game_info.game_id, current_game_info.platform_id),
                     game_length: current_game_info.game_length,
                     game_map: Map::from(current_game_info.map_id.0).get_static_name().to_string(),
                     queue_name: current_game_info.game_queue_config_id.map(|x| Queue::from(x.0).to_str().to_string()).unwrap_or_default(),
                     participants,
-                })
+                }))
             }
         }
     }
@@ -212,12 +240,16 @@ pub mod ssr {
 
     async fn find_summoner_live_by_puuids(db: &PgPool, puuids: &[String]) -> AppResult<HashMap<String, SummonerLiveModel>> {
         Ok(sqlx::query_as::<_, SummonerLiveModel>(
-            "SELECT  id,
+            "SELECT  ss.id as id,
                     puuid,
                     game_name,
                     tag_line,
                     platform,
-                    summoner_level  FROM summoners WHERE puuid = ANY($1)"
+                    summoner_level,
+                    pp.slug as pro_slug
+            FROM summoners as ss
+                left join (select id, slug from pro_players) as pp on pp.id = ss.pro_player_id
+            WHERE ss.puuid = ANY($1)"
         )
             .bind(puuids)
             .fetch_all(db)
@@ -247,5 +279,6 @@ pub mod ssr {
         pub puuid: String,
         pub platform: String,
         pub summoner_level: i64,
+        pub pro_slug: Option<String>,
     }
 }

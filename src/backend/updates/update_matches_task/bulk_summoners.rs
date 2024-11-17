@@ -48,7 +48,7 @@ pub async fn bulk_update_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
     Ok(())
 }
 
-pub async fn bulk_insert_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]) -> AppResult<HashMap<String, i32>> {
+pub async fn bulk_insert_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]) -> AppResult<HashMap<String, (i32, String ,String, String)>> {
     let game_names = summoners.iter().map(|x| x.game_name.clone()).collect::<Vec<String>>();
     let tag_lines = summoners.iter().map(|x| x.tag_line.clone()).collect::<Vec<String>>();
     let puuids = summoners.iter().map(|x| x.puuid.clone()).collect::<Vec<String>>();
@@ -97,5 +97,16 @@ pub async fn bulk_insert_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
         .bind(updated_ats)
         .fetch_all(db)
         .await?;
-    Ok(rows.into_iter().enumerate().map(|(index, r)| (summoners.get(index).unwrap().puuid.clone(), r.id)).collect::<HashMap<String, i32>>())
+    Ok(rows.into_iter().enumerate().map(|(index, r)| {
+        let summoner_index = summoners.get(index).unwrap();
+        (
+            summoner_index.puuid.clone(),
+            (
+                r.id,
+                summoner_index.platform.clone(),
+                summoner_index.game_name.clone(),
+                summoner_index.tag_line.clone(),
+            )
+        )
+    }).collect::<HashMap<String, (i32, String ,String, String)>>())
 }

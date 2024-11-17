@@ -65,7 +65,7 @@ pub fn App() -> impl IntoView {
         <Link rel="icon" type_="image/x-icon" href="/assets/favicon.ico" />
         // content for this welcome page
         <Router>
-            <main class="bg-gray-900 flex items-start justify-center min-h-screen w-full">
+            <main class="bg-gray-900 flex items-start justify-center min-h-screen w-full text-gray-200">
                 <Routes transition=true fallback=|| "Page not found.".into_view()>
                     <Route path=StaticSegment("") view=move || view! { <Redirect path="platform/EUW" /> } />
                     <ParentRoute path=(StaticSegment("platform"), ParamSegment("platform_type")) view=PlatformTypePage>
