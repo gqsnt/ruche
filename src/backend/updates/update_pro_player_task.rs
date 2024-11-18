@@ -75,7 +75,15 @@ pub async fn update_pro_player_task(
     )
         .buffer_unordered(concurrency_limit)
         .filter_map(|response| async {
-            Some(response.unwrap())
+            match response{
+                Ok(r) => {
+                    Some(r)
+                }
+                Err(e) => {
+                    log!("Failed to fetch pro player: {:?}", e);
+                    None
+                }
+            }
         })
         .collect::<Vec<_>>()
         .await;
