@@ -5,7 +5,7 @@ use crate::consts::item::Item;
 use crate::consts::perk::Perk;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::summoner_url;
+use crate::utils::{summoner_encounter_url, summoner_url};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
@@ -107,7 +107,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                                                         key=|match_| match_.match_id
                                                         let:match_
                                                     >
-                                                        <MatchCard match_=match_ />
+                                                        <MatchCard match_=match_ summoner/>
                                                     </For>
                                                 </div>
                                                 <Show when=move || (total_pages > 1)>
@@ -129,7 +129,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
 
 
 #[component]
-pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
+pub fn MatchCard(match_: SummonerMatch, summoner:ReadSignal<Summoner>) -> impl IntoView {
     let (show_details, set_show_details) = signal(false);
 
     view! {
@@ -344,6 +344,9 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                             .into_iter()
                             .map(|participant| {
                                 let is_pro_player = participant.pro_player_slug.is_some();
+                                let participant_platform = participant.summoner_platform.clone();
+                                let participant_name = participant.summoner_name.clone();
+                                let participant_tag_line = participant.summoner_tag_line.clone();
                                 view! {
                                     <div class="flex items-center gap-1 w-[130px]">
                                         <img
@@ -355,8 +358,14 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         />
                                         <Show when=move || (participant.encounter_count > 1)>
                                             <a
-                                                target="_blank"
-                                                href="#"
+                                                href=summoner_encounter_url(
+                                                    summoner().platform.to_string().as_str(),
+                                                    summoner().game_name.as_str(),
+                                                    summoner().tag_line.as_str(),
+                                                    participant_platform.as_str(),
+                                                    participant_name.as_str(),
+                                                    participant_tag_line.as_str()
+                                                )
                                                 class="text-xs bg-green-800 rounded px-0.5 text-center"
                                             >
                                                 {participant.encounter_count}
@@ -434,7 +443,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
             <Show when=move || show_details()>
                 <MatchDetails
                     match_id=match_.match_id
-                    summoner_id=match_.summoner_id
+                    summoner
                     riot_match_id=match_.riot_match_id.clone()
                     platform=match_.platform.clone()
                 />

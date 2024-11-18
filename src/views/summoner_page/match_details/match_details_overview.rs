@@ -3,16 +3,17 @@ use crate::consts::item::Item;
 use crate::consts::perk::Perk;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::summoner_url;
+use crate::utils::{summoner_encounter_url, summoner_url};
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
+use crate::views::summoner_page::Summoner;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 
 #[component]
-pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantDetails>>) -> impl IntoView {
+pub fn MatchDetailsOverview(summoner:ReadSignal<Summoner>, match_details: ReadSignal<Vec<LolMatchParticipantDetails>>) -> impl IntoView {
     let details = match_details();
     let (summoner_team, summoner_team_won) = {
-        let detail = details.iter().find(|participant| participant.summoner_id == summoner_id).expect("Summoner id not found");
+        let detail = details.iter().find(|participant| participant.summoner_id == summoner().id).expect("Summoner id not found");
         (detail.team_id, detail.won)
     };
     let other_team = if summoner_team == 100 {
@@ -28,13 +29,13 @@ pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolM
                 won=summoner_team_won
                 team_id=summoner_team
                 participants=first_team
-                summoner_id
+                summoner
             />
             <MatchDetailsOverviewTable
                 won=!summoner_team_won
                 team_id=other_team
                 participants=second_team
-                summoner_id
+                summoner
             />
         </div>
     }
@@ -42,7 +43,7 @@ pub fn MatchDetailsOverview(summoner_id: i32, match_details: ReadSignal<Vec<LolM
 
 
 #[component]
-pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, participants: Vec<LolMatchParticipantDetails>) -> impl IntoView {
+pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner:ReadSignal<Summoner>, participants: Vec<LolMatchParticipantDetails>) -> impl IntoView {
     view! {
         <table class="table-fixed text-xs w-full border-collapse">
             <colgroup>
@@ -81,12 +82,16 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                         let item5_id = participant.item5_id;
                         let item6_id = participant.item6_id;
                         let is_pro_player = participant.summoner_pro_player_slug.is_some();
+                        let participant_platform = participant.summoner_platform.clone();
+                        let participant_name = participant.summoner_name.clone();
+                        let participant_tag_line = participant.summoner_tag_line.clone();
+
                         view! {
                             <tr
-                                class=("bg-red-900", !won && participant.summoner_id != summoner_id)
-                                class=("bg-blue-900", won && participant.summoner_id != summoner_id)
-                                class=("bg-red-800", !won && participant.summoner_id == summoner_id)
-                                class=("bg-blue-800", won && participant.summoner_id == summoner_id)
+                                class=("bg-red-900", !won && participant.summoner_id != summoner().id)
+                                class=("bg-blue-900", won && participant.summoner_id != summoner().id)
+                                class=("bg-red-800", !won && participant.summoner_id == summoner().id)
+                                class=("bg-blue-800", won && participant.summoner_id == summoner().id)
                             >
                                 <td class="pl-2.5 py-1">
                                     <div class="relative w-8">
@@ -157,8 +162,14 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner_id: i32, part
                                     <div class="flex items-center gap-1">
                                         <Show when=move || (participant.encounter_count > 1)>
                                             <a
-                                                target="_blank"
-                                                href="#"
+                                                 href=summoner_encounter_url(
+                                                    summoner().platform.to_string().as_str(),
+                                                    summoner().game_name.as_str(),
+                                                    summoner().tag_line.as_str(),
+                                                    participant_platform.as_str(),
+                                                    participant_name.as_str(),
+                                                    participant_tag_line.as_str()
+                                                )
                                                 class="text-xs bg-green-800 rounded px-0.5 text-center"
                                             >
                                                 {participant.encounter_count}

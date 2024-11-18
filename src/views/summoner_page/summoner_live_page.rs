@@ -4,7 +4,7 @@ use crate::consts::champion::Champion;
 use crate::consts::perk::Perk;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::summoner_url;
+use crate::utils::{summoner_encounter_url, summoner_url};
 use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
 use leptos::prelude::*;
@@ -70,8 +70,8 @@ pub fn SummonerLivePage() -> impl IntoView {
                                                 )}
                                             </div>
                                         </div>
-                                        <MatchLiveTable team_id=100 participants=first_team />
-                                        <MatchLiveTable team_id=200 participants=second_team />
+                                        <MatchLiveTable team_id=100 participants=first_team  summoner=summoner/>
+                                        <MatchLiveTable team_id=200 participants=second_team summoner=summoner />
 
                                     </div>
                                 },
@@ -91,7 +91,7 @@ pub fn SummonerLivePage() -> impl IntoView {
 
 
 #[component]
-pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> impl IntoView {
+pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summoner:ReadSignal<Summoner>) -> impl IntoView {
     let is_blue_team = || team_id == 100;
     view! {
         <table class="table-fixed text-xs w-full">
@@ -128,6 +128,10 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                     .into_iter()
                     .map(|participant| {
                         let is_pro_player = participant.pro_player_slug.is_some();
+                        let participant_platform = participant.platform.clone();
+                        let participant_name = participant.game_name.clone();
+                        let participant_tag_line = participant.tag_line.clone();
+
                         view! {
                             <tr>
                                 <td
@@ -201,8 +205,14 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                     <div class="flex items-center gap-1">
                                         <Show when=move || (participant.encounter_count > 1)>
                                             <a
-                                                target="_blank"
-                                                href="#"
+                                                 href=summoner_encounter_url(
+                                                    summoner().platform.to_string().as_str(),
+                                                    summoner().game_name.as_str(),
+                                                    summoner().tag_line.as_str(),
+                                                    participant_platform.as_str(),
+                                                    participant_name.as_str(),
+                                                    participant_tag_line.as_str()
+                                                )
                                                 class="text-xs bg-green-800 rounded px-0.5 text-center"
                                             >
                                                 {participant.encounter_count}

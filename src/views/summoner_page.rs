@@ -20,6 +20,7 @@ pub mod summoner_encounters_page;
 pub mod summoner_live_page;
 pub mod match_details;
 mod summoner_nav;
+mod encounter_page;
 
 #[component]
 pub fn SummonerPage() -> impl IntoView {

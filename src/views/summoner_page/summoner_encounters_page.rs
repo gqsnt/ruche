@@ -2,7 +2,7 @@ use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_encounters::get_encounters;
 use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::HasStaticAsset;
-use crate::utils::summoner_url;
+use crate::utils::{summoner_encounter_url, summoner_url};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
 use crate::views::MatchFiltersSearch;
@@ -106,9 +106,10 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                     <thead>
                                                         <tr>
                                                             <th class="text-left px-2">Summoner</th>
-                                                            <th class="text-left px-2">With</th>
-                                                            <th class="text-left px-2">Vs</th>
-                                                            <th class="text-left px-2">Total</th>
+                                                            <th class="px-2">With</th>
+                                                            <th class=" px-2">Vs</th>
+                                                            <th class=" px-2">Total</th>
+                                                            <th class=" px-2"></th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -119,6 +120,9 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                         >
                                                             {
                                                                 let encounter: SummonerEncounter = encounter;
+                                                                let encounter_platform = encounter.platform.clone();
+                                                                let encounter_game_name = encounter.game_name.clone();
+                                                                let encounter_tag_line = encounter.tag_line.clone();
                                                                 view! {
                                                                     <tr>
                                                                         <td class="text-left w-[200px]">
@@ -148,7 +152,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                                 </div>
                                                                             </div>
                                                                         </td>
-                                                                        <td class="px-2 text-left">
+                                                                        <td class="px-2">
                                                                             {encounter.with_win_count}W
                                                                             {encounter.with_match_count - encounter.with_win_count}L
                                                                             <span class="mx-1">{encounter.with_match_count}G</span>
@@ -158,7 +162,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                                     / encounter.with_match_count as f64) * 100.0) as i32,
                                                                             )}
                                                                         </td>
-                                                                        <td class="px-2 text-left">
+                                                                        <td class="px-2">
                                                                             {encounter.vs_win_count}W
                                                                             {encounter.vs_match_count - encounter.vs_win_count}L
                                                                             <span class="mx-1">{encounter.vs_match_count}G</span>
@@ -168,7 +172,20 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                                     / encounter.vs_match_count as f64) * 100.0) as i32,
                                                                             )}
                                                                         </td>
-                                                                        <td class="px-2 text-left">{encounter.match_count}</td>
+                                                                        <td class="px-2 ">{encounter.match_count}</td>
+                                                                        <td class="px-2">
+                                                                            <a class="my-button font-bold"
+                                                                                href=summoner_encounter_url(
+                                                                                    summoner().platform.to_string().as_str(),
+                                                                                    summoner().game_name.as_str(),
+                                                                                    summoner().tag_line.as_str(),
+                                                                                    encounter_platform.as_str(),
+                                                                                    encounter_game_name.as_str(),
+                                                                                    encounter_tag_line.as_str()
+                                                                                )>
+                                                                                >
+                                                                            </a>
+                                                                        </td>
                                                                     </tr>
                                                                 }
                                                             }

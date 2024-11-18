@@ -7,7 +7,7 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
-
+use crate::views::summoner_page::encounter_page::EncounterPage;
 
 #[component]
 pub fn SummonerNav() -> impl IntoView {
@@ -77,6 +77,19 @@ pub fn SummonerNav() -> impl IntoView {
                             Live
                         </button>
                     </li>
+                    <li class="-mb-px text-center">
+                        <button
+                            class=move || {
+                                if tab() == Some(Tabs::Encounter.to_string()) {
+                                    "active-tab"
+                                } else {
+                                    "disabled-tab"
+                                }
+                            }
+                        >
+                            Encouter
+                        </button>
+                    </li>
                 </ul>
             </nav>
         </div>
@@ -100,6 +113,9 @@ pub fn SummonerNav() -> impl IntoView {
             <Show when=move || tab() == Some(Tabs::Live.to_string())>
                 <SummonerLivePage />
             </Show>
+            <Show when=move || tab() == Some(Tabs::Live.to_string())>
+                <EncounterPage />
+            </Show>
 
         </div>
     }
@@ -113,6 +129,7 @@ pub enum Tabs {
     Champions,
     Encounters,
     Live,
+    Encounter,
 }
 
 impl std::fmt::Display for Tabs {
@@ -122,6 +139,7 @@ impl std::fmt::Display for Tabs {
             Tabs::Champions => write!(f, "champions"),
             Tabs::Encounters => write!(f, "encounters"),
             Tabs::Live => write!(f, "live"),
+            Tabs::Encounter => write!(f, "encounter"),
         }
     }
 }

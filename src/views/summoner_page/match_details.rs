@@ -6,15 +6,16 @@ use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::server_fn::serde::{Deserialize, Serialize};
 use leptos::{component, view, IntoView};
+use crate::views::summoner_page::Summoner;
 
 pub mod match_details_overview;
 pub mod match_details_team;
 pub mod match_details_build;
 
 #[component]
-pub fn MatchDetails(match_id: i32, riot_match_id: String, platform: String, summoner_id: i32) -> impl IntoView {
+pub fn MatchDetails(match_id: i32, riot_match_id: String, platform: String, summoner: ReadSignal<Summoner>) -> impl IntoView {
     let match_details = Resource::new(
-        move || (match_id, riot_match_id.clone(), platform.clone(), summoner_id),
+        move || (match_id, riot_match_id.clone(), platform.clone(), summoner().id),
         |(match_id, riot_match_id, platform,summoner_id)| async move {
             get_match_details(match_id, riot_match_id, platform, Some(summoner_id)).await
         },
@@ -28,19 +29,19 @@ pub fn MatchDetails(match_id: i32, riot_match_id: String, platform: String, summ
                     <Show when=move || match_detail_tab() == "overview">
                         <MatchDetailsOverview
                             match_details=match_details_signal
-                            summoner_id=summoner_id
+                            summoner
                         />
                     </Show>
                     <Show when=move || match_detail_tab() == "team">
                         <MatchDetailsTeam
                             _match_details=match_details_signal
-                            _summoner_id=summoner_id
+                            _summoner_id=summoner().id
                         />
                     </Show>
                     <Show when=move || match_detail_tab() == "build">
                         <MatchDetailsBuild
                             match_details=match_details_signal
-                            summoner_id=summoner_id
+                            summoner_id=summoner().id
                         />
                     </Show>
                 }

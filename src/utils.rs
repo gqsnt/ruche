@@ -35,6 +35,11 @@ pub fn summoner_not_found_url(platform: &str, game_name: &str, tag_line: &str) -
     format!("/platform/{}?game_name={}&tag_line={}", platform, game_name, tag_line)
 }
 
+pub fn summoner_encounter_url(platform:&str, game_name:&str, tag_line:&str, encounter_platform:&str, encounter_game_name:&str, encounter_tag_line:&str) -> String {
+    format!("/platform/{}/summoners/{}?tab=encounter&encounter={}&encounter_platform={}", platform, summoner_to_slug(game_name, tag_line), summoner_to_slug(encounter_game_name, encounter_tag_line), encounter_platform)
+}
+
+
 
 pub fn round_to_2_decimal_places(value: f64) -> f64 {
     (value * 100.0).round() / 100.0
