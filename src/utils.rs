@@ -1,4 +1,4 @@
-pub fn version_to_major_minor(version: String) -> String {
+pub fn version_to_major_minor(version: &str) -> String {
     let mut split = version.split(".");
     if split.clone().count() < 2 {
         panic!("version_to_major_minor: version: {}", version);

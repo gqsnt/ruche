@@ -8,7 +8,7 @@ pub async fn get_matches(summoner_id: i32, page_number: i32, filters: Option<Mat
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
-    ssr::inner_get_matches(&db, summoner_id, page_number, filters.unwrap_or_default()).await.map_err(|e| e.to_server_fn_error())
+    ssr::fetch_matches(&db, summoner_id, page_number, filters.unwrap_or_default()).await.map_err(|e| e.to_server_fn_error())
 }
 
 
@@ -25,7 +25,7 @@ pub mod ssr {
     use crate::consts::queue::Queue;
     use sqlx::{FromRow, PgPool, QueryBuilder};
 
-    pub async fn inner_get_matches(
+    pub async fn fetch_matches(
         db: &PgPool,
         summoner_id: i32,
         page: i32,
@@ -123,9 +123,9 @@ pub mod ssr {
         participant_query.push_bind(per_page);
         participant_query.push(" OFFSET ");
         participant_query.push_bind(offset);
-        let ag_build = aggregate_query.build_query_as::<MatchesResultInfoModel>();
+        let matches_statistics_query = aggregate_query.build_query_as::<MatchesResultInfoModel>();
 
-        let aggregate_result = ag_build
+        let matches_statistics = matches_statistics_query
             .fetch_one(db)
             .await?;
         let results = participant_query
@@ -135,19 +135,19 @@ pub mod ssr {
 
 
         let matches_result_info = {
-            let total_matches = aggregate_result.total_count.unwrap_or_default() as i32;
-            let total_wins = aggregate_result.total_wins.unwrap_or_default() as i32;
+            let total_matches = matches_statistics.total_count.unwrap_or_default() as i32;
+            let total_wins = matches_statistics.total_wins.unwrap_or_default() as i32;
             let total_losses = total_matches - total_wins;
             let round_2 = |x: f64| (x * 100.0).round() / 100.0;
             MatchesResultInfo {
                 total_matches,
                 total_wins,
                 total_losses,
-                avg_kills: round_2(aggregate_result.avg_kills.clone().unwrap_or_default().to_f64().unwrap_or_default()),
-                avg_deaths: round_2(aggregate_result.avg_deaths.clone().unwrap_or_default().to_f64().unwrap_or_default()),
-                avg_assists: round_2(aggregate_result.avg_assists.clone().unwrap_or_default().to_f64().unwrap_or_default()),
-                avg_kda: round_2(aggregate_result.avg_kda.clone().unwrap_or_default().to_f64().unwrap_or_default()),
-                avg_kill_participation: (aggregate_result.avg_kill_participation.clone().unwrap_or_default().to_f64().unwrap_or_default() * 100.0) as i32,
+                avg_kills: round_2(matches_statistics.avg_kills.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_deaths: round_2(matches_statistics.avg_deaths.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_assists: round_2(matches_statistics.avg_assists.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_kda: round_2(matches_statistics.avg_kda.clone().unwrap_or_default().to_f64().unwrap_or_default()),
+                avg_kill_participation: (matches_statistics.avg_kill_participation.clone().unwrap_or_default().to_f64().unwrap_or_default() * 100.0) as i32,
             }
         };
 

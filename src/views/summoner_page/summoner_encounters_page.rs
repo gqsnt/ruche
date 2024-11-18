@@ -87,7 +87,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                 </button>
             </div>
             <Suspense fallback=move || {
-                view! { <p>Loading Encounters ...</p> }
+                view! { <div class="text-center">Loading Encounters</div> }
             }>
                 {move || Suspend::new(async move {
                     match encounters_resource.await {
@@ -186,7 +186,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                             } else {
                                 Ok(
                                     Either::Right(
-                                        view! { <div class="text-center">No encounters found</div> },
+                                        view! { <div class="text-center">No Encounters Found</div>},
                                     ),
                                 )
                             }

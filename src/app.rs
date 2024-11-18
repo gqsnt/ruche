@@ -66,7 +66,7 @@ pub fn App() -> impl IntoView {
         // content for this welcome page
         <Router>
             <main class="bg-gray-900 flex items-start justify-center min-h-screen w-full text-gray-200">
-                <Routes transition=true fallback=|| "Page not found.".into_view()>
+                <Routes transition=true fallback=|| view!{<div class="text-center">Page Not Found</div>}>
                     <Route path=StaticSegment("") view=move || view! { <Redirect path="platform/EUW" /> } />
                     <ParentRoute path=(StaticSegment("platform"), ParamSegment("platform_type")) view=PlatformTypePage>
                         <Route path=StaticSegment("") view=move || view! { }/>

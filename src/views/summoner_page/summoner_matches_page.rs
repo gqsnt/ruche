@@ -56,7 +56,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
         <div class="w-[768px] inline-block align-top justify-center">
             <div class="">
                 <Suspense fallback=move || {
-                    view! { <p>"Loading matches ..."</p> }
+                    view! { <div class="text-center">Loading Matches</div> }
                 }>
                     {move || Suspend::new(async move {
                         match matches_resource.await {
@@ -69,7 +69,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                                 if matches_result.matches.is_empty() {
                                     Ok(
                                         Either::Left(
-                                            view! { <div class="text-center">No matches found</div> },
+                                            view! { <div class="text-center">No Matches Found</div> },
                                         ),
                                     )
                                 } else {

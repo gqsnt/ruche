@@ -122,7 +122,7 @@ pub fn SummonerPage() -> impl IntoView {
 
     view! {
         <Transition fallback=move || {
-            view! { <div>"Loading summoner ..."</div> }
+            view! { <div class="text-center">Loading Summoner</div> }
         }>{summoner_view}</Transition>
     }
 }

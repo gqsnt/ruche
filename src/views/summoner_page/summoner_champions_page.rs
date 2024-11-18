@@ -43,7 +43,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
     view! {
         <div>
             <Suspense fallback=move || {
-                view! { <p>Loading Champions ...</p> }
+                view! { <div class="text-center">Loading Champions</div> }
             }>
                 {move || Suspend::new(async move {
                     match champions_resource.await {
@@ -305,7 +305,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                 Ok(
                                     Either::Right(
 
-                                        view! { <p class="my-2">No Champions found</p> },
+                                        view! { <div class="text-center">No Champions Found</div> },
                                     ),
                                 )
                             }

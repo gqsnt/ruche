@@ -39,7 +39,7 @@ pub fn SummonerLivePage() -> impl IntoView {
                 </button>
             </div>
             <Suspense fallback=move || {
-                view! { <p>"Not in Live Game"</p> }
+                view! { <div class="text-center">Not In Live Game</div> }
             }>
                 {move || Suspend::new(async move {
                     match live_game_resource.await {
@@ -79,8 +79,7 @@ pub fn SummonerLivePage() -> impl IntoView {
                         }
                         _ => {
                             Either::Left(
-
-                                view! { <p>"Not in Live Game"</p> },
+                                view! { <div class="text-center">Not In Live Game</div> },
                             )
                         }
                     }

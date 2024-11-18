@@ -1,16 +1,13 @@
 use crate::backend::ssr::{AppResult, Id};
 use crate::backend::updates::update_matches_task::TempSummoner;
 use chrono::{DateTime, Utc};
+use itertools::Itertools;
 use std::collections::HashMap;
 
+
+
 pub async fn bulk_update_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]) -> AppResult<()> {
-    let game_names = summoners.iter().map(|x| x.game_name.clone()).collect::<Vec<String>>();
-    let tag_lines = summoners.iter().map(|x| x.tag_line.clone()).collect::<Vec<String>>();
-    let puuids = summoners.iter().map(|x| x.puuid.clone()).collect::<Vec<String>>();
-    let platforms = summoners.iter().map(|x| x.platform.to_string()).collect::<Vec<String>>();
-    let summoner_levels = summoners.iter().map(|x| x.summoner_level).collect::<Vec<i64>>();
-    let profile_icon_ids = summoners.iter().map(|x| x.profile_icon_id as i32).collect::<Vec<i32>>();
-    let updated_ats = summoners.iter().map(|x| x.updated_at).collect::<Vec<DateTime<Utc>>>();
+    let (game_names, tag_lines, puuids, platforms, summoner_levels, profile_icon_ids, updated_ats)= summoners_multiunzip(summoners);
 
     let sql = r"
         UPDATE summoners
@@ -48,14 +45,8 @@ pub async fn bulk_update_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
     Ok(())
 }
 
-pub async fn bulk_insert_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]) -> AppResult<HashMap<String, (i32, String ,String, String)>> {
-    let game_names = summoners.iter().map(|x| x.game_name.clone()).collect::<Vec<String>>();
-    let tag_lines = summoners.iter().map(|x| x.tag_line.clone()).collect::<Vec<String>>();
-    let puuids = summoners.iter().map(|x| x.puuid.clone()).collect::<Vec<String>>();
-    let platforms = summoners.iter().map(|x| x.platform.to_string()).collect::<Vec<String>>();
-    let summoner_levels = summoners.iter().map(|x| x.summoner_level).collect::<Vec<i64>>();
-    let profile_icon_ids = summoners.iter().map(|x| x.profile_icon_id as i32).collect::<Vec<i32>>();
-    let updated_ats = summoners.iter().map(|x| x.updated_at).collect::<Vec<DateTime<Utc>>>();
+pub async fn bulk_insert_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]) -> AppResult<HashMap<String, (i32, String, String, String)>> {
+    let (game_names, tag_lines, puuids, platforms, summoner_levels, profile_icon_ids, updated_ats)= summoners_multiunzip(summoners);
     let sql = r"
         INSERT INTO
             summoners
@@ -108,5 +99,22 @@ pub async fn bulk_insert_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
                 summoner_index.tag_line.clone(),
             )
         )
-    }).collect::<HashMap<String, (i32, String ,String, String)>>())
+    }).collect::<HashMap<String, (i32, String, String, String)>>())
 }
+
+
+pub fn summoners_multiunzip(summoners:&[TempSummoner])-> (Vec<&str>, Vec<&str>, Vec<&str>, Vec<String>, Vec<i64>, Vec<i32>, Vec<DateTime<Utc>>){
+    summoners.iter().map(|s| {
+        (
+            s.game_name.as_str(),
+            s.tag_line.as_str(),
+            s.puuid.as_str(),
+            s.platform.to_string(),
+            s.summoner_level,
+            s.profile_icon_id as i32,
+            s.updated_at
+        )
+    })
+        .multiunzip()
+}
+

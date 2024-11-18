@@ -30,10 +30,10 @@ pub async fn schedule_update_pro_player_task(
             let now = Local::now();
             let target_time = if now.hour() >= start_hour {
                 // If it's past 2 a.m. today, schedule for 2 a.m. the next day
-                (now + Duration::days(1)).with_hour(start_hour).unwrap().with_minute(0).unwrap().with_second(0).unwrap()
+                (now + Duration::days(1)).with_hour(start_hour).unwrap_or_default().with_minute(0).unwrap_or_default().with_second(0).unwrap_or_default()
             } else {
                 // Otherwise, schedule for 2 a.m. today
-                now.with_hour(start_hour).unwrap().with_minute(0).unwrap().with_second(0).unwrap()
+                now.with_hour(start_hour).unwrap_or_default().with_minute(0).unwrap_or_default().with_second(0).unwrap_or_default()
             };
 
             let duration_until_target = target_time - now;
