@@ -5,7 +5,7 @@ use crate::consts::perk::Perk;
 use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{round_to_2_decimal_places, summoner_url};
+use crate::utils::summoner_url;
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
 use crate::views::MatchFiltersSearch;
@@ -454,7 +454,7 @@ pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, 
                     {stats.total_wins}W {stats.total_loses}L {stats.total_wins + stats.total_loses}G
                     {((
                         stats.total_wins as f64
-                            / (stats.total_wins + stats.total_loses).max(1) as f64,
+                            / (stats.total_wins + stats.total_loses).max(1) as f64
                     ) * 100.0).round()}%
                 </div>
                 <div class="flex flex-col">
