@@ -455,7 +455,7 @@ pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, 
                     {((
                         stats.total_wins as f64
                             / (stats.total_wins + stats.total_loses).max(1) as f64
-                    ) * 100.0).round()}%
+                    ) * 100.0).round() as i32}%
                 </div>
                 <div class="flex flex-col">
                     <div>{stats.avg_kills}/ {stats.avg_deaths}/ {stats.avg_assists}</div>
