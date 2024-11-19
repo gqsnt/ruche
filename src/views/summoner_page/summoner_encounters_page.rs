@@ -65,7 +65,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                     type="text"
                     class="my-input"
                     placeholder="Search for a summoner"
-                    value=search_summoner_signal.get()
+                    prop:value=move || search_summoner_signal.get()
                     on:input=move |e| { set_search_summoner_signal(event_target_value(&e)) }
                 />
                 <button
@@ -119,7 +119,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                             let:encounter
                                                         >
                                                             {
-                                                                let encounter: SummonerEncounter = encounter;
+                                                                let encounter: SummonerEncountersSummoner = encounter;
                                                                 let encounter_platform = encounter.platform.clone();
                                                                 let encounter_game_name = encounter.game_name.clone();
                                                                 let encounter_tag_line = encounter.tag_line.clone();
@@ -174,15 +174,17 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                         </td>
                                                                         <td class="px-2 ">{encounter.match_count}</td>
                                                                         <td class="px-2">
-                                                                            <a class="my-button font-bold"
+                                                                            <a
+                                                                                class="my-button font-bold"
                                                                                 href=summoner_encounter_url(
                                                                                     summoner().platform.to_string().as_str(),
                                                                                     summoner().game_name.as_str(),
                                                                                     summoner().tag_line.as_str(),
                                                                                     encounter_platform.as_str(),
                                                                                     encounter_game_name.as_str(),
-                                                                                    encounter_tag_line.as_str()
-                                                                                )>
+                                                                                    encounter_tag_line.as_str(),
+                                                                                )
+                                                                            >
                                                                                 >
                                                                             </a>
                                                                         </td>
@@ -203,7 +205,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                             } else {
                                 Ok(
                                     Either::Right(
-                                        view! { <div class="text-center">No Encounters Found</div>},
+                                        view! { <div class="text-center">No Encounters Found</div> },
                                     ),
                                 )
                             }
@@ -219,14 +221,14 @@ pub fn SummonerEncountersPage() -> impl IntoView {
 
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SummonerEncounters {
-    pub encounters: Vec<SummonerEncounter>,
+pub struct SummonerEncountersResult {
+    pub encounters: Vec<SummonerEncountersSummoner>,
     pub total_pages: i64,
 }
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SummonerEncounter {
+pub struct SummonerEncountersSummoner {
     pub id: i32,
     pub match_count: i64,
     pub with_match_count: i64,

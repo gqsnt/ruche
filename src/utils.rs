@@ -36,7 +36,7 @@ pub fn summoner_not_found_url(platform: &str, game_name: &str, tag_line: &str) -
 }
 
 pub fn summoner_encounter_url(platform:&str, game_name:&str, tag_line:&str, encounter_platform:&str, encounter_game_name:&str, encounter_tag_line:&str) -> String {
-    format!("/platform/{}/summoners/{}?tab=encounter&encounter={}&encounter_platform={}", platform, summoner_to_slug(game_name, tag_line), summoner_to_slug(encounter_game_name, encounter_tag_line), encounter_platform)
+    format!("/platform/{}/summoners/{}?tab=encounter&encounter_slug={}&encounter_platform={}", platform, summoner_to_slug(game_name, tag_line), summoner_to_slug(encounter_game_name, encounter_tag_line), encounter_platform)
 }
 
 

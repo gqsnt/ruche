@@ -6,3 +6,4 @@ pub mod get_champions;
 pub mod get_live_game;
 pub mod get_encounters;
 pub mod get_match_details;
+pub mod get_encounter;

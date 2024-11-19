@@ -70,18 +70,22 @@ pub fn SummonerLivePage() -> impl IntoView {
                                                 )}
                                             </div>
                                         </div>
-                                        <MatchLiveTable team_id=100 participants=first_team  summoner=summoner/>
-                                        <MatchLiveTable team_id=200 participants=second_team summoner=summoner />
+                                        <MatchLiveTable
+                                            team_id=100
+                                            participants=first_team
+                                            summoner=summoner
+                                        />
+                                        <MatchLiveTable
+                                            team_id=200
+                                            participants=second_team
+                                            summoner=summoner
+                                        />
 
                                     </div>
                                 },
                             )
                         }
-                        _ => {
-                            Either::Left(
-                                view! { <div class="text-center">Not In Live Game</div> },
-                            )
-                        }
+                        _ => Either::Left(view! { <div class="text-center">Not In Live Game</div> }),
                     }
                 })}
             </Suspense>
@@ -205,13 +209,13 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                     <div class="flex items-center gap-1">
                                         <Show when=move || (participant.encounter_count > 1)>
                                             <a
-                                                 href=summoner_encounter_url(
+                                                href=summoner_encounter_url(
                                                     summoner().platform.to_string().as_str(),
                                                     summoner().game_name.as_str(),
                                                     summoner().tag_line.as_str(),
                                                     participant_platform.as_str(),
                                                     participant_name.as_str(),
-                                                    participant_tag_line.as_str()
+                                                    participant_tag_line.as_str(),
                                                 )
                                                 class="text-xs bg-green-800 rounded px-0.5 text-center"
                                             >

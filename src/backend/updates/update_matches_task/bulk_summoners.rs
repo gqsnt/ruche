@@ -102,7 +102,7 @@ pub async fn bulk_insert_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
     }).collect::<HashMap<String, (i32, String, String, String)>>())
 }
 
-
+#[allow(clippy::type_complexity)]
 pub fn summoners_multiunzip(summoners:&[TempSummoner])-> (Vec<&str>, Vec<&str>, Vec<&str>, Vec<String>, Vec<i64>, Vec<i32>, Vec<DateTime<Utc>>){
     summoners.iter().map(|s| {
         (

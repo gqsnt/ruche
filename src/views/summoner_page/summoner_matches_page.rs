@@ -107,7 +107,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                                                         key=|match_| match_.match_id
                                                         let:match_
                                                     >
-                                                        <MatchCard match_=match_ summoner/>
+                                                        <MatchCard match_=match_ summoner />
                                                     </For>
                                                 </div>
                                                 <Show when=move || (total_pages > 1)>
@@ -364,7 +364,7 @@ pub fn MatchCard(match_: SummonerMatch, summoner:ReadSignal<Summoner>) -> impl I
                                                     summoner().tag_line.as_str(),
                                                     participant_platform.as_str(),
                                                     participant_name.as_str(),
-                                                    participant_tag_line.as_str()
+                                                    participant_tag_line.as_str(),
                                                 )
                                                 class="text-xs bg-green-800 rounded px-0.5 text-center"
                                             >

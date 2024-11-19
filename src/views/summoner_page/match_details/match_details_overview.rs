@@ -88,10 +88,22 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner:ReadSignal<Su
 
                         view! {
                             <tr
-                                class=("bg-red-900", !won && participant.summoner_id != summoner().id)
-                                class=("bg-blue-900", won && participant.summoner_id != summoner().id)
-                                class=("bg-red-800", !won && participant.summoner_id == summoner().id)
-                                class=("bg-blue-800", won && participant.summoner_id == summoner().id)
+                                class=(
+                                    "bg-red-900",
+                                    !won && participant.summoner_id != summoner().id,
+                                )
+                                class=(
+                                    "bg-blue-900",
+                                    won && participant.summoner_id != summoner().id,
+                                )
+                                class=(
+                                    "bg-red-800",
+                                    !won && participant.summoner_id == summoner().id,
+                                )
+                                class=(
+                                    "bg-blue-800",
+                                    won && participant.summoner_id == summoner().id,
+                                )
                             >
                                 <td class="pl-2.5 py-1">
                                     <div class="relative w-8">
@@ -162,13 +174,13 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner:ReadSignal<Su
                                     <div class="flex items-center gap-1">
                                         <Show when=move || (participant.encounter_count > 1)>
                                             <a
-                                                 href=summoner_encounter_url(
+                                                href=summoner_encounter_url(
                                                     summoner().platform.to_string().as_str(),
                                                     summoner().game_name.as_str(),
                                                     summoner().tag_line.as_str(),
                                                     participant_platform.as_str(),
                                                     participant_name.as_str(),
-                                                    participant_tag_line.as_str()
+                                                    participant_tag_line.as_str(),
                                                 )
                                                 class="text-xs bg-green-800 rounded px-0.5 text-center"
                                             >

@@ -1,10 +1,10 @@
-use crate::views::summoner_page::summoner_encounters_page::SummonerEncounters;
+use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersResult;
 use crate::views::MatchFiltersSearch;
 use leptos::prelude::*;
 use leptos::server;
 
 #[server]
-pub async fn get_encounters(summoner_id: i32, page_number: i32, filters: Option<MatchFiltersSearch>, search_summoner: Option<String>) -> Result<SummonerEncounters, ServerFnError> {
+pub async fn get_encounters(summoner_id: i32, page_number: i32, filters: Option<MatchFiltersSearch>, search_summoner: Option<String>) -> Result<SummonerEncountersResult, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
@@ -14,11 +14,11 @@ pub async fn get_encounters(summoner_id: i32, page_number: i32, filters: Option<
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use crate::backend::ssr::{parse_date, AppResult};
-    use crate::views::summoner_page::summoner_encounters_page::{SummonerEncounter, SummonerEncounters};
+    use crate::backend::ssr::{AppResult};
+    use crate::views::summoner_page::summoner_encounters_page::{SummonerEncountersSummoner, SummonerEncountersResult};
     use crate::views::MatchFiltersSearch;
     use sqlx::{FromRow, PgPool, QueryBuilder};
-
+    use crate::backend::server_fns::get_matches::ssr::get_matches_ids;
 
     pub async fn inner_get_encounters(
         db: &PgPool,
@@ -26,9 +26,8 @@ pub mod ssr {
         page: i32,
         filters: MatchFiltersSearch,
         search_summoner: Option<String>,
-    ) -> AppResult<SummonerEncounters> {
-        let start_date = parse_date(filters.start_date.clone());
-        let end_date = parse_date(filters.end_date.clone());
+    ) -> AppResult<SummonerEncountersResult> {
+        let match_ids = get_matches_ids(db, summoner_id, filters.clone()).await?;
         let per_page = 40;
         let offset = (page.max(1) - 1) * per_page;
 
@@ -90,27 +89,14 @@ pub mod ssr {
                               AND lmp1.summoner_id =
         "#);
         query.push_bind(summoner_id);
+        query.push(r" AND lmp1.lol_match_id = ANY(");
+        query.push_bind(&match_ids);
+        query.push(")");
         if let Some(search_summoner) = search_summoner {
             if !search_summoner.is_empty() {
                 query.push(" AND s1.game_name ILIKE ");
                 query.push_bind(format!("%{}%", search_summoner));
             }
-        }
-        if let Some(champion_id) = filters.champion_id {
-            query.push(" AND lmp1.champion_id = ");
-            query.push_bind(champion_id);
-        }
-        if let Some(queue_id) = filters.queue_id {
-            query.push(" AND lm.queue_id = ");
-            query.push_bind(queue_id);
-        }
-        if let Some(start_date) = start_date {
-            query.push(" AND lm.match_end >= ");
-            query.push_bind(start_date);
-        }
-        if let Some(end_date) = end_date {
-            query.push(" AND lm.match_end <= ");
-            query.push_bind(end_date);
         }
 
         query.push(
@@ -133,10 +119,10 @@ pub mod ssr {
         } else {
             (results.first().unwrap().total_count as f64 / per_page as f64).ceil() as i64
         };
-        Ok(SummonerEncounters {
+        Ok(SummonerEncountersResult {
             total_pages,
             encounters: results.into_iter().map(|encounter| {
-                SummonerEncounter {
+                SummonerEncountersSummoner {
                     id: encounter.id,
                     profile_icon_id: encounter.profile_icon_id as u16,
                     match_count: encounter.match_count,

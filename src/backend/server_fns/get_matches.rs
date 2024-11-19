@@ -23,7 +23,7 @@ pub mod ssr {
 
     use crate::backend::ssr::{format_duration_since, parse_date, AppResult};
     use crate::consts::queue::Queue;
-    use sqlx::{FromRow, PgPool, QueryBuilder};
+    use sqlx::{query_as, FromRow, PgPool, QueryBuilder};
 
     pub async fn fetch_matches(
         db: &PgPool,
@@ -31,13 +31,16 @@ pub mod ssr {
         page: i32,
         filters: MatchFiltersSearch,
     ) -> AppResult<GetSummonerMatchesResult> {
-        let start_date = parse_date(filters.start_date.clone());
-        let end_date = parse_date(filters.end_date.clone());
+        let match_ids = get_matches_ids(db, summoner_id, filters.clone()).await?;
         let per_page = 20;
         let offset = (page.max(1) - 1) * per_page;
-        let mut aggregate_query = QueryBuilder::new(r#"
+        let total_matches = match_ids.len() as i32;
+        let total_pages = (total_matches as f64 / per_page as f64).ceil() as i32;
+        let current_match_ids= match_ids.iter().skip(offset as usize).take(per_page as usize).cloned().collect::<Vec<_>>();
+
+
+        let matches_statistics = query_as::<_, MatchesResultInfoModel>(r#"
             SELECT
-                count(lmp.lol_match_id) as total_count,
                 sum(CASE WHEN lmp.won THEN 1 ELSE 0 END) as total_wins,
                 avg(lmp.kills)  as avg_kills,
                 avg(lmp.deaths)  as avg_deaths,
@@ -47,11 +50,14 @@ pub mod ssr {
             FROM lol_match_participants as lmp
             INNER JOIN (SELECT id, queue_id, match_end FROM lol_matches) as lm ON lm.id = lmp.lol_match_id
             WHERE
-                lmp.summoner_id =
-        "#);
-        aggregate_query.push_bind(summoner_id);
+                lmp.summoner_id = $1 and  lmp.lol_match_id = ANY($2)
+        "#)
+            .bind(summoner_id)
+            .bind(&match_ids)
+            .fetch_one(db)
+            .await?;
 
-        let mut participant_query = QueryBuilder::new(r#"
+        let participant_matches = query_as::<_,SummonerMatchModel>(r#"
             SELECT
                 lmp.id,
                 lmp.lol_match_id,
@@ -84,60 +90,19 @@ pub mod ssr {
             FROM lol_match_participants as lmp
             INNER JOIN (SELECT id,match_id,platform, queue_id,match_duration, match_end FROM lol_matches) as lm ON lm.id = lmp.lol_match_id
             WHERE
-                lmp.summoner_id =
-        "#);
-        participant_query.push_bind(summoner_id);
-
-
-        if let Some(champion_id) = filters.champion_id {
-            let sql_filter = " AND lmp.champion_id = ";
-            participant_query.push(sql_filter);
-            participant_query.push_bind(champion_id);
-            aggregate_query.push(sql_filter);
-            aggregate_query.push_bind(champion_id);
-        }
-        if let Some(queue_id) = filters.queue_id {
-            let sql_filter = " AND lm.queue_id = ";
-            participant_query.push(sql_filter);
-            participant_query.push_bind(queue_id);
-            aggregate_query.push(sql_filter);
-            aggregate_query.push_bind(queue_id);
-        }
-
-        if let Some(start_date) = start_date {
-            let sql_filter = " AND lm.match_end >= ";
-            participant_query.push(sql_filter);
-            participant_query.push_bind(start_date);
-            aggregate_query.push(sql_filter);
-            aggregate_query.push_bind(start_date);
-        }
-        if let Some(end_date) = end_date {
-            let sql_filter = " AND lm.match_end <= ";
-            participant_query.push(sql_filter);
-            participant_query.push_bind(end_date);
-            aggregate_query.push(sql_filter);
-            aggregate_query.push_bind(end_date);
-        }
-
-        participant_query.push(" ORDER BY lm.match_end DESC LIMIT ");
-        participant_query.push_bind(per_page);
-        participant_query.push(" OFFSET ");
-        participant_query.push_bind(offset);
-        let matches_statistics_query = aggregate_query.build_query_as::<MatchesResultInfoModel>();
-
-        let matches_statistics = matches_statistics_query
-            .fetch_one(db)
-            .await?;
-        let results = participant_query
-            .build_query_as::<SummonerMatchModel>()
+                lmp.summoner_id = $1 and lmp.lol_match_id = ANY($2)
+            ORDER BY lm.match_end DESC
+        "#)
+            .bind(summoner_id)
+            .bind(&current_match_ids)
             .fetch_all(db)
             .await?;
 
 
+
         let matches_result_info = {
-            let total_matches = matches_statistics.total_count.unwrap_or_default() as i32;
             let total_wins = matches_statistics.total_wins.unwrap_or_default() as i32;
-            let total_losses = total_matches - total_wins;
+            let total_losses = total_matches- total_wins;
             let round_2 = |x: f64| (x * 100.0).round() / 100.0;
             MatchesResultInfo {
                 total_matches,
@@ -151,8 +116,8 @@ pub mod ssr {
             }
         };
 
-        let matches_ids: Vec<_> = results.iter().map(|row| row.lol_match_id).collect();
-        let mut matches = results.into_iter().map(|row| {
+        let matches_ids: Vec<_> = participant_matches.iter().map(|row| row.lol_match_id).collect();
+        let mut matches = participant_matches.into_iter().map(|row| {
             let match_duration = Duration::seconds(row.lol_match_match_duration.unwrap_or_default() as i64);
             let match_duration_str = format!(
                 "{:02}:{:02}:{:02}",
@@ -200,7 +165,7 @@ pub mod ssr {
                 participants: vec![],
             }
         }).collect::<Vec<_>>();
-        let total_pages = (matches_result_info.total_matches as f64 / per_page as f64).ceil() as i32;
+
 
         // Fetch participants for the collected match_ids
 
@@ -213,7 +178,7 @@ pub mod ssr {
                         lmp.team_id
                 FROM lol_match_participants as lmp
                 WHERE lmp.lol_match_id = ANY($1)
-                ORDER BY lmp.team_id ASC;"
+                ORDER BY lmp.team_id ASC"
             )
                 .bind(&matches_ids)
                 .fetch_all(db)
@@ -255,6 +220,46 @@ pub mod ssr {
 
         Ok(GetSummonerMatchesResult { matches, total_pages: total_pages as i64, matches_result_info })
     }
+
+
+    pub async fn get_matches_ids(db:&PgPool, summoner_id:i32, filters:MatchFiltersSearch) -> AppResult<Vec<i32>>{
+        let start_date = parse_date(filters.start_date.clone());
+        let end_date = parse_date(filters.end_date.clone());
+        let mut query = QueryBuilder::new(r#"
+            SELECT
+                lmp.lol_match_id
+            FROM lol_match_participants as lmp
+            INNER JOIN (SELECT id, queue_id, match_end FROM lol_matches) as lm ON lm.id = lmp.lol_match_id
+            WHERE
+                lmp.summoner_id = "#);
+        query.push_bind(summoner_id);
+        if let Some(champion_id) = filters.champion_id {
+            let sql_filter = " AND lmp.champion_id = ";
+            query.push(sql_filter);
+            query.push_bind(champion_id);
+
+        }
+        if let Some(queue_id) = filters.queue_id {
+            let sql_filter = " AND lm.queue_id = ";
+            query.push(sql_filter);
+            query.push_bind(queue_id);
+        }
+
+        if let Some(start_date) = start_date {
+            let sql_filter = " AND lm.match_end >= ";
+            query.push(sql_filter);
+            query.push_bind(start_date);
+        }
+        if let Some(end_date) = end_date {
+            let sql_filter = " AND lm.match_end <= ";
+            query.push(sql_filter);
+            query.push_bind(end_date);
+        }
+        query.push(" ORDER BY lm.match_end DESC");
+        Ok(query.build_query_as::<(i32,)>().fetch_all(db).await?.into_iter().map(|(id,)| id).collect_vec())
+
+    }
+
 
     pub async fn get_summoner_encounters(db: &PgPool, summoner_id: i32, encounters_ids: &Vec<i32>) -> AppResult<HashMap<i32, i32>> {
         Ok(
@@ -317,8 +322,6 @@ pub mod ssr {
 
     #[derive(FromRow)]
     pub struct MatchesResultInfoModel {
-        #[allow(dead_code)]
-        pub total_count: Option<i64>,
         pub total_wins: Option<i64>,
         pub avg_kills: Option<BigDecimal>,
         pub avg_deaths: Option<BigDecimal>,

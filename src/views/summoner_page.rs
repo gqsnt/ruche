@@ -19,8 +19,8 @@ pub mod summoner_champions_page;
 pub mod summoner_encounters_page;
 pub mod summoner_live_page;
 pub mod match_details;
-mod summoner_nav;
-mod encounter_page;
+pub mod summoner_nav;
+pub mod summoner_encounter_page;
 
 #[component]
 pub fn SummonerPage() -> impl IntoView {
@@ -71,7 +71,7 @@ pub fn SummonerPage() -> impl IntoView {
                                                 {summoner_signal().game_name}#{summoner_signal().tag_line}
                                             </div>
                                             <div>
-                                                lvl. {summoner_signal().summoner_level}
+                                                <span>lvl. {summoner.summoner_level}</span>
                                                 <Show when=move || summoner_signal().pro_slug.is_some()>
 
                                                     <a

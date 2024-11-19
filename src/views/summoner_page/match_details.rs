@@ -27,10 +27,7 @@ pub fn MatchDetails(match_id: i32, riot_match_id: String, platform: String, summ
                 let (match_details_signal, _) = signal(match_details);
                 view! {
                     <Show when=move || match_detail_tab() == "overview">
-                        <MatchDetailsOverview
-                            match_details=match_details_signal
-                            summoner
-                        />
+                        <MatchDetailsOverview match_details=match_details_signal summoner />
                     </Show>
                     <Show when=move || match_detail_tab() == "team">
                         <MatchDetailsTeam
@@ -80,7 +77,7 @@ pub fn MatchDetails(match_id: i32, riot_match_id: String, platform: String, summ
             </div>
             <div>
                 <Transition fallback=move || {
-                    view! { <div class="text-center">Loading Match Details</div>}
+                    view! { <div class="text-center">Loading Match Details</div> }
                 }>{match_detail_view}</Transition>
             </div>
         </div>

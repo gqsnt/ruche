@@ -7,7 +7,7 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
-use crate::views::summoner_page::encounter_page::EncounterPage;
+use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterPage;
 
 #[component]
 pub fn SummonerNav() -> impl IntoView {
@@ -78,17 +78,13 @@ pub fn SummonerNav() -> impl IntoView {
                         </button>
                     </li>
                     <li class="-mb-px text-center">
-                        <button
-                            class=move || {
-                                if tab() == Some(Tabs::Encounter.to_string()) {
-                                    "active-tab"
-                                } else {
-                                    "disabled-tab"
-                                }
+                        <button class=move || {
+                            if tab() == Some(Tabs::Encounter.to_string()) {
+                                "active-tab"
+                            } else {
+                                "disabled-tab"
                             }
-                        >
-                            Encouter
-                        </button>
+                        }>Encouter</button>
                     </li>
                 </ul>
             </nav>
@@ -113,8 +109,10 @@ pub fn SummonerNav() -> impl IntoView {
             <Show when=move || tab() == Some(Tabs::Live.to_string())>
                 <SummonerLivePage />
             </Show>
-            <Show when=move || tab() == Some(Tabs::Live.to_string())>
-                <EncounterPage />
+            <Show when=move || tab() == Some(Tabs::Encounter.to_string())>
+                <MatchFilters>
+                    <SummonerEncounterPage />
+                </MatchFilters>
             </Show>
 
         </div>
