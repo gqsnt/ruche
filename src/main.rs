@@ -63,13 +63,15 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
 
     // thread to update matches details
     schedule_update_matches_task(db.clone(), riot_api.clone(), update_interval_duration).await;
-    // thead to update pro player (on launch and at 2am)
-    schedule_update_pro_player_task(db.clone(), riot_api.clone()).await;
+
     // thread to cleanup live game cache
     schedule_live_game_cache_cleanup_task(cache_for_cleanup, cleanup_interval).await;
-    // thread to generate site map (on launch and at 3am)
+
     if is_prod{
+        // thread to generate site map (on launch and at 3am)
         schedule_generate_site_map(db.clone()).await;
+        // thead to update pro player (on launch and at 2am)
+        schedule_update_pro_player_task(db.clone(), riot_api.clone()).await;
     }
 
 
