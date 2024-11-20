@@ -52,7 +52,7 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
             url_writer.url(UrlEntry::builder().loc(format!("{}/platform/{}", base_url, platform)).build()?)?;
         }
         let total_summoners = get_total_summoners(db).await?;
-        let per_page = 1000;
+        let per_page = 500;
         let total_pages = total_summoners / per_page;
         for page in 1..=total_pages {
             let summoners = get_platforms_summoners_taglines(db, per_page, page).await?;
@@ -64,7 +64,7 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
         url_writer.end()?;
     }
 
-    tokio::fs::write("public/sitemap.xml", output).await?;
+    tokio::fs::write("target/site/sitemap.xml", output).await?;
     Ok(())
 }
 
