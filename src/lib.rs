@@ -12,8 +12,7 @@ pub const DATE_FORMAT: &str = "%d/%m/%Y %H:%M";
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use std::net::SocketAddr;
-    use std::path::PathBuf;
+    use crate::backend::live_game_cache;
     use axum::extract::Host;
     use axum::handler::HandlerWithoutStateExt;
     use axum::response::Redirect;
@@ -21,8 +20,11 @@ pub mod ssr {
     use axum_server::tls_rustls::RustlsConfig;
     use http::{StatusCode, Uri};
     use leptos::logging::log;
-    use crate::backend::live_game_cache;
     use leptos::prelude::*;
+    use sqlx::postgres::PgConnectOptions;
+    use sqlx::PgPool;
+    use std::net::SocketAddr;
+    use std::path::PathBuf;
 
     #[derive(Clone, axum::extract::FromRef)]
     pub struct AppState {
@@ -38,13 +40,23 @@ pub mod ssr {
         riven::RiotApi::new(api_key)
     }
     pub async fn init_database() -> sqlx::PgPool {
-        let database_url = dotenv::var("DATABASE_URL").expect("no database url specify");
-        let max_connections = dotenv::var("MAX_PG_CONNECTIONS").unwrap_or("10".to_string());
+        let max_connections = dotenv::var("MAX_PG_CONNECTIONS").unwrap_or("10".to_string()).parse::<u32>().unwrap_or(10);
+        let db_username = dotenv::var("DB_USER_NAME").expect("no db username specify");
+        let db_password = dotenv::var("DB_PASSWORD").expect("no db password specify");
+        let db_name = dotenv::var("DB_NAME").expect("no db name specify");
+        let socket = dotenv::var("DB_SOCKET").unwrap_or("".to_string());
+        let opts = PgConnectOptions::new()
+            .host("127.0.0.1")
+            .port(5432)
+            .username(db_username.as_str())
+            .password(db_password.as_str())
+            .database(db_name.as_str())
+            .socket(socket.as_str());
+
         let pool = sqlx::postgres::PgPoolOptions::new()
-            .max_connections(max_connections.parse::<u32>().unwrap_or(10))
-            .connect(database_url.as_str())
-            .await
-            .expect("could not connect to database_url");
+            .max_connections(max_connections)
+            .connect_with(opts).
+            await.expect("failed to connect to database");
 
         sqlx::migrate!()
             .run(&pool)
@@ -55,12 +67,11 @@ pub mod ssr {
     }
 
 
-    pub async fn serve(app:Router, is_prod:bool, socket_addr: SocketAddr) -> Result<(), axum::Error> {
-        if is_prod{
+    pub async fn serve(app: Router, is_prod: bool, socket_addr: SocketAddr) -> Result<(), axum::Error> {
+        if is_prod {
             tokio::spawn(redirect_http_to_https());
             serve_with_tsl(app, socket_addr).await
-
-        }else{
+        } else {
             serve_locally(app, socket_addr).await
         }
     }
@@ -68,10 +79,8 @@ pub mod ssr {
 
     pub async fn serve_with_tsl(
         app: Router,
-        socket_addr: SocketAddr
+        socket_addr: SocketAddr,
     ) -> Result<(), axum::Error> {
-
-
         let config = RustlsConfig::from_pem_file(
             PathBuf::from("signed_certs")
                 .join("cert.pem"),
@@ -128,7 +137,6 @@ pub mod ssr {
         axum::serve(listener, app.into_make_service()).await.unwrap();
         Ok(())
     }
-
 }
 
 
