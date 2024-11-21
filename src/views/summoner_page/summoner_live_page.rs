@@ -20,7 +20,7 @@ pub fn SummonerLivePage() -> impl IntoView {
 
     let live_game_resource = Resource::new(
         move || (refresh_signal.get(), summoner().puuid.clone(), summoner().id, summoner().platform.to_string()),
-        |(_, puuid, id,platform_type)| async move {
+        |(_, puuid, id, platform_type)| async move {
             get_live_game(puuid, platform_type, id).await
         },
     );
@@ -95,7 +95,7 @@ pub fn SummonerLivePage() -> impl IntoView {
 
 
 #[component]
-pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summoner:ReadSignal<Summoner>) -> impl IntoView {
+pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summoner: ReadSignal<Summoner>) -> impl IntoView {
     let is_blue_team = || team_id == 100;
     view! {
         <table class="table-fixed text-xs w-full">
@@ -207,7 +207,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                 </td>
                                 <td class="pl-[5px] py-1 text-ellipsis overflow-hidden text-left">
                                     <div class="flex items-center gap-1">
-                                        <Show when=move || (participant.encounter_count > 1)>
+                                        <Show when=move || (participant.encounter_count > 0)>
                                             <a
                                                 href=summoner_encounter_url(
                                                     summoner().platform.to_string().as_str(),
@@ -342,11 +342,11 @@ pub struct LiveGame {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LiveGameParticipant {
-    pub summoner_id:i32,
+    pub summoner_id: i32,
     pub puuid: String,
     pub champion_id: u16,
     pub pro_player_slug: Option<String>,
-    pub encounter_count:i32,
+    pub encounter_count: i32,
     pub summoner_spell1_id: u16,
     pub summoner_spell2_id: u16,
     pub perk_primary_selection_id: u16,
@@ -354,7 +354,7 @@ pub struct LiveGameParticipant {
     pub game_name: String,
     pub tag_line: String,
     pub platform: String,
-    pub summoner_level: i64,
+    pub summoner_level: i32,
     pub team_id: i32,
     pub ranked_stats: Option<LiveGameParticipantRankedStats>,
     pub champion_stats: Option<LiveGameParticipantChampionStats>,

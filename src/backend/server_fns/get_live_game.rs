@@ -8,13 +8,12 @@ pub async fn get_live_game(puuid: String, platform_type: String, summoner_id: i3
     let live_cache = state.live_game_cache.clone();
     let db = state.db.clone();
     if let Some(live_data) = live_cache.get_game_data(&puuid) {
-        Ok(Some(ssr::add_encounters(&db,  live_data, summoner_id).await?))
+        Ok(Some(ssr::add_encounters(&db, live_data, summoner_id).await?))
     } else {
-
         let riot_api = state.riot_api.clone();
         match ssr::get_live_game_data(&db, riot_api, puuid, platform_type).await {
             Ok(live_data) => {
-                match live_data{
+                match live_data {
                     None => Ok(None),
                     Some(live_data) => {
                         live_cache.set_game_data(
@@ -22,7 +21,7 @@ pub async fn get_live_game(puuid: String, platform_type: String, summoner_id: i3
                             live_data.participants.iter().map(|x| x.puuid.clone()).collect(),
                             live_data.clone(),
                         );
-                        Ok(Some(ssr::add_encounters(&db,  live_data, summoner_id).await?))
+                        Ok(Some(ssr::add_encounters(&db, live_data, summoner_id).await?))
                     }
                 }
             }
@@ -37,7 +36,7 @@ pub async fn get_live_game(puuid: String, platform_type: String, summoner_id: i3
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use crate::backend::ssr::AppResult;
+    use crate::backend::ssr::{AppResult, PlatformRouteDb};
     use crate::backend::updates::update_matches_task::bulk_summoners::bulk_insert_summoners;
     use crate::backend::updates::update_matches_task::TempSummoner;
 
@@ -58,7 +57,7 @@ pub mod ssr {
 
 
     pub async fn add_encounters(db: &PgPool, mut game_data: LiveGame, summoner_id: i32) -> AppResult<LiveGame> {
-        let summoners_ids=  game_data.participants.iter().map(|x| x.summoner_id).collect::<Vec<i32>>();
+        let summoners_ids = game_data.participants.iter().map(|x| x.summoner_id).collect::<Vec<i32>>();
         let encounters = get_summoner_encounters(db, summoner_id, &summoners_ids).await?;
         for participant in game_data.participants.iter_mut() {
             if let Some(encounter_count) = encounters.get(&participant.summoner_id) {
@@ -67,7 +66,6 @@ pub mod ssr {
         }
         Ok(game_data)
     }
-
 
 
     pub async fn get_live_game_data(db: &PgPool, riot_api: Arc<RiotApi>, puuid: String, platform_type: String) -> AppResult<Option<LiveGame>> {
@@ -150,14 +148,13 @@ pub mod ssr {
                         perk_sub_style_id,
                         game_name: summoner_detail.game_name.clone(),
                         tag_line: summoner_detail.tag_line.clone(),
-                        platform: summoner_detail.platform.clone(),
+                        platform: summoner_detail.platform.to_string(),
                         summoner_level: summoner_detail.summoner_level,
-
                         team_id: participant.team_id as i32,
                         ranked_stats,
                         champion_stats,
-                        encounter_count:0 ,
-                        pro_player_slug:summoner_detail.pro_slug.clone(),
+                        encounter_count: 0,
+                        pro_player_slug: summoner_detail.pro_slug.clone(),
                     })
                 }
                 Ok(Some(LiveGame {
@@ -218,7 +215,7 @@ pub mod ssr {
                 avg(lmp.deaths) as avg_deaths,
                 avg(lmp.assists) as avg_assists
             from lol_match_participants as lmp
-                inner join (select id, queue_id,match_end  from lol_matches) as lm on lmp.lol_match_id = lm.id
+                join lol_matches as lm on lmp.lol_match_id = lm.id
             where lmp.summoner_id = ANY($1) and lm.queue_id = 420 and lm.match_end >= '2024-09-25 12:00:00'
             group by lmp.summoner_id, lmp.champion_id;
         "#)  // 420 is the queue id for ranked solo/duo and 2024-09-25 is the split 3 s14 start date
@@ -240,16 +237,17 @@ pub mod ssr {
 
     async fn find_summoner_live_by_puuids(db: &PgPool, puuids: &[String]) -> AppResult<HashMap<String, SummonerLiveModel>> {
         Ok(sqlx::query_as::<_, SummonerLiveModel>(
-            "SELECT  ss.id as id,
-                    puuid,
-                    game_name,
-                    tag_line,
-                    platform,
-                    summoner_level,
-                    pp.slug as pro_slug
+            r#"
+            SELECT
+                ss.id as id,
+                puuid,
+                game_name,
+                tag_line,
+                platform,
+                summoner_level,
+                pro_player_slug as pro_slug
             FROM summoners as ss
-                left join (select id, slug from pro_players) as pp on pp.id = ss.pro_player_id
-            WHERE ss.puuid = ANY($1)"
+            WHERE ss.puuid = ANY($1)"#
         )
             .bind(puuids)
             .fetch_all(db)
@@ -277,8 +275,8 @@ pub mod ssr {
         pub game_name: String,
         pub tag_line: String,
         pub puuid: String,
-        pub platform: String,
-        pub summoner_level: i64,
+        pub platform: PlatformRouteDb,
+        pub summoner_level: i32,
         pub pro_slug: Option<String>,
     }
 }

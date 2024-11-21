@@ -1,24 +1,41 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
--- Table: pro_players
-CREATE TABLE IF NOT EXISTS pro_players
-(
-    id              SERIAL PRIMARY KEY,
-    pro_uuid            UUID NOT NULL UNIQUE,
-    slug            VARCHAR(50) NOT NULL
-);
+--Region Enum
+CREATE TYPE platform_type AS ENUM (
+    'BR',
+    'EUNE',
+    'EUW',
+    'JP',
+    'KR',
+    'LAN',
+    'LAS',
+    'MENA',
+    'NA',
+    'OCE',
+    'PH',
+    'RU',
+    'SG',
+    'TH',
+    'TR',
+    'TW',
+    'VN',
+    'PBE'
+    );
+
+
 
 -- Table: summoners
 CREATE TABLE IF NOT EXISTS summoners
 (
     id              SERIAL PRIMARY KEY,
-    puuid           VARCHAR(78) NOT NULL UNIQUE,
-    game_name       VARCHAR(16) NOT NULL,
-    tag_line        VARCHAR(5)  NOT NULL,
-    profile_icon_id INTEGER     NOT NULL,
-    summoner_level  BIGINT      NOT NULL,
-    updated_at      TIMESTAMP   NOT NULL DEFAULT NOW(),
-    platform        VARCHAR(4)  NOT NULL,
-    pro_player_id  INTEGER     REFERENCES pro_players (id) DEFAULT null
+    profile_icon_id INTEGER       NOT NULL,
+    summoner_level  INTEGER       NOT NULL,
+    updated_at      TIMESTAMP     NOT NULL DEFAULT NOW(),
+    platform        platform_type NOT NULL,
+    pro_player_slug VARCHAR(16)            DEFAULT NULL,
+    puuid           VARCHAR(78)   NOT NULL UNIQUE,
+    game_name       VARCHAR(16)   NOT NULL,
+    tag_line        VARCHAR(5)    NOT NULL
 );
 
 
@@ -26,17 +43,17 @@ CREATE TABLE IF NOT EXISTS summoners
 CREATE TABLE IF NOT EXISTS lol_matches
 (
     id             SERIAL PRIMARY KEY,
-    match_id       VARCHAR(17)           NOT NULL UNIQUE,
-    game_mode      VARCHAR(15),
     map_id         INTEGER,
     queue_id       INTEGER,
-    version        VARCHAR(5),
-    platform       VARCHAR(4),
-    updated        BOOLEAN DEFAULT FALSE NOT NULL,
-    trashed        BOOLEAN DEFAULT FALSE NOT NULL,
+    match_duration INTEGER,
     match_creation TIMESTAMP,
     match_end      TIMESTAMP,
-    match_duration INTEGER
+    updated        BOOLEAN DEFAULT FALSE NOT NULL,
+    trashed        BOOLEAN DEFAULT FALSE NOT NULL,
+    platform       platform_type,
+    match_id       VARCHAR(17)           NOT NULL UNIQUE,
+    game_mode      VARCHAR(15),
+    version        VARCHAR(5)
 );
 
 
@@ -48,10 +65,7 @@ CREATE TABLE IF NOT EXISTS lol_match_participants
     summoner_id                INTEGER       NOT NULL REFERENCES summoners (id) ON DELETE CASCADE,
     champion_id                INTEGER       NOT NULL,
     team_id                    INTEGER       NOT NULL,
-    won                        BOOLEAN       NOT NULL,
     champ_level                INTEGER       NOT NULL,
-    kill_participation         DECIMAL(5, 2) NOT NULL,
-    kda                        DECIMAL(5, 2) NOT NULL,
     kills                      INTEGER       NOT NULL,
     deaths                     INTEGER       NOT NULL,
     assists                    INTEGER       NOT NULL,
@@ -84,7 +98,10 @@ CREATE TABLE IF NOT EXISTS lol_match_participants
     item3_id                   BIGINT,
     item4_id                   BIGINT,
     item5_id                   BIGINT,
-    item6_id                   BIGINT
+    item6_id                   BIGINT,
+    won                        BOOLEAN       NOT NULL,
+    kill_participation         DECIMAL(5, 2) NOT NULL,
+    kda                        DECIMAL(5, 2) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS lol_match_timelines
@@ -92,28 +109,37 @@ CREATE TABLE IF NOT EXISTS lol_match_timelines
     id                   SERIAL PRIMARY KEY,
     lol_match_id         INTEGER NOT NULL REFERENCES lol_matches (id) ON DELETE CASCADE,
     summoner_id          INTEGER NOT NULL REFERENCES summoners (id) ON DELETE CASCADE,
-    items_event_timeline JSONB   NOT NULL,
-    skills_timeline      int[]   NOT NULL
+    skills_timeline      int[]   NOT NULL,
+    items_event_timeline JSONB   NOT NULL
 );
 
+CREATE INDEX idx_summoners_game_name_trgm ON summoners USING gin (game_name gin_trgm_ops);
+CREATE INDEX idx_summoners_game_name_tag_line_platform ON summoners (game_name, lower(tag_line), platform);
+-- 2
 
 
+-- Composite Index for lmp2
 
 
-
-create index lol_match_participants_summoner_id_idx on lol_match_participants (summoner_id);
-create index lol_match_participants__match_id_idx on lol_match_participants (lol_match_id);
-create index lol_match_participants_summoner_lol_match_id_idx on lol_match_participants (summoner_id, lol_match_id);
-create index lol_match_participants_summoners_champion_id_idx on lol_match_participants (summoner_id, champion_id);
-create index lol_match_participants_lol_match_id_champion_id_idx on lol_match_participants (lol_match_id, champion_id);
-create index lol_match_match_end_idx on lol_matches (match_end);
-create index lol_match_match_end_queue_id_idx on lol_matches (queue_id, match_end);
-create index lol_match_queue_id_idx on lol_matches (queue_id);
-
-CREATE INDEX summoners_game_tag_platform_idx ON summoners (game_name, tag_line, platform);
-
-CREATE INDEX summoners_puuid_idx ON summoners (puuid);
-CREATE INDEX lol_matches_updated_idx ON lol_matches (updated);
-CREATE INDEX lol_matches_match_id_desc_idx ON lol_matches (match_id desc);
-
-CREATE INDEX pro_players_puuid_idx ON pro_players (pro_uuid);
+-- Covering Index for lmp2
+CREATE INDEX idx_lmp4_covering ON lol_match_participants (summoner_id, lol_match_id, team_id, won)
+    INCLUDE (
+        champion_id, champ_level, kills, deaths, assists, kda, kill_participation,
+        summoner_spell1_id, summoner_spell2_id, perk_primary_selection_id,
+        perk_sub_style_id, item0_id, item1_id, item2_id, item3_id, item4_id,
+        item5_id, item6_id
+        ); -- 3
+CREATE INDEX idx_lmp_lol_match_id_summoner_id
+    ON lol_match_participants (lol_match_id, summoner_id)
+    INCLUDE (team_id, won); -- 1
+CREATE INDEX idx_lmp2_match_id ON lol_match_participants (lol_match_id); -- 2
+CREATE INDEX idx_lmp2_summoner_id ON lol_match_participants (summoner_id); -- 1
+CREATE INDEX idx_lmp2_match_id_summoner_id
+    ON lol_match_participants (lol_match_id, summoner_id);-- 1
+-- Enhanced Index on lol_matches
+CREATE INDEX idx_lm_covering_full
+    ON lol_matches (match_end DESC)
+    INCLUDE (platform, queue_id, match_duration, match_id); -- 2
+CREATE INDEX idx_lm_id_covering_full
+    ON lol_matches (id, match_end DESC)
+    INCLUDE (platform, queue_id, match_duration, match_id);-- 1

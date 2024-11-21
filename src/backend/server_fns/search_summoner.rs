@@ -63,7 +63,7 @@ pub async fn search_summoner(
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use crate::backend::ssr::{AppError, AppResult, Id};
+    use crate::backend::ssr::{AppError, AppResult, Id, PlatformRouteDb};
     use crate::consts::platform_route::PlatformRoute;
     use chrono::Utc;
 
@@ -74,11 +74,17 @@ pub mod ssr {
         tag_line: &str,
     ) -> AppResult<SummonerDb> {
         sqlx::query_as::<_, SummonerDb>(
-            "SELECT id,game_name,tag_line, platform FROM summoners WHERE game_name ILIKE $1 AND tag_line ILIKE $2 AND platform = $3"
+            r#"
+            SELECT id, game_name, tag_line, platform
+            FROM summoners
+            WHERE game_name like $1
+              AND lower(tag_line) like lower($2)
+              AND platform = $3
+              "#
         )
             .bind(game_name)
             .bind(tag_line)
-            .bind(platform_route.to_string())
+            .bind(PlatformRouteDb::from(*platform_route))
 
             .fetch_one(db)
             .await.map_err(|e| e.into())
@@ -90,7 +96,7 @@ pub mod ssr {
         pub id: i32,
         pub game_name: String,
         pub tag_line: String,
-        pub platform: String,
+        pub platform: PlatformRouteDb,
     }
 
 
@@ -114,7 +120,7 @@ pub mod ssr {
     async fn find_summoner_id_by_puuid(db: &sqlx::PgPool, platform_route: PlatformRoute, puuid: &str) -> AppResult<i32> {
         sqlx::query_as::<_, Id>("SELECT id FROM summoners WHERE puuid = $1 and platform = $2")
             .bind(puuid)
-            .bind(platform_route.to_string())
+            .bind(PlatformRouteDb::from(platform_route))
             .fetch_one(db)
             .await
             .map(|x| x.id)
@@ -137,7 +143,7 @@ pub mod ssr {
             .bind(summoner.puuid.clone())
             .bind(summoner.summoner_level as i32)
             .bind(summoner.profile_icon_id)
-            .bind(platform_route.to_string())
+            .bind(PlatformRouteDb::from(platform_route))
             .bind(Utc::now().naive_utc())
             .bind(id)
             .execute(db)
@@ -158,7 +164,7 @@ pub mod ssr {
             .bind(account.game_name.clone())
             .bind(account.tag_line.clone())
             .bind(summoner.puuid.clone())
-            .bind(platform_route.to_string())
+            .bind(PlatformRouteDb::from(platform_route))
             .bind(summoner.summoner_level as i32)
             .bind(summoner.profile_icon_id)
             .bind(Utc::now().naive_utc())

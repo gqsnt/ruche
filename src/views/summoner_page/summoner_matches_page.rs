@@ -14,7 +14,7 @@ use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::server_fn::serde::{Deserialize, Serialize};
 use leptos::{component, view, IntoView};
-use leptos_router::hooks::{query_signal_with_options};
+use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 
 #[component]
@@ -51,7 +51,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
 
     meta_store.title().set(format!("{}#{} | Matches | Broken.gg", summoner().game_name, summoner().tag_line));
     meta_store.description().set(format!("Explore {}#{}'s match history on Broken.gg. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner().game_name, summoner().tag_line));
-    meta_store.url().set( summoner().to_route_path());
+    meta_store.url().set(summoner().to_route_path());
     view! {
         <div class="w-[768px] inline-block align-top justify-center">
             <div class="">
@@ -129,7 +129,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
 
 
 #[component]
-pub fn MatchCard(match_: SummonerMatch, summoner:ReadSignal<Summoner>) -> impl IntoView {
+pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Summoner>) -> impl IntoView {
     let (show_details, set_show_details) = signal(false);
 
     view! {
@@ -512,5 +512,5 @@ pub struct SummonerMatchParticipant {
     pub champion_id: u16,
     pub team_id: i32,
     pub pro_player_slug: Option<String>,
-    pub encounter_count:i32,
+    pub encounter_count: i32,
 }

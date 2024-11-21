@@ -13,9 +13,8 @@ pub async fn get_encounter(summoner_id: i32, filters: Option<MatchFiltersSearch>
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use crate::backend::server_fns::get_matches::ssr::get_matches_ids;
     use crate::backend::server_fns::get_summoner::ssr::{find_summoner_by_exact_game_name_tag_line, SummonerModel};
-    use crate::backend::ssr::{format_duration_since, AppResult};
+    use crate::backend::ssr::{format_duration_since, AppResult, PlatformRouteDb};
     use crate::consts::champion::Champion;
     use crate::consts::platform_route::PlatformRoute;
     use crate::consts::queue::Queue;
@@ -27,24 +26,27 @@ pub mod ssr {
     use bigdecimal::{BigDecimal, ToPrimitive};
     use chrono::{Duration, NaiveDateTime};
     use itertools::Itertools;
-    use sqlx::PgPool;
+    use sqlx::{PgPool, QueryBuilder};
 
     pub async fn get_encounter_data(db: &PgPool, summoner_id: i32, filters: MatchFiltersSearch, page_number: i32, encounter_slug: String, encounter_platform: String, is_with: bool) -> AppResult<SummonerEncounterResult> {
         let (encounter_game_name, encounter_tag_line) = parse_summoner_slug(encounter_slug.as_str());
         let platform_route = PlatformRoute::from(encounter_platform.as_str());
         let encounter = find_summoner_by_exact_game_name_tag_line(db, &platform_route, &encounter_game_name, &encounter_tag_line).await?;
         let summoner = find_summoner_by_id(db, summoner_id).await?;
-        let match_ids = get_matches_ids(db, summoner_id, filters).await?;
         let per_page = 20;
         let offset = (page_number.max(1) - 1) * per_page;
 
-        let matches = sqlx::query_as::<_, EncounterRowModel>(r#"
-           SELECT lmp1.lol_match_id,
+        let start_date = filters.start_date_to_naive();
+        let end_date = filters.end_date_to_naive();
+
+        let mut query = QueryBuilder::new(r#"
+            SELECT
+               lmp1.lol_match_id,
                lm.match_end,
                lm.platform,
                lm.queue_id,
                lm.match_duration,
-               lm.match_id as riot_match_id,
+               lm.match_id  AS riot_match_id,
                lmp1.summoner_id,
                lmp1.won,
                lmp1.champion_id,
@@ -65,44 +67,65 @@ pub mod ssr {
                lmp1.item4_id,
                lmp1.item5_id,
                lmp1.item6_id,
-               lmp2.summoner_id               as encounter_summoner_id,
-               lmp2.won                       as encounter_won,
-               lmp2.champion_id               as encounter_champion_id,
-               lmp2.champ_level               as encounter_champ_level,
-               lmp2.kills                     as encounter_kills,
-               lmp2.deaths                    as encounter_deaths,
-               lmp2.assists                   as encounter_assists,
-               lmp2.kda                       as encounter_kda,
-               lmp2.kill_participation        as encounter_kill_participation,
-               lmp2.summoner_spell1_id        as encounter_summoner_spell1_id,
-               lmp2.summoner_spell2_id        as encounter_summoner_spell2_id,
-               lmp2.perk_primary_selection_id as encounter_perk_primary_selection_id,
-               lmp2.perk_sub_style_id         as encounter_perk_sub_style_id,
-               lmp2.item0_id                  as encounter_item0_id,
-               lmp2.item1_id                  as encounter_item1_id,
-               lmp2.item2_id                  as encounter_item2_id,
-               lmp2.item3_id                  as encounter_item3_id,
-               lmp2.item4_id                  as encounter_item4_id,
-               lmp2.item5_id                  as encounter_item5_id,
-               lmp2.item6_id                  as encounter_item6_id
-        FROM lol_match_participants lmp1
-                 JOIN lol_match_participants lmp2 ON lmp1.lol_match_id = lmp2.lol_match_id
-                 join (select id, match_id, match_end, platform, queue_id, match_duration from lol_matches) lm
-                      on lmp1.lol_match_id = lm.id
-        WHERE lmp1.lol_match_id = ANY ($1)
-          AND lmp1.summoner_id = $2
-          AND lmp2.summoner_id = $3
-          AND lmp1.summoner_id != lmp2.summoner_id
-          AND ($4 = (lmp1.won = lmp2.won))
-        ORDER BY lm.match_end DESC
-        OFFSET $5 LIMIT $6
-        "#)
-            .bind(&match_ids)
-            .bind(summoner_id)
-            .bind(encounter.id)
-            .bind(is_with)
-            .bind(offset)
-            .bind(per_page)
+               lmp2.summoner_id               AS encounter_summoner_id,
+               lmp2.won                       AS encounter_won,
+               lmp2.champion_id               AS encounter_champion_id,
+               lmp2.champ_level               AS encounter_champ_level,
+               lmp2.kills                     AS encounter_kills,
+               lmp2.deaths                    AS encounter_deaths,
+               lmp2.assists                   AS encounter_assists,
+               lmp2.kda                       AS encounter_kda,
+               lmp2.kill_participation        AS encounter_kill_participation,
+               lmp2.summoner_spell1_id        AS encounter_summoner_spell1_id,
+               lmp2.summoner_spell2_id        AS encounter_summoner_spell2_id,
+               lmp2.perk_primary_selection_id AS encounter_perk_primary_selection_id,
+               lmp2.perk_sub_style_id         AS encounter_perk_sub_style_id,
+               lmp2.item0_id                  AS encounter_item0_id,
+               lmp2.item1_id                  AS encounter_item1_id,
+               lmp2.item2_id                  AS encounter_item2_id,
+               lmp2.item3_id                  AS encounter_item3_id,
+               lmp2.item4_id                  AS encounter_item4_id,
+               lmp2.item5_id                  AS encounter_item5_id,
+               lmp2.item6_id                  AS encounter_item6_id
+           FROM lol_match_participants lmp1
+                     left JOIN lol_matches lm ON lm.id = lmp1.lol_match_id
+                     JOIN lol_match_participants lmp2 ON lmp2.lol_match_id = lmp1.lol_match_id and lmp2.summoner_id =
+        "#);
+        query.push_bind(encounter.id);
+        query.push(" AND ");
+        query.push_bind(is_with);
+        query.push(" = (lmp2.won = lmp1.won) where lmp1.summoner_id = ");
+        query.push_bind(summoner_id);
+
+        if let Some(champion_id) = filters.champion_id {
+            let sql_filter = " AND lmp1.champion_id = ";
+            query.push(sql_filter);
+            query.push_bind(champion_id);
+        }
+
+        if let Some(queue_id) = filters.queue_id {
+            let sql_filter = " AND lm.queue_id = ";
+            query.push(sql_filter);
+            query.push_bind(queue_id);
+        }
+
+        if let Some(start_date) = start_date {
+            let sql_filter = " AND lm.match_end >= ";
+            query.push(sql_filter);
+            query.push_bind(start_date);
+        }
+
+        if let Some(end_date) = end_date {
+            let sql_filter = " AND lm.match_end <= ";
+            query.push(sql_filter);
+            query.push_bind(end_date);
+        }
+
+        query.push(" order by lm.match_end desc limit 20 offset ");
+        query.push_bind(offset);
+
+
+        let matches = query.build_query_as::<EncounterRowModel>()
             .fetch_all(db)
             .await?
             .into_iter()
@@ -133,7 +156,7 @@ pub mod ssr {
                     match_ended_since,
                     match_duration: match_duration_str,
                     queue: row.queue_id.map(|q| Queue::from(q as u16).to_str()).unwrap_or_default().to_string(),
-                    platform: row.platform,
+                    platform: row.platform.to_string(),
                     participant: SummonerEncounterParticipant {
                         summoner_id,
                         won: row.won,
@@ -168,8 +191,8 @@ pub mod ssr {
                         kills: row.encounter_kills,
                         deaths: row.encounter_deaths,
                         assists: row.encounter_assists,
-                        kda:encounter_kda,
-                        kill_participation:encounter_kill_participation,
+                        kda: encounter_kda,
+                        kill_participation: encounter_kill_participation,
                         summoner_spell1_id: row.encounter_summoner_spell1_id.unwrap_or_default() as u16,
                         summoner_spell2_id: row.encounter_summoner_spell2_id.unwrap_or_default() as u16,
                         perk_primary_selection_id: row.encounter_perk_primary_selection_id.unwrap_or_default() as u16,
@@ -200,19 +223,14 @@ pub mod ssr {
                 avg(lmp2.kda) as encounter_avg_kda,
                 avg(lmp2.kill_participation) as encounter_avg_kill_participation
             FROM lol_match_participants lmp1
-                JOIN lol_match_participants lmp2 ON lmp1.lol_match_id = lmp2.lol_match_id
-                join (select id, match_end, platform, queue_id, match_duration from lol_matches) lm
-                     on lmp1.lol_match_id = lm.id
-            WHERE lmp1.lol_match_id = ANY ($1)
-              AND lmp1.summoner_id = $2
-              AND lmp2.summoner_id = $3
-              AND lmp1.summoner_id != lmp2.summoner_id
-              AND ($4 = (lmp1.won = lmp2.won))
+                     left JOIN lol_matches lm ON lm.id = lmp1.lol_match_id
+                     JOIN lol_match_participants lmp2 ON lmp2.lol_match_id = lmp1.lol_match_id and lmp2.summoner_id = $1
+                AND $2 = (lmp2.won = lmp1.won)
+           where lmp1.summoner_id = $3
         "#)
-            .bind(&match_ids)
-            .bind(summoner_id)
             .bind(encounter.id)
             .bind(is_with)
+            .bind(summoner_id)
             .fetch_one(db)
             .await?;
         let total_pages = (encounter_stats.total_matches as f64 / per_page as f64).ceil() as i32;
@@ -259,12 +277,10 @@ pub mod ssr {
                    ss.summoner_level  as summoner_level,
                    ss.puuid           as puuid,
                    ss.updated_at      as updated_at,
-                   pp.slug            as pro_slug
+                   ss.pro_player_slug            as pro_slug
             FROM summoners as ss
-                     left join (select id, slug from pro_players) as pp on pp.id = ss.pro_player_id
             WHERE
-                ss.id = $1
-            LIMIT 1"#
+                ss.id = $1"#
         ).bind(summoner_id)
             .fetch_one(db)
             .await
@@ -274,7 +290,7 @@ pub mod ssr {
                     game_name: summoner_db.game_name,
                     tag_line: summoner_db.tag_line,
                     puuid: summoner_db.puuid,
-                    platform: PlatformRoute::from(summoner_db.platform.as_str()),
+                    platform: PlatformRoute::from(summoner_db.platform),
                     updated_at: summoner_db.updated_at.format(DATE_FORMAT).to_string(),
                     summoner_level: summoner_db.summoner_level,
                     profile_icon_id: summoner_db.profile_icon_id as u16,
@@ -308,7 +324,7 @@ pub mod ssr {
         pub lol_match_id: i32,
         pub riot_match_id: String,
         pub match_end: Option<NaiveDateTime>,
-        pub platform: String,
+        pub platform: PlatformRouteDb,
         pub queue_id: Option<i32>,
         pub match_duration: Option<i32>,
         pub summoner_id: i32,

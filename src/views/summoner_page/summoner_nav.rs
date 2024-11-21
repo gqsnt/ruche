@@ -1,5 +1,6 @@
 use crate::views::components::match_filters::MatchFilters;
 use crate::views::summoner_page::summoner_champions_page::SummonerChampionsPage;
+use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterPage;
 use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersPage;
 use crate::views::summoner_page::summoner_live_page::SummonerLivePage;
 use crate::views::summoner_page::summoner_matches_page::SummonerMatchesPage;
@@ -7,7 +8,6 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
-use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterPage;
 
 #[component]
 pub fn SummonerNav() -> impl IntoView {

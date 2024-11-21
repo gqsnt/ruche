@@ -50,13 +50,12 @@ pub async fn update_summoner(puuid: String, platform_type: String) -> Result<(),
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use crate::backend::ssr::{AppResult, Id};
+    use crate::backend::ssr::{AppResult, Id, PlatformRouteDb};
     use leptos::logging::log;
     use riven::consts::RegionalRoute;
     use riven::RiotApi;
     use std::collections::HashSet;
     use std::sync::Arc;
-    use crate::consts::platform_route::PlatformRoute;
 
     pub async fn update_summoner_default_matches(
         db: sqlx::PgPool,
@@ -137,15 +136,15 @@ pub mod ssr {
         let match_ids = match_ids.to_vec();
         let platforms = match_ids.iter().map(|x| {
             let match_id_split = x.split("_").collect::<Vec<&str>>();
-            PlatformRoute::from_raw_str(match_id_split[0]).to_string()
-        }).collect::<Vec<String>>();
+            PlatformRouteDb::from_raw_str(match_id_split[0])
+        }).collect::<Vec<_>>();
         let sql = r"
         INSERT INTO
             lol_matches
             (match_id, platform)
         SELECT * FROM UNNEST(
             $1::VARCHAR(17)[],
-            $2::VARCHAR(4)[]
+            $2::platform_type[]
         )
         ON CONFLICT (match_id) DO NOTHING;
         ";

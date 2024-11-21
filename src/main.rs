@@ -1,5 +1,3 @@
-
-
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
@@ -67,7 +65,7 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     // thread to cleanup live game cache
     schedule_live_game_cache_cleanup_task(cache_for_cleanup, cleanup_interval).await;
 
-    if is_prod{
+    if is_prod {
         // thread to generate site map (on launch and at 3am)
         schedule_generate_site_map(db.clone()).await;
         // thead to update pro player (on launch and at 2am)

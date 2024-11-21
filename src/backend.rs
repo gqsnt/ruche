@@ -18,13 +18,15 @@ pub type ServerResult<T> = Result<T, ServerFnError>;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
+    use std::fmt::Formatter;
+    use crate::consts::platform_route::PlatformRoute;
     use chrono::{NaiveDateTime, Utc};
     use http::status::StatusCode;
     use leptos::prelude::ServerFnError;
+    use serde::{Deserialize, Serialize};
     use std::num::ParseIntError;
     use std::sync::Arc;
     use thiserror::Error;
-
 
     pub type AppResult<T> = Result<T, AppError>;
 
@@ -174,6 +176,93 @@ pub mod ssr {
         }
         pub fn as_server_fn_error<T>(&self) -> Result<T, ServerFnError> {
             Err(ServerFnError::new(self.to_string()))
+        }
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, sqlx::Type, Deserialize, Serialize)]
+    #[sqlx(type_name = "platform_type")]
+    pub enum PlatformRouteDb {
+        BR,
+        EUNE,
+        EUW,
+        JP,
+        KR,
+        LAN,
+        LAS,
+        MENA,
+        NA,
+        OCE,
+        PH,
+        RU,
+        SG,
+        TH,
+        TR,
+        TW,
+        VN,
+        PBE,
+    }
+
+
+    impl From<PlatformRouteDb> for PlatformRoute {
+        fn from(value: PlatformRouteDb) -> Self {
+            match value {
+                PlatformRouteDb::BR => PlatformRoute::BR1,
+                PlatformRouteDb::EUNE => PlatformRoute::EUN1,
+                PlatformRouteDb::EUW => PlatformRoute::EUW1,
+                PlatformRouteDb::JP => PlatformRoute::JP1,
+                PlatformRouteDb::KR => PlatformRoute::KR,
+                PlatformRouteDb::LAN => PlatformRoute::LA1,
+                PlatformRouteDb::LAS => PlatformRoute::LA2,
+                PlatformRouteDb::MENA => PlatformRoute::ME1,
+                PlatformRouteDb::NA => PlatformRoute::NA1,
+                PlatformRouteDb::OCE => PlatformRoute::OC1,
+                PlatformRouteDb::PH => PlatformRoute::PH2,
+                PlatformRouteDb::RU => PlatformRoute::RU,
+                PlatformRouteDb::SG => PlatformRoute::SG2,
+                PlatformRouteDb::TH => PlatformRoute::TH2,
+                PlatformRouteDb::TR => PlatformRoute::TR1,
+                PlatformRouteDb::TW => PlatformRoute::TW2,
+                PlatformRouteDb::VN => PlatformRoute::VN2,
+                PlatformRouteDb::PBE => PlatformRoute::PBE1,
+            }
+        }
+    }
+
+    impl From<PlatformRoute> for PlatformRouteDb {
+        fn from(value: PlatformRoute) -> Self {
+            match value {
+                PlatformRoute::BR1 => PlatformRouteDb::BR,
+                PlatformRoute::EUN1 => PlatformRouteDb::EUNE,
+                PlatformRoute::EUW1 => PlatformRouteDb::EUW,
+                PlatformRoute::JP1 => PlatformRouteDb::JP,
+                PlatformRoute::KR => PlatformRouteDb::KR,
+                PlatformRoute::LA1 => PlatformRouteDb::LAN,
+                PlatformRoute::LA2 => PlatformRouteDb::LAS,
+                PlatformRoute::ME1 => PlatformRouteDb::MENA,
+                PlatformRoute::NA1 => PlatformRouteDb::NA,
+                PlatformRoute::OC1 => PlatformRouteDb::OCE,
+                PlatformRoute::PH2 => PlatformRouteDb::PH,
+                PlatformRoute::RU => PlatformRouteDb::RU,
+                PlatformRoute::SG2 => PlatformRouteDb::SG,
+                PlatformRoute::TH2 => PlatformRouteDb::TH,
+                PlatformRoute::TR1 => PlatformRouteDb::TR,
+                PlatformRoute::TW2 => PlatformRouteDb::TW,
+                PlatformRoute::VN2 => PlatformRouteDb::VN,
+                PlatformRoute::PBE1 => PlatformRouteDb::PBE,
+            }
+        }
+    }
+
+    impl PlatformRouteDb {
+
+        pub fn from_raw_str(str: &str) -> Self {
+            PlatformRoute::from_raw_str(str).into()
+        }
+    }
+
+    impl std::fmt::Display for PlatformRouteDb{
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", PlatformRoute::from(*self))
         }
     }
 }

@@ -1,13 +1,12 @@
-use crate::backend::ssr::{AppResult, Id};
+use crate::backend::ssr::{AppResult, Id, PlatformRouteDb};
 use crate::backend::updates::update_matches_task::TempSummoner;
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
 use std::collections::HashMap;
 
 
-
 pub async fn bulk_update_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]) -> AppResult<()> {
-    let (game_names, tag_lines, puuids, platforms, summoner_levels, profile_icon_ids, updated_ats)= summoners_multiunzip(summoners);
+    let (game_names, tag_lines, puuids, platforms, summoner_levels, profile_icon_ids, updated_ats) = summoners_multiunzip(summoners);
 
     let sql = r"
         UPDATE summoners
@@ -22,11 +21,12 @@ pub async fn bulk_update_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
             SELECT
                 unnest($1::VARCHAR(16)[]) AS game_name,
                 unnest($2::VARCHAR(5)[]) AS tag_line,
-                unnest($3::VARCHAR(78)[]) AS puuid,
-                unnest($4::VARCHAR(4)[]) AS platform,
-                unnest($5::INT[]) AS summoner_level,
-                unnest($6::INT[]) AS profile_icon_id,
-                unnest($7::TIMESTAMP[]) AS updated_at
+                unnest($3::platform_type[]) AS platform,
+                unnest($4::INT[]) AS summoner_level,
+                unnest($5::INT[]) AS profile_icon_id,
+                unnest($6::TIMESTAMP[]) AS updated_at,
+                unnest($6::VARCHAR(78)[]) AS puuid
+
         ) AS data
         WHERE summoners.puuid = data.puuid;
         ";
@@ -34,11 +34,11 @@ pub async fn bulk_update_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
     sqlx::query(sql)
         .bind(game_names)
         .bind(tag_lines)
-        .bind(puuids)
         .bind(platforms)
         .bind(summoner_levels)
         .bind(profile_icon_ids)
         .bind(updated_ats)
+        .bind(puuids)
         .execute(db)
         .await?;
 
@@ -46,7 +46,7 @@ pub async fn bulk_update_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
 }
 
 pub async fn bulk_insert_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]) -> AppResult<HashMap<String, (i32, String, String, String)>> {
-    let (game_names, tag_lines, puuids, platforms, summoner_levels, profile_icon_ids, updated_ats)= summoners_multiunzip(summoners);
+    let (game_names, tag_lines, puuids, platforms, summoner_levels, profile_icon_ids, updated_ats) = summoners_multiunzip(summoners);
     let sql = r"
         INSERT INTO
             summoners
@@ -62,7 +62,7 @@ pub async fn bulk_insert_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
                 $1::VARCHAR(16)[],
                 $2::VARCHAR(5)[],
                 $3::VARCHAR(78)[],
-                $4::VARCHAR(4)[],
+                $4::platform_type[],
                 $5::INT[],
                 $6::INT[],
                 $7::TIMESTAMP[]
@@ -103,13 +103,13 @@ pub async fn bulk_insert_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
 }
 
 #[allow(clippy::type_complexity)]
-pub fn summoners_multiunzip(summoners:&[TempSummoner])-> (Vec<&str>, Vec<&str>, Vec<&str>, Vec<String>, Vec<i64>, Vec<i32>, Vec<DateTime<Utc>>){
+pub fn summoners_multiunzip(summoners: &[TempSummoner]) -> (Vec<&str>, Vec<&str>, Vec<&str>, Vec<PlatformRouteDb>, Vec<i32>, Vec<i32>, Vec<DateTime<Utc>>) {
     summoners.iter().map(|s| {
         (
             s.game_name.as_str(),
             s.tag_line.as_str(),
             s.puuid.as_str(),
-            s.platform.to_string(),
+            PlatformRouteDb::from_raw_str(s.platform.as_str()),
             s.summoner_level,
             s.profile_icon_id as i32,
             s.updated_at

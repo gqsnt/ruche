@@ -14,16 +14,16 @@ pub async fn get_matches(summoner_id: i32, page_number: i32, filters: Option<Mat
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
+    use crate::backend::ssr::{format_duration_since, AppResult, PlatformRouteDb};
+    use crate::consts::queue::Queue;
     use crate::views::summoner_page::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo, SummonerMatch, SummonerMatchParticipant};
     use crate::views::MatchFiltersSearch;
     use bigdecimal::{BigDecimal, ToPrimitive};
     use chrono::{Duration, NaiveDateTime};
     use itertools::Itertools;
-    use std::collections::HashMap;
 
-    use crate::backend::ssr::{format_duration_since, parse_date, AppResult};
-    use crate::consts::queue::Queue;
-    use sqlx::{query_as, FromRow, PgPool, QueryBuilder};
+    use sqlx::{FromRow, PgPool, QueryBuilder};
+    use std::collections::HashMap;
 
     pub async fn fetch_matches(
         db: &PgPool,
@@ -31,78 +31,109 @@ pub mod ssr {
         page: i32,
         filters: MatchFiltersSearch,
     ) -> AppResult<GetSummonerMatchesResult> {
-        let match_ids = get_matches_ids(db, summoner_id, filters.clone()).await?;
         let per_page = 20;
         let offset = (page.max(1) - 1) * per_page;
-        let total_matches = match_ids.len() as i32;
+
+        let start_date = filters.start_date_to_naive();
+        let end_date = filters.end_date_to_naive();
+
+
+        let mut statistics_query = QueryBuilder::new(r#"
+            SELECT
+               count(*) as total_matches,
+               sum(CASE WHEN lmp.won THEN 1 ELSE 0 END) as total_wins,
+               avg(lmp.kills)                           as avg_kills,
+               avg(lmp.deaths)                          as avg_deaths,
+               avg(lmp.assists)                         as avg_assists,
+               avg(lmp.kda)                             as avg_kda,
+               avg(lmp.kill_participation)              as avg_kill_participation
+            FROM lol_match_participants as lmp
+                     left JOIN lol_matches as lm ON lm.id = lmp.lol_match_id
+            WHERE lmp.summoner_id =
+        "#);
+        let mut participants_query = QueryBuilder::new(r#"
+            SELECT lmp.id,
+                   lmp.lol_match_id,
+                   lmp.champion_id,
+                   lmp.summoner_id,
+                   lmp.team_id,
+                   lmp.won,
+                   lmp.champ_level,
+                   lmp.kill_participation,
+                   lmp.kda,
+                   lmp.kills,
+                   lmp.deaths,
+                   lmp.assists,
+                   lmp.summoner_spell1_id,
+                   lmp.summoner_spell2_id,
+                   lmp.perk_primary_selection_id,
+                   lmp.perk_sub_style_id,
+                   lmp.item0_id,
+                   lmp.item1_id,
+                   lmp.item2_id,
+                   lmp.item3_id,
+                   lmp.item4_id,
+                   lmp.item5_id,
+                   lmp.item6_id,
+                   lm.match_id       AS riot_match_id,
+                   lm.platform       AS platform,
+                   lm.queue_id       AS lol_match_queue_id,
+                   lm.match_end      AS lol_match_match_end,
+                   lm.match_duration AS lol_match_match_duration
+            FROM lol_match_participants as lmp
+                       JOIN lol_matches as lm
+                                ON lm.id = lmp.lol_match_id
+            WHERE lmp.summoner_id =
+        "#);
+        statistics_query.push_bind(summoner_id);
+        participants_query.push_bind(summoner_id);
+
+        if let Some(champion_id) = filters.champion_id {
+            let sql_filter = " AND lmp.champion_id = ";
+            statistics_query.push(sql_filter);
+            statistics_query.push_bind(champion_id);
+            participants_query.push(sql_filter);
+            participants_query.push_bind(champion_id);
+        }
+        if let Some(queue_id) = filters.queue_id {
+            let sql_filter = " AND lm.queue_id = ";
+            statistics_query.push(sql_filter);
+            statistics_query.push_bind(queue_id);
+            participants_query.push(sql_filter);
+            participants_query.push_bind(queue_id);
+        }
+
+        if let Some(start_date) = start_date {
+            let sql_filter = " AND lm.match_end >= ";
+            statistics_query.push(sql_filter);
+            statistics_query.push_bind(start_date);
+            participants_query.push(sql_filter);
+            participants_query.push_bind(start_date);
+        }
+        if let Some(end_date) = end_date {
+            let sql_filter = " AND lm.match_end <= ";
+            statistics_query.push(sql_filter);
+            statistics_query.push_bind(end_date);
+            participants_query.push(sql_filter);
+            participants_query.push_bind(end_date);
+        }
+
+
+        participants_query.push(" ORDER BY lm.match_end DESC LIMIT 20 OFFSET ");
+        participants_query.push_bind(offset);
+        let (matches_statistics, matches_participants) = tokio::join!(
+            statistics_query.build_query_as::<MatchesResultInfoModel>().fetch_one(db),
+            participants_query.build_query_as::<SummonerMatchModel>().fetch_all(db),
+        );
+        let matches_statistics = matches_statistics?;
+        let matches_participants = matches_participants?;
+        let total_matches = matches_statistics.total_matches as i32;
         let total_pages = (total_matches as f64 / per_page as f64).ceil() as i32;
-        let current_match_ids= match_ids.iter().skip(offset as usize).take(per_page as usize).cloned().collect::<Vec<_>>();
-
-
-        let matches_statistics = query_as::<_, MatchesResultInfoModel>(r#"
-            SELECT
-                sum(CASE WHEN lmp.won THEN 1 ELSE 0 END) as total_wins,
-                avg(lmp.kills)  as avg_kills,
-                avg(lmp.deaths)  as avg_deaths,
-                avg(lmp.assists)  as avg_assists,
-                avg(lmp.kda)  as avg_kda,
-                avg(lmp.kill_participation) as avg_kill_participation
-            FROM lol_match_participants as lmp
-            INNER JOIN (SELECT id, queue_id, match_end FROM lol_matches) as lm ON lm.id = lmp.lol_match_id
-            WHERE
-                lmp.summoner_id = $1 and  lmp.lol_match_id = ANY($2)
-        "#)
-            .bind(summoner_id)
-            .bind(&match_ids)
-            .fetch_one(db)
-            .await?;
-
-        let participant_matches = query_as::<_,SummonerMatchModel>(r#"
-            SELECT
-                lmp.id,
-                lmp.lol_match_id,
-                lmp.champion_id,
-                lmp.summoner_id,
-                lmp.team_id,
-                lmp.won,
-                lmp.champ_level,
-                lmp.kill_participation,
-                lmp.kda,
-                lmp.kills,
-                lmp.deaths,
-                lmp.assists,
-                lmp.summoner_spell1_id,
-                lmp.summoner_spell2_id,
-                lmp.perk_primary_selection_id,
-                lmp.perk_sub_style_id,
-                lmp.item0_id,
-                lmp.item1_id,
-                lmp.item2_id,
-                lmp.item3_id,
-                lmp.item4_id,
-                lmp.item5_id,
-                lmp.item6_id,
-                lm.match_id AS riot_match_id,
-                lm.platform AS platform,
-                lm.queue_id AS lol_match_queue_id,
-                lm.match_end AS lol_match_match_end,
-                lm.match_duration AS lol_match_match_duration
-            FROM lol_match_participants as lmp
-            INNER JOIN (SELECT id,match_id,platform, queue_id,match_duration, match_end FROM lol_matches) as lm ON lm.id = lmp.lol_match_id
-            WHERE
-                lmp.summoner_id = $1 and lmp.lol_match_id = ANY($2)
-            ORDER BY lm.match_end DESC
-        "#)
-            .bind(summoner_id)
-            .bind(&current_match_ids)
-            .fetch_all(db)
-            .await?;
-
 
 
         let matches_result_info = {
             let total_wins = matches_statistics.total_wins.unwrap_or_default() as i32;
-            let total_losses = total_matches- total_wins;
+            let total_losses = total_matches - total_wins;
             let round_2 = |x: f64| (x * 100.0).round() / 100.0;
             MatchesResultInfo {
                 total_matches,
@@ -116,8 +147,8 @@ pub mod ssr {
             }
         };
 
-        let matches_ids: Vec<_> = participant_matches.iter().map(|row| row.lol_match_id).collect();
-        let mut matches = participant_matches.into_iter().map(|row| {
+        let matches_ids: Vec<_> = matches_participants.iter().map(|row| row.lol_match_id).collect();
+        let mut matches = matches_participants.into_iter().map(|row| {
             let match_duration = Duration::seconds(row.lol_match_match_duration.unwrap_or_default() as i64);
             let match_duration_str = format!(
                 "{:02}:{:02}:{:02}",
@@ -139,7 +170,7 @@ pub mod ssr {
                 summoner_id: row.summoner_id,
                 match_id: row.lol_match_id,
                 riot_match_id: row.riot_match_id,
-                platform: row.platform.unwrap_or_default(),
+                platform: row.platform.to_string(),
                 match_ended_since,
                 match_duration: match_duration_str,
                 queue: row.lol_match_queue_id.map(|q| Queue::from(q as u16).to_str()).unwrap_or_default().to_string(),
@@ -178,7 +209,7 @@ pub mod ssr {
                         lmp.team_id
                 FROM lol_match_participants as lmp
                 WHERE lmp.lol_match_id = ANY($1)
-                ORDER BY lmp.team_id ASC"
+                ORDER BY lmp.team_id"
             )
                 .bind(&matches_ids)
                 .fetch_all(db)
@@ -222,74 +253,25 @@ pub mod ssr {
     }
 
 
-    pub async fn get_matches_ids(db:&PgPool, summoner_id:i32, filters:MatchFiltersSearch) -> AppResult<Vec<i32>>{
-        let start_date = parse_date(filters.start_date.clone());
-        let end_date = parse_date(filters.end_date.clone());
-        let mut query = QueryBuilder::new(r#"
-            SELECT
-                lmp.lol_match_id
-            FROM lol_match_participants as lmp
-            INNER JOIN (SELECT id, queue_id, match_end FROM lol_matches) as lm ON lm.id = lmp.lol_match_id
-            WHERE
-                lmp.summoner_id = "#);
-        query.push_bind(summoner_id);
-        if let Some(champion_id) = filters.champion_id {
-            let sql_filter = " AND lmp.champion_id = ";
-            query.push(sql_filter);
-            query.push_bind(champion_id);
-
-        }
-        if let Some(queue_id) = filters.queue_id {
-            let sql_filter = " AND lm.queue_id = ";
-            query.push(sql_filter);
-            query.push_bind(queue_id);
-        }
-
-        if let Some(start_date) = start_date {
-            let sql_filter = " AND lm.match_end >= ";
-            query.push(sql_filter);
-            query.push_bind(start_date);
-        }
-        if let Some(end_date) = end_date {
-            let sql_filter = " AND lm.match_end <= ";
-            query.push(sql_filter);
-            query.push_bind(end_date);
-        }
-        query.push(" ORDER BY lm.match_end DESC");
-        Ok(query.build_query_as::<(i32,)>().fetch_all(db).await?.into_iter().map(|(id,)| id).collect_vec())
-
-    }
-
-
-    pub async fn get_summoner_encounters(db: &PgPool, summoner_id: i32, encounters_ids: &Vec<i32>) -> AppResult<HashMap<i32, i32>> {
+    pub async fn get_summoner_encounters(db: &PgPool, summoner_id: i32, encounters_ids: &[i32]) -> AppResult<HashMap<i32, i32>> {
         Ok(
-            sqlx::query_as::<_, SummonerEncounterModel>(
+            sqlx::query_as::<_, (i32, i64)>(
                 r#"
                  SELECT
-                        ss.id as summoner_id,
-                        encounter_data.match_count as encounter_count
-                    FROM summoners AS ss
-                    INNER JOIN (
-                        SELECT
-                            lmp.summoner_id,
-                            COUNT(lmp.id) AS match_count
-                        FROM lol_match_participants AS lmp
-                        WHERE lmp.summoner_id != $1 and lmp.summoner_id = any ($2)
-                       AND EXISTS (SELECT 1
-                                   FROM lol_match_participants AS lmp1
-                                            INNER JOIN (select id, queue_id, match_end from lol_matches) as lm
-                                                       on lmp1.lol_match_id = lm.id
-                                   WHERE lmp1.lol_match_id = lmp.lol_match_id
-                                     AND lmp1.summoner_id = $1)
-                     GROUP BY lmp.summoner_id) AS encounter_data ON ss.id = encounter_data.summoner_id
+                    lmp.summoner_id,
+                    COUNT(*)    AS match_count
+                 from lol_match_participants lmp
+                    JOIN lol_match_participants tm ON lmp.lol_match_id = tm.lol_match_id AND tm.summoner_id = $1
+                where lmp.summoner_id = ANY($2)
+                group by lmp.summoner_id
             "#
             )
                 .bind(summoner_id)
-                .bind(encounters_ids)
+                .bind(encounters_ids.iter().filter(|&&id| id != summoner_id).collect::<Vec<_>>())
                 .fetch_all(db)
                 .await?
                 .into_iter()
-                .map(|row| (row.summoner_id, row.encounter_count as i32))
+                .map(|(summoner_id, encounter_count)| (summoner_id, encounter_count as i32))
                 .collect::<HashMap<_, _>>()
         )
     }
@@ -297,15 +279,14 @@ pub mod ssr {
 
     pub async fn get_summoner_infos_by_ids(db: &PgPool, summoner_ids: Vec<i32>) -> AppResult<HashMap<i32, (String, String, String, Option<String>)>> {
         Ok(
-            sqlx::query_as::<_, (i32, String, String, String, Option<String>)>(
+            sqlx::query_as::<_, (i32, String, String, PlatformRouteDb, Option<String>)>(
                 "SELECT
                     ss.id,
                     ss.game_name,
                     ss.tag_line,
                     ss.platform,
-                    pp.slug as pro_player_slug
+                    ss.pro_player_slug as pro_player_slug
             FROM summoners as ss
-                left join (select id, slug from pro_players) as pp on pp.id = ss.pro_player_id
             WHERE ss.id = ANY($1);"
             )
                 .bind(&summoner_ids)
@@ -313,7 +294,7 @@ pub mod ssr {
                 .await?
                 .into_iter()
                 .map(|(id, game_name, tag_line, platform, pro_player_slug)| {
-                    (id, (game_name, tag_line, platform, pro_player_slug))
+                    (id, (game_name, tag_line, platform.to_string(), pro_player_slug))
                 })
                 .collect::<HashMap<_, _>>()
         )
@@ -322,6 +303,7 @@ pub mod ssr {
 
     #[derive(FromRow)]
     pub struct MatchesResultInfoModel {
+        pub total_matches: i64,
         pub total_wins: Option<i64>,
         pub avg_kills: Option<BigDecimal>,
         pub avg_deaths: Option<BigDecimal>,
@@ -336,7 +318,7 @@ pub mod ssr {
         pub id: i32,
         pub lol_match_id: i32,
         pub riot_match_id: String,
-        pub platform: Option<String>,
+        pub platform: PlatformRouteDb,
         pub champion_id: i32,
         pub summoner_id: i32,
         pub summoner_spell1_id: Option<i32>,
@@ -364,11 +346,6 @@ pub mod ssr {
         pub lol_match_match_duration: Option<i32>,
     }
 
-    #[derive(FromRow)]
-    pub struct SummonerEncounterModel {
-        pub summoner_id: i32,
-        pub encounter_count: i64,
-    }
     #[derive(FromRow)]
     pub struct SummonerMatchParticipantModel {
         pub team_id: i32,

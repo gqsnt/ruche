@@ -1,4 +1,4 @@
-use crate::backend::ssr::{AppError, AppResult};
+use crate::backend::ssr::{AppError, AppResult, PlatformRouteDb};
 use crate::backend::updates::update_matches_task::bulk_summoners::bulk_insert_summoners;
 use crate::backend::updates::update_matches_task::TempSummoner;
 use crate::{consts, DB_CHUNK_SIZE};
@@ -10,7 +10,6 @@ use leptos::logging::log;
 use riven::RiotApi;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::types::Uuid;
 use sqlx::PgPool;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -75,7 +74,7 @@ pub async fn update_pro_player_task(
     )
         .buffer_unordered(concurrency_limit)
         .filter_map(|response| async {
-            match response{
+            match response {
                 Ok(r) => {
                     Some(r)
                 }
@@ -90,11 +89,11 @@ pub async fn update_pro_player_task(
     log!("Time to fetch pro_data: {:?}", start.elapsed());
     start = Instant::now();
     let pro_accounts = pro_players_data.iter().flat_map(|pro_player| {
-        pro_player.accounts.iter().cloned()
-    }).collect::<Vec<ProPlayerAccountShort>>();
-
-    let mut existing_summoner_ids = fetch_existing_accounts(db, &pro_accounts).await?;
-    let not_found_accounts = pro_accounts.iter().filter(|&account| {
+        pro_player.accounts.iter().cloned().map(|acc| (acc, pro_player.slug.clone())).collect_vec()
+    }).collect::<HashMap<ProPlayerAccountShort, String>>();
+    let keys = pro_accounts.keys().cloned().collect_vec();
+    let mut existing_summoner_ids = fetch_existing_accounts(db, &keys).await?;
+    let not_found_accounts = keys.iter().filter(|&account| {
         !existing_summoner_ids.keys().contains(account)
     }).collect::<Vec<_>>();
     println!("Not found accounts: {:?}", not_found_accounts.len());
@@ -144,9 +143,9 @@ pub async fn update_pro_player_task(
     }
     println!("Time taken to fetch summoners: {:?}", start.elapsed());
     start = Instant::now();
-    let pro_players_db = mass_upsert_pro_players(db, &pro_players_data).await?;
+    //let pro_players_db = mass_upsert_pro_players(db, &pro_players_data).await?;
     remove_pro_players_from_summoners(db).await?;
-    mass_update_adding_pro_player_to_summoners(db, pro_players_db, existing_summoner_ids, &pro_players_data).await?;
+    mass_update_adding_pro_player_to_summoners(db, existing_summoner_ids, pro_accounts).await?;
     println!("Time taken to update pro players: {:?}", start.elapsed());
     Ok(())
 }
@@ -154,8 +153,8 @@ pub async fn update_pro_player_task(
 pub async fn remove_pro_players_from_summoners(db: &PgPool) -> AppResult<()> {
     let query = r#"
         UPDATE summoners
-        SET pro_player_id = null
-        where pro_player_id != null
+        SET pro_player_slug = null
+        where pro_player_slug != null
     "#;
     sqlx::query(query)
         .execute(db)
@@ -166,62 +165,24 @@ pub async fn remove_pro_players_from_summoners(db: &PgPool) -> AppResult<()> {
 
 pub async fn mass_update_adding_pro_player_to_summoners(
     db: &PgPool,
-    pro_players: HashMap<String, i32>,
     summoner_ids: HashMap<ProPlayerAccountShort, i32>,
-    pro_players_data: &[ProPlayerShort],
+    pro_players_data: HashMap<ProPlayerAccountShort, String>,
 ) -> AppResult<()> {
-    let pro_player_summoners = pro_players_data.iter().flat_map(|pro_player| {
-        let pro_player_id = *pro_players.get(&pro_player.pro_uuid).unwrap();
-        pro_player.accounts.iter().filter_map(|account| {
-            summoner_ids.get(account).map(|summoner_id| {
-                (pro_player_id, *summoner_id)
-            })
-        }).collect_vec()
-    }).collect_vec();
-
-    let (pro_player_ids, summoner_ids): (Vec<_>, Vec<_>) = pro_player_summoners.iter().map(|&(pro_player_id, summoner_id)| {
-        (pro_player_id, summoner_id)
+    let (summoner_ids, pro_player_slugs): (Vec<_>, Vec<_>) = summoner_ids.iter().map(|(account, id)| {
+        (*id, pro_players_data.get(account).unwrap().clone())
     }).multiunzip();
-
     let query = r#"
         UPDATE summoners
-        SET pro_player_id = data.pro_player_id
-        FROM (SELECT UNNEST($1::INT[]) AS summoner_id, UNNEST($2::INT[]) AS pro_player_id) AS data
+        SET pro_player_slug = data.pro_player_slug
+        FROM (SELECT UNNEST($1::INT[]) AS summoner_id, UNNEST($2::TEXT[]) AS pro_player_slug) AS data
         WHERE summoners.id = data.summoner_id
     "#;
     sqlx::query(query)
         .bind(&summoner_ids)
-        .bind(&pro_player_ids)
+        .bind(&pro_player_slugs)
         .execute(db)
         .await?;
     Ok(())
-}
-
-
-pub async fn mass_upsert_pro_players(
-    db: &PgPool,
-    pro_players: &[ProPlayerShort],
-) -> AppResult<HashMap<String, i32>> {
-    let uuids = pro_players.iter().map(|pro_player| Uuid::parse_str(pro_player.pro_uuid.as_str()).unwrap()).collect::<Vec<Uuid>>();
-    let slugs = pro_players.iter().map(|pro_player| pro_player.slug.clone()).collect::<Vec<String>>();
-    let query = r#"
-        INSERT INTO pro_players (pro_uuid, slug)
-        SELECT * FROM UNNEST($1::UUID[], $2::VARCHAR(50)[])
-        ON CONFLICT (pro_uuid) DO UPDATE SET slug = EXCLUDED.slug
-        RETURNING pro_uuid, id
-    "#;
-    Ok(
-        sqlx::query_as::<_, (Uuid, i32)>(query)
-            .bind(&uuids)
-            .bind(&slugs)
-            .fetch_all(db)
-            .await?
-            .into_iter()
-            .map(|(uuid, id)| {
-                (uuid.to_string(), id)
-            })
-            .collect()
-    )
 }
 
 pub async fn fetch_existing_accounts(
@@ -229,17 +190,17 @@ pub async fn fetch_existing_accounts(
     player_shorts: &[ProPlayerAccountShort],
 ) -> AppResult<HashMap<ProPlayerAccountShort, i32>> {
     let (platforms, game_names, tag_lines): (Vec<_>, Vec<_>, Vec<_>) = player_shorts.iter().map(|player_short| {
-        (player_short.platform.clone(), player_short.game_name.clone(), player_short.tag_line.clone())
+        (PlatformRouteDb::from_raw_str(player_short.platform.as_str()), player_short.game_name.clone(), player_short.tag_line.clone())
     }).multiunzip();
 
     let query = r#"
         SELECT id, game_name, tag_line, platform
         FROM summoners
         WHERE (game_name, tag_line, platform) IN (
-            SELECT UNNEST($1::text[]), UNNEST($2::text[]), UNNEST($3::text[])
+            SELECT UNNEST($1::text[]), UNNEST($2::text[]), UNNEST($3::platform_type[])
         )
     "#;
-    let rows = sqlx::query_as::<_, (i32, String, String, String)>(query)
+    let rows = sqlx::query_as::<_, (i32, String, String, PlatformRouteDb)>(query)
         .bind(&game_names)
         .bind(&tag_lines)
         .bind(&platforms)
@@ -253,7 +214,7 @@ pub async fn fetch_existing_accounts(
             (ProPlayerAccountShort {
                 game_name,
                 tag_line,
-                platform,
+                platform: platform.to_string(),
             }, id)
         })
         .collect::<HashMap<_, _>>();

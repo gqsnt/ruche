@@ -32,7 +32,7 @@ pub async fn get_summoner(
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use crate::backend::ssr::AppResult;
+    use crate::backend::ssr::{AppResult, PlatformRouteDb};
     use crate::consts::platform_route::PlatformRoute;
     use crate::views::summoner_page::Summoner;
     use crate::DATE_FORMAT;
@@ -47,25 +47,23 @@ pub mod ssr {
         sqlx::query_as::<_, SummonerModel>(
             r#"
             SELECT
-                   ss.id              as id,
-                   ss.game_name       as game_name,
-                   ss.tag_line        as tag_line,
-                   ss.platform        as platform,
-                   ss.profile_icon_id as profile_icon_id,
-                   ss.summoner_level  as summoner_level,
-                   ss.puuid           as puuid,
-                   ss.updated_at      as updated_at,
-                   pp.slug            as pro_slug
+               ss.id              as id,
+               ss.game_name       as game_name,
+               ss.tag_line        as tag_line,
+               ss.platform        as platform,
+               ss.profile_icon_id as profile_icon_id,
+               ss.summoner_level  as summoner_level,
+               ss.puuid           as puuid,
+               ss.updated_at      as updated_at,
+               ss.pro_player_slug as pro_slug
             FROM summoners as ss
-                     left join (select id, slug from pro_players) as pp on pp.id = ss.pro_player_id
-            WHERE
-                ss.game_name = $1
-                AND ss.tag_line = $2
-                AND ss.platform = $3
-            LIMIT 1"#
+            WHERE ss.game_name = $1
+              AND lower(ss.tag_line) = lower($2)
+              AND ss.platform = $3
+  "#
         ).bind(game_name)
             .bind(tag_line)
-            .bind(platform_route.to_string())
+            .bind(PlatformRouteDb::from(*platform_route))
             .fetch_one(db)
             .await
             .map(|summoner_db| {
@@ -74,7 +72,7 @@ pub mod ssr {
                     game_name: summoner_db.game_name,
                     tag_line: summoner_db.tag_line,
                     puuid: summoner_db.puuid,
-                    platform: PlatformRoute::from(summoner_db.platform.as_str()),
+                    platform: PlatformRoute::from(summoner_db.platform),
                     updated_at: summoner_db.updated_at.format(DATE_FORMAT).to_string(),
                     summoner_level: summoner_db.summoner_level,
                     profile_icon_id: summoner_db.profile_icon_id as u16,
@@ -91,9 +89,9 @@ pub mod ssr {
         pub game_name: String,
         pub tag_line: String,
         pub puuid: String,
-        pub platform: String,
+        pub platform: PlatformRouteDb,
         pub updated_at: NaiveDateTime,
-        pub summoner_level: i64,
+        pub summoner_level: i32,
         pub profile_icon_id: i32,
         pub pro_slug: Option<String>,
     }

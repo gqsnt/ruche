@@ -537,7 +537,7 @@ impl From<u16> for Champion {
 }
 
 
-pub static CHAMPION_OPTIONS: &[(u16, & str)] = &[
+pub static CHAMPION_OPTIONS: &[(u16, &str)] = &[
     (Champion::Aatrox as u16, Champion::Aatrox.to_str()),
     (Champion::Ahri as u16, Champion::Ahri.to_str()),
     (Champion::Akali as u16, Champion::Akali.to_str()),

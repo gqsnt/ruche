@@ -22,7 +22,6 @@ pub mod ssr {
     use leptos::logging::log;
     use leptos::prelude::*;
     use sqlx::postgres::PgConnectOptions;
-    use sqlx::PgPool;
     use std::net::SocketAddr;
     use std::path::PathBuf;
 

@@ -2,7 +2,7 @@ pub mod bulk_summoners;
 pub mod bulk_lol_matches;
 pub mod bulk_lol_match_participants;
 
-use crate::backend::ssr::{AppError, AppResult};
+use crate::backend::ssr::{AppError, AppResult, PlatformRouteDb};
 use crate::backend::updates::update_matches_task::bulk_lol_match_participants::bulk_insert_lol_match_participants;
 use crate::backend::updates::update_matches_task::bulk_lol_matches::{bulk_trashed_matches, bulk_update_matches};
 use crate::backend::updates::update_matches_task::bulk_summoners::{bulk_insert_summoners, bulk_update_summoners};
@@ -53,7 +53,7 @@ async fn update_matches_task(
 ) -> AppResult<()> {
     let match_data_futures = matches_to_update.iter().map(|match_| {
         let api = Arc::clone(api);
-        let pt = consts::platform_route::PlatformRoute::from(match_.platform.as_str()).to_riven();
+        let pt = consts::platform_route::PlatformRoute::from(match_.platform).to_riven();
         async move {
             api.match_v5().get_match(pt.to_regional(), &match_.match_id).await
         }
@@ -92,7 +92,7 @@ async fn update_matches_task(
                     game_name: participant.riot_id_game_name.clone().unwrap_or_default(),
                     tag_line: participant.riot_id_tagline.clone(),
                     platform: match_platform.to_string(),
-                    summoner_level: participant.summoner_level as i64,
+                    summoner_level: participant.summoner_level,
                     profile_icon_id: participant.profile_icon as u16,
                     updated_at: DateTime::from_timestamp_millis(
                         match_data.info.game_end_timestamp.unwrap_or(0)
@@ -111,10 +111,7 @@ async fn update_matches_task(
 
     for summoner in participants_map.values() {
         if let Some((_, existing_timestamp)) = existing_summoners.get(&summoner.puuid) {
-            if summoner.updated_at.timestamp() > *existing_timestamp as i64 {
-                if summoner.game_name.is_empty() || summoner.tag_line.is_empty() {
-                    panic!("on update matches data already present , newest but data is empty");
-                }
+            if summoner.updated_at.timestamp() > *existing_timestamp as i64 && !summoner.game_name.is_empty() && !summoner.tag_line.is_empty() {
                 summoners_to_update.push(summoner.clone());
             }
         } else if summoner.game_name.is_empty() || summoner.tag_line.is_empty() {
@@ -323,7 +320,7 @@ pub struct TempSummoner {
     pub tag_line: String,
     pub puuid: String,
     pub platform: String,
-    pub summoner_level: i64,
+    pub summoner_level: i32,
     pub profile_icon_id: u16,
     pub updated_at: DateTime<Utc>,
 }
@@ -456,7 +453,7 @@ pub async fn find_conflicting_summoners(
         .await?
         .into_iter()
         .fold(HashMap::new(), |mut acc: HashMap<(String, String, String), Vec<SummonerModel>>, row| {
-            acc.entry((row.game_name.clone(), row.tag_line.clone(), row.platform.clone()))
+            acc.entry((row.game_name.clone(), row.tag_line.clone(), row.platform.to_string()))
                 .or_default()
                 .push(row);
             acc
@@ -490,9 +487,9 @@ pub struct SummonerModel {
     pub game_name: String,
     pub tag_line: String,
     pub puuid: String,
-    pub platform: String,
+    pub platform: PlatformRouteDb,
     pub updated_at: NaiveDateTime,
-    pub summoner_level: i64,
+    pub summoner_level: i32,
     pub profile_icon_id: i32,
 }
 
@@ -508,6 +505,6 @@ pub struct SummonerShortModel {
 pub struct LolMatchNotUpdated {
     pub id: i32,
     pub match_id: String,
-    pub platform: String,
+    pub platform: PlatformRouteDb,
     pub updated: bool,
 }

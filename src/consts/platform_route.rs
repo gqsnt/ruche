@@ -126,8 +126,8 @@ impl PlatformRoute {
     }
 
     #[cfg(feature = "ssr")]
-    pub fn from_raw_str(value:&str) -> Self{
-        match value{
+    pub fn from_raw_str(value: &str) -> Self {
+        match value {
             "BR1" => PlatformRoute::BR1,
             "EUN1" => PlatformRoute::EUN1,
             "EUW1" => PlatformRoute::EUW1,
@@ -149,7 +149,6 @@ impl PlatformRoute {
             _ => PlatformRoute::EUW1,
         }
     }
-
 }
 
 impl From<&str> for PlatformRoute {

@@ -2,11 +2,11 @@ use crate::backend::server_fns::get_match_details::get_match_details;
 use crate::views::summoner_page::match_details::match_details_build::MatchDetailsBuild;
 use crate::views::summoner_page::match_details::match_details_overview::MatchDetailsOverview;
 use crate::views::summoner_page::match_details::match_details_team::MatchDetailsTeam;
+use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::server_fn::serde::{Deserialize, Serialize};
 use leptos::{component, view, IntoView};
-use crate::views::summoner_page::Summoner;
 
 pub mod match_details_overview;
 pub mod match_details_team;
@@ -16,7 +16,7 @@ pub mod match_details_build;
 pub fn MatchDetails(match_id: i32, riot_match_id: String, platform: String, summoner: ReadSignal<Summoner>) -> impl IntoView {
     let match_details = Resource::new(
         move || (match_id, riot_match_id.clone(), platform.clone(), summoner().id),
-        |(match_id, riot_match_id, platform,summoner_id)| async move {
+        |(match_id, riot_match_id, platform, summoner_id)| async move {
             get_match_details(match_id, riot_match_id, platform, Some(summoner_id)).await
         },
     );
@@ -95,7 +95,7 @@ pub struct LolMatchParticipantDetails {
     pub summoner_platform: String,
     pub summoner_pro_player_slug: Option<String>,
     pub summoner_icon_id: u16,
-    pub summoner_level: i64,
+    pub summoner_level: i32,
     pub encounter_count: i32,
     pub champion_id: u16,
     pub team_id: i32,

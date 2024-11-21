@@ -16,6 +16,16 @@ pub struct MatchFiltersSearch {
 }
 
 impl MatchFiltersSearch {
+    #[cfg(feature = "ssr")]
+    pub fn start_date_to_naive(&self) -> Option<chrono::NaiveDateTime> {
+        crate::backend::ssr::parse_date(self.start_date.clone())
+    }
+
+    #[cfg(feature = "ssr")]
+    pub fn end_date_to_naive(&self) -> Option<chrono::NaiveDateTime> {
+        crate::backend::ssr::parse_date(self.end_date.clone())
+    }
+
     pub fn from_signals(queue_id: Option<String>, champion_id: Option<String>, start_date: Option<String>, end_date: Option<String>) -> Self {
         Self {
             queue_id: queue_id.map(|x| x.parse::<i32>().unwrap_or_default()),

@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use leptos::server;
 
 #[server]
-pub async fn get_match_details(match_id: i32, riot_match_id: String, platform: String, summoner_id:Option<i32>) -> Result<Vec<LolMatchParticipantDetails>, ServerFnError> {
+pub async fn get_match_details(match_id: i32, riot_match_id: String, platform: String, summoner_id: Option<i32>) -> Result<Vec<LolMatchParticipantDetails>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
@@ -28,7 +28,7 @@ pub async fn get_match_details(match_id: i32, riot_match_id: String, platform: S
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::server_fns::get_matches::ssr::get_summoner_encounters;
-    use crate::backend::ssr::AppResult;
+    use crate::backend::ssr::{AppResult, PlatformRouteDb};
     use crate::views::summoner_page::match_details::{LolMatchParticipantDetails, LolMatchTimeline};
     use bigdecimal::{BigDecimal, ToPrimitive};
     use itertools::Itertools;
@@ -38,53 +38,59 @@ pub mod ssr {
 
     pub async fn get_match_participants_details(db: &PgPool, match_id: i32, summoner_id: Option<i32>) -> AppResult<Vec<LolMatchParticipantDetails>> {
         let lol_match_participant_details = sqlx::query_as::<_, LolMatchParticipantDetailsModel>(
-            "SELECT
+            r#"
+            SELECT
                 lmp.id,
-                lmp.lol_match_id,
-                lmp.summoner_id,
-                lmp.champion_id,
-                lmp.team_id,
-                lmp.won,
-                lmp.kills,
-                lmp.deaths,
-                lmp.assists,
-                lmp.champ_level,
-                lmp.kda,
-                lmp.kill_participation,
-                lmp.damage_dealt_to_champions,
-                lmp.damage_taken,
-                lmp.gold_earned,
-                lmp.wards_placed,
-                lmp.cs,
-                lmp.summoner_spell1_id,
-                lmp.summoner_spell2_id,
-                lmp.perk_defense_id,
-                lmp.perk_flex_id,
-                lmp.perk_offense_id,
-                lmp.perk_primary_style_id,
-                lmp.perk_sub_style_id,
-                lmp.perk_primary_selection_id,
-                lmp.perk_primary_selection1_id,
-                lmp.perk_primary_selection2_id,
-                lmp.perk_primary_selection3_id,
-                lmp.perk_sub_selection1_id,
-                lmp.perk_sub_selection2_id,
-                lmp.item0_id,
-                lmp.item1_id,
-                lmp.item2_id,
-                lmp.item3_id,
-                lmp.item4_id,
-                lmp.item5_id,
-                lmp.item6_id
-            FROM lol_match_participants  as lmp
-            INNER JOIN (SELECT id,game_name, tag_line, platform, profile_icon_id, summoner_level FROM summoners) as ss ON ss.id = lmp.summoner_id
-            WHERE lmp.lol_match_id = $1;",
-        )
+               lmp.lol_match_id,
+               lmp.summoner_id,
+               ss.game_name,
+               ss.tag_line,
+               ss.platform,
+               ss.summoner_level,
+               ss.profile_icon_id,
+               ss.pro_player_slug,
+               lmp.champion_id,
+               lmp.team_id,
+               lmp.won,
+               lmp.kills,
+               lmp.deaths,
+               lmp.assists,
+               lmp.champ_level,
+               lmp.kda,
+               lmp.kill_participation,
+               lmp.damage_dealt_to_champions,
+               lmp.damage_taken,
+               lmp.gold_earned,
+               lmp.wards_placed,
+               lmp.cs,
+               lmp.summoner_spell1_id,
+               lmp.summoner_spell2_id,
+               lmp.perk_defense_id,
+               lmp.perk_flex_id,
+               lmp.perk_offense_id,
+               lmp.perk_primary_style_id,
+               lmp.perk_sub_style_id,
+               lmp.perk_primary_selection_id,
+               lmp.perk_primary_selection1_id,
+               lmp.perk_primary_selection2_id,
+               lmp.perk_primary_selection3_id,
+               lmp.perk_sub_selection1_id,
+               lmp.perk_sub_selection2_id,
+               lmp.item0_id,
+               lmp.item1_id,
+               lmp.item2_id,
+               lmp.item3_id,
+               lmp.item4_id,
+               lmp.item5_id,
+               lmp.item6_id
+            FROM lol_match_participants as lmp
+                left JOIN summoners as ss ON ss.id = lmp.summoner_id
+            WHERE lmp.lol_match_id = $1;
+        "#)
             .bind(match_id)
             .fetch_all(db)
             .await?;
         let unique_summoner_ids = lol_match_participant_details.iter().map(|p| p.summoner_id).unique().collect::<Vec<_>>();
-        let summoners = get_summoner_infos_by_ids(db, unique_summoner_ids.clone()).await?;
         let encounters = if let Some(summoner_id) = summoner_id {
             get_summoner_encounters(db, summoner_id, &unique_summoner_ids).await?
         } else {
@@ -92,18 +98,17 @@ pub mod ssr {
         };
         Ok(
             lol_match_participant_details.into_iter().map(|lmp| {
-                let (game_name, tag_line, platform, summoner_level, profile_icon_id, pro_player_slug) = summoners.get(&lmp.summoner_id).cloned().unwrap();
                 let encounter_count = encounters.get(&lmp.summoner_id).cloned();
                 LolMatchParticipantDetails {
                     id: lmp.id,
                     lol_match_id: lmp.lol_match_id,
                     summoner_id: lmp.summoner_id,
-                    summoner_name: game_name,
-                    summoner_tag_line: tag_line,
-                    summoner_platform: platform,
-                    summoner_pro_player_slug: pro_player_slug,
-                    summoner_icon_id: profile_icon_id as u16,
-                    summoner_level,
+                    summoner_name: lmp.game_name,
+                    summoner_tag_line: lmp.tag_line,
+                    summoner_platform: lmp.platform.to_string(),
+                    summoner_pro_player_slug: lmp.pro_player_slug,
+                    summoner_icon_id: lmp.profile_icon_id as u16,
+                    summoner_level: lmp.summoner_level,
                     encounter_count: encounter_count.unwrap_or_default(),
                     champion_id: lmp.champion_id as u16,
                     team_id: lmp.team_id,
@@ -147,33 +152,6 @@ pub mod ssr {
     }
 
 
-    pub async fn get_summoner_infos_by_ids(db: &PgPool, summoner_ids: Vec<i32>) -> AppResult<HashMap<i32, (String, String, String, i64, i32, Option<String>)>> {
-        Ok(
-            sqlx::query_as::<_, (i32, String, String, String, i64, i32, Option<String>)>(
-                "SELECT
-                    ss.id,
-                    ss.game_name,
-                    ss.tag_line,
-                    ss.platform,
-                    ss.summoner_level,
-                    ss.profile_icon_id,
-                    pp.slug as pro_player_slug
-            FROM summoners as ss
-                left join (select id, slug from pro_players) as pp on pp.id = ss.pro_player_id
-            WHERE ss.id = ANY($1);"
-            )
-                .bind(&summoner_ids)
-                .fetch_all(db)
-                .await?
-                .into_iter()
-                .map(|(id, game_name, tag_line, platform, level, profile_icon_id, pro_player_slug)| {
-                    (id, (game_name, tag_line, platform, level, profile_icon_id, pro_player_slug))
-                })
-                .collect::<HashMap<_, _>>()
-        )
-    }
-
-
     pub async fn get_match_timeline(db: &PgPool, match_id: i32) -> AppResult<Vec<LolMatchTimeline>> {
         let timelines = sqlx::query_as::<_, LolMatchTimelineModel>(
             "SELECT * FROM lol_match_timelines WHERE lol_match_id = $1"
@@ -196,6 +174,12 @@ pub mod ssr {
         pub id: i32,
         pub lol_match_id: i32,
         pub summoner_id: i32,
+        pub game_name: String,
+        pub tag_line: String,
+        pub platform: PlatformRouteDb,
+        pub summoner_level: i32,
+        pub profile_icon_id: i32,
+        pub pro_player_slug: Option<String>,
         pub champion_id: i32,
         pub team_id: i32,
         pub won: bool,

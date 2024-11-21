@@ -7,6 +7,7 @@ use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
 use crate::utils::summoner_url;
 use crate::views::components::pagination::Pagination;
+use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
 use crate::views::MatchFiltersSearch;
 use leptos::either::Either;
@@ -15,7 +16,6 @@ use leptos::{component, IntoView};
 use leptos_router::hooks::{query_signal_with_options, use_query_map};
 use leptos_router::NavigateOptions;
 use serde::{Deserialize, Serialize};
-use crate::views::summoner_page::match_details::MatchDetails;
 
 #[component]
 pub fn SummonerEncounterPage() -> impl IntoView {
@@ -141,7 +141,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
 
 
 #[component]
-pub fn SummonerEncounterMatchComponent(match_:SummonerEncounterMatch, summoner:ReadSignal<Summoner>) -> impl IntoView{
+pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch, summoner: ReadSignal<Summoner>) -> impl IntoView {
     let (show_details, set_show_details) = signal(false);
     view! {
         <div class="flex flex-col">
@@ -452,7 +452,12 @@ pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, 
             >
                 <div>
                     {stats.total_wins}W {stats.total_loses}L {stats.total_wins + stats.total_loses}G
-                    {format!("{}%",((stats.total_wins as f64/ (stats.total_wins + stats.total_loses).max(1) as f64) * 100.0).round() as i32)}
+                    {format!(
+                        "{}%",
+                        ((stats.total_wins as f64
+                            / (stats.total_wins + stats.total_loses).max(1) as f64) * 100.0)
+                            .round() as i32,
+                    )}
                 </div>
                 <div class="flex flex-col">
                     <div>{stats.avg_kills}/ {stats.avg_deaths}/ {stats.avg_assists}</div>

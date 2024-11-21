@@ -332,7 +332,7 @@ pub fn TableHeaderItem<S, R, T>(
 where
     S: Fn() -> TableSortType + Send + Copy + Sync + 'static,
     R: Fn() -> bool + Send + Sync + Copy + 'static,
-    T: Fn(TableSortType) ->()+ Send + Sync + 'static,
+    T: Fn(TableSortType) -> () + Send + Sync + 'static,
 {
     view! {
         <button

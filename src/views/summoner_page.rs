@@ -137,7 +137,7 @@ pub struct Summoner {
     pub puuid: String,
     pub platform: PlatformRoute,
     pub updated_at: String,
-    pub summoner_level: i64,
+    pub summoner_level: i32,
     pub profile_icon_id: u16,
     pub pro_slug: Option<String>,
 }

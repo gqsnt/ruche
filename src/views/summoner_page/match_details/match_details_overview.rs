@@ -10,7 +10,7 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 
 #[component]
-pub fn MatchDetailsOverview(summoner:ReadSignal<Summoner>, match_details: ReadSignal<Vec<LolMatchParticipantDetails>>) -> impl IntoView {
+pub fn MatchDetailsOverview(summoner: ReadSignal<Summoner>, match_details: ReadSignal<Vec<LolMatchParticipantDetails>>) -> impl IntoView {
     let details = match_details();
     let (summoner_team, summoner_team_won) = {
         let detail = details.iter().find(|participant| participant.summoner_id == summoner().id).expect("Summoner id not found");
@@ -43,7 +43,7 @@ pub fn MatchDetailsOverview(summoner:ReadSignal<Summoner>, match_details: ReadSi
 
 
 #[component]
-pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner:ReadSignal<Summoner>, participants: Vec<LolMatchParticipantDetails>) -> impl IntoView {
+pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner: ReadSignal<Summoner>, participants: Vec<LolMatchParticipantDetails>) -> impl IntoView {
     view! {
         <table class="table-fixed text-xs w-full border-collapse">
             <colgroup>

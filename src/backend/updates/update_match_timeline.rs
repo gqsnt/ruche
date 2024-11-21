@@ -50,7 +50,7 @@ pub async fn update_match_timeline(
         );
     }
 
-    for  frame in timeline.info.frames.iter() {
+    for frame in timeline.info.frames.iter() {
         for event in &frame.events {
             let event_type = EventType::from(event.r#type.as_str());
             match event_type {

@@ -3,7 +3,7 @@ use crate::views::summoner_page::summoner_search_page::SummonerSearchPage;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::components::Outlet;
-use leptos_router::hooks::{use_location};
+use leptos_router::hooks::use_location;
 
 #[component]
 pub fn PlatformTypePage() -> impl IntoView {
@@ -13,7 +13,7 @@ pub fn PlatformTypePage() -> impl IntoView {
     meta_store.description().set("Experience lightning-fast League of Legends statistics and summoner profiles on Broken.gg. Built with Rust for unmatched performance and efficiency. Search now to elevate your gaming experience.".to_string());
     meta_store.image().set("https://next-level.xyz/assets/favicon.ico".to_string());
     meta_store.url().set(location.pathname.get());
-    let req_include_summoner =  move || {
+    let req_include_summoner = move || {
         location.pathname.get().contains("summoners")
     };
 
