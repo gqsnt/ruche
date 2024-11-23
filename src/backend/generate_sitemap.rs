@@ -1,4 +1,4 @@
-use crate::backend::ssr::AppResult;
+use crate::backend::ssr::{AppResult, PlatformRouteDb};
 use crate::consts::platform_route::PLATFORM_ROUTE_OPTIONS;
 use crate::utils::summoner_url;
 use chrono::{Duration, Local, NaiveDateTime, Timelike};
@@ -57,7 +57,7 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
         for page in 1..=total_pages {
             let summoners = get_platforms_summoners_taglines(db, per_page, page).await?;
             for (game_name, tag_line, platform, updated_at) in summoners {
-                let url = format!("{}{}", base_url, summoner_url(&platform, &game_name, &tag_line));
+                let url = format!("{}{}", base_url, summoner_url(&platform.to_string(), &game_name, &tag_line));
                 url_writer.url(UrlEntry::builder().loc(url).lastmod(updated_at.and_utc().fixed_offset()).build()?)?;
             }
         }
@@ -77,9 +77,9 @@ pub async fn get_total_summoners(db: &PgPool) -> AppResult<i64> {
 }
 
 
-pub async fn get_platforms_summoners_taglines(db: &PgPool, per_page: i64, page: i64) -> AppResult<Vec<(String, String, String, NaiveDateTime)>> {
+pub async fn get_platforms_summoners_taglines(db: &PgPool, per_page: i64, page: i64) -> AppResult<Vec<(String, String, PlatformRouteDb, NaiveDateTime)>> {
     let offset = (page - 1) * per_page;
-    sqlx::query_as::<_, (String, String, String, NaiveDateTime)>(
+    sqlx::query_as::<_, (String, String, PlatformRouteDb, NaiveDateTime)>(
         "SELECT game_name, tag_line, platform, updated_at FROM summoners WHERE tag_line != '' and game_name != '' ORDER BY platform, game_name  LIMIT $1 OFFSET $2"
     ).bind(per_page)
         .bind(offset)
