@@ -9,20 +9,20 @@ use crate::utils::{summoner_encounter_url, summoner_url};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
-use crate::views::MatchFiltersSearch;
+use crate::views::{BackEndMatchFiltersSearch};
 use leptos::either::Either;
 use leptos::prelude::*;
-use leptos::server_fn::serde::{Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
+use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
 
 #[component]
 pub fn SummonerMatchesPage() -> impl IntoView {
     let summoner = expect_context::<ReadSignal<Summoner>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
-    let match_filters_updated = expect_context::<RwSignal<MatchFiltersSearch>>();
+    let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
     let (page_number, set_page_number) = query_signal_with_options::<i32>(
         "page",
         NavigateOptions {
@@ -41,11 +41,11 @@ pub fn SummonerMatchesPage() -> impl IntoView {
     });
 
 
-    let matches_resource = Resource::new(
+    let matches_resource = Resource::new_rkyv(
         move || (match_filters_updated.get(), summoner(), page_number()),
         |(filters, summoner, page_number)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_matches(summoner.id, page_number.unwrap_or(1), Some(filters)).await
+            get_matches(summoner.id, page_number.unwrap_or(1) as u16, Some(filters)).await
         },
     );
 
@@ -452,15 +452,14 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Summoner>) -> impl 
     }
 }
 
-
-#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+#[derive(Clone, Deserialize, Serialize, Default, Archive)]
 pub struct GetSummonerMatchesResult {
     pub matches: Vec<SummonerMatch>,
     pub total_pages: i64,
     pub matches_result_info: MatchesResultInfo,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+#[derive(Clone, Deserialize, Serialize, Default, Archive)]
 pub struct MatchesResultInfo {
     pub total_matches: i32,
     pub total_wins: i32,
@@ -471,7 +470,7 @@ pub struct MatchesResultInfo {
     pub avg_kda: f64,
     pub avg_kill_participation: i32,
 }
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerMatch {
     pub summoner_id: i32,
     pub match_id: i32,
@@ -502,7 +501,7 @@ pub struct SummonerMatch {
     pub participants: Vec<SummonerMatchParticipant>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerMatchParticipant {
     pub lol_match_id: i32,
     pub summoner_id: i32,

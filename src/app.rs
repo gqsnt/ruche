@@ -3,7 +3,8 @@ use crate::views::summoner_page::SummonerPage;
 use leptos::config::LeptosOptions;
 use leptos::prelude::GlobalAttributes;
 use leptos::prelude::*;
-use leptos::server_fn::serde::{Deserialize, Serialize};
+use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
+
 use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, Title};
 use leptos_router::components::{ParentRoute, Redirect};
 use leptos_router::{components::{Route, Router, Routes}, ParamSegment, StaticSegment};
@@ -11,7 +12,7 @@ use leptos_router::{components::{Route, Router, Routes}, ParamSegment, StaticSeg
 pub const SITE_URL: &str = "https://next-level.xyz";
 
 
-#[derive(Debug, Clone, reactive_stores_macro::Store, Serialize, Deserialize, Default)]
+#[derive(Clone, reactive_stores_macro::Store, Serialize, Deserialize, Archive, Default)]
 pub struct MetaStore {
     pub title: String,
     pub description: String,

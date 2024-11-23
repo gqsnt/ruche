@@ -1,17 +1,20 @@
 use crate::views::summoner_page::summoner_live_page::LiveGame;
 use leptos::prelude::*;
 use leptos::server;
+use leptos::server_fn::codec::Rkyv;
+use crate::consts::platform_route::PlatformRoute;
 
-#[server]
-pub async fn get_live_game(puuid: String, platform_type: String, summoner_id: i32) -> Result<Option<LiveGame>, ServerFnError> {
+#[server(input=Rkyv,output=Rkyv)]
+pub async fn get_live_game(summoner_id: i32, platform_route:PlatformRoute, puuid:[u8;78]) -> Result<Option<LiveGame>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
+    let puuid = String::from_utf8_lossy(&puuid).to_string();
     let live_cache = state.live_game_cache.clone();
     let db = state.db.clone();
     if let Some(live_data) = live_cache.get_game_data(&puuid) {
         Ok(Some(ssr::add_encounters(&db, live_data, summoner_id).await?))
     } else {
         let riot_api = state.riot_api.clone();
-        match ssr::get_live_game_data(&db, riot_api, puuid, platform_type).await {
+        match ssr::get_live_game_data(&db, riot_api, puuid, platform_route).await {
             Ok(live_data) => {
                 match live_data {
                     None => Ok(None),
@@ -68,8 +71,7 @@ pub mod ssr {
     }
 
 
-    pub async fn get_live_game_data(db: &PgPool, riot_api: Arc<RiotApi>, puuid: String, platform_type: String) -> AppResult<Option<LiveGame>> {
-        let platform_route = PlatformRoute::from(platform_type.as_str());
+    pub async fn get_live_game_data(db: &PgPool, riot_api: Arc<RiotApi>, puuid: String, platform_route: PlatformRoute) -> AppResult<Option<LiveGame>> {
         let riven_pr = platform_route.to_riven();
         let current_game_info = riot_api
             .spectator_v5()
@@ -85,7 +87,7 @@ pub mod ssr {
                 let mut summoner_details = find_summoner_live_by_puuids(db, &participant_puuids).await?;
 
                 let puuids_not_found = participant_puuids.iter().filter(|&x| !summoner_details.contains_key(x)).cloned().collect::<Vec<String>>();
-                find_and_insert_new_summoners(db, riot_api.clone(), &puuids_not_found, platform_type.clone(), &current_game_info).await?;
+                find_and_insert_new_summoners(db, riot_api.clone(), &puuids_not_found, platform_route.clone(), &current_game_info).await?;
                 let new_summoners = find_summoner_live_by_puuids(db, &puuids_not_found).await?;
                 summoner_details.extend(new_summoners);
 
@@ -169,8 +171,7 @@ pub mod ssr {
     }
 
 
-    async fn find_and_insert_new_summoners(db: &PgPool, riot_api: Arc<RiotApi>, puuids: &[String], platform_type: String, game_info: &CurrentGameInfo) -> AppResult<()> {
-        let platform_route = PlatformRoute::from(platform_type.as_str());
+    async fn find_and_insert_new_summoners(db: &PgPool, riot_api: Arc<RiotApi>, puuids: &[String], platform_route: PlatformRoute, game_info: &CurrentGameInfo) -> AppResult<()> {
         let riven_pr = platform_route.to_riven();
         let summoners_accounts_futures = puuids.iter().map(|puuid| {
             let api = riot_api.clone();
@@ -188,7 +189,7 @@ pub mod ssr {
                 game_name: account.game_name.clone().unwrap_or_default(),
                 tag_line: account.tag_line.clone().unwrap_or_default(),
                 puuid: account.puuid.clone(),
-                platform: platform_type.clone(),
+                platform: platform_route.to_string(),
                 summoner_level: 0,
                 profile_icon_id: current_participant.profile_icon_id as u16,
                 updated_at: chrono::Utc::now(),

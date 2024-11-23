@@ -3,23 +3,23 @@ use crate::backend::server_fns::get_champions::get_champions;
 use crate::consts::champion::Champion;
 use crate::consts::HasStaticAsset;
 use crate::views::summoner_page::Summoner;
-use crate::views::MatchFiltersSearch;
+use crate::views::{BackEndMatchFiltersSearch};
 use itertools::Itertools;
 use leptos::either::Either;
 use leptos::prelude::*;
-use leptos::server_fn::serde::{Deserialize, Serialize};
 use leptos::{component, view, IntoView};
+use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
 
 #[component]
 pub fn SummonerChampionsPage() -> impl IntoView {
     let summoner = expect_context::<ReadSignal<Summoner>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-    let match_filters_updated = expect_context::<RwSignal<MatchFiltersSearch>>();
+    let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
     let (table_sort, set_table_sort) = signal::<(TableSortType, bool)>((TableSortType::default(), true));
     let current_sort_type = move || table_sort.get().0;
     let current_sort_normal_flow = move || table_sort.get().1;
 
-    let champions_resource = Resource::new(
+    let champions_resource = Resource::new_rkyv(
         move || (match_filters_updated.get(), summoner()),
         |(filters, summoner)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
@@ -353,7 +353,7 @@ where
 }
 
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
 pub enum TableSortType {
     #[default]
     Index,
@@ -396,7 +396,7 @@ impl TableSortType {
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct ChampionStats {
     pub champion_id: u16,
     pub champion_name: String,

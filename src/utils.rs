@@ -43,3 +43,11 @@ pub fn summoner_encounter_url(platform: &str, game_name: &str, tag_line: &str, e
 pub fn round_to_2_decimal_places(value: f64) -> f64 {
     (value * 100.0).round() / 100.0
 }
+
+pub fn string_to_fixed_array<const N: usize>(input: &str) -> [u8; N] {
+    let mut result = [0u8; N]; // Initialize the fixed-size array with zeros.
+    let bytes = input.as_bytes(); // Get the string as a slice of bytes.
+    let len = bytes.len().min(N); // Determine how much of the string fits into the array.
+    result[..len].copy_from_slice(&bytes[..len]); // Copy the bytes into the fixed-size array.
+    result
+}

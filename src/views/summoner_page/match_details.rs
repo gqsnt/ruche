@@ -5,8 +5,9 @@ use crate::views::summoner_page::match_details::match_details_team::MatchDetails
 use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
 use leptos::prelude::*;
-use leptos::server_fn::serde::{Deserialize, Serialize};
+use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
 use leptos::{component, view, IntoView};
+use crate::consts::platform_route::PlatformRoute;
 
 pub mod match_details_overview;
 pub mod match_details_team;
@@ -14,10 +15,10 @@ pub mod match_details_build;
 
 #[component]
 pub fn MatchDetails(match_id: i32, riot_match_id: String, platform: String, summoner: ReadSignal<Summoner>) -> impl IntoView {
-    let match_details = Resource::new(
+    let match_details = Resource::new_rkyv(
         move || (match_id, riot_match_id.clone(), platform.clone(), summoner().id),
         |(match_id, riot_match_id, platform, summoner_id)| async move {
-            get_match_details(match_id, riot_match_id, platform, Some(summoner_id)).await
+            get_match_details(match_id, Some(summoner_id), riot_match_id, PlatformRoute::from(platform.as_str()) ).await
         },
     );
     let (match_detail_tab, set_match_detail_tab) = signal("overview".to_string());
@@ -85,7 +86,7 @@ pub fn MatchDetails(match_id: i32, riot_match_id: String, platform: String, summ
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct LolMatchParticipantDetails {
     pub id: i32,
     pub lol_match_id: i32,
@@ -136,7 +137,7 @@ pub struct LolMatchParticipantDetails {
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct LolMatchTimeline {
     pub id: i32,
     pub lol_match_id: i32,
@@ -146,7 +147,8 @@ pub struct LolMatchTimeline {
 }
 
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Deserialize, Serialize, Archive)]
 pub struct ItemEvent {
     pub item_id: u32,
     pub event_type: ItemEventType,
@@ -154,7 +156,8 @@ pub struct ItemEvent {
 
 
 #[repr(u8)]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Deserialize, Serialize, Archive, PartialEq)]
 pub enum ItemEventType {
     Purchased,
     Sold,

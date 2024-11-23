@@ -1,21 +1,20 @@
-#[cfg(feature = "ssr")]
 use crate::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use crate::utils::{parse_summoner_slug, summoner_not_found_url};
 use crate::views::summoner_page::Summoner;
 use leptos::prelude::*;
 use leptos::server;
-
-#[server]
+use leptos::server_fn::codec::Rkyv;
+#[server( input=Rkyv,output=Rkyv)]
 pub async fn get_summoner(
-    platform_type: String,
+    platform_route: PlatformRoute,
     summoner_slug: String,
 ) -> Result<Summoner, ServerFnError> {
     //log!("Server::Fetching summoner: {}", summoner_slug);
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
-    let platform_route = PlatformRoute::from(platform_type.as_str());
+
     let (game_name, tag_line) = parse_summoner_slug(summoner_slug.as_str());
     match ssr::find_summoner_by_exact_game_name_tag_line(&db, &platform_route, game_name.as_str(), tag_line.as_str()).await {
         Ok(summoner) => {

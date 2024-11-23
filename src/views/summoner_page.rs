@@ -9,9 +9,10 @@ use crate::views::summoner_page::summoner_nav::SummonerNav;
 use leptos::context::provide_context;
 use leptos::either::Either;
 use leptos::prelude::*;
-use leptos::server::Resource;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_params_map;
+use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
+
 
 pub mod summoner_search_page;
 pub mod summoner_matches_page;
@@ -37,13 +38,14 @@ pub fn SummonerPage() -> impl IntoView {
 
 
     // Update the summoner signal when resource changes
-    let summoner_resource = Resource::new_blocking(
+    let summoner_resource = leptos_server::Resource::new_rkyv_blocking(
         move || (update_summoner_action.version().get(), platform_type(), summoner_slug()),
-        |(_, pt, ss)| async move {
+        |(_, platform, summoner_slug)| async move {
             //log!("Client::Fetching summoner: {}", ss);
-            get_summoner(pt, ss).await
+            get_summoner(PlatformRoute::from(platform.as_str()), summoner_slug).await
         },
     );
+
 
 
     let summoner_view = move || {
@@ -88,26 +90,15 @@ pub fn SummonerPage() -> impl IntoView {
 
                                             </div>
                                         </div>
-                                        <ActionForm action=update_summoner_action>
-                                            <input
-                                                type="hidden"
-                                                name="id"
-                                                value=move || summoner_signal().id
-                                            />
-                                            <input
-                                                type="hidden"
-                                                name="puuid"
-                                                value=move || summoner_signal().puuid.clone()
-                                            />
-                                            <input
-                                                type="hidden"
-                                                name="platform_type"
-                                                value=move || summoner_signal().platform.to_string()
-                                            />
-                                            <button class="my-button" type="submit">
+                                        <div>
+                                        <button class="my-button" on:click=move |_| {
+                                                update_summoner_action.dispatch(UpdateSummoner {
+                                            puuid: summoner_signal().puuid.clone(),
+                                            platform_route: summoner_signal().platform});
+                            }>
                                                 Update
                                             </button>
-                                        </ActionForm>
+                            </div>
                                     </div>
                                 </div>
 
@@ -129,16 +120,17 @@ pub fn SummonerPage() -> impl IntoView {
 }
 
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, Archive)]
 pub struct Summoner {
     pub id: i32,
+    pub summoner_level: i32,
+    pub profile_icon_id: u16,
+    pub platform: PlatformRoute,
     pub game_name: String,
     pub tag_line: String,
     pub puuid: String,
-    pub platform: PlatformRoute,
     pub updated_at: String,
-    pub summoner_level: i32,
-    pub profile_icon_id: u16,
     pub pro_slug: Option<String>,
 }
 

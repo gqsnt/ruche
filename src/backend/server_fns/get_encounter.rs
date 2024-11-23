@@ -1,13 +1,15 @@
 use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterResult;
-use crate::views::MatchFiltersSearch;
+use crate::views::{BackEndMatchFiltersSearch};
 use leptos::prelude::*;
 use leptos::server;
+use leptos::server_fn::codec::Rkyv;
+use crate::consts::platform_route::PlatformRoute;
 
-#[server]
-pub async fn get_encounter(summoner_id: i32, filters: Option<MatchFiltersSearch>, page_number: i32, encounter_slug: String, encounter_platform: String, is_with: bool) -> Result<SummonerEncounterResult, ServerFnError> {
+#[server(input=Rkyv, output=Rkyv)]
+pub async fn get_encounter( is_with: bool,summoner_id: i32,page_number: u16 ,filters: Option<BackEndMatchFiltersSearch>, encounter_slug: String, encounter_platform: PlatformRoute) -> Result<SummonerEncounterResult, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
-    Ok(ssr::get_encounter_data(&db, summoner_id, filters.unwrap_or_default(), page_number, encounter_slug, encounter_platform, is_with).await?)
+    Ok(ssr::get_encounter_data(&db, summoner_id, filters.unwrap_or_default(), page_number as i32, encounter_slug, encounter_platform, is_with).await?)
 }
 
 
@@ -21,17 +23,16 @@ pub mod ssr {
     use crate::utils::{parse_summoner_slug, round_to_2_decimal_places};
     use crate::views::summoner_page::summoner_encounter_page::{SummonerEncounterMatch, SummonerEncounterParticipant, SummonerEncounterResult, SummonerEncounterStats};
     use crate::views::summoner_page::Summoner;
-    use crate::views::MatchFiltersSearch;
+    use crate::views::{BackEndMatchFiltersSearch};
     use crate::DATE_FORMAT;
     use bigdecimal::{BigDecimal, ToPrimitive};
     use chrono::{Duration, NaiveDateTime};
     use itertools::Itertools;
     use sqlx::{PgPool, QueryBuilder};
 
-    pub async fn get_encounter_data(db: &PgPool, summoner_id: i32, filters: MatchFiltersSearch, page_number: i32, encounter_slug: String, encounter_platform: String, is_with: bool) -> AppResult<SummonerEncounterResult> {
+    pub async fn get_encounter_data(db: &PgPool, summoner_id: i32, filters: BackEndMatchFiltersSearch, page_number: i32, encounter_slug: String, encounter_platform: PlatformRoute, is_with: bool) -> AppResult<SummonerEncounterResult> {
         let (encounter_game_name, encounter_tag_line) = parse_summoner_slug(encounter_slug.as_str());
-        let platform_route = PlatformRoute::from(encounter_platform.as_str());
-        let encounter = find_summoner_by_exact_game_name_tag_line(db, &platform_route, &encounter_game_name, &encounter_tag_line).await?;
+        let encounter = find_summoner_by_exact_game_name_tag_line(db, &encounter_platform, &encounter_game_name, &encounter_tag_line).await?;
         let summoner = find_summoner_by_id(db, summoner_id).await?;
         let per_page = 20;
         let offset = (page_number.max(1) - 1) * per_page;

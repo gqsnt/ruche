@@ -5,10 +5,10 @@ use crate::consts::HasStaticAsset;
 use crate::utils::{summoner_encounter_url, summoner_url};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
-use crate::views::MatchFiltersSearch;
+use crate::views::{BackEndMatchFiltersSearch};
 use leptos::either::Either;
 use leptos::prelude::*;
-use leptos::server_fn::serde::{Deserialize, Serialize};
+use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
@@ -17,7 +17,7 @@ use leptos_router::NavigateOptions;
 pub fn SummonerEncountersPage() -> impl IntoView {
     let summoner = expect_context::<ReadSignal<Summoner>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-    let match_filters_updated = expect_context::<RwSignal<MatchFiltersSearch>>();
+    let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
 
     let (page_number, set_page_number) = query_signal_with_options::<i32>(
         "page",
@@ -47,11 +47,11 @@ pub fn SummonerEncountersPage() -> impl IntoView {
         }
     });
 
-    let encounters_resource = Resource::new(
+    let encounters_resource = Resource::new_rkyv(
         move || (search_summoner.get(), match_filters_updated.get(), summoner(), page_number()),
         |(search_summoner, filters, summoner, page_number)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_encounters(summoner.id, page_number.unwrap_or(1), Some(filters), search_summoner).await
+            get_encounters(summoner.id, page_number.unwrap_or(1) as u16, Some(filters), search_summoner).await
         },
     );
 
@@ -220,14 +220,14 @@ pub fn SummonerEncountersPage() -> impl IntoView {
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize, Deserialize, Default, Archive)]
 pub struct SummonerEncountersResult {
     pub encounters: Vec<SummonerEncountersSummoner>,
     pub total_pages: i64,
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncountersSummoner {
     pub id: i32,
     pub match_count: i64,

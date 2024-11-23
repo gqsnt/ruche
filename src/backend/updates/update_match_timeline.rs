@@ -14,10 +14,9 @@ pub async fn update_match_timeline(
     api: Arc<RiotApi>,
     match_id: i32,
     riot_match_id: String,
-    platform: String,
+    platform_route: PlatformRoute,
 ) -> AppResult<()> {
     // Fetch the match timeline
-    let platform_route = PlatformRoute::from(platform.as_str());
     let riven_pr = platform_route.to_riven();
     let timeline = api
         .match_v5()

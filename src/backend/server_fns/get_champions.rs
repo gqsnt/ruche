@@ -1,10 +1,11 @@
 use crate::views::summoner_page::summoner_champions_page::ChampionStats;
-use crate::views::MatchFiltersSearch;
+use crate::views::{BackEndMatchFiltersSearch};
 use leptos::prelude::*;
 use leptos::server;
+use leptos::server_fn::codec::Rkyv;
 
-#[server]
-pub async fn get_champions(summoner_id: i32, filters: Option<MatchFiltersSearch>) -> Result<Vec<ChampionStats>, ServerFnError> {
+#[server(input=Rkyv,output=Rkyv)]
+pub async fn get_champions(summoner_id: i32, filters: Option<BackEndMatchFiltersSearch>) -> Result<Vec<ChampionStats>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
@@ -17,7 +18,7 @@ pub mod ssr {
     use crate::consts::champion::Champion;
     use crate::utils::round_to_2_decimal_places;
     use crate::views::summoner_page::summoner_champions_page::ChampionStats;
-    use crate::views::MatchFiltersSearch;
+    use crate::views::{BackEndMatchFiltersSearch};
     use bigdecimal::{BigDecimal, ToPrimitive};
     use itertools::Itertools;
     use sqlx::{FromRow, PgPool, QueryBuilder};
@@ -25,7 +26,7 @@ pub mod ssr {
     pub async fn inner_get_champions(
         db: &PgPool,
         summoner_id: i32,
-        filters: MatchFiltersSearch,
+        filters: BackEndMatchFiltersSearch,
     ) -> AppResult<Vec<ChampionStats>> {
         let start_date = filters.start_date_to_naive();
         let end_date = filters.end_date_to_naive();

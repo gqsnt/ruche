@@ -23,7 +23,6 @@ pub mod ssr {
     use chrono::{NaiveDateTime, Utc};
     use http::status::StatusCode;
     use leptos::prelude::ServerFnError;
-    use serde::{Deserialize, Serialize};
     use std::num::ParseIntError;
     use std::sync::Arc;
     use thiserror::Error;
@@ -179,7 +178,7 @@ pub mod ssr {
         }
     }
 
-    #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, sqlx::Type, Deserialize, Serialize)]
+    #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, sqlx::Type, serde::Serialize, serde::Deserialize)]
     #[sqlx(type_name = "platform_type")]
     pub enum PlatformRouteDb {
         BR,

@@ -1,14 +1,17 @@
 use crate::views::summoner_page::summoner_matches_page::GetSummonerMatchesResult;
-use crate::views::MatchFiltersSearch;
+use crate::views::{BackEndMatchFiltersSearch};
 use leptos::prelude::*;
-use leptos::server;
+use leptos::server_fn::codec::Rkyv;
 
-#[server]
-pub async fn get_matches(summoner_id: i32, page_number: i32, filters: Option<MatchFiltersSearch>) -> Result<GetSummonerMatchesResult, ServerFnError> {
+
+
+
+#[server(input=Rkyv,output=Rkyv)]
+pub async fn get_matches(summoner_id: i32, page_number: u16, filters: Option<BackEndMatchFiltersSearch>) -> Result<GetSummonerMatchesResult, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
-    ssr::fetch_matches(&db, summoner_id, page_number, filters.unwrap_or_default()).await.map_err(|e| e.to_server_fn_error())
+    ssr::fetch_matches(&db, summoner_id, page_number as i32, filters.unwrap_or_default()).await.map_err(|e| e.to_server_fn_error())
 }
 
 
@@ -17,7 +20,7 @@ pub mod ssr {
     use crate::backend::ssr::{format_duration_since, AppResult, PlatformRouteDb};
     use crate::consts::queue::Queue;
     use crate::views::summoner_page::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo, SummonerMatch, SummonerMatchParticipant};
-    use crate::views::MatchFiltersSearch;
+    use crate::views::{BackEndMatchFiltersSearch};
     use bigdecimal::{BigDecimal, ToPrimitive};
     use chrono::{Duration, NaiveDateTime};
     use itertools::Itertools;
@@ -29,7 +32,7 @@ pub mod ssr {
         db: &PgPool,
         summoner_id: i32,
         page: i32,
-        filters: MatchFiltersSearch,
+        filters: BackEndMatchFiltersSearch,
     ) -> AppResult<GetSummonerMatchesResult> {
         let per_page = 20;
         let offset = (page.max(1) - 1) * per_page;

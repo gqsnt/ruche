@@ -3,9 +3,11 @@ use crate::backend::updates::update_match_timeline::update_match_timeline;
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use leptos::prelude::*;
 use leptos::server;
+use leptos::server_fn::codec::Rkyv;
+use crate::consts::platform_route::PlatformRoute;
 
-#[server]
-pub async fn get_match_details(match_id: i32, riot_match_id: String, platform: String, summoner_id: Option<i32>) -> Result<Vec<LolMatchParticipantDetails>, ServerFnError> {
+#[server(input=Rkyv,output=Rkyv)]
+pub async fn get_match_details(match_id: i32,  summoner_id: Option<i32>, riot_match_id: String, platform: PlatformRoute) -> Result<Vec<LolMatchParticipantDetails>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 

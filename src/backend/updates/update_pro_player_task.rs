@@ -8,11 +8,11 @@ use futures::{stream, StreamExt};
 use itertools::Itertools;
 use leptos::logging::log;
 use riven::RiotApi;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::PgPool;
 use std::collections::HashMap;
 use std::sync::Arc;
+use serde::{Deserialize, Serialize};
 use tokio::time::{sleep_until, Instant};
 
 pub async fn schedule_update_pro_player_task(

@@ -9,20 +9,21 @@ use crate::utils::summoner_url;
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
-use crate::views::MatchFiltersSearch;
+use crate::views::{BackEndMatchFiltersSearch};
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, IntoView};
 use leptos_router::hooks::{query_signal_with_options, use_query_map};
 use leptos_router::NavigateOptions;
-use serde::{Deserialize, Serialize};
+use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
+use crate::consts::platform_route::PlatformRoute;
 
 #[component]
 pub fn SummonerEncounterPage() -> impl IntoView {
     let summoner = expect_context::<ReadSignal<Summoner>>();
 
     let queries = use_query_map();
-    let match_filters_updated = expect_context::<RwSignal<MatchFiltersSearch>>();
+    let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
     let (is_with, set_is_with) = signal(true);
 
     let encounter_slug = move || queries.read().get("encounter_slug").unwrap_or_default();
@@ -37,11 +38,11 @@ pub fn SummonerEncounterPage() -> impl IntoView {
         },
     );
 
-    let encounter_resource = Resource::new(
+    let encounter_resource = leptos_server::Resource::new_rkyv(
         move || (summoner(), match_filters_updated.get(), page_number(), encounter_slug(), encounter_platform(), is_with.get()),
         |(summoner, filters, page_number, encounter_slug, encounter_platform, is_with)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_encounter(summoner.id, Some(filters), page_number.unwrap_or(1), encounter_slug, encounter_platform, is_with).await
+            get_encounter(is_with, summoner.id,page_number.unwrap_or(1) as u16,  Some(filters), encounter_slug, PlatformRoute::from(encounter_platform.as_str()), ).await
         },
     );
 
@@ -472,7 +473,7 @@ pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, 
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterResult {
     pub total_pages: i32,
     pub matches: Vec<SummonerEncounterMatch>,
@@ -482,7 +483,7 @@ pub struct SummonerEncounterResult {
     pub encounter: Summoner,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterStats {
     pub total_wins: i32,
     pub total_loses: i32,
@@ -493,7 +494,7 @@ pub struct SummonerEncounterStats {
     pub avg_kill_participation: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterParticipant {
     pub summoner_id: i32,
     pub won: bool,
@@ -518,7 +519,7 @@ pub struct SummonerEncounterParticipant {
     pub item6_id: u32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterMatch {
     pub match_id: i32,
     pub riot_match_id: String,

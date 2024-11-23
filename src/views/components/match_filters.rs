@@ -1,6 +1,6 @@
 use crate::consts::champion::CHAMPION_OPTIONS;
 use crate::consts::queue::QUEUE_OPTIONS;
-use crate::views::MatchFiltersSearch;
+use crate::views::{BackEndMatchFiltersSearch};
 use leptos::context::provide_context;
 use leptos::prelude::*;
 use leptos::reactive::wrappers::write::SignalSetter;
@@ -46,7 +46,7 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
         },
     );
 
-    let filters_signal = RwSignal::new(MatchFiltersSearch::from_signals(
+    let filters_signal = RwSignal::new(BackEndMatchFiltersSearch::from_signals(
         queue_id(),
         champion_id(),
         start_date(),
@@ -62,13 +62,13 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
         };
         setter.set(value.clone());
         let filters = if name == "start_date" {
-            MatchFiltersSearch::from_signals(queue_id(), champion_id(), value, end_date())
+            BackEndMatchFiltersSearch::from_signals(queue_id(), champion_id(), value, end_date())
         } else if name == "end_date" {
-            MatchFiltersSearch::from_signals(queue_id(), champion_id(), start_date(), value)
+            BackEndMatchFiltersSearch::from_signals(queue_id(), champion_id(), start_date(), value)
         } else if name == "champion_id" {
-            MatchFiltersSearch::from_signals(queue_id(), value, start_date(), end_date())
+            BackEndMatchFiltersSearch::from_signals(queue_id(), value, start_date(), end_date())
         } else {
-            MatchFiltersSearch::from_signals(value, champion_id(), start_date(), end_date())
+            BackEndMatchFiltersSearch::from_signals(value, champion_id(), start_date(), end_date())
         };
         filters_signal.set(filters);
     };

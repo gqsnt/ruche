@@ -4,12 +4,13 @@ use crate::consts::champion::Champion;
 use crate::consts::perk::Perk;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{summoner_encounter_url, summoner_url};
+use crate::utils::{string_to_fixed_array, summoner_encounter_url, summoner_url};
 use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
 use leptos::prelude::*;
-use leptos::server_fn::serde::{Deserialize, Serialize};
+use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
 use leptos::{component, view, IntoView};
+use crate::consts::platform_route::PlatformRoute;
 
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {
@@ -18,10 +19,10 @@ pub fn SummonerLivePage() -> impl IntoView {
 
     let (refresh_signal, set_refresh_signal) = signal(0);
 
-    let live_game_resource = Resource::new(
+    let live_game_resource = Resource::new_rkyv(
         move || (refresh_signal.get(), summoner().puuid.clone(), summoner().id, summoner().platform.to_string()),
         |(_, puuid, id, platform_type)| async move {
-            get_live_game(puuid, platform_type, id).await
+            get_live_game(id, PlatformRoute::from(platform_type.as_str()),string_to_fixed_array::<78>(puuid.as_str())).await
         },
     );
 
@@ -331,7 +332,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize, Deserialize, Default, Archive)]
 pub struct LiveGame {
     pub game_id: String,
     pub game_length: i64,
@@ -340,7 +341,7 @@ pub struct LiveGame {
     pub participants: Vec<LiveGameParticipant>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize, Deserialize, Default, Archive)]
 pub struct LiveGameParticipant {
     pub summoner_id: i32,
     pub puuid: String,
@@ -361,7 +362,7 @@ pub struct LiveGameParticipant {
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize, Deserialize, Default, Archive)]
 pub struct LiveGameParticipantRankedStats {
     pub total_ranked: i32,
     pub total_ranked_wins: i32,
@@ -370,7 +371,7 @@ pub struct LiveGameParticipantRankedStats {
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize, Deserialize, Default, Archive)]
 pub struct LiveGameParticipantChampionStats {
     pub total_champion_played: i32,
     pub total_champion_wins: i32,

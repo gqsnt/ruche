@@ -1,14 +1,14 @@
 use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersResult;
-use crate::views::MatchFiltersSearch;
+use crate::views::{BackEndMatchFiltersSearch};
 use leptos::prelude::*;
 use leptos::server;
-
-#[server]
-pub async fn get_encounters(summoner_id: i32, page_number: i32, filters: Option<MatchFiltersSearch>, search_summoner: Option<String>) -> Result<SummonerEncountersResult, ServerFnError> {
+use leptos::server_fn::codec::Rkyv;
+#[server(input=Rkyv,output=Rkyv)]
+pub async fn get_encounters(summoner_id: i32, page_number: u16, filters: Option<BackEndMatchFiltersSearch>, search_summoner: Option<String>) -> Result<SummonerEncountersResult, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
-    ssr::inner_get_encounters(&db, summoner_id, page_number, filters.unwrap_or_default(), search_summoner).await.map_err(|e| e.to_server_fn_error())
+    ssr::inner_get_encounters(&db, summoner_id, page_number as i32, filters.unwrap_or_default(), search_summoner).await.map_err(|e| e.to_server_fn_error())
 }
 
 
@@ -16,7 +16,7 @@ pub async fn get_encounters(summoner_id: i32, page_number: i32, filters: Option<
 pub mod ssr {
     use crate::backend::ssr::{AppResult, PlatformRouteDb};
     use crate::views::summoner_page::summoner_encounters_page::{SummonerEncountersResult, SummonerEncountersSummoner};
-    use crate::views::MatchFiltersSearch;
+    use crate::views::{BackEndMatchFiltersSearch};
     use sqlx::{FromRow, PgPool, QueryBuilder};
     use std::collections::HashMap;
 
@@ -24,7 +24,7 @@ pub mod ssr {
         db: &PgPool,
         summoner_id: i32,
         page: i32,
-        filters: MatchFiltersSearch,
+        filters: BackEndMatchFiltersSearch,
         search_summoner: Option<String>,
     ) -> AppResult<SummonerEncountersResult> {
         let per_page = 40;

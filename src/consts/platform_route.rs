@@ -1,4 +1,5 @@
-use serde::{Deserialize, Serialize};
+use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
+
 
 pub const PLATFORM_ROUTE_OPTIONS: [PlatformRoute; 16] = [
     PlatformRoute::BR1,
@@ -19,11 +20,9 @@ pub const PLATFORM_ROUTE_OPTIONS: [PlatformRoute; 16] = [
     PlatformRoute::VN2,
 ];
 
-
 /// Platform routes for League of Legends (LoL), Teamfight Tactics (TFT), and Legends of Runeterra (LoR).
-#[derive(Debug)]
-#[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
-#[derive(Clone, Copy)]
+#[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, Archive)]
+#[derive(Clone, Copy,Debug)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum PlatformRoute {
@@ -179,26 +178,29 @@ impl From<&str> for PlatformRoute {
 
 impl std::fmt::Display for PlatformRoute {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            PlatformRoute::BR1 => "BR",
-            PlatformRoute::EUN1 => "EUNE",
-            PlatformRoute::EUW1 => "EUW",
-            PlatformRoute::JP1 => "JP",
-            PlatformRoute::KR => "KR",
-            PlatformRoute::LA1 => "LAN",
-            PlatformRoute::LA2 => "LAS",
-            PlatformRoute::ME1 => "MENA",
-            PlatformRoute::NA1 => "NA",
-            PlatformRoute::OC1 => "OCE",
-            PlatformRoute::PH2 => "PH",
-            PlatformRoute::RU => "RU",
-            PlatformRoute::SG2 => "SG",
-            PlatformRoute::TH2 => "TH",
-            PlatformRoute::TR1 => "TR",
-            PlatformRoute::TW2 => "TW",
-            PlatformRoute::VN2 => "VN",
-            PlatformRoute::PBE1 => "PBE",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                PlatformRoute::BR1 => "BR",
+                PlatformRoute::EUN1 => "EUNE",
+                PlatformRoute::EUW1 => "EUW",
+                PlatformRoute::JP1 => "JP",
+                PlatformRoute::KR => "KR",
+                PlatformRoute::LA1 => "LAN",
+                PlatformRoute::LA2 => "LAS",
+                PlatformRoute::ME1 => "MENA",
+                PlatformRoute::NA1 => "NA",
+                PlatformRoute::OC1 => "OCE",
+                PlatformRoute::PH2 => "PH",
+                PlatformRoute::RU => "RU",
+                PlatformRoute::SG2 => "SG",
+                PlatformRoute::TH2 => "TH",
+                PlatformRoute::TR1 => "TR",
+                PlatformRoute::TW2 => "TW",
+                PlatformRoute::VN2 => "VN",
+                PlatformRoute::PBE1 => "PBE",
+            }
+        )
     }
 }
-

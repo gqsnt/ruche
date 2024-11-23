@@ -1,15 +1,16 @@
 use crate::backend::server_fns::search_summoner::SearchSummoner;
-use crate::consts::platform_route::PLATFORM_ROUTE_OPTIONS;
-use leptos::form::ActionForm;
+use crate::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use leptos::html::{Input, Select};
 use leptos_router::hooks::{use_params_map, use_query_map};
+
 
 #[component]
 pub fn SummonerSearchPage() -> impl IntoView {
     let query = use_query_map();
     let params = use_params_map();
-    let find_summoner = ServerAction::<SearchSummoner>::new();
+    let search_summoner = ServerAction::<SearchSummoner>::new();
 
 
     let game_name = move || {
@@ -22,14 +23,28 @@ pub fn SummonerSearchPage() -> impl IntoView {
         params.read().get("platform_type").unwrap_or_default()
     };
 
+    let game_name_node = NodeRef::<Input>::new();
+    let tag_line_node = NodeRef::<Input>::new();
+    let platform_type_node = NodeRef::<Select>::new();
 
     view! {
         <div class="w-full flex justify-center">
-            <ActionForm action=find_summoner>
+            <form on:submit:target=move |ev|{
+            ev.prevent_default();
+            search_summoner.dispatch(
+                SearchSummoner{
+                    platform_route: PlatformRoute::from(platform_type_node.get().expect("platform_type not valid").value().as_str()),
+                    game_name: game_name_node.get().expect("game_name not valid").value(),
+                    tag_line: tag_line_node.get().expect("tag_line not valid").value(),
+                }
+            );
+
+        } >
                 <div class="my-2 flex space-x-2 items-center max-w-[768px]">
                     <input
                         class="my-input"
                         type="text"
+                        node_ref=game_name_node
                         placeholder="Game Name"
                         value=move || game_name()
                         name="game_name"
@@ -37,13 +52,14 @@ pub fn SummonerSearchPage() -> impl IntoView {
                     <input
                         class="my-input"
                         type="text"
+                        node_ref=tag_line_node
                         placeholder="Tag Line"
                         value=move || tag_line()
                         name="tag_line"
                     />
                     <select
                         class="my-select"
-                        aria-label="Platform Type"
+                        node_ref=platform_type_node
                         name="platform_type"
                         prop:value=move || platform_type()
                     >
@@ -65,9 +81,8 @@ pub fn SummonerSearchPage() -> impl IntoView {
                         "Search"
                     </button>
                 </div>
-            </ActionForm>
+            </form>
         </div>
     }
 }
-
 
