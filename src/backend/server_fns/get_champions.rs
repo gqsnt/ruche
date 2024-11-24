@@ -15,8 +15,6 @@ pub async fn get_champions(summoner_id: i32, filters: Option<BackEndMatchFilters
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::ssr::AppResult;
-    use crate::consts::champion::Champion;
-    use crate::utils::{round_to_2_decimal_places};
     use crate::views::summoner_page::summoner_champions_page::ChampionStats;
     use crate::views::{BackEndMatchFiltersSearch};
     use bigdecimal::{BigDecimal, ToPrimitive};

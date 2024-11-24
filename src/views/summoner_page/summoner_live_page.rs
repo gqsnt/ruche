@@ -4,7 +4,7 @@ use crate::consts::champion::Champion;
 use crate::consts::perk::Perk;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{string_to_fixed_array, summoner_encounter_url, summoner_url, FixedToString, GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine};
+use crate::utils::{summoner_encounter_url, summoner_url, FixedToString, GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine};
 use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
 use leptos::prelude::*;
@@ -22,7 +22,7 @@ pub fn SummonerLivePage() -> impl IntoView {
     let (refresh_signal, set_refresh_signal) = signal(0);
 
     let live_game_resource = Resource::new_rkyv(
-        move || (refresh_signal.get(), summoner().puuid.clone(), summoner().id, summoner().platform.to_string()),
+        move || (refresh_signal.get(), summoner().puuid, summoner().id, summoner().platform.to_string()),
         |(_, puuid, id, platform_type)| async move {
             get_live_game(id, PlatformRoute::from(platform_type.as_str()),puuid).await
         },
@@ -227,7 +227,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                                 target="_blank"
                                                 href=format!(
                                                     "https://lolpros.gg/player/{}",
-                                                    participant.pro_player_slug.clone().unwrap().to_str(),
+                                                    participant.pro_player_slug.unwrap().to_str(),
                                                 )
                                                 class="text-xs bg-purple-800 rounded px-0.5 text-center"
                                             >
@@ -259,7 +259,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                             Either::Left(
                                                 view! {
                                                     <div>
-                                                        {format!("{:.2}",ranked_stats.ranked_win_rate)}%
+                                                        {format!("{:.2}", ranked_stats.ranked_win_rate)}%
                                                         {ranked_stats.total_ranked}G
                                                     </div>
                                                     <div>
@@ -283,7 +283,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                             Either::Left(
                                                 view! {
                                                     <div>
-                                                        {format!("{:.2}",champion_stats.champion_win_rate)}%
+                                                        {format!("{:.2}", champion_stats.champion_win_rate)}%
                                                         {champion_stats.total_champion_played}G
                                                     </div>
                                                     <div>
@@ -307,12 +307,16 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                             Either::Left(
                                                 view! {
                                                     <div>
-                                                        {format!("{:.2}",(champion_stats.avg_kills + champion_stats.avg_assists)
-                                                            / champion_stats.avg_deaths.max(1.0))}:1
+                                                        {format!(
+                                                            "{:.2}",
+                                                            (champion_stats.avg_kills + champion_stats.avg_assists)
+                                                                / champion_stats.avg_deaths.max(1.0),
+                                                        )}:1
                                                     </div>
                                                     <div>
-                                                        {format!("{:.2}",champion_stats.avg_kills)}/ {format!("{:.2}",champion_stats.avg_deaths)}/
-                                                        {format!("{:.2}",champion_stats.avg_assists)}
+                                                        {format!("{:.2}", champion_stats.avg_kills)}/
+                                                        {format!("{:.2}", champion_stats.avg_deaths)}/
+                                                        {format!("{:.2}", champion_stats.avg_assists)}
                                                     </div>
                                                 },
                                             )

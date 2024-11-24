@@ -1,6 +1,3 @@
-use std::borrow::Cow;
-use itertools::Itertools;
-use leptos::html::tr;
 
 pub type GameName= [u8;16];
 pub type TagLine= [u8;5];

@@ -43,7 +43,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
         move || (summoner(), match_filters_updated.get(), page_number(), encounter_slug(), encounter_platform(), is_with.get()),
         |(summoner, filters, page_number, encounter_slug, encounter_platform, is_with)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_encounter(is_with, summoner.id,page_number.unwrap_or(1) as u16,  Some(filters), PlatformRoute::from(encounter_platform.as_str()), string_to_fixed_array::<22>(encounter_slug.as_str())).await
+            get_encounter(is_with, summoner.id,page_number.unwrap_or(1),  Some(filters), PlatformRoute::from(encounter_platform.as_str()), string_to_fixed_array::<22>(encounter_slug.as_str())).await
         },
     );
 
@@ -308,7 +308,7 @@ pub fn SummonerEncounterParticipantComponent(encounter_participant: SummonerEnco
                         /
                         <span class="text-white">{encounter_participant.assists}</span>
                     </div>
-                    <div>{format!("{:.2}",encounter_participant.kda)}:1 KDA</div>
+                    <div>{format!("{:.2}", encounter_participant.kda)}:1 KDA</div>
                 </div>
                 <div
                     class="flex flex-col h-[58px]  "
@@ -320,7 +320,7 @@ pub fn SummonerEncounterParticipantComponent(encounter_participant: SummonerEnco
                     class=("border-blue-500", move || encounter_participant.won)
                 >
                     <div class="text-red-300 text-sm">
-                        P/Kill {format!("{:.2}",encounter_participant.kill_participation)}%
+                        P/Kill {format!("{:.2}", encounter_participant.kill_participation)}%
                     </div>
                 </div>
             </div>
@@ -437,7 +437,7 @@ pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, 
                             target="_blank"
                             href=format!(
                                 "https://lolpros.gg/player/{}",
-                                summoner.pro_slug.clone().unwrap().to_str(),
+                                summoner.pro_slug.unwrap().to_str(),
                             )
                             class=" bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
                         >
@@ -460,9 +460,13 @@ pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, 
                     )}
                 </div>
                 <div class="flex flex-col">
-                    <div>{format!("{:.2}", stats.avg_kills)}/ {format!("{:.2}", stats.avg_deaths)}/ {format!("{:.2}", stats.avg_assists)}</div>
                     <div>
-                        {format!("{:.2}", stats.avg_kda)}:1 P/kill {format!("{:.2}",stats.avg_kill_participation)}%
+                        {format!("{:.2}", stats.avg_kills)}/ {format!("{:.2}", stats.avg_deaths)}/
+                        {format!("{:.2}", stats.avg_assists)}
+                    </div>
+                    <div>
+                        {format!("{:.2}", stats.avg_kda)}:1 P/kill
+                        {format!("{:.2}", stats.avg_kill_participation)}%
                     </div>
                 </div>
 

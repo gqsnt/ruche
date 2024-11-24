@@ -28,7 +28,6 @@ impl BackEndMatchFiltersSearch {
     pub fn start_date_to_naive(&self) -> Option<chrono::NaiveDateTime> {
         crate::backend::ssr::parse_date(
             self.start_date
-                .clone()
                 .map(|x| format!("{:04}-{:02}-{:02}", x.0, x.1, x.2)),
         )
     }
@@ -37,7 +36,6 @@ impl BackEndMatchFiltersSearch {
     pub fn end_date_to_naive(&self) -> Option<chrono::NaiveDateTime> {
         crate::backend::ssr::parse_date(
             self.end_date
-                .clone()
                 .map(|x| format!("{:04}-{:02}-{:02}", x.0, x.1, x.2)),
         )
     }

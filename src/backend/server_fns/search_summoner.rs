@@ -4,7 +4,10 @@ use crate::utils::{summoner_not_found_url, summoner_url};
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
-use crate::utils::{FixedToString, GameName, TagLine};
+use crate::utils::{GameName, TagLine};
+#[cfg(feature = "ssr")]
+use crate::utils::FixedToString;
+
 
 #[server(input = Rkyv, output = Rkyv)]
 pub async fn search_summoner(

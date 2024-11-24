@@ -27,7 +27,6 @@ pub mod ssr {
 
     use sqlx::{FromRow, PgPool, QueryBuilder};
     use std::collections::HashMap;
-    use leptos::logging::log;
     use crate::consts::platform_route::PlatformRoute;
     use crate::utils::string_to_fixed_array;
 
@@ -234,7 +233,7 @@ pub mod ssr {
                     champion_id: row.champion_id as u16,
                     game_name: string_to_fixed_array::<16>(game_name.as_str()),
                     tag_line: string_to_fixed_array::<5>(tag_line.as_str()),
-                    platform: platform.clone(),
+                    platform: *platform,
                     pro_player_slug: pro_player_slug.clone().map(|pps|string_to_fixed_array::<16>(pps.as_str())),
                     encounter_count,
                 }
@@ -254,7 +253,7 @@ pub mod ssr {
                 match_.participants = participants.clone();
             }
         }
-        Ok(GetSummonerMatchesResult { matches, total_pages: total_pages as u16, matches_result_info })
+        Ok(GetSummonerMatchesResult { matches, total_pages , matches_result_info })
     }
 
 

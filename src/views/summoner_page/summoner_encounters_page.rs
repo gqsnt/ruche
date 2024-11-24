@@ -52,7 +52,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
         move || (search_summoner.get(), match_filters_updated.get(), summoner(), page_number()),
         |(search_summoner, filters, summoner, page_number)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_encounters(summoner.id, page_number.unwrap_or(1) as u16, Some(filters),search_summoner.map(|r|string_to_fixed_array::<16>(r.as_str()))).await
+            get_encounters(summoner.id, page_number.unwrap_or(1) , Some(filters),search_summoner.map(|r|string_to_fixed_array::<16>(r.as_str()))).await
         },
     );
 
@@ -142,7 +142,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                                 <div class="ml-2">
                                                                                     <a
                                                                                         href=summoner_url(
-                                                                                           encounter_platform.clone(),
+                                                                                            encounter_platform.clone(),
                                                                                             encounter_game_name.clone(),
                                                                                             encounter_tag_line.clone(),
                                                                                         )

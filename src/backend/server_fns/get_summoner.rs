@@ -1,3 +1,4 @@
+#[cfg(feature = "ssr")]
 use leptos::logging::log;
 use crate::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
@@ -6,7 +7,10 @@ use crate::views::summoner_page::Summoner;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
-use crate::utils::{FixedToString, SummonerSlug};
+use crate::utils::{SummonerSlug};
+#[cfg(feature = "ssr")]
+use crate::utils::FixedToString;
+
 
 #[server( input=Rkyv,output=Rkyv)]
 pub async fn get_summoner(

@@ -71,7 +71,8 @@ pub fn SummonerPage() -> impl IntoView {
                                         />
                                         <div class="flex flex-col items-start">
                                             <div>
-                                                {summoner_signal().game_name.to_string()}#{summoner_signal().tag_line.to_string()}
+                                                {summoner_signal().game_name.to_string()}#
+                                                {summoner_signal().tag_line.to_string()}
                                             </div>
                                             <div>
                                                 <span>lvl. {summoner.summoner_level}</span>
@@ -92,14 +93,19 @@ pub fn SummonerPage() -> impl IntoView {
                                             </div>
                                         </div>
                                         <div>
-                                        <button class="my-button" on:click=move |_| {
-                                                update_summoner_action.dispatch(UpdateSummoner {
-                                            puuid: summoner_signal().puuid,
-                                            platform_route: summoner_signal().platform});
-                            }>
+                                            <button
+                                                class="my-button"
+                                                on:click=move |_| {
+                                                    update_summoner_action
+                                                        .dispatch(UpdateSummoner {
+                                                            puuid: summoner_signal().puuid,
+                                                            platform_route: summoner_signal().platform,
+                                                        });
+                                                }
+                                            >
                                                 Update
                                             </button>
-                            </div>
+                                        </div>
                                     </div>
                                 </div>
 

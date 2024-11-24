@@ -216,17 +216,18 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: u16, summoner: ReadSignal<S
                                         {participant.kills}/{participant.deaths}/
                                         {participant.assists}
                                         <div class="ml-1 relative">
-                                            {format!(
-                                                "({:.2}%)",
-                                                participant.kill_participation,
-                                            )}
+                                            {format!("({:.2}%)", participant.kill_participation)}
                                         </div>
                                     </div>
                                 </td>
                                 <td class="py-1">
                                     <div class="flex justify-center">
-                                        <div>{format_with_spaces(participant.damage_dealt_to_champions)}</div>
-                                        <div class="ml-2">{format_with_spaces(participant.damage_taken)}</div>
+                                        <div>
+                                            {format_with_spaces(participant.damage_dealt_to_champions)}
+                                        </div>
+                                        <div class="ml-2">
+                                            {format_with_spaces(participant.damage_taken)}
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="py-1">

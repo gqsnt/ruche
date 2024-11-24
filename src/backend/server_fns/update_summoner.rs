@@ -5,12 +5,14 @@ use crate::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use crate::utils::summoner_url;
 #[cfg(feature = "ssr")]
+use crate::utils::FixedToString;
+#[cfg(feature = "ssr")]
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos::server;
 
 use leptos::server_fn::codec::Rkyv;
-use crate::utils::{FixedToString, Puuid};
+use crate::utils::{Puuid};
 
 #[server( input=Rkyv)]
 pub async fn update_summoner(puuid: Puuid, platform_route: PlatformRoute) -> Result<(), ServerFnError> {

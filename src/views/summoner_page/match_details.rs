@@ -9,7 +9,7 @@ use leptos::prelude::*;
 use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
 use leptos::{component, view, IntoView};
 use crate::consts::platform_route::PlatformRoute;
-use crate::utils::{string_to_fixed_array, GameName, ProPlayerSlug, RiotMatchId, TagLine};
+use crate::utils::{GameName, ProPlayerSlug, RiotMatchId, TagLine};
 
 pub mod match_details_overview;
 pub mod match_details_team;
@@ -18,7 +18,7 @@ pub mod match_details_build;
 #[component]
 pub fn MatchDetails(match_id: i32, riot_match_id: RiotMatchId, platform: PlatformRoute, summoner: ReadSignal<Summoner>) -> impl IntoView {
     let match_details = Resource::new_rkyv(
-        move || (match_id, riot_match_id, platform.clone(), summoner().id),
+        move || (match_id, riot_match_id, platform, summoner().id),
         |(match_id, riot_match_id, platform, summoner_id)| async move {
             get_match_details(match_id, Some(summoner_id), platform,riot_match_id ).await
         },

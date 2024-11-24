@@ -3,7 +3,10 @@ use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
 use crate::consts::platform_route::PlatformRoute;
-use crate::utils::{FixedToString, Puuid};
+use crate::utils::{Puuid};
+#[cfg(feature = "ssr")]
+use crate::utils::FixedToString;
+
 
 #[server(input=Rkyv,output=Rkyv)]
 pub async fn get_live_game(summoner_id: i32, platform_route:PlatformRoute, puuid:Puuid) -> Result<Option<LiveGame>, ServerFnError> {
@@ -20,8 +23,8 @@ pub async fn get_live_game(summoner_id: i32, platform_route:PlatformRoute, puuid
                     None => Ok(None),
                     Some(live_data) => {
                         live_cache.set_game_data(
-                            live_data.game_id.clone(),
-                            live_data.participants.iter().map(|x| x.puuid.clone()).collect(),
+                            live_data.game_id,
+                            live_data.participants.iter().map(|x| x.puuid).collect(),
                             live_data.clone(),
                         );
                         Ok(Some(ssr::add_encounters(&db, live_data, summoner_id).await?))
@@ -47,7 +50,7 @@ pub mod ssr {
     use crate::consts::map::Map;
     use crate::consts::platform_route::PlatformRoute;
     use crate::consts::queue::Queue;
-    use crate::utils::{round_to_2_decimal_places, string_to_fixed_array};
+    use crate::utils::{string_to_fixed_array};
     use crate::views::summoner_page::summoner_live_page::{LiveGame, LiveGameParticipant, LiveGameParticipantChampionStats, LiveGameParticipantRankedStats};
     use bigdecimal::{BigDecimal, ToPrimitive};
     use futures::stream::FuturesUnordered;
@@ -87,7 +90,7 @@ pub mod ssr {
                 let mut summoner_details = find_summoner_live_by_puuids(db, &participant_puuids).await?;
 
                 let puuids_not_found = participant_puuids.iter().filter(|&x| !summoner_details.contains_key(x)).cloned().collect::<Vec<String>>();
-                find_and_insert_new_summoners(db, riot_api.clone(), &puuids_not_found, platform_route.clone(), &current_game_info).await?;
+                find_and_insert_new_summoners(db, riot_api, &puuids_not_found, platform_route, &current_game_info).await?;
                 let new_summoners = find_summoner_live_by_puuids(db, &puuids_not_found).await?;
                 summoner_details.extend(new_summoners);
 

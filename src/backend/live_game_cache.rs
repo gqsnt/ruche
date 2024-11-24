@@ -25,7 +25,7 @@ impl LiveGameCache {
     // Attempt to retrieve game data from the cache
     pub fn get_game_data(&self, puuid: &Puuid) -> Option<LiveGame> {
         if let Some(game_id_entry) = self.puuid_to_game.get(puuid) {
-            let game_id = game_id_entry.value().clone();
+            let game_id = *game_id_entry.value();
             if let Some(game_entry) = self.game_cache.get(&game_id) {
                 let (game_data, timestamp) = game_entry.value();
                 let diff = Instant::now() - *timestamp;
@@ -49,9 +49,9 @@ impl LiveGameCache {
     // Update the cache with new game data
     pub fn set_game_data(&self, game_id: RiotMatchId, puuids: Vec<Puuid>, game_data: LiveGame) {
         let now = Instant::now();
-        self.game_cache.insert(game_id.clone(), (game_data, now));
+        self.game_cache.insert(game_id, (game_data, now));
         for puuid in puuids {
-            self.puuid_to_game.insert(puuid, game_id.clone());
+            self.puuid_to_game.insert(puuid, game_id);
         }
     }
 }
@@ -70,7 +70,7 @@ pub async fn schedule_live_game_cache_cleanup_task(cache: Arc<LiveGameCache>, in
                 .filter_map(|entry| {
                     let (_, timestamp) = entry.value();
                     if now.duration_since(*timestamp) >= cache.expiration_duration {
-                        Some(entry.key().clone())
+                        Some(*entry.key())
                     } else {
                         None
                     }
@@ -86,7 +86,7 @@ pub async fn schedule_live_game_cache_cleanup_task(cache: Arc<LiveGameCache>, in
                     .iter()
                     .filter_map(|entry| {
                         if entry.value() == &game_id {
-                            Some(entry.key().clone())
+                            Some(*entry.key())
                         } else {
                             None
                         }

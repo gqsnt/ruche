@@ -4,7 +4,10 @@ use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
 use crate::consts::platform_route::PlatformRoute;
-use crate::utils::{FixedToString, SummonerSlug};
+use crate::utils::{SummonerSlug};
+#[cfg(feature = "ssr")]
+use crate::utils::FixedToString;
+
 
 #[server(input=Rkyv, output=Rkyv)]
 pub async fn get_encounter( is_with: bool,summoner_id: i32,page_number: u16 ,filters: Option<BackEndMatchFiltersSearch>, encounter_platform: PlatformRoute,encounter_slug: SummonerSlug,) -> Result<SummonerEncounterResult, ServerFnError> {
@@ -18,10 +21,9 @@ pub async fn get_encounter( is_with: bool,summoner_id: i32,page_number: u16 ,fil
 pub mod ssr {
     use crate::backend::server_fns::get_summoner::ssr::{find_summoner_by_exact_game_name_tag_line, SummonerModel};
     use crate::backend::ssr::{format_duration_since, AppResult, PlatformRouteDb};
-    use crate::consts::champion::Champion;
     use crate::consts::platform_route::PlatformRoute;
     use crate::consts::queue::Queue;
-    use crate::utils::{parse_summoner_slug, round_to_2_decimal_places, string_to_fixed_array};
+    use crate::utils::{parse_summoner_slug, string_to_fixed_array};
     use crate::views::summoner_page::summoner_encounter_page::{SummonerEncounterMatch, SummonerEncounterParticipant, SummonerEncounterResult, SummonerEncounterStats};
     use crate::views::summoner_page::Summoner;
     use crate::views::{BackEndMatchFiltersSearch};

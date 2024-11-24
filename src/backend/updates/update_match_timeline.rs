@@ -215,7 +215,7 @@ async fn bulk_insert_match_timeline(db: &PgPool, timelines: Vec<TempLolMatchTime
         b.push_bind(rec.lol_match_id);
         b.push_bind(rec.summoner_id);
         b.push_bind(serde_json::to_value(&items_event_timeline).unwrap_or_default());
-        b.push_bind(rec.skills_timeline.iter().map(|&x| x as u8).collect::<Vec<_>>());
+        b.push_bind(rec.skills_timeline.iter().map(|&x| (x as u8)as i32).collect::<Vec<_>>());
     });
     qb.build().fetch_all(db).await?;
     Ok(())

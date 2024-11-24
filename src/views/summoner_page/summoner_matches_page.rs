@@ -14,7 +14,6 @@ use crate::views::{BackEndMatchFiltersSearch};
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos::logging::log;
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
@@ -94,14 +93,31 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                                                     </div>
                                                     <div class="flex flex-col ml-2">
                                                         <div>
-                                                            {format!("{:.2}",matches_result.matches_result_info.avg_kills)}/
-                                                            {format!("{:.2}",matches_result.matches_result_info.avg_deaths)}/
-                                                            {format!("{:.2}",matches_result.matches_result_info.avg_assists)}
+                                                            {format!(
+                                                                "{:.2}",
+                                                                matches_result.matches_result_info.avg_kills,
+                                                            )}/
+                                                            {format!(
+                                                                "{:.2}",
+                                                                matches_result.matches_result_info.avg_deaths,
+                                                            )}/
+                                                            {format!(
+                                                                "{:.2}",
+                                                                matches_result.matches_result_info.avg_assists,
+                                                            )}
                                                         </div>
-                                                        <div>{format!("{:.2}",matches_result.matches_result_info.avg_kda)}:1</div>
+                                                        <div>
+                                                            {format!(
+                                                                "{:.2}",
+                                                                matches_result.matches_result_info.avg_kda,
+                                                            )}:1
+                                                        </div>
                                                         <div>
                                                             P/kill
-                                                            {format!("{:.2}",matches_result.matches_result_info.avg_kill_participation)}%
+                                                            {format!(
+                                                                "{:.2}",
+                                                                matches_result.matches_result_info.avg_kill_participation,
+                                                            )}%
                                                         </div>
                                                     </div>
                                                 </div>
@@ -255,7 +271,9 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Summoner>) -> impl 
                                 class:border-blue-500=move || match_.won
                                 class="flex flex-col h-[58px] pl-2 border-l-2"
                             >
-                                <div class="text-red-300">P/Kill {format!("{:.2}",match_.kill_participation)}%</div>
+                                <div class="text-red-300">
+                                    P/Kill {format!("{:.2}", match_.kill_participation)}%
+                                </div>
                             </div>
                         </div>
                         <div class="flex gap-0.5">

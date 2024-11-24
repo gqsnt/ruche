@@ -3,8 +3,10 @@ use crate::views::{BackEndMatchFiltersSearch};
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
-use crate::backend::server_fns::search_summoner::search_summoner;
-use crate::utils::{string_to_fixed_array, FixedToString, GameName};
+use crate::utils::{GameName};
+#[cfg(feature = "ssr")]
+use crate::utils::FixedToString;
+
 
 #[server(input=Rkyv,output=Rkyv)]
 pub async fn get_encounters(summoner_id: i32, page_number: u16, filters: Option<BackEndMatchFiltersSearch>, search_summoner: Option<GameName>) -> Result<SummonerEncountersResult, ServerFnError> {

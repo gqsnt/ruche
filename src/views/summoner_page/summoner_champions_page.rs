@@ -249,19 +249,22 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                                     height="32"
                                                                                 />
                                                                             </div>
-                                                                            <div class="ml-2 text-center">{Champion::from(champion.champion_id).to_str()}</div>
+                                                                            <div class="ml-2 text-center">
+                                                                                {Champion::from(champion.champion_id).to_str()}
+                                                                            </div>
                                                                         </div>
                                                                     </td>
                                                                     <td class="text-xs border border-gray-800">
                                                                         {champion.total_wins}W {champion.total_lose}L
-                                                                        {format!("{:.2}",champion.win_rate)}%
+                                                                        {format!("{:.2}", champion.win_rate)}%
                                                                     </td>
                                                                     <td class="text-xs border border-gray-800">
                                                                         <div>
-                                                                            <div>{format!("{:.2}",champion.avg_kda)}:1</div>
+                                                                            <div>{format!("{:.2}", champion.avg_kda)}:1</div>
                                                                             <div>
-                                                                                {format!("{:.2}",champion.avg_kills)}/ {format!("{:.2}",champion.avg_deaths)}/
-                                                                                {format!("{:.2}",champion.avg_assists)}
+                                                                                {format!("{:.2}", champion.avg_kills)}/
+                                                                                {format!("{:.2}", champion.avg_deaths)}/
+                                                                                {format!("{:.2}", champion.avg_assists)}
                                                                             </div>
                                                                         </div>
                                                                     </td>
@@ -330,7 +333,7 @@ pub fn TableHeaderItem<S, R, T>(
 where
     S: Fn() -> TableSortType + Send + Copy + Sync + 'static,
     R: Fn() -> bool + Send + Sync + Copy + 'static,
-    T: Fn(TableSortType) -> () + Send + Sync + 'static,
+    T: Fn(TableSortType)+ 'static,
 {
     view! {
         <button
@@ -373,7 +376,7 @@ impl TableSortType {
         // is reversed because we want to sort in descending order
         let ordering = match self {
             TableSortType::Index => idx_b.cmp(idx_a),
-            TableSortType::Champion => Champion::from(b.champion_id).to_str().cmp(&Champion::from(a.champion_id).to_str()),
+            TableSortType::Champion => Champion::from(b.champion_id).to_str().cmp(Champion::from(a.champion_id).to_str()),
             TableSortType::WinRate => a.win_rate.partial_cmp(&b.win_rate).unwrap(),
             TableSortType::AvgKDA => a.avg_kda.partial_cmp(&b.avg_kda).unwrap(),
             TableSortType::AvgGold => a.avg_gold_earned.partial_cmp(&b.avg_gold_earned).unwrap(),

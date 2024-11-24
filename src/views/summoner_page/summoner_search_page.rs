@@ -29,24 +29,32 @@ pub fn SummonerSearchPage() -> impl IntoView {
 
     view! {
         <div class="w-full flex justify-center">
-            <form on:submit:target=move |ev|{
-            ev.prevent_default();
-            search_summoner.dispatch(
-                SearchSummoner{
-                    platform_route: PlatformRoute::from(platform_type_node.get().expect("platform_type not valid").value().as_str()),
-                    game_name: string_to_fixed_array::<16>(game_name_node.get().expect("game_name not valid").value().as_str()),
-                    tag_line: string_to_fixed_array::<5>(tag_line_node.get().expect("tag_line not valid").value().as_str()),
-                }
-            );
-
-        } >
+            <form on:submit:target=move |ev| {
+                ev.prevent_default();
+                search_summoner
+                    .dispatch(SearchSummoner {
+                        platform_route: PlatformRoute::from(
+                            platform_type_node
+                                .get()
+                                .expect("platform_type not valid")
+                                .value()
+                                .as_str(),
+                        ),
+                        game_name: string_to_fixed_array::<
+                            16,
+                        >(game_name_node.get().expect("game_name not valid").value().as_str()),
+                        tag_line: string_to_fixed_array::<
+                            5,
+                        >(tag_line_node.get().expect("tag_line not valid").value().as_str()),
+                    });
+            }>
                 <div class="my-2 flex space-x-2 items-center max-w-[768px]">
                     <input
                         class="my-input"
                         type="text"
                         node_ref=game_name_node
                         placeholder="Game Name"
-                        value=move || game_name()
+                        value=game_name
                         name="game_name"
                     />
                     <input
@@ -54,14 +62,14 @@ pub fn SummonerSearchPage() -> impl IntoView {
                         type="text"
                         node_ref=tag_line_node
                         placeholder="Tag Line"
-                        value=move || tag_line()
+                        value=tag_line
                         name="tag_line"
                     />
                     <select
                         class="my-select"
                         node_ref=platform_type_node
                         name="platform_type"
-                        prop:value=move || platform_type()
+                        prop:value=platform_type
                     >
                         {PLATFORM_ROUTE_OPTIONS
                             .iter()

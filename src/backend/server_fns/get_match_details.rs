@@ -1,11 +1,13 @@
 #[cfg(feature = "ssr")]
+use crate::utils::FixedToString;
+#[cfg(feature = "ssr")]
 use crate::backend::updates::update_match_timeline::update_match_timeline;
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
 use crate::consts::platform_route::PlatformRoute;
-use crate::utils::{FixedToString, RiotMatchId};
+use crate::utils::{RiotMatchId};
 
 #[server(input=Rkyv,output=Rkyv)]
 pub async fn get_match_details(match_id: i32,  summoner_id: Option<i32>, platform: PlatformRoute, riot_match_id: RiotMatchId) -> Result<Vec<LolMatchParticipantDetails>, ServerFnError> {
