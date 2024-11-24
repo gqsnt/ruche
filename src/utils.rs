@@ -2,7 +2,7 @@
 pub type GameName= [u8;16];
 pub type TagLine= [u8;5];
 pub type Puuid= [u8;78];
-pub type ProPlayerSlug= [u8;16];
+pub type ProPlayerSlug= [u8;20];
 pub type SummonerSlug = [u8;22];
 pub type RiotMatchId = [u8;17];
 pub type GameMode= [u8;15];

@@ -58,7 +58,6 @@ pub async fn update_pro_player_task(
     let mut start = Instant::now();
     let pro_players = get_all_pro_players().await?;
     log!("Found {} Pro players", pro_players.len());
-
     // Define the concurrency limit
     let concurrency_limit = 4;
 

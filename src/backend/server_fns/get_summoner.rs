@@ -83,7 +83,7 @@ pub mod ssr {
                     updated_at: summoner_db.updated_at.format(DATE_FORMAT).to_string(),
                     summoner_level: summoner_db.summoner_level as u16,
                     profile_icon_id: summoner_db.profile_icon_id as u16,
-                    pro_slug: summoner_db.pro_slug.map(|s|string_to_fixed_array::<16>(s.as_str())),
+                    pro_slug: summoner_db.pro_slug.map(|s|string_to_fixed_array::<20>(s.as_str())),
                 }
             })
             .map_err(|e| e.into())

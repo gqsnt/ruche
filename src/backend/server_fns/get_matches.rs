@@ -234,7 +234,7 @@ pub mod ssr {
                     game_name: string_to_fixed_array::<16>(game_name.as_str()),
                     tag_line: string_to_fixed_array::<5>(tag_line.as_str()),
                     platform: *platform,
-                    pro_player_slug: pro_player_slug.clone().map(|pps|string_to_fixed_array::<16>(pps.as_str())),
+                    pro_player_slug: pro_player_slug.clone().map(|pps|string_to_fixed_array::<20>(pps.as_str())),
                     encounter_count,
                 }
             }).collect_vec()

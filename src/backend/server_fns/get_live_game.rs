@@ -159,7 +159,7 @@ pub mod ssr {
                         ranked_stats,
                         champion_stats,
                         encounter_count: 0,
-                        pro_player_slug: summoner_detail.pro_slug.clone().map(|s|string_to_fixed_array::<16>(s.as_str())),
+                        pro_player_slug: summoner_detail.pro_slug.clone().map(|s|string_to_fixed_array::<20>(s.as_str())),
                     })
                 }
                 Ok(Some(LiveGame {
