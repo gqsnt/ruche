@@ -14,8 +14,13 @@ pub async fn get_match_details(match_id: i32,  summoner_id: Option<i32>, platfor
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
-    let mut details = ssr::get_match_participants_details(&db, match_id, summoner_id).await.map_err(|e| e.to_server_fn_error())?;
-    let mut match_timelines = ssr::get_match_timeline(&db, match_id).await?;
+    let (details , match_timelines) = tokio::join!(
+        ssr::get_match_participants_details(&db, match_id, summoner_id),
+        ssr::get_match_timeline(&db, match_id)
+    );
+    let mut details = details?;
+    let mut match_timelines = match_timelines?;
+
     if match_timelines.is_empty() {
         update_match_timeline(&db, state.riot_api.clone(), match_id, riot_match_id.to_string(), platform).await?;
         match_timelines = ssr::get_match_timeline(&db, match_id).await?;

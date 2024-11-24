@@ -166,7 +166,7 @@ pub mod ssr {
                     game_id: string_to_fixed_array::<17>(format!("{}_{}", current_game_info.game_id, current_game_info.platform_id).as_str()),
                     game_length: current_game_info.game_length as u16,
                     game_map: Map::from(current_game_info.map_id.0),
-                    queue: current_game_info.game_queue_config_id.map(|x| Queue::from(x.0)).unwrap(),
+                    queue: current_game_info.game_queue_config_id.map(|x| Queue::from_u16(x.0)).unwrap(),
                     participants,
                 }))
             }

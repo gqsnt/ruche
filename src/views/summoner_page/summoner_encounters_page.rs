@@ -230,13 +230,13 @@ pub struct SummonerEncountersResult {
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncountersSummoner {
+    pub id: i32,
     pub match_count: u16,
     pub with_match_count: u16,
     pub with_win_count: u16,
     pub vs_match_count: u16,
     pub vs_win_count: u16,
     pub profile_icon_id: u16,
-    pub id: i32,
     pub game_name: GameName,
     pub tag_line: TagLine,
     pub platform: PlatformRoute,

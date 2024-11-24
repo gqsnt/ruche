@@ -345,7 +345,7 @@ pub struct LiveGame {
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct LiveGameParticipant {
-    pub platform: PlatformRoute,
+    pub summoner_id: i32,
     pub champion_id: u16,
     pub team_id: u16,
     pub encounter_count: u16,
@@ -354,7 +354,7 @@ pub struct LiveGameParticipant {
     pub perk_primary_selection_id: u16,
     pub perk_sub_style_id: u16,
     pub summoner_level: u16,
-    pub summoner_id: i32,
+    pub platform: PlatformRoute,
     pub puuid: Puuid,
     pub game_name: GameName,
     pub tag_line: TagLine,

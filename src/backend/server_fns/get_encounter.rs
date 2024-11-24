@@ -42,6 +42,26 @@ pub mod ssr {
 
         let start_date = filters.start_date_to_naive();
         let end_date = filters.end_date_to_naive();
+        let mut stats_query = QueryBuilder::new(r#"
+            select
+                count(lmp1.lol_match_id) as total_matches,
+                sum(CASE WHEN lmp1.won THEN 1 ELSE 0 END) as total_wins,
+                avg(lmp1.kills) as avg_kills,
+                avg(lmp1.deaths) as avg_deaths,
+                avg(lmp1.assists) as avg_assists,
+                avg(lmp1.kda) as avg_kda,
+                avg(lmp1.kill_participation) as avg_kill_participation,
+                sum(CASE WHEN lmp2.won THEN 1 ELSE 0 END) as encounter_total_wins,
+                avg(lmp2.kills) as encounter_avg_kills,
+                avg(lmp2.deaths) as encounter_avg_deaths,
+                avg(lmp2.assists) as encounter_avg_assists,
+                avg(lmp2.kda) as encounter_avg_kda,
+                avg(lmp2.kill_participation) as encounter_avg_kill_participation
+            FROM lol_match_participants lmp1
+                     left JOIN lol_matches lm ON lm.id = lmp1.lol_match_id
+                     JOIN lol_match_participants lmp2 ON lmp2.lol_match_id = lmp1.lol_match_id and lmp2.summoner_id =
+        "#);
+
 
         let mut query = QueryBuilder::new(r#"
             SELECT
@@ -96,42 +116,59 @@ pub mod ssr {
                      JOIN lol_match_participants lmp2 ON lmp2.lol_match_id = lmp1.lol_match_id and lmp2.summoner_id =
         "#);
         query.push_bind(encounter.id);
+        stats_query.push_bind(encounter.id);
         query.push(" AND ");
+        stats_query.push(" AND ");
         query.push_bind(is_with);
+        stats_query.push_bind(is_with);
         query.push(" = (lmp2.won = lmp1.won) where lmp1.summoner_id = ");
+        stats_query.push(" = (lmp2.won = lmp1.won) where lmp1.summoner_id = ");
         query.push_bind(summoner_id);
+        stats_query.push_bind(summoner_id);
 
         if let Some(champion_id) = filters.champion_id {
             let sql_filter = " AND lmp1.champion_id = ";
             query.push(sql_filter);
             query.push_bind(champion_id as i32);
+            stats_query.push(sql_filter);
+            stats_query.push_bind(champion_id as i32);
+
         }
 
         if let Some(queue_id) = filters.queue_id {
             let sql_filter = " AND lm.queue_id = ";
             query.push(sql_filter);
-            query.push_bind((Queue::from(queue_id) as u16) as i32);
+            query.push_bind(Queue::from(queue_id).to_u16() as i32);
+            stats_query.push(sql_filter);
+            stats_query.push_bind(Queue::from(queue_id).to_u16() as i32);
         }
 
         if let Some(start_date) = start_date {
             let sql_filter = " AND lm.match_end >= ";
             query.push(sql_filter);
             query.push_bind(start_date);
+            stats_query.push(sql_filter);
+            stats_query.push_bind(start_date);
         }
 
         if let Some(end_date) = end_date {
             let sql_filter = " AND lm.match_end <= ";
             query.push(sql_filter);
             query.push_bind(end_date);
+            stats_query.push(sql_filter);
+            stats_query.push_bind(end_date);
         }
 
         query.push(" order by lm.match_end desc limit 20 offset ");
         query.push_bind(offset);
+        let (encounter_stats , matches) = tokio::join!(
+          stats_query.build_query_as::<SummonerEncounterStatsModel>().fetch_one(db),
+          query.build_query_as::<EncounterRowModel>().fetch_all(db)
+        );
+        let encounter_stats = encounter_stats?;
+        let matches = matches?;
 
-
-        let matches = query.build_query_as::<EncounterRowModel>()
-            .fetch_all(db)
-            .await?
+        let matches =matches
             .into_iter()
             .map(|row| {
                 let match_duration = Duration::seconds(row.match_duration.unwrap_or_default() as i64);
@@ -159,7 +196,7 @@ pub mod ssr {
                     riot_match_id: string_to_fixed_array::<17>(row.riot_match_id.as_str()),
                     match_ended_since,
                     match_duration: match_duration_str,
-                    queue: row.queue_id.map(|q| Queue::from(q as u16)).unwrap(),
+                    queue: row.queue_id.map(|q| Queue::from_u16(q as u16)).unwrap(),
                     platform: row.platform.into(),
                     participant: SummonerEncounterParticipant {
                         summoner_id,
@@ -207,32 +244,7 @@ pub mod ssr {
                     },
                 }
             }).collect_vec();
-        let encounter_stats = sqlx::query_as::<_, SummonerEncounterStatsModel>(r#"
-            select
-                count(lmp1.lol_match_id) as total_matches,
-                sum(CASE WHEN lmp1.won THEN 1 ELSE 0 END) as total_wins,
-                avg(lmp1.kills) as avg_kills,
-                avg(lmp1.deaths) as avg_deaths,
-                avg(lmp1.assists) as avg_assists,
-                avg(lmp1.kda) as avg_kda,
-                avg(lmp1.kill_participation) as avg_kill_participation,
-                sum(CASE WHEN lmp2.won THEN 1 ELSE 0 END) as encounter_total_wins,
-                avg(lmp2.kills) as encounter_avg_kills,
-                avg(lmp2.deaths) as encounter_avg_deaths,
-                avg(lmp2.assists) as encounter_avg_assists,
-                avg(lmp2.kda) as encounter_avg_kda,
-                avg(lmp2.kill_participation) as encounter_avg_kill_participation
-            FROM lol_match_participants lmp1
-                     left JOIN lol_matches lm ON lm.id = lmp1.lol_match_id
-                     JOIN lol_match_participants lmp2 ON lmp2.lol_match_id = lmp1.lol_match_id and lmp2.summoner_id = $1
-                AND $2 = (lmp2.won = lmp1.won)
-           where lmp1.summoner_id = $3
-        "#)
-            .bind(encounter.id)
-            .bind(is_with)
-            .bind(summoner_id)
-            .fetch_one(db)
-            .await?;
+
         let total_pages = (encounter_stats.total_matches as f64 / per_page as f64).ceil() as u16;
         let summoner_stats = SummonerEncounterStats {
             total_wins: encounter_stats.total_wins as u16,

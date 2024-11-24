@@ -488,18 +488,27 @@ pub struct SummonerEncounterResult {
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterStats {
-    pub total_wins: u16,
-    pub total_loses: u16,
     pub avg_kills: f32,
     pub avg_deaths: f32,
     pub avg_assists: f32,
     pub avg_kda: f32,
     pub avg_kill_participation: f32,
+    pub total_wins: u16,
+    pub total_loses: u16,
 }
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterParticipant {
-    pub won: bool,
+    pub summoner_id: i32,
+    pub kda: f32,
+    pub kill_participation: f32,
+    pub item0_id: u32,
+    pub item1_id: u32,
+    pub item2_id: u32,
+    pub item3_id: u32,
+    pub item4_id: u32,
+    pub item5_id: u32,
+    pub item6_id: u32,
     pub champion_id: u16,
     pub champ_level: u16,
     pub kills: u16,
@@ -509,23 +518,14 @@ pub struct SummonerEncounterParticipant {
     pub summoner_spell2_id: u16,
     pub perk_primary_selection_id: u16,
     pub perk_sub_style_id: u16,
-    pub summoner_id: i32,
-    pub item0_id: u32,
-    pub item1_id: u32,
-    pub item2_id: u32,
-    pub item3_id: u32,
-    pub item4_id: u32,
-    pub item5_id: u32,
-    pub item6_id: u32,
-    pub kda: f32,
-    pub kill_participation: f32,
+    pub won: bool,
 }
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterMatch {
+    pub match_id: i32,
     pub platform: PlatformRoute,
     pub queue: Queue,
-    pub match_id: i32,
     pub riot_match_id: RiotMatchId,
     pub match_ended_since: String,
     pub match_duration: String,

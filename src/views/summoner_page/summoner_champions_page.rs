@@ -399,14 +399,6 @@ impl TableSortType {
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct ChampionStats {
-    pub champion_id: u16,
-    pub total_matches: u16,
-    pub total_wins: u16,
-    pub total_lose: u16,
-    pub total_double_kills: u16,
-    pub total_triple_kills: u16,
-    pub total_quadra_kills: u16,
-    pub total_penta_kills: u16,
     pub win_rate: f32,
     pub avg_kda: f32,
     pub avg_kill_participation: f32,
@@ -417,4 +409,12 @@ pub struct ChampionStats {
     pub avg_cs: u32,
     pub avg_damage_dealt_to_champions: u32,
     pub avg_damage_taken: u32,
+    pub champion_id: u16,
+    pub total_matches: u16,
+    pub total_wins: u16,
+    pub total_lose: u16,
+    pub total_double_kills: u16,
+    pub total_triple_kills: u16,
+    pub total_quadra_kills: u16,
+    pub total_penta_kills: u16,
 }

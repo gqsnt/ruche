@@ -130,10 +130,10 @@ pub fn SummonerPage() -> impl IntoView {
 
 #[derive(Clone, PartialEq, Eq,Debug, Serialize, Deserialize, Archive)]
 pub struct Summoner {
-    pub platform: PlatformRoute,
+    pub id: i32,
     pub profile_icon_id: u16,
     pub summoner_level: u16,
-    pub id: i32,
+    pub platform: PlatformRoute,
     pub game_name: GameName,
     pub tag_line: TagLine,
     pub puuid: Puuid,
