@@ -105,3 +105,8 @@ pub fn string_to_fixed_array<const N: usize>(input: &str) -> [u8; N] {
     result[..len].copy_from_slice(&bytes[..len]); // Copy the bytes into the fixed-size array.
     result
 }
+
+pub fn format_float_to_2digits(value: f32) -> String {
+    let value = (value * 100.0).round()/100.0;
+    value.to_string()
+}

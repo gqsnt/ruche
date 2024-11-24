@@ -6,7 +6,7 @@ use crate::views::summoner_page::summoner_live_page::SummonerLivePage;
 use crate::views::summoner_page::summoner_matches_page::SummonerMatchesPage;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos_router::hooks::query_signal_with_options;
+use leptos_router::hooks::{query_signal_with_options};
 use leptos_router::NavigateOptions;
 
 #[component]
@@ -17,13 +17,48 @@ pub fn SummonerNav() -> impl IntoView {
         ..Default::default()
     });
 
+    let (_, set_page_number) = query_signal_with_options::<u16>(
+        "page",
+        NavigateOptions {
+            scroll: false,
+            replace: true,
+            ..Default::default()
+        },
+    );
+
+    let (_, set_encounter_slug) = query_signal_with_options::<String>(
+        "encounter_slug",
+        NavigateOptions {
+            scroll: false,
+            replace: true,
+            ..Default::default()
+        },
+    );
+
+    let (_, set_encounter_platform) = query_signal_with_options::<String>(
+        "encounter_platform",
+        NavigateOptions {
+            scroll: false,
+            replace: true,
+            ..Default::default()
+        },
+    );
+
+    let switch_tab =  move |tab: Tabs| {
+        set_page_number(None);
+        set_encounter_slug(None);
+        set_encounter_platform(None);
+        set_tab(Some(tab.to_string()));
+    };
+
+
     view! {
         <div class="flex justify-center">
             <nav class="w-[768px]">
                 <ul class="flex justify-start space-x-2">
                     <li class="-mb-px">
                         <button
-                            on:click=move |_| set_tab(Some(Tabs::Matches.to_string()))
+                            on:click=move |_| switch_tab(Tabs::Matches)
                             class=move || {
                                 if tab().is_none() || tab() == Some(Tabs::Matches.to_string()) {
                                     "active-tab"
@@ -37,7 +72,7 @@ pub fn SummonerNav() -> impl IntoView {
                     </li>
                     <li class="-mb-px">
                         <button
-                            on:click=move |_| set_tab(Some(Tabs::Champions.to_string()))
+                            on:click=move |_| switch_tab(Tabs::Champions)
                             class=move || {
                                 if tab() == Some(Tabs::Champions.to_string()) {
                                     "active-tab"
@@ -51,7 +86,7 @@ pub fn SummonerNav() -> impl IntoView {
                     </li>
                     <li class="-mb-px">
                         <button
-                            on:click=move |_| set_tab(Some(Tabs::Encounters.to_string()))
+                            on:click=move |_| switch_tab(Tabs::Encounters)
                             class=move || {
                                 if tab() == Some(Tabs::Encounters.to_string()) {
                                     "active-tab"
@@ -65,7 +100,7 @@ pub fn SummonerNav() -> impl IntoView {
                     </li>
                     <li class="-mb-px">
                         <button
-                            on:click=move |_| set_tab(Some(Tabs::Live.to_string()))
+                            on:click=move |_| switch_tab(Tabs::Live)
                             class=move || {
                                 if tab() == Some(Tabs::Live.to_string()) {
                                     "active-tab"

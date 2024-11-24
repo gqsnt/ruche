@@ -5,7 +5,7 @@ use crate::consts::perk::Perk;
 use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{string_to_fixed_array, summoner_url, FixedToString, RiotMatchId};
+use crate::utils::{format_float_to_2digits, string_to_fixed_array, summoner_url, FixedToString, RiotMatchId};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
@@ -308,7 +308,7 @@ pub fn SummonerEncounterParticipantComponent(encounter_participant: SummonerEnco
                         /
                         <span class="text-white">{encounter_participant.assists}</span>
                     </div>
-                    <div>{format!("{:.2}", encounter_participant.kda)}:1 KDA</div>
+                    <div>{format_float_to_2digits( encounter_participant.kda)}:1 KDA</div>
                 </div>
                 <div
                     class="flex flex-col h-[58px]  "
@@ -320,7 +320,7 @@ pub fn SummonerEncounterParticipantComponent(encounter_participant: SummonerEnco
                     class=("border-blue-500", move || encounter_participant.won)
                 >
                     <div class="text-red-300 text-sm">
-                        P/Kill {format!("{:.2}", encounter_participant.kill_participation)}%
+                        P/Kill {format_float_to_2digits( encounter_participant.kill_participation)}%
                     </div>
                 </div>
             </div>
@@ -461,12 +461,12 @@ pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, 
                 </div>
                 <div class="flex flex-col">
                     <div>
-                        {format!("{:.2}", stats.avg_kills)}/ {format!("{:.2}", stats.avg_deaths)}/
-                        {format!("{:.2}", stats.avg_assists)}
+                        {format_float_to_2digits( stats.avg_kills)}/ {format_float_to_2digits( stats.avg_deaths)}/
+                        {format_float_to_2digits( stats.avg_assists)}
                     </div>
                     <div>
-                        {format!("{:.2}", stats.avg_kda)}:1 P/kill
-                        {format!("{:.2}", stats.avg_kill_participation)}%
+                        {format_float_to_2digits( stats.avg_kda)}:1 P/kill
+                        {format_float_to_2digits( stats.avg_kill_participation)}%
                     </div>
                 </div>
 

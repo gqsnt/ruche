@@ -3,7 +3,7 @@ use crate::consts::item::Item;
 use crate::consts::perk::Perk;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{format_with_spaces, summoner_encounter_url, summoner_url, FixedToString};
+use crate::utils::{format_float_to_2digits, format_with_spaces, summoner_encounter_url, summoner_url, FixedToString};
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use crate::views::summoner_page::Summoner;
 use leptos::prelude::*;
@@ -213,20 +213,20 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: u16, summoner: ReadSignal<S
                                 </td>
                                 <td class="py-1 text-center">
                                     <div class="flex  justify-center">
-                                        {participant.kills}/{participant.deaths}/
-                                        {participant.assists}
+                                        {participant.kills}/{participant.deaths}/{participant.assists}
                                         <div class="ml-1 relative">
-                                            {format!("({:.2}%)", participant.kill_participation)}
+                                            {format_float_to_2digits(participant.kill_participation)}%
                                         </div>
                                     </div>
                                 </td>
                                 <td class="py-1">
-                                    <div class="flex justify-center">
+                                    <div class="flex justify-center space-x-1">
                                         <div>
                                             {format_with_spaces(participant.damage_dealt_to_champions)}
-                                        </div>
-                                        <div class="ml-2">
-                                            {format_with_spaces(participant.damage_taken)}
+                                        </div><span>-</span>
+
+                                        <div >
+                                             {format_with_spaces(participant.damage_taken)}
                                         </div>
                                     </div>
                                 </td>

@@ -67,6 +67,7 @@ pub fn SummonerSearchPage() -> impl IntoView {
                     />
                     <select
                         class="my-select"
+                        aria-label="Platform Type"
                         node_ref=platform_type_node
                         name="platform_type"
                         prop:value=platform_type

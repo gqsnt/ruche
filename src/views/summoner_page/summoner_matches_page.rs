@@ -6,7 +6,7 @@ use crate::consts::item::Item;
 use crate::consts::perk::Perk;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{summoner_encounter_url, summoner_url, FixedToString, GameName, ProPlayerSlug, RiotMatchId, TagLine};
+use crate::utils::{format_float_to_2digits, summoner_encounter_url, summoner_url, FixedToString, GameName, ProPlayerSlug, RiotMatchId, TagLine};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
@@ -264,7 +264,7 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Summoner>) -> impl 
                                     /
                                     <span class="text-white">{match_.assists}</span>
                                 </div>
-                                <div>{format!("{:.2}", match_.kda)}:1 KDA</div>
+                                <div>{format_float_to_2digits( match_.kda)}:1 KDA</div>
                             </div>
                             <div
                                 class:border-red-500=move || !match_.won
@@ -272,7 +272,7 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Summoner>) -> impl 
                                 class="flex flex-col h-[58px] pl-2 border-l-2"
                             >
                                 <div class="text-red-300">
-                                    P/Kill {format!("{:.2}", match_.kill_participation)}%
+                                    P/Kill {format_float_to_2digits( match_.kill_participation)}%
                                 </div>
                             </div>
                         </div>

@@ -4,7 +4,7 @@ use crate::consts::champion::Champion;
 use crate::consts::perk::Perk;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{summoner_encounter_url, summoner_url, FixedToString, GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine};
+use crate::utils::{format_float_to_2digits, summoner_encounter_url, summoner_url, FixedToString, GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine};
 use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
 use leptos::prelude::*;
@@ -259,7 +259,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                             Either::Left(
                                                 view! {
                                                     <div>
-                                                        {format!("{:.2}", ranked_stats.ranked_win_rate)}%
+                                                        {format_float_to_2digits( ranked_stats.ranked_win_rate)}%
                                                         {ranked_stats.total_ranked}G
                                                     </div>
                                                     <div>
@@ -283,7 +283,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                             Either::Left(
                                                 view! {
                                                     <div>
-                                                        {format!("{:.2}", champion_stats.champion_win_rate)}%
+                                                        {format_float_to_2digits( champion_stats.champion_win_rate)}%
                                                         {champion_stats.total_champion_played}G
                                                     </div>
                                                     <div>
@@ -314,9 +314,9 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                                         )}:1
                                                     </div>
                                                     <div>
-                                                        {format!("{:.2}", champion_stats.avg_kills)}/
-                                                        {format!("{:.2}", champion_stats.avg_deaths)}/
-                                                        {format!("{:.2}", champion_stats.avg_assists)}
+                                                        {format_float_to_2digits( champion_stats.avg_kills)}/
+                                                        {format_float_to_2digits( champion_stats.avg_deaths)}/
+                                                        {format_float_to_2digits( champion_stats.avg_assists)}
                                                     </div>
                                                 },
                                             )

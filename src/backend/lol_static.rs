@@ -23,8 +23,7 @@ pub fn get_assets_dest_path() -> PathBuf {
 pub struct ImageToDownload {
     url: String,
     path: PathBuf,
-    size: (u32, u32),
-    to_avif: bool,
+    size: (u32, u32)
 }
 
 
@@ -63,8 +62,7 @@ pub async fn init_static_data() -> AppResult<()> {
             images_to_download.push(ImageToDownload {
                 url: image_url,
                 path: path.clone(),
-                size: (60, 60),
-                to_avif: true,
+                size: (48, 48),
             });
         }
     }
@@ -85,7 +83,6 @@ pub async fn init_static_data() -> AppResult<()> {
                 url,
                 path,
                 size: (22, 22),
-                to_avif: true,
             });
         }
     }
@@ -101,22 +98,18 @@ pub async fn init_static_data() -> AppResult<()> {
 }
 
 
-pub async fn encode_and_save_image(image_data: &[u8], file_path: &Path, size: (u32, u32), to_avif: bool) -> AppResult<()> {
+pub async fn encode_and_save_image(image_data: &[u8], file_path: &Path, size: (u32, u32)) -> AppResult<()> {
     println!("Saving image: {:?}", file_path);
     let img = image::load_from_memory_with_format(image_data, image::ImageFormat::Png).unwrap();
     let resized = img.resize_exact(size.0, size.1, image::imageops::FilterType::Lanczos3);
     //tokio::fs::create_dir_all(file_path.parent().unwrap()).await.unwrap();
-    if to_avif {
-        let result = Encoder::new()
-            .with_quality(75.0)
-            .with_speed(1)
-            .encode_rgba(Img::new(resized.to_rgba8().as_bytes().as_rgba(), resized.width() as usize, resized.height() as usize))?;
+    let result = Encoder::new()
+        .with_quality(75.0)
+        .with_speed(1)
+        .encode_rgba(Img::new(resized.to_rgba8().as_bytes().as_rgba(), resized.width() as usize, resized.height() as usize))?;
 
 
-        tokio::fs::write(file_path, result.avif_file).await?;
-    } else {
-        resized.save(file_path).unwrap();
-    }
+    tokio::fs::write(file_path, result.avif_file).await?;
     Ok(())
 }
 
@@ -134,8 +127,7 @@ async fn download_and_save_images(images_to_download: Vec<ImageToDownload>) -> A
                         let image_data_vec = image_data.to_vec();
                         let path = image.path.clone();
                         let size = image.size;
-                        let to_avif = image.to_avif;
-                        encode_and_save_image(&image_data_vec, &path, size, to_avif).await.unwrap()
+                        encode_and_save_image(&image_data_vec, &path, size).await.unwrap()
                     }
                     Err(e) => {
                         eprintln!("Error downloading image: {}", e);
@@ -161,7 +153,6 @@ pub async fn get_perks(version: String) -> AppResult<Vec<ImageToDownload>> {
                 url: image_url,
                 path,
                 size: (22, 22),
-                to_avif: true,
             });
         }
     }
@@ -175,8 +166,7 @@ pub async fn get_perks(version: String) -> AppResult<Vec<ImageToDownload>> {
             images_to_download.push(ImageToDownload {
                 url: image_url,
                 path,
-                size: (22, 22),
-                to_avif: true,
+                size: (22, 22)
             });
         }
     }
@@ -199,8 +189,7 @@ pub async fn get_items(version: String) -> AppResult<Vec<ImageToDownload>> {
             images_to_download.push(ImageToDownload {
                 url: image_url,
                 path: path.clone(),
-                size: (22, 22),
-                to_avif: true,
+                size: (22, 22)
             });
         }
     }
@@ -232,7 +221,6 @@ pub async fn update_profile_icons_image(version: String) -> AppResult<Vec<ImageT
                 url: image_url,
                 path: path.clone(),
                 size: (64, 64),
-                to_avif: true,
             });
         }
     }

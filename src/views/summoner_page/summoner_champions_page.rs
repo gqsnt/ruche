@@ -9,7 +9,7 @@ use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
-use crate::utils::{format_with_spaces, FixedToString};
+use crate::utils::{format_float_to_2digits, format_with_spaces, FixedToString};
 
 #[component]
 pub fn SummonerChampionsPage() -> impl IntoView {
@@ -256,15 +256,15 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                     </td>
                                                                     <td class="text-xs border border-gray-800">
                                                                         {champion.total_wins}W {champion.total_lose}L
-                                                                        {format!("{:.2}", champion.win_rate)}%
+                                                                        {format_float_to_2digits( champion.win_rate)}%
                                                                     </td>
                                                                     <td class="text-xs border border-gray-800">
                                                                         <div>
-                                                                            <div>{format!("{:.2}", champion.avg_kda)}:1</div>
+                                                                            <div>{format_float_to_2digits( champion.avg_kda)}:1</div>
                                                                             <div>
-                                                                                {format!("{:.2}", champion.avg_kills)}/
-                                                                                {format!("{:.2}", champion.avg_deaths)}/
-                                                                                {format!("{:.2}", champion.avg_assists)}
+                                                                                {format_float_to_2digits( champion.avg_kills)}/
+                                                                                {format_float_to_2digits( champion.avg_deaths)}/
+                                                                                {format_float_to_2digits( champion.avg_assists)}
                                                                             </div>
                                                                         </div>
                                                                     </td>
