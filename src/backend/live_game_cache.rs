@@ -3,14 +3,13 @@ use dashmap::DashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
+use crate::utils::{Puuid, RiotMatchId};
 
-type GameId = String;
-type Puuid = String;
 
 
 pub struct LiveGameCache {
-    game_cache: DashMap<GameId, (LiveGame, Instant)>,
-    puuid_to_game: DashMap<Puuid, GameId>,
+    game_cache: DashMap<RiotMatchId, (LiveGame, Instant)>,
+    puuid_to_game: DashMap<Puuid, RiotMatchId>,
     expiration_duration: Duration,
 }
 
@@ -32,7 +31,7 @@ impl LiveGameCache {
                 let diff = Instant::now() - *timestamp;
                 if diff < self.expiration_duration {
                     let mut data = game_data.clone();
-                    data.game_length += diff.as_secs() as i64;
+                    data.game_length += diff.as_secs() as u16;
                     return Some(data);
                 } else {
                     // Data expired, remove from cache
@@ -48,7 +47,7 @@ impl LiveGameCache {
     }
 
     // Update the cache with new game data
-    pub fn set_game_data(&self, game_id: GameId, puuids: Vec<Puuid>, game_data: LiveGame) {
+    pub fn set_game_data(&self, game_id: RiotMatchId, puuids: Vec<Puuid>, game_data: LiveGame) {
         let now = Instant::now();
         self.game_cache.insert(game_id.clone(), (game_data, now));
         for puuid in puuids {
@@ -65,7 +64,7 @@ pub async fn schedule_live_game_cache_cleanup_task(cache: Arc<LiveGameCache>, in
             let now = Instant::now();
 
             // Clean up game_cache
-            let expired_game_ids: Vec<GameId> = cache
+            let expired_game_ids: Vec<RiotMatchId> = cache
                 .game_cache
                 .iter()
                 .filter_map(|entry| {

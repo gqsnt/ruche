@@ -3,7 +3,7 @@ use crate::consts::item::Item;
 use crate::consts::perk::Perk;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{summoner_encounter_url, summoner_url};
+use crate::utils::{format_with_spaces, summoner_encounter_url, summoner_url, FixedToString};
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use crate::views::summoner_page::Summoner;
 use leptos::prelude::*;
@@ -43,7 +43,7 @@ pub fn MatchDetailsOverview(summoner: ReadSignal<Summoner>, match_details: ReadS
 
 
 #[component]
-pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner: ReadSignal<Summoner>, participants: Vec<LolMatchParticipantDetails>) -> impl IntoView {
+pub fn MatchDetailsOverviewTable(won: bool, team_id: u16, summoner: ReadSignal<Summoner>, participants: Vec<LolMatchParticipantDetails>) -> impl IntoView {
     view! {
         <table class="table-fixed text-xs w-full border-collapse">
             <colgroup>
@@ -82,9 +82,6 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner: ReadSignal<S
                         let item5_id = participant.item5_id;
                         let item6_id = participant.item6_id;
                         let is_pro_player = participant.summoner_pro_player_slug.is_some();
-                        let participant_platform = participant.summoner_platform.clone();
-                        let participant_name = participant.summoner_name.clone();
-                        let participant_tag_line = participant.summoner_tag_line.clone();
 
                         view! {
                             <tr
@@ -175,12 +172,12 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner: ReadSignal<S
                                         <Show when=move || (participant.encounter_count > 1)>
                                             <a
                                                 href=summoner_encounter_url(
-                                                    summoner().platform.to_string().as_str(),
-                                                    summoner().game_name.as_str(),
-                                                    summoner().tag_line.as_str(),
-                                                    participant_platform.as_str(),
-                                                    participant_name.as_str(),
-                                                    participant_tag_line.as_str(),
+                                                    summoner().platform.to_string(),
+                                                    summoner().tag_line.to_string(),
+                                                    summoner().game_name.to_string(),
+                                                    participant.platform.to_string(),
+                                                    participant.game_name.to_string(),
+                                                    participant.tag_line.to_string(),
                                                 )
                                                 class="text-xs bg-green-800 rounded px-0.5 text-center"
                                             >
@@ -192,7 +189,7 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner: ReadSignal<S
                                                 target="_blank"
                                                 href=format!(
                                                     "https://lolpros.gg/player/{}",
-                                                    participant.summoner_pro_player_slug.clone().unwrap(),
+                                                    participant.summoner_pro_player_slug.unwrap().to_str(),
                                                 )
                                                 class="text-xs bg-purple-800 rounded px-0.5 text-center"
                                             >
@@ -202,12 +199,12 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner: ReadSignal<S
                                         <a
                                             target="_blank"
                                             href=summoner_url(
-                                                participant.summoner_platform.clone().as_str(),
-                                                participant.summoner_name.clone().as_str(),
-                                                participant.summoner_tag_line.clone().as_str(),
+                                                participant.platform.to_string(),
+                                                participant.game_name.to_string(),
+                                                participant.tag_line.to_string(),
                                             )
                                         >
-                                            {participant.summoner_name.clone()}
+                                            {participant.game_name.to_string()}
                                         </a>
                                     </div>
                                     <span class="text-[11px]">
@@ -220,16 +217,16 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: i32, summoner: ReadSignal<S
                                         {participant.assists}
                                         <div class="ml-1 relative">
                                             {format!(
-                                                "({}%)",
-                                                (participant.kill_participation * 100.0).round(),
+                                                "({:.2}%)",
+                                                participant.kill_participation,
                                             )}
                                         </div>
                                     </div>
                                 </td>
                                 <td class="py-1">
                                     <div class="flex justify-center">
-                                        <div>{participant.damage_dealt_to_champions}</div>
-                                        <div class="ml-2">{participant.damage_taken}</div>
+                                        <div>{format_with_spaces(participant.damage_dealt_to_champions)}</div>
+                                        <div class="ml-2">{format_with_spaces(participant.damage_taken)}</div>
                                     </div>
                                 </td>
                                 <td class="py-1">

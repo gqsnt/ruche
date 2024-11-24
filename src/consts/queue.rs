@@ -1,4 +1,6 @@
-#[repr(u16)]
+use rkyv::{Archive, Deserialize, Serialize};
+
+#[repr(u8)]
 #[derive(
     Debug,
     Clone,
@@ -6,471 +8,108 @@
     Eq,
     PartialEq,
     Hash,
+    Serialize, Deserialize, Archive
 )]
 pub enum Queue {
-    /// `0`.
-    /// Games on Custom games
-    Custom = 0,
-
-    /// `2`.
-    /// 5v5 Blind Pick games on Summoner's Rift
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 430
-    SummonersRift5v5BlindPickDeprecated2 = 2,
-
-    /// `4`.
-    /// 5v5 Ranked Solo games on Summoner's Rift
-    ///
-    /// Deprecated in favor of queueId 420
-    SummonersRift5v5RankedSoloDeprecated4 = 4,
-
-    /// `6`.
-    /// 5v5 Ranked Premade games on Summoner's Rift
-    ///
-    /// Game mode deprecated
-    SummonersRift5v5RankedPremade = 6,
-
-    /// `7`.
-    /// Co-op vs AI games on Summoner's Rift
-    ///
-    /// Deprecated in favor of queueId 32 and 33
-    SummonersRiftCoOpVsAi = 7,
-
-    /// `8`.
-    /// 3v3 Normal games on Twisted Treeline
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 460
-    TwistedTreeline3v3Normal = 8,
-
-    /// `9`.
-    /// 3v3 Ranked Flex games on Twisted Treeline
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 470
-    TwistedTreeline3v3RankedFlexDeprecated9 = 9,
-
-    /// `14`.
-    /// 5v5 Draft Pick games on Summoner's Rift
-    ///
-    /// Deprecated in favor of queueId 400
-    SummonersRift5v5DraftPickDeprecated14 = 14,
-
-    /// `16`.
-    /// 5v5 Dominion Blind Pick games on Crystal Scar
-    ///
-    /// Game mode deprecated
-    CrystalScar5v5DominionBlindPick = 16,
-
-    /// `17`.
-    /// 5v5 Dominion Draft Pick games on Crystal Scar
-    ///
-    /// Game mode deprecated
-    CrystalScar5v5DominionDraftPick = 17,
-
-    /// `25`.
-    /// Dominion Co-op vs AI games on Crystal Scar
-    ///
-    /// Game mode deprecated
-    CrystalScarDominionCoOpVsAi = 25,
-
-    /// `31`.
-    /// Co-op vs AI Intro Bot games on Summoner's Rift
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 830
-    SummonersRiftCoOpVsAiIntroBotDeprecated31 = 31,
-
-    /// `32`.
-    /// Co-op vs AI Beginner Bot games on Summoner's Rift
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 840
-    SummonersRiftCoOpVsAiBeginnerBotDeprecated32 = 32,
-
-    /// `33`.
-    /// Co-op vs AI Intermediate Bot games on Summoner's Rift
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 850
-    SummonersRiftCoOpVsAiIntermediateBotDeprecated33 = 33,
-
-    /// `41`.
-    /// 3v3 Ranked Team games on Twisted Treeline
-    ///
-    /// Game mode deprecated
-    TwistedTreeline3v3RankedTeam = 41,
-
-    /// `42`.
-    /// 5v5 Ranked Team games on Summoner's Rift
-    ///
-    /// Game mode deprecated
-    SummonersRift5v5RankedTeam = 42,
-
-    /// `52`.
-    /// Co-op vs AI games on Twisted Treeline
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 800
-    TwistedTreelineCoOpVsAi = 52,
-
-    /// `61`.
-    /// 5v5 Team Builder games on Summoner's Rift
-    ///
-    /// Game mode deprecated
-    SummonersRift5v5TeamBuilder = 61,
-
-    /// `65`.
-    /// 5v5 ARAM games on Howling Abyss
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 450
-    HowlingAbyss5v5AramDeprecated65 = 65,
-
-    /// `67`.
-    /// ARAM Co-op vs AI games on Howling Abyss
-    ///
-    /// Game mode deprecated
-    HowlingAbyssAramCoOpVsAi = 67,
-
-    /// `70`.
-    /// One for All games on Summoner's Rift
-    ///
-    /// Deprecated in patch 8.6 in favor of queueId 1020
-    SummonersRiftOneForAllDeprecated70 = 70,
-
-    /// `72`.
-    /// 1v1 Snowdown Showdown games on Howling Abyss
-    HowlingAbyss1v1SnowdownShowdown = 72,
-
-    /// `73`.
-    /// 2v2 Snowdown Showdown games on Howling Abyss
-    HowlingAbyss2v2SnowdownShowdown = 73,
-
-    /// `75`.
-    /// 6v6 Hexakill games on Summoner's Rift
-    SummonersRift6v6Hexakill = 75,
-
-    /// `76`.
-    /// Ultra Rapid Fire games on Summoner's Rift
-    SummonersRiftUltraRapidFire = 76,
-
-    /// `78`.
-    /// One For All: Mirror Mode games on Howling Abyss
-    HowlingAbyssOneForAllMirrorMode = 78,
-
-    /// `83`.
-    /// Co-op vs AI Ultra Rapid Fire games on Summoner's Rift
-    SummonersRiftCoOpVsAiUltraRapidFire = 83,
-
-    /// `91`.
-    /// Doom Bots Rank 1 games on Summoner's Rift
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 950
-    SummonersRiftDoomBotsRank1 = 91,
-
-    /// `92`.
-    /// Doom Bots Rank 2 games on Summoner's Rift
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 950
-    SummonersRiftDoomBotsRank2 = 92,
-
-    /// `93`.
-    /// Doom Bots Rank 5 games on Summoner's Rift
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 950
-    SummonersRiftDoomBotsRank5 = 93,
-
-    /// `96`.
-    /// Ascension games on Crystal Scar
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 910
-    CrystalScarAscensionDeprecated96 = 96,
-
-    /// `98`.
-    /// 6v6 Hexakill games on Twisted Treeline
-    TwistedTreeline6v6Hexakill = 98,
-
-    /// `100`.
-    /// 5v5 ARAM games on Butcher's Bridge
-    ButchersBridge5v5Aram = 100,
-
-    /// `300`.
-    /// Legend of the Poro King games on Howling Abyss
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 920
-    HowlingAbyssLegendOfThePoroKingDeprecated300 = 300,
-
-    /// `310`.
-    /// Nemesis games on Summoner's Rift
-    SummonersRiftNemesis = 310,
-
-    /// `313`.
-    /// Black Market Brawlers games on Summoner's Rift
-    SummonersRiftBlackMarketBrawlers = 313,
-
-    /// `315`.
-    /// Nexus Siege games on Summoner's Rift
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 940
-    SummonersRiftNexusSiegeDeprecated315 = 315,
-
-    /// `317`.
-    /// Definitely Not Dominion games on Crystal Scar
-    CrystalScarDefinitelyNotDominion = 317,
-
-    /// `318`.
-    /// ARURF games on Summoner's Rift
-    ///
-    /// Deprecated in patch 7.19 in favor of queueId 900
-    SummonersRiftArurfDeprecated318 = 318,
-
-    /// `325`.
-    /// All Random games on Summoner's Rift
-    SummonersRiftAllRandom = 325,
-
-    /// `400`.
-    /// 5v5 Draft Pick games on Summoner's Rift
-    SummonersRift5v5DraftPick = 400,
-
-    /// `410`.
-    /// 5v5 Ranked Dynamic games on Summoner's Rift
-    ///
-    /// Game mode deprecated in patch 6.22
-    SummonersRift5v5RankedDynamic = 410,
-
-    /// `420`.
-    /// 5v5 Ranked Solo games on Summoner's Rift
-    SummonersRift5v5RankedSolo = 420,
-
-    /// `430`.
-    /// 5v5 Blind Pick games on Summoner's Rift
-    SummonersRift5v5BlindPick = 430,
-
-    /// `440`.
-    /// 5v5 Ranked Flex games on Summoner's Rift
-    SummonersRift5v5RankedFlex = 440,
-
-    /// `450`.
-    /// 5v5 ARAM games on Howling Abyss
-    HowlingAbyss5v5Aram = 450,
-
-    /// `460`.
-    /// 3v3 Blind Pick games on Twisted Treeline
-    ///
-    /// Deprecated in patch 9.23
-    TwistedTreeline3v3BlindPick = 460,
-
-    /// `470`.
-    /// 3v3 Ranked Flex games on Twisted Treeline
-    ///
-    /// Deprecated in patch 9.23
-    TwistedTreeline3v3RankedFlexDeprecated470 = 470,
-
-    /// `490`.
-    /// Normal (Quickplay) games on Summoner's Rift
-    SummonersRiftNormalQuickplay = 490,
-
-    /// `600`.
-    /// Blood Hunt Assassin games on Summoner's Rift
-    SummonersRiftBloodHuntAssassin = 600,
-
-    /// `610`.
-    /// Dark Star: Singularity games on Cosmic Ruins
-    CosmicRuinsDarkStarSingularity = 610,
-
-    /// `700`.
-    /// Summoner's Rift Clash games on Summoner's Rift
-    SummonersRiftClash = 700,
-
-    /// `720`.
-    /// ARAM Clash games on Howling Abyss
-    HowlingAbyssAramClash = 720,
-
-    /// `800`.
-    /// Co-op vs. AI Intermediate Bot games on Twisted Treeline
-    ///
-    /// Deprecated in patch 9.23
-    TwistedTreelineCoOpVsAiIntermediateBot = 800,
-
-    /// `810`.
-    /// Co-op vs. AI Intro Bot games on Twisted Treeline
-    ///
-    /// Deprecated in patch 9.23
-    TwistedTreelineCoOpVsAiIntroBot = 810,
-
-    /// `820`.
-    /// Co-op vs. AI Beginner Bot games on Twisted Treeline
-    TwistedTreelineCoOpVsAiBeginnerBot = 820,
-
-    /// `830`.
-    /// Co-op vs. AI Intro Bot games on Summoner's Rift
-    SummonersRiftCoOpVsAiIntroBot = 830,
-
-    /// `840`.
-    /// Co-op vs. AI Beginner Bot games on Summoner's Rift
-    SummonersRiftCoOpVsAiBeginnerBot = 840,
-
-    /// `850`.
-    /// Co-op vs. AI Intermediate Bot games on Summoner's Rift
-    SummonersRiftCoOpVsAiIntermediateBot = 850,
-
-    /// `900`.
-    /// ARURF games on Summoner's Rift
-    SummonersRiftArurf = 900,
-
-    /// `910`.
-    /// Ascension games on Crystal Scar
-    CrystalScarAscension = 910,
-
-    /// `920`.
-    /// Legend of the Poro King games on Howling Abyss
-    HowlingAbyssLegendOfThePoroKing = 920,
-
-    /// `940`.
-    /// Nexus Siege games on Summoner's Rift
-    SummonersRiftNexusSiege = 940,
-
-    /// `950`.
-    /// Doom Bots Voting games on Summoner's Rift
-    SummonersRiftDoomBotsVoting = 950,
-
-    /// `960`.
-    /// Doom Bots Standard games on Summoner's Rift
-    SummonersRiftDoomBotsStandard = 960,
-
-    /// `980`.
-    /// Star Guardian Invasion: Normal games on Valoran City Park
-    ValoranCityParkStarGuardianInvasionNormal = 980,
-
-    /// `990`.
-    /// Star Guardian Invasion: Onslaught games on Valoran City Park
-    ValoranCityParkStarGuardianInvasionOnslaught = 990,
-
-    /// `1000`.
-    /// PROJECT: Hunters games on Overcharge
-    OverchargeProjectHunters = 1000,
-
-    /// `1010`.
-    /// Snow ARURF games on Summoner's Rift
-    SummonersRiftSnowArurf = 1010,
-
-    /// `1020`.
-    /// One for All games on Summoner's Rift
-    SummonersRiftOneForAll = 1020,
-
-    /// `1030`.
-    /// Odyssey Extraction: Intro games on Crash Site
-    CrashSiteOdysseyExtractionIntro = 1030,
-
-    /// `1040`.
-    /// Odyssey Extraction: Cadet games on Crash Site
-    CrashSiteOdysseyExtractionCadet = 1040,
-
-    /// `1050`.
-    /// Odyssey Extraction: Crewmember games on Crash Site
-    CrashSiteOdysseyExtractionCrewmember = 1050,
-
-    /// `1060`.
-    /// Odyssey Extraction: Captain games on Crash Site
-    CrashSiteOdysseyExtractionCaptain = 1060,
-
-    /// `1070`.
-    /// Odyssey Extraction: Onslaught games on Crash Site
-    CrashSiteOdysseyExtractionOnslaught = 1070,
-
-    /// `1090`.
-    /// Teamfight Tactics games on Convergence
-    ConvergenceTeamfightTactics = 1090,
-
-    /// `1091`.
-    /// Teamfight Tactics 1v0 games on Convergence
-    ConvergenceTeamfightTactics1v0 = 1091,
-
-    /// `1092`.
-    /// Teamfight Tactics 2v0 games on Convergence
-    ConvergenceTeamfightTactics2v0 = 1092,
-
-    /// `1100`.
-    /// Ranked Teamfight Tactics games on Convergence
-    ConvergenceRankedTeamfightTactics = 1100,
-
-    /// `1110`.
-    /// Teamfight Tactics Tutorial games on Convergence
-    ConvergenceTeamfightTacticsTutorial = 1110,
-
-    /// `1111`.
-    /// Teamfight Tactics Simulation games on Convergence
-    ConvergenceTeamfightTacticsSimulation = 1111,
-
-    /// `1130`.
-    /// Ranked Teamfight Tactics (Hyper Roll) games on Convergence
-    ConvergenceRankedTeamfightTacticsHyperRoll = 1130,
-
-    /// `1150`.
-    /// Ranked Teamfight Tactics (Double Up Workshop) games on Convergence
-    ///
-    /// Deprecated in patch 12.11 in favor of queueId 1160
-    ConvergenceRankedTeamfightTacticsDoubleUpWorkshopDeprecated1150 = 1150,
-
-    /// `1160`.
-    /// Ranked Teamfight Tactics (Double Up Workshop) games on Convergence
-    ConvergenceRankedTeamfightTacticsDoubleUpWorkshop = 1160,
-
-    /// `1200`.
-    /// Nexus Blitz games on Nexus Blitz
-    ///
-    /// Deprecated in patch 9.2 in favor of queueId 1300
-    NexusBlitzDeprecated1200 = 1200,
-
-    /// `1210`.
-    /// Teamfight Tactics (Choncc's Treasure) games on Convergence
-    ConvergenceTeamfightTacticsChonccsTreasure = 1210,
-
-    /// `1300`.
-    /// Nexus Blitz games on Nexus Blitz
-    NexusBlitz = 1300,
-
-    /// `1400`.
-    /// Ultimate Spellbook games on Summoner's Rift
-    SummonersRiftUltimateSpellbook = 1400,
-
-    /// `1700`.
-    /// 2v2v2v2 `CHERRY` games on Arena
-    Arena2v2v2v2Cherry = 1700,
-
-    /// `1710`.
-    /// Arena (`CHERRY` games) games on Rings of Wrath
-    RingsOfWrathArenaCherryGames = 1710,
-
-    /// `1810`.
-    /// Swarm solo (`STRAWBERRY` games) games on Swarm
-    SwarmSoloStrawberryGames = 1810,
-
-    /// `1820`.
-    /// Swarm duo (`STRAWBERRY` games) games on Swarm
-    SwarmDuoStrawberryGames = 1820,
-
-    /// `1830`.
-    /// Swarm trio (`STRAWBERRY` games) games on Swarm
-    SwarmTrioStrawberryGames = 1830,
-
-    /// `1840`.
-    /// Swarm quad (`STRAWBERRY` games) games on Swarm
-    SwarmQuadStrawberryGames = 1840,
-
-    /// `1900`.
-    /// Pick URF games on Summoner's Rift
-    SummonersRiftPickUrf = 1900,
-
-    /// `2000`.
-    /// Tutorial 1 games on Summoner's Rift
-    SummonersRiftTutorial1 = 2000,
-
-    /// `2010`.
-    /// Tutorial 2 games on Summoner's Rift
-    SummonersRiftTutorial2 = 2010,
-
-    /// `2020`.
-    /// Tutorial 3 games on Summoner's Rift
-    SummonersRiftTutorial3 = 2020,
-
-    /// `6000`.
-    /// Teamfight Tactics Set 3.5 Revival games on Convergence
-    ConvergenceTeamfightTacticsSet35Revival = 6000,
+    Custom,
+    SummonersRift5v5BlindPickDeprecated2,
+    SummonersRift5v5RankedSoloDeprecated4,
+    SummonersRift5v5RankedPremade,
+    SummonersRiftCoOpVsAi,
+    TwistedTreeline3v3Normal,
+    TwistedTreeline3v3RankedFlexDeprecated9,
+    SummonersRift5v5DraftPickDeprecated14,
+    CrystalScar5v5DominionBlindPick,
+    CrystalScar5v5DominionDraftPick,
+    CrystalScarDominionCoOpVsAi,
+    SummonersRiftCoOpVsAiIntroBotDeprecated31,
+    SummonersRiftCoOpVsAiBeginnerBotDeprecated32,
+    SummonersRiftCoOpVsAiIntermediateBotDeprecated33,
+    TwistedTreeline3v3RankedTeam,
+    SummonersRift5v5RankedTeam,
+    TwistedTreelineCoOpVsAi,
+    SummonersRift5v5TeamBuilder,
+    HowlingAbyss5v5AramDeprecated65,
+    HowlingAbyssAramCoOpVsAi,
+    SummonersRiftOneForAllDeprecated70,
+    HowlingAbyss1v1SnowdownShowdown,
+    HowlingAbyss2v2SnowdownShowdown,
+    SummonersRift6v6Hexakill,
+    SummonersRiftUltraRapidFire,
+    HowlingAbyssOneForAllMirrorMode,
+    SummonersRiftCoOpVsAiUltraRapidFire,
+    SummonersRiftDoomBotsRank1,
+    SummonersRiftDoomBotsRank2,
+    SummonersRiftDoomBotsRank5,
+    CrystalScarAscensionDeprecated96,
+    TwistedTreeline6v6Hexakill,
+    ButchersBridge5v5Aram,
+    HowlingAbyssLegendOfThePoroKingDeprecated300,
+    SummonersRiftNemesis,
+    SummonersRiftBlackMarketBrawlers,
+    SummonersRiftNexusSiegeDeprecated315,
+    CrystalScarDefinitelyNotDominion,
+    SummonersRiftArurfDeprecated318,
+    SummonersRiftAllRandom,
+    SummonersRift5v5DraftPick,
+    SummonersRift5v5RankedDynamic,
+    SummonersRift5v5RankedSolo,
+    SummonersRift5v5BlindPick,
+    SummonersRift5v5RankedFlex,
+    HowlingAbyss5v5Aram,
+    TwistedTreeline3v3BlindPick,
+    TwistedTreeline3v3RankedFlexDeprecated470,
+    SummonersRiftNormalQuickplay,
+    SummonersRiftBloodHuntAssassin,
+    CosmicRuinsDarkStarSingularity,
+    SummonersRiftClash,
+    HowlingAbyssAramClash,
+    TwistedTreelineCoOpVsAiIntermediateBot,
+    TwistedTreelineCoOpVsAiIntroBot,
+    TwistedTreelineCoOpVsAiBeginnerBot,
+    SummonersRiftCoOpVsAiIntroBot,
+    SummonersRiftCoOpVsAiBeginnerBot,
+    SummonersRiftCoOpVsAiIntermediateBot,
+    SummonersRiftArurf,
+    CrystalScarAscension,
+    HowlingAbyssLegendOfThePoroKing,
+    SummonersRiftNexusSiege,
+    SummonersRiftDoomBotsVoting,
+    SummonersRiftDoomBotsStandard,
+    ValoranCityParkStarGuardianInvasionNormal,
+    ValoranCityParkStarGuardianInvasionOnslaught,
+    OverchargeProjectHunters,
+    SummonersRiftSnowArurf,
+    SummonersRiftOneForAll,
+    CrashSiteOdysseyExtractionIntro,
+    CrashSiteOdysseyExtractionCadet,
+    CrashSiteOdysseyExtractionCrewmember,
+    CrashSiteOdysseyExtractionCaptain,
+    CrashSiteOdysseyExtractionOnslaught,
+    ConvergenceTeamfightTactics,
+    ConvergenceTeamfightTactics1v0,
+    ConvergenceTeamfightTactics2v0,
+    ConvergenceRankedTeamfightTactics,
+    ConvergenceTeamfightTacticsTutorial,
+    ConvergenceTeamfightTacticsSimulation,
+    ConvergenceRankedTeamfightTacticsHyperRoll,
+    ConvergenceRankedTeamfightTacticsDoubleUpWorkshopDeprecated1150,
+    ConvergenceRankedTeamfightTacticsDoubleUpWorkshop,
+    NexusBlitzDeprecated1200,
+    ConvergenceTeamfightTacticsChonccsTreasure,
+    NexusBlitz,
+    SummonersRiftUltimateSpellbook,
+    Arena2v2v2v2Cherry,
+    RingsOfWrathArenaCherryGames,
+    SwarmSoloStrawberryGames,
+    SwarmDuoStrawberryGames,
+    SwarmTrioStrawberryGames,
+    SwarmQuadStrawberryGames,
+    SummonersRiftPickUrf,
+    SummonersRiftTutorial1,
+    SummonersRiftTutorial2,
+    SummonersRiftTutorial3,
+    ConvergenceTeamfightTacticsSet35Revival,
 }
 
 
@@ -497,22 +136,238 @@ impl Queue {
 }
 
 
-pub static QUEUE_OPTIONS: &[(u16, &str)] = &[
-    (Queue::SummonersRift5v5DraftPick as u16, Queue::SummonersRift5v5DraftPick.to_str()),
-    (Queue::SummonersRift5v5BlindPick as u16, Queue::SummonersRift5v5BlindPick.to_str()),
-    (Queue::SummonersRift5v5RankedSolo as u16, Queue::SummonersRift5v5RankedSolo.to_str()),
-    (Queue::SummonersRift5v5RankedFlex as u16, Queue::SummonersRift5v5RankedFlex.to_str()),
-    (Queue::HowlingAbyss5v5Aram as u16, Queue::HowlingAbyss5v5Aram.to_str()),
-    (Queue::SummonersRiftArurf as u16, Queue::SummonersRiftArurf.to_str()),
-    (Queue::SummonersRiftOneForAll as u16, Queue::SummonersRiftOneForAll.to_str()),
-    (Queue::Arena2v2v2v2Cherry as u16, Queue::Arena2v2v2v2Cherry.to_str()),
-    (Queue::SummonersRiftPickUrf as u16, Queue::SummonersRiftPickUrf.to_str()),
-    (Queue::SummonersRiftUltimateSpellbook as u16, Queue::SummonersRiftUltimateSpellbook.to_str()),
-    (Queue::SummonersRiftNexusSiege as u16, Queue::SummonersRiftNexusSiege.to_str()),
-    (Queue::SummonersRiftClash as u16, Queue::SummonersRiftClash.to_str()),
-    (Queue::SummonersRiftNormalQuickplay as u16, Queue::SummonersRiftNormalQuickplay.to_str()),
-    (Queue::NexusBlitz as u16, Queue::NexusBlitz.to_str()),
+pub static QUEUE_OPTIONS: &[(u8, &str)] = &[
+    (Queue::SummonersRift5v5DraftPick as u8, Queue::SummonersRift5v5DraftPick.to_str()),
+    (Queue::SummonersRift5v5BlindPick as u8, Queue::SummonersRift5v5BlindPick.to_str()),
+    (Queue::SummonersRift5v5RankedSolo as u8, Queue::SummonersRift5v5RankedSolo.to_str()),
+    (Queue::SummonersRift5v5RankedFlex as u8, Queue::SummonersRift5v5RankedFlex.to_str()),
+    (Queue::HowlingAbyss5v5Aram as u8, Queue::HowlingAbyss5v5Aram.to_str()),
+    (Queue::SummonersRiftArurf as u8, Queue::SummonersRiftArurf.to_str()),
+    (Queue::SummonersRiftOneForAll as u8, Queue::SummonersRiftOneForAll.to_str()),
+    (Queue::Arena2v2v2v2Cherry as u8, Queue::Arena2v2v2v2Cherry.to_str()),
+    (Queue::SummonersRiftPickUrf as u8, Queue::SummonersRiftPickUrf.to_str()),
+    (Queue::SummonersRiftUltimateSpellbook as u8, Queue::SummonersRiftUltimateSpellbook.to_str()),
+    (Queue::SummonersRiftNexusSiege as u8, Queue::SummonersRiftNexusSiege.to_str()),
+    (Queue::SummonersRiftClash as u8, Queue::SummonersRiftClash.to_str()),
+    (Queue::SummonersRiftNormalQuickplay as u8, Queue::SummonersRiftNormalQuickplay.to_str()),
+    (Queue::NexusBlitz as u8, Queue::NexusBlitz.to_str()),
 ];
+
+
+
+impl From<u8> for Queue{
+    fn from(value: u8) -> Self {
+        match value{
+            0=>Queue::Custom,
+            1=>Queue::SummonersRift5v5BlindPickDeprecated2,
+            2=>Queue::SummonersRift5v5RankedSoloDeprecated4,
+            3=>Queue::SummonersRift5v5RankedPremade,
+            4=>Queue::SummonersRiftCoOpVsAi,
+            5=>Queue::TwistedTreeline3v3Normal,
+            6=>Queue::TwistedTreeline3v3RankedFlexDeprecated9,
+            7=>Queue::SummonersRift5v5DraftPickDeprecated14,
+            8=>Queue::CrystalScar5v5DominionBlindPick,
+            9=>Queue::CrystalScar5v5DominionDraftPick,
+            10=>Queue::CrystalScarDominionCoOpVsAi,
+            11=>Queue::SummonersRiftCoOpVsAiIntroBotDeprecated31,
+            12=>Queue::SummonersRiftCoOpVsAiBeginnerBotDeprecated32,
+            13=>Queue::SummonersRiftCoOpVsAiIntermediateBotDeprecated33,
+            14=>Queue::TwistedTreeline3v3RankedTeam,
+            15=>Queue::SummonersRift5v5RankedTeam,
+            16=>Queue::TwistedTreelineCoOpVsAi,
+            17=>Queue::SummonersRift5v5TeamBuilder,
+            18=>Queue::HowlingAbyss5v5AramDeprecated65,
+            19=>Queue::HowlingAbyssAramCoOpVsAi,
+            20=>Queue::SummonersRiftOneForAllDeprecated70,
+            21=>Queue::HowlingAbyss1v1SnowdownShowdown,
+            22=>Queue::HowlingAbyss2v2SnowdownShowdown,
+            23=>Queue::SummonersRift6v6Hexakill,
+            24=>Queue::SummonersRiftUltraRapidFire,
+            25=>Queue::HowlingAbyssOneForAllMirrorMode,
+            26=>Queue::SummonersRiftCoOpVsAiUltraRapidFire,
+            27=>Queue::SummonersRiftDoomBotsRank1,
+            28=>Queue::SummonersRiftDoomBotsRank2,
+            29=>Queue::SummonersRiftDoomBotsRank5,
+            30=>Queue::CrystalScarAscensionDeprecated96,
+            31=>Queue::TwistedTreeline6v6Hexakill,
+            32=>Queue::ButchersBridge5v5Aram,
+            33=>Queue::HowlingAbyssLegendOfThePoroKingDeprecated300,
+            34=>Queue::SummonersRiftNemesis,
+            35=>Queue::SummonersRiftBlackMarketBrawlers,
+            36=>Queue::SummonersRiftNexusSiegeDeprecated315,
+            37=>Queue::CrystalScarDefinitelyNotDominion,
+            38=>Queue::SummonersRiftArurfDeprecated318,
+            39=>Queue::SummonersRiftAllRandom,
+            40=>Queue::SummonersRift5v5DraftPick,
+            41=>Queue::SummonersRift5v5RankedDynamic,
+            42=>Queue::SummonersRift5v5RankedSolo,
+            43=>Queue::SummonersRift5v5BlindPick,
+            44=>Queue::SummonersRift5v5RankedFlex,
+            45=>Queue::HowlingAbyss5v5Aram,
+            46=>Queue::TwistedTreeline3v3BlindPick,
+            47=>Queue::TwistedTreeline3v3RankedFlexDeprecated470,
+            48=>Queue::SummonersRiftNormalQuickplay,
+            49=>Queue::SummonersRiftBloodHuntAssassin,
+            50=>Queue::CosmicRuinsDarkStarSingularity,
+            51=>Queue::SummonersRiftClash,
+            52=>Queue::HowlingAbyssAramClash,
+            53=>Queue::TwistedTreelineCoOpVsAiIntermediateBot,
+            54=>Queue::TwistedTreelineCoOpVsAiIntroBot,
+            55=>Queue::TwistedTreelineCoOpVsAiBeginnerBot,
+            56=>Queue::SummonersRiftCoOpVsAiIntroBot,
+            57=>Queue::SummonersRiftCoOpVsAiBeginnerBot,
+            58=>Queue::SummonersRiftCoOpVsAiIntermediateBot,
+            59=>Queue::SummonersRiftArurf,
+            60=>Queue::CrystalScarAscension,
+            61=>Queue::HowlingAbyssLegendOfThePoroKing,
+            62=>Queue::SummonersRiftNexusSiege,
+            63=>Queue::SummonersRiftDoomBotsVoting,
+            64=>Queue::SummonersRiftDoomBotsStandard,
+            65=>Queue::ValoranCityParkStarGuardianInvasionNormal,
+            66=>Queue::ValoranCityParkStarGuardianInvasionOnslaught,
+            67=>Queue::OverchargeProjectHunters,
+            68=>Queue::SummonersRiftSnowArurf,
+            69=>Queue::SummonersRiftOneForAll,
+            70=>Queue::CrashSiteOdysseyExtractionIntro,
+            71=>Queue::CrashSiteOdysseyExtractionCadet,
+            72=>Queue::CrashSiteOdysseyExtractionCrewmember,
+            73=>Queue::CrashSiteOdysseyExtractionCaptain,
+            74=>Queue::CrashSiteOdysseyExtractionOnslaught,
+            75=>Queue::ConvergenceTeamfightTactics,
+            76=>Queue::ConvergenceTeamfightTactics1v0,
+            77=>Queue::ConvergenceTeamfightTactics2v0,
+            78=>Queue::ConvergenceRankedTeamfightTactics,
+            79=>Queue::ConvergenceTeamfightTacticsTutorial,
+            80=>Queue::ConvergenceTeamfightTacticsSimulation,
+            81=>Queue::ConvergenceRankedTeamfightTacticsHyperRoll,
+            82=>Queue::ConvergenceRankedTeamfightTacticsDoubleUpWorkshopDeprecated1150,
+            83=>Queue::ConvergenceRankedTeamfightTacticsDoubleUpWorkshop,
+            84=>Queue::NexusBlitzDeprecated1200,
+            85=>Queue::ConvergenceTeamfightTacticsChonccsTreasure,
+            86=>Queue::NexusBlitz,
+            87=>Queue::SummonersRiftUltimateSpellbook,
+            88=>Queue::Arena2v2v2v2Cherry,
+            89=>Queue::RingsOfWrathArenaCherryGames,
+            90=>Queue::SwarmSoloStrawberryGames,
+            91=>Queue::SwarmDuoStrawberryGames,
+            92=>Queue::SwarmTrioStrawberryGames,
+            93=>Queue::SwarmQuadStrawberryGames,
+            94=>Queue::SummonersRiftPickUrf,
+            95=>Queue::SummonersRiftTutorial1,
+            96=>Queue::SummonersRiftTutorial2,
+            97=>Queue::SummonersRiftTutorial3,
+            98=>Queue::ConvergenceTeamfightTacticsSet35Revival,
+            _ => Queue::Custom,
+        }
+    }
+}
+
+
+impl From<Queue> for u16{
+    fn from(value: Queue) -> Self {
+        match value {
+            Queue::Custom => 0 ,
+            Queue::SummonersRift5v5BlindPickDeprecated2 => 2 ,
+            Queue::SummonersRift5v5RankedSoloDeprecated4 => 4 ,
+            Queue::SummonersRift5v5RankedPremade => 6 ,
+            Queue::SummonersRiftCoOpVsAi => 7 ,
+            Queue::TwistedTreeline3v3Normal => 8 ,
+            Queue::TwistedTreeline3v3RankedFlexDeprecated9 => 9 ,
+            Queue::SummonersRift5v5DraftPickDeprecated14 => 14 ,
+            Queue::CrystalScar5v5DominionBlindPick => 16 ,
+            Queue::CrystalScar5v5DominionDraftPick => 17 ,
+            Queue::CrystalScarDominionCoOpVsAi => 25 ,
+            Queue::SummonersRiftCoOpVsAiIntroBotDeprecated31 => 31 ,
+            Queue::SummonersRiftCoOpVsAiBeginnerBotDeprecated32 => 32 ,
+            Queue::SummonersRiftCoOpVsAiIntermediateBotDeprecated33 => 33 ,
+            Queue::TwistedTreeline3v3RankedTeam => 41 ,
+            Queue::SummonersRift5v5RankedTeam => 42 ,
+            Queue::TwistedTreelineCoOpVsAi => 52 ,
+            Queue::SummonersRift5v5TeamBuilder => 61 ,
+            Queue::HowlingAbyss5v5AramDeprecated65 => 65 ,
+            Queue::HowlingAbyssAramCoOpVsAi => 67 ,
+            Queue::SummonersRiftOneForAllDeprecated70 => 70 ,
+            Queue::HowlingAbyss1v1SnowdownShowdown => 72 ,
+            Queue::HowlingAbyss2v2SnowdownShowdown => 73 ,
+            Queue::SummonersRift6v6Hexakill => 75 ,
+            Queue::SummonersRiftUltraRapidFire => 76 ,
+            Queue::HowlingAbyssOneForAllMirrorMode => 78 ,
+            Queue::SummonersRiftCoOpVsAiUltraRapidFire => 83 ,
+            Queue::SummonersRiftDoomBotsRank1 => 91 ,
+            Queue::SummonersRiftDoomBotsRank2 => 92 ,
+            Queue::SummonersRiftDoomBotsRank5 => 93 ,
+            Queue::CrystalScarAscensionDeprecated96 => 96 ,
+            Queue::TwistedTreeline6v6Hexakill => 98 ,
+            Queue::ButchersBridge5v5Aram => 100 ,
+            Queue::HowlingAbyssLegendOfThePoroKingDeprecated300 => 300 ,
+            Queue::SummonersRiftNemesis => 310 ,
+            Queue::SummonersRiftBlackMarketBrawlers => 313 ,
+            Queue::SummonersRiftNexusSiegeDeprecated315 => 315 ,
+            Queue::CrystalScarDefinitelyNotDominion => 317 ,
+            Queue::SummonersRiftArurfDeprecated318 => 318 ,
+            Queue::SummonersRiftAllRandom => 325 ,
+            Queue::SummonersRift5v5DraftPick => 400 ,
+            Queue::SummonersRift5v5RankedDynamic => 410 ,
+            Queue::SummonersRift5v5RankedSolo => 420 ,
+            Queue::SummonersRift5v5BlindPick => 430 ,
+            Queue::SummonersRift5v5RankedFlex => 440 ,
+            Queue::HowlingAbyss5v5Aram => 450 ,
+            Queue::TwistedTreeline3v3BlindPick => 460 ,
+            Queue::TwistedTreeline3v3RankedFlexDeprecated470 => 470 ,
+            Queue::SummonersRiftNormalQuickplay => 490 ,
+            Queue::SummonersRiftBloodHuntAssassin => 600 ,
+            Queue::CosmicRuinsDarkStarSingularity => 610 ,
+            Queue::SummonersRiftClash => 700 ,
+            Queue::HowlingAbyssAramClash => 720 ,
+            Queue::TwistedTreelineCoOpVsAiIntermediateBot => 800 ,
+            Queue::TwistedTreelineCoOpVsAiIntroBot => 810 ,
+            Queue::TwistedTreelineCoOpVsAiBeginnerBot => 820 ,
+            Queue::SummonersRiftCoOpVsAiIntroBot => 830 ,
+            Queue::SummonersRiftCoOpVsAiBeginnerBot => 840 ,
+            Queue::SummonersRiftCoOpVsAiIntermediateBot => 850 ,
+            Queue::SummonersRiftArurf => 900 ,
+            Queue::CrystalScarAscension => 910 ,
+            Queue::HowlingAbyssLegendOfThePoroKing => 920 ,
+            Queue::SummonersRiftNexusSiege => 940 ,
+            Queue::SummonersRiftDoomBotsVoting => 950 ,
+            Queue::SummonersRiftDoomBotsStandard => 960 ,
+            Queue::ValoranCityParkStarGuardianInvasionNormal => 980 ,
+            Queue::ValoranCityParkStarGuardianInvasionOnslaught => 990 ,
+            Queue::OverchargeProjectHunters => 1000 ,
+            Queue::SummonersRiftSnowArurf => 1010 ,
+            Queue::SummonersRiftOneForAll => 1020 ,
+            Queue::CrashSiteOdysseyExtractionIntro => 1030 ,
+            Queue::CrashSiteOdysseyExtractionCadet => 1040 ,
+            Queue::CrashSiteOdysseyExtractionCrewmember => 1050 ,
+            Queue::CrashSiteOdysseyExtractionCaptain => 1060 ,
+            Queue::CrashSiteOdysseyExtractionOnslaught => 1070 ,
+            Queue::ConvergenceTeamfightTactics => 1090 ,
+            Queue::ConvergenceTeamfightTactics1v0 => 1091 ,
+            Queue::ConvergenceTeamfightTactics2v0 => 1092 ,
+            Queue::ConvergenceRankedTeamfightTactics => 1100 ,
+            Queue::ConvergenceTeamfightTacticsTutorial => 1110 ,
+            Queue::ConvergenceTeamfightTacticsSimulation => 1111 ,
+            Queue::ConvergenceRankedTeamfightTacticsHyperRoll => 1130 ,
+            Queue::ConvergenceRankedTeamfightTacticsDoubleUpWorkshopDeprecated1150 => 1150 ,
+            Queue::ConvergenceRankedTeamfightTacticsDoubleUpWorkshop => 1160 ,
+            Queue::NexusBlitzDeprecated1200 => 1200 ,
+            Queue::ConvergenceTeamfightTacticsChonccsTreasure => 1210 ,
+            Queue::NexusBlitz => 1300 ,
+            Queue::SummonersRiftUltimateSpellbook => 1400 ,
+            Queue::Arena2v2v2v2Cherry => 1700 ,
+            Queue::RingsOfWrathArenaCherryGames => 1710 ,
+            Queue::SwarmSoloStrawberryGames => 1810 ,
+            Queue::SwarmDuoStrawberryGames => 1820 ,
+            Queue::SwarmTrioStrawberryGames => 1830 ,
+            Queue::SwarmQuadStrawberryGames => 1840 ,
+            Queue::SummonersRiftPickUrf => 1900 ,
+            Queue::SummonersRiftTutorial1 => 2000 ,
+            Queue::SummonersRiftTutorial2 => 2010 ,
+            Queue::SummonersRiftTutorial3 => 2020 ,
+            Queue::ConvergenceTeamfightTacticsSet35Revival => 6000 ,
+        }
+    }
+}
 
 impl From<u16> for Queue {
     fn from(value: u16) -> Self {

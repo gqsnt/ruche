@@ -4,13 +4,15 @@ use crate::consts::champion::Champion;
 use crate::consts::perk::Perk;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{string_to_fixed_array, summoner_encounter_url, summoner_url};
+use crate::utils::{string_to_fixed_array, summoner_encounter_url, summoner_url, FixedToString, GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine};
 use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
 use leptos::{component, view, IntoView};
+use crate::consts::map::Map;
 use crate::consts::platform_route::PlatformRoute;
+use crate::consts::queue::Queue;
 
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {
@@ -22,12 +24,12 @@ pub fn SummonerLivePage() -> impl IntoView {
     let live_game_resource = Resource::new_rkyv(
         move || (refresh_signal.get(), summoner().puuid.clone(), summoner().id, summoner().platform.to_string()),
         |(_, puuid, id, platform_type)| async move {
-            get_live_game(id, PlatformRoute::from(platform_type.as_str()),string_to_fixed_array::<78>(puuid.as_str())).await
+            get_live_game(id, PlatformRoute::from(platform_type.as_str()),puuid).await
         },
     );
 
-    meta_store.title().set(format!("{}#{} | Live Game | Broken.gg", summoner().game_name, summoner().tag_line));
-    meta_store.description().set(format!("Watch {}#{}'s live game now on Broken.gg. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner().game_name, summoner().tag_line));
+    meta_store.title().set(format!("{}#{} | Live Game | Broken.gg", summoner().game_name.to_str(), summoner().tag_line.to_str()));
+    meta_store.description().set(format!("Watch {}#{}'s live game now on Broken.gg. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner().game_name.to_str(), summoner().tag_line.to_str()));
     meta_store.url().set(format!("{}?tab=live", summoner().to_route_path()));
     view! {
         <div class="w-[768px]">
@@ -61,8 +63,8 @@ pub fn SummonerLivePage() -> impl IntoView {
                                 view! {
                                     <div class="flex flex-col space-y-2">
                                         <div class="flex space-x-2">
-                                            <div>{result.queue_name}</div>
-                                            <div>{result.game_map}</div>
+                                            <div>{result.queue.to_str()}</div>
+                                            <div>{result.game_map.get_static_name()}</div>
                                             <div>
                                                 {format!(
                                                     "{:02}:{:02}",
@@ -133,9 +135,6 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                     .into_iter()
                     .map(|participant| {
                         let is_pro_player = participant.pro_player_slug.is_some();
-                        let participant_platform = participant.platform.clone();
-                        let participant_name = participant.game_name.clone();
-                        let participant_tag_line = participant.tag_line.clone();
 
                         view! {
                             <tr>
@@ -211,12 +210,12 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                         <Show when=move || (participant.encounter_count > 0)>
                                             <a
                                                 href=summoner_encounter_url(
-                                                    summoner().platform.to_string().as_str(),
-                                                    summoner().game_name.as_str(),
-                                                    summoner().tag_line.as_str(),
-                                                    participant_platform.as_str(),
-                                                    participant_name.as_str(),
-                                                    participant_tag_line.as_str(),
+                                                    summoner().platform.to_string(),
+                                                    summoner().game_name.to_string(),
+                                                    summoner().tag_line.to_string(),
+                                                    participant.platform.to_string(),
+                                                    participant.game_name.to_string(),
+                                                    participant.tag_line.to_string(),
                                                 )
                                                 class="text-xs bg-green-800 rounded px-0.5 text-center"
                                             >
@@ -228,7 +227,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                                 target="_blank"
                                                 href=format!(
                                                     "https://lolpros.gg/player/{}",
-                                                    participant.pro_player_slug.clone().unwrap(),
+                                                    participant.pro_player_slug.clone().unwrap().to_str(),
                                                 )
                                                 class="text-xs bg-purple-800 rounded px-0.5 text-center"
                                             >
@@ -238,14 +237,14 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                         <a
                                             target="_blank"
                                             href=summoner_url(
-                                                participant.platform.clone().as_str(),
-                                                &participant.game_name,
-                                                &participant.tag_line,
+                                                participant.platform.to_string(),
+                                                participant.game_name.to_string(),
+                                                participant.tag_line.to_string(),
                                             )
                                         >
-                                            {participant.game_name.clone()}
+                                            {participant.game_name.to_string()}
                                             #
-                                            {participant.tag_line.clone()}
+                                            {participant.tag_line.to_string()}
                                         </a>
                                     </div>
                                     <span class="text-[11px]">
@@ -260,7 +259,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                             Either::Left(
                                                 view! {
                                                     <div>
-                                                        {(ranked_stats.ranked_win_rate * 100.0).round()}%
+                                                        {format!("{:.2}",ranked_stats.ranked_win_rate)}%
                                                         {ranked_stats.total_ranked}G
                                                     </div>
                                                     <div>
@@ -284,7 +283,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                             Either::Left(
                                                 view! {
                                                     <div>
-                                                        {(champion_stats.champion_win_rate * 100.0).round()}%
+                                                        {format!("{:.2}",champion_stats.champion_win_rate)}%
                                                         {champion_stats.total_champion_played}G
                                                     </div>
                                                     <div>
@@ -308,13 +307,12 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                             Either::Left(
                                                 view! {
                                                     <div>
-                                                        {(((champion_stats.avg_kills + champion_stats.avg_assists)
-                                                            / champion_stats.avg_deaths.max(1.0)) * 100.0)
-                                                            .round() / 100.0}:1
+                                                        {format!("{:.2}",(champion_stats.avg_kills + champion_stats.avg_assists)
+                                                            / champion_stats.avg_deaths.max(1.0))}:1
                                                     </div>
                                                     <div>
-                                                        {champion_stats.avg_kills}/ {champion_stats.avg_deaths}/
-                                                        {champion_stats.avg_assists}
+                                                        {format!("{:.2}",champion_stats.avg_kills)}/ {format!("{:.2}",champion_stats.avg_deaths)}/
+                                                        {format!("{:.2}",champion_stats.avg_assists)}
                                                     </div>
                                                 },
                                             )
@@ -332,31 +330,31 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
 }
 
 
-#[derive(Clone, Serialize, Deserialize, Default, Archive)]
+#[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct LiveGame {
-    pub game_id: String,
-    pub game_length: i64,
-    pub game_map: String,
-    pub queue_name: String,
+    pub game_length: u16,
+    pub game_map: Map,
+    pub queue: Queue,
+    pub game_id: RiotMatchId,
     pub participants: Vec<LiveGameParticipant>,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default, Archive)]
+#[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct LiveGameParticipant {
-    pub summoner_id: i32,
-    pub puuid: String,
+    pub platform: PlatformRoute,
     pub champion_id: u16,
-    pub pro_player_slug: Option<String>,
-    pub encounter_count: i32,
+    pub team_id: u16,
+    pub encounter_count: u16,
     pub summoner_spell1_id: u16,
     pub summoner_spell2_id: u16,
     pub perk_primary_selection_id: u16,
     pub perk_sub_style_id: u16,
-    pub game_name: String,
-    pub tag_line: String,
-    pub platform: String,
-    pub summoner_level: i32,
-    pub team_id: i32,
+    pub summoner_level: u16,
+    pub summoner_id: i32,
+    pub puuid: Puuid,
+    pub game_name: GameName,
+    pub tag_line: TagLine,
+    pub pro_player_slug: Option<ProPlayerSlug>,
     pub ranked_stats: Option<LiveGameParticipantRankedStats>,
     pub champion_stats: Option<LiveGameParticipantChampionStats>,
 }
@@ -364,20 +362,20 @@ pub struct LiveGameParticipant {
 
 #[derive(Clone, Serialize, Deserialize, Default, Archive)]
 pub struct LiveGameParticipantRankedStats {
-    pub total_ranked: i32,
-    pub total_ranked_wins: i32,
-    pub total_ranked_losses: i32,
-    pub ranked_win_rate: f64,
+    pub total_ranked: u16,
+    pub total_ranked_wins: u16,
+    pub total_ranked_losses: u16,
+    pub ranked_win_rate: f32,
 }
 
 
 #[derive(Clone, Serialize, Deserialize, Default, Archive)]
 pub struct LiveGameParticipantChampionStats {
-    pub total_champion_played: i32,
-    pub total_champion_wins: i32,
-    pub total_champion_losses: i32,
-    pub champion_win_rate: f64,
-    pub avg_kills: f64,
-    pub avg_deaths: f64,
-    pub avg_assists: f64,
+    pub total_champion_played: u16,
+    pub total_champion_wins: u16,
+    pub total_champion_losses: u16,
+    pub champion_win_rate: f32,
+    pub avg_kills: f32,
+    pub avg_deaths: f32,
+    pub avg_assists: f32,
 }

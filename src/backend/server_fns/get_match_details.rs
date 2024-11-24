@@ -5,16 +5,17 @@ use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
 use crate::consts::platform_route::PlatformRoute;
+use crate::utils::{FixedToString, RiotMatchId};
 
 #[server(input=Rkyv,output=Rkyv)]
-pub async fn get_match_details(match_id: i32,  summoner_id: Option<i32>, riot_match_id: String, platform: PlatformRoute) -> Result<Vec<LolMatchParticipantDetails>, ServerFnError> {
+pub async fn get_match_details(match_id: i32,  summoner_id: Option<i32>, platform: PlatformRoute, riot_match_id: RiotMatchId) -> Result<Vec<LolMatchParticipantDetails>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
     let mut details = ssr::get_match_participants_details(&db, match_id, summoner_id).await.map_err(|e| e.to_server_fn_error())?;
     let mut match_timelines = ssr::get_match_timeline(&db, match_id).await?;
     if match_timelines.is_empty() {
-        update_match_timeline(&db, state.riot_api.clone(), match_id, riot_match_id, platform).await?;
+        update_match_timeline(&db, state.riot_api.clone(), match_id, riot_match_id.to_string(), platform).await?;
         match_timelines = ssr::get_match_timeline(&db, match_id).await?;
     }
     for detail in details.iter_mut() {
@@ -31,12 +32,13 @@ pub async fn get_match_details(match_id: i32,  summoner_id: Option<i32>, riot_ma
 pub mod ssr {
     use crate::backend::server_fns::get_matches::ssr::get_summoner_encounters;
     use crate::backend::ssr::{AppResult, PlatformRouteDb};
-    use crate::views::summoner_page::match_details::{LolMatchParticipantDetails, LolMatchTimeline};
+    use crate::views::summoner_page::match_details::{LolMatchParticipantDetails, LolMatchTimeline, Skill};
     use bigdecimal::{BigDecimal, ToPrimitive};
     use itertools::Itertools;
     use sqlx::types::JsonValue;
     use sqlx::{FromRow, PgPool};
     use std::collections::HashMap;
+    use crate::utils::string_to_fixed_array;
 
     pub async fn get_match_participants_details(db: &PgPool, match_id: i32, summoner_id: Option<i32>) -> AppResult<Vec<LolMatchParticipantDetails>> {
         let lol_match_participant_details = sqlx::query_as::<_, LolMatchParticipantDetailsModel>(
@@ -105,27 +107,27 @@ pub mod ssr {
                     id: lmp.id,
                     lol_match_id: lmp.lol_match_id,
                     summoner_id: lmp.summoner_id,
-                    summoner_name: lmp.game_name,
-                    summoner_tag_line: lmp.tag_line,
-                    summoner_platform: lmp.platform.to_string(),
-                    summoner_pro_player_slug: lmp.pro_player_slug,
+                    game_name: string_to_fixed_array::<16>(lmp.game_name.as_str()),
+                    tag_line: string_to_fixed_array::<5>(lmp.tag_line.as_str()),
+                    platform: lmp.platform.into(),
+                    summoner_pro_player_slug: lmp.pro_player_slug.map(|s| string_to_fixed_array::<16>(s.as_str())),
                     summoner_icon_id: lmp.profile_icon_id as u16,
-                    summoner_level: lmp.summoner_level,
-                    encounter_count: encounter_count.unwrap_or_default(),
+                    summoner_level: lmp.summoner_level as u16,
+                    encounter_count: encounter_count.unwrap_or_default() as u16,
                     champion_id: lmp.champion_id as u16,
-                    team_id: lmp.team_id,
+                    team_id: lmp.team_id as u16,
                     won: lmp.won,
-                    kills: lmp.kills,
-                    deaths: lmp.deaths,
-                    assists: lmp.assists,
-                    champ_level: lmp.champ_level,
-                    kda: lmp.kda.map_or(0.0, |bd| bd.to_f64().unwrap_or(0.0)),
-                    kill_participation: lmp.kill_participation.map_or(0.0, |bd| bd.to_f64().unwrap_or(0.0)),
-                    damage_dealt_to_champions: lmp.damage_dealt_to_champions,
-                    damage_taken: lmp.damage_taken,
-                    gold_earned: lmp.gold_earned,
-                    wards_placed: lmp.wards_placed,
-                    cs: lmp.cs,
+                    kills: lmp.kills as u16,
+                    deaths: lmp.deaths as u16,
+                    assists: lmp.assists as u16,
+                    champ_level: lmp.champ_level as u16,
+                    kda: lmp.kda.map_or(0.0, |bd| bd.to_f32().unwrap_or(0.0)),
+                    kill_participation: lmp.kill_participation.map_or(0.0, |bd| bd.to_f32().unwrap_or(0.0)) * 100.0,
+                    damage_dealt_to_champions: lmp.damage_dealt_to_champions as u32,
+                    damage_taken: lmp.damage_taken as u32,
+                    gold_earned: lmp.gold_earned as u32,
+                    wards_placed: lmp.wards_placed as u16,
+                    cs: lmp.cs as u16,
                     summoner_spell1_id: lmp.summoner_spell1_id.unwrap_or_default() as u16,
                     summoner_spell2_id: lmp.summoner_spell2_id.unwrap_or_default() as u16,
                     perk_defense_id: lmp.perk_defense_id.unwrap_or_default() as u16,
@@ -166,7 +168,7 @@ pub mod ssr {
                 lol_match_id: x.lol_match_id,
                 summoner_id: x.summoner_id,
                 items_event_timeline: serde_json::from_value(x.items_event_timeline).unwrap_or_default(),
-                skills_timeline: x.skills_timeline,
+                skills_timeline: x.skills_timeline.into_iter().map(|s|Skill::from(s as u8)).collect_vec(),
             }).collect();
         Ok(timelines)
     }

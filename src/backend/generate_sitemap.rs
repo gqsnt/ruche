@@ -57,7 +57,7 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
         for page in 1..=total_pages {
             let summoners = get_platforms_summoners_taglines(db, per_page, page).await?;
             for (game_name, tag_line, platform, updated_at) in summoners {
-                let url = format!("{}{}", base_url, summoner_url(&platform.to_string(), &game_name, &tag_line));
+                let url = format!("{}{}", base_url, summoner_url(platform.to_string(), game_name, tag_line));
                 url_writer.url(UrlEntry::builder().loc(url).lastmod(updated_at.and_utc().fixed_offset()).build()?)?;
             }
         }

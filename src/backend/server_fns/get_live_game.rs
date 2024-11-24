@@ -3,18 +3,18 @@ use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
 use crate::consts::platform_route::PlatformRoute;
+use crate::utils::{FixedToString, Puuid};
 
 #[server(input=Rkyv,output=Rkyv)]
-pub async fn get_live_game(summoner_id: i32, platform_route:PlatformRoute, puuid:[u8;78]) -> Result<Option<LiveGame>, ServerFnError> {
+pub async fn get_live_game(summoner_id: i32, platform_route:PlatformRoute, puuid:Puuid) -> Result<Option<LiveGame>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
-    let puuid = String::from_utf8_lossy(&puuid).to_string();
     let live_cache = state.live_game_cache.clone();
     let db = state.db.clone();
     if let Some(live_data) = live_cache.get_game_data(&puuid) {
         Ok(Some(ssr::add_encounters(&db, live_data, summoner_id).await?))
     } else {
         let riot_api = state.riot_api.clone();
-        match ssr::get_live_game_data(&db, riot_api, puuid, platform_route).await {
+        match ssr::get_live_game_data(&db, riot_api, puuid.to_string(), platform_route).await {
             Ok(live_data) => {
                 match live_data {
                     None => Ok(None),
@@ -47,7 +47,7 @@ pub mod ssr {
     use crate::consts::map::Map;
     use crate::consts::platform_route::PlatformRoute;
     use crate::consts::queue::Queue;
-    use crate::utils::round_to_2_decimal_places;
+    use crate::utils::{round_to_2_decimal_places, string_to_fixed_array};
     use crate::views::summoner_page::summoner_live_page::{LiveGame, LiveGameParticipant, LiveGameParticipantChampionStats, LiveGameParticipantRankedStats};
     use bigdecimal::{BigDecimal, ToPrimitive};
     use futures::stream::FuturesUnordered;
@@ -107,13 +107,13 @@ pub mod ssr {
                     let summoner_detail = summoner_details.get(participant_puuid.as_str()).expect("summoner not found");
                     let stats = live_game_stats.get(&summoner_detail.id).unwrap_or(&default_hashmap);
                     let champion_stats = stats.get(&(participant.champion_id.0 as i32)).map(|champion_stats| LiveGameParticipantChampionStats {
-                        total_champion_played: champion_stats.total_match as i32,
-                        total_champion_wins: champion_stats.total_win as i32,
-                        total_champion_losses: champion_stats.total_match as i32 - champion_stats.total_win as i32,
-                        champion_win_rate: champion_stats.total_win as f64 / champion_stats.total_match as f64,
-                        avg_kills: round_to_2_decimal_places(champion_stats.avg_kills.to_f64().unwrap_or_default()),
-                        avg_deaths: round_to_2_decimal_places(champion_stats.avg_deaths.to_f64().unwrap_or_default()),
-                        avg_assists: round_to_2_decimal_places(champion_stats.avg_assists.to_f64().unwrap_or_default()),
+                        total_champion_played: champion_stats.total_match as u16,
+                        total_champion_wins: champion_stats.total_win as u16,
+                        total_champion_losses: champion_stats.total_match as u16 - champion_stats.total_win as u16,
+                        champion_win_rate: champion_stats.total_win as f32 / champion_stats.total_match as f32,
+                        avg_kills: champion_stats.avg_kills.to_f32().unwrap_or_default(),
+                        avg_deaths: champion_stats.avg_deaths.to_f32().unwrap_or_default(),
+                        avg_assists: champion_stats.avg_assists.to_f32().unwrap_or_default(),
                     });
 
 
@@ -125,10 +125,10 @@ pub mod ssr {
                         None
                     } else {
                         Some(LiveGameParticipantRankedStats {
-                            total_ranked: total_ranked as i32,
-                            total_ranked_wins: total_wins as i32,
-                            total_ranked_losses: total_ranked as i32 - total_wins as i32,
-                            ranked_win_rate: total_wins as f64 / total_ranked as f64,
+                            total_ranked: total_ranked as u16,
+                            total_ranked_wins: total_wins as u16,
+                            total_ranked_losses: total_ranked as u16 - total_wins as u16,
+                            ranked_win_rate: total_wins as f32 / total_ranked as f32,
                         })
                     };
                     let (perk_primary_selection_id, perk_sub_style_id) = match participant.perks.clone() {
@@ -142,28 +142,28 @@ pub mod ssr {
                     summoner_ids.push(summoner_detail.id);
                     participants.push(LiveGameParticipant {
                         summoner_id: summoner_detail.id,
-                        puuid: participant_puuid,
+                        puuid: string_to_fixed_array::<78>(participant_puuid.as_str()),
                         champion_id: participant.champion_id.0 as u16,
                         summoner_spell1_id: participant.spell1_id as u16,
                         summoner_spell2_id: participant.spell2_id as u16,
                         perk_primary_selection_id,
                         perk_sub_style_id,
-                        game_name: summoner_detail.game_name.clone(),
-                        tag_line: summoner_detail.tag_line.clone(),
-                        platform: summoner_detail.platform.to_string(),
-                        summoner_level: summoner_detail.summoner_level,
-                        team_id: participant.team_id as i32,
+                        game_name: string_to_fixed_array::<16>(summoner_detail.game_name.as_str()),
+                        tag_line: string_to_fixed_array::<5>(summoner_detail.tag_line.as_str()),
+                        platform: summoner_detail.platform.into(),
+                        summoner_level: summoner_detail.summoner_level as u16,
+                        team_id: participant.team_id as u16,
                         ranked_stats,
                         champion_stats,
                         encounter_count: 0,
-                        pro_player_slug: summoner_detail.pro_slug.clone(),
+                        pro_player_slug: summoner_detail.pro_slug.clone().map(|s|string_to_fixed_array::<16>(s.as_str())),
                     })
                 }
                 Ok(Some(LiveGame {
-                    game_id: format!("{}_{}", current_game_info.game_id, current_game_info.platform_id),
-                    game_length: current_game_info.game_length,
-                    game_map: Map::from(current_game_info.map_id.0).get_static_name().to_string(),
-                    queue_name: current_game_info.game_queue_config_id.map(|x| Queue::from(x.0).to_str().to_string()).unwrap_or_default(),
+                    game_id: string_to_fixed_array::<17>(format!("{}_{}", current_game_info.game_id, current_game_info.platform_id).as_str()),
+                    game_length: current_game_info.game_length as u16,
+                    game_map: Map::from(current_game_info.map_id.0),
+                    queue: current_game_info.game_queue_config_id.map(|x| Queue::from(x.0)).unwrap(),
                     participants,
                 }))
             }

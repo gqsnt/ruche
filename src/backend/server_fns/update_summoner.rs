@@ -1,3 +1,4 @@
+
 #[cfg(feature = "ssr")]
 use crate::backend::server_fns::search_summoner::ssr::insert_or_update_account_and_summoner;
 use crate::consts::platform_route::PlatformRoute;
@@ -9,16 +10,17 @@ use leptos::prelude::*;
 use leptos::server;
 
 use leptos::server_fn::codec::Rkyv;
+use crate::utils::{FixedToString, Puuid};
 
 #[server( input=Rkyv)]
-pub async fn update_summoner(puuid: String, platform_route: PlatformRoute) -> Result<(), ServerFnError> {
+pub async fn update_summoner(puuid: Puuid, platform_route: PlatformRoute) -> Result<(), ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let riot_api = state.riot_api.clone();
     let max_matches = state.max_matches;
 
     match riot_api
         .account_v1()
-        .get_by_puuid(platform_route.to_riven().to_regional(), puuid.as_str())
+        .get_by_puuid(platform_route.to_riven().to_regional(), puuid.to_str())
         .await
     {
         Ok(account) => {
@@ -32,12 +34,12 @@ pub async fn update_summoner(puuid: String, platform_route: PlatformRoute) -> Re
                     let puuid = summoner.puuid.clone();
                     leptos_axum::redirect(
                         summoner_url(
-                            platform_route.to_string().as_str(),
-                            &account
+                            platform_route.to_string(),
+                            account
                                 .game_name
                                 .clone()
                                 .expect("update summoner: game name not found"),
-                            &account
+                            account
                                 .tag_line
                                 .clone()
                                 .expect("update summoner: tag line not found"),

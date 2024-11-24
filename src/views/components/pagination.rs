@@ -4,9 +4,9 @@ use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 
 #[component]
-pub fn Pagination(max_page: usize) -> impl IntoView {
+pub fn Pagination(max_page: u16) -> impl IntoView {
     // Use query_signal_with_options to get the current page from query parameters
-    let (page, set_page) = query_signal_with_options::<usize>("page", NavigateOptions {
+    let (page, set_page) = query_signal_with_options::<u16>("page", NavigateOptions {
         scroll: false,
         replace: true,
         ..Default::default()

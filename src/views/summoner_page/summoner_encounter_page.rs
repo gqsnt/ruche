@@ -5,7 +5,7 @@ use crate::consts::perk::Perk;
 use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::summoner_url;
+use crate::utils::{string_to_fixed_array, summoner_url, FixedToString, RiotMatchId};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
@@ -17,6 +17,7 @@ use leptos_router::hooks::{query_signal_with_options, use_query_map};
 use leptos_router::NavigateOptions;
 use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
 use crate::consts::platform_route::PlatformRoute;
+use crate::consts::queue::Queue;
 
 #[component]
 pub fn SummonerEncounterPage() -> impl IntoView {
@@ -29,7 +30,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
     let encounter_slug = move || queries.read().get("encounter_slug").unwrap_or_default();
     let encounter_platform = move || queries.read().get("encounter_platform").unwrap_or_default();
 
-    let (page_number, set_page_number) = query_signal_with_options::<i32>(
+    let (page_number, set_page_number) = query_signal_with_options::<u16>(
         "page",
         NavigateOptions {
             scroll: false,
@@ -42,7 +43,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
         move || (summoner(), match_filters_updated.get(), page_number(), encounter_slug(), encounter_platform(), is_with.get()),
         |(summoner, filters, page_number, encounter_slug, encounter_platform, is_with)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_encounter(is_with, summoner.id,page_number.unwrap_or(1) as u16,  Some(filters), encounter_slug, PlatformRoute::from(encounter_platform.as_str()), ).await
+            get_encounter(is_with, summoner.id,page_number.unwrap_or(1) as u16,  Some(filters), PlatformRoute::from(encounter_platform.as_str()), string_to_fixed_array::<22>(encounter_slug.as_str())).await
         },
     );
 
@@ -124,8 +125,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
                                             </div>
 
                                             <Show when=move || (encounter_result.total_pages > 1)>
-                                                <Pagination max_page=encounter_result.total_pages
-                                                    as usize />
+                                                <Pagination max_page=encounter_result.total_pages />
                                             </Show>
                                         },
                                     ),
@@ -150,7 +150,7 @@ pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch, summoner:
                 <div class="flex flex-col  gap-2">
                     <div class="flex flex-col items-start w-[108px]">
                         <div class="uppercase font-bold text-ellipsis max-w-[90%] overflow-hidden whitespace-nowrap">
-                            {match_.queue.clone()}
+                            {match_.queue.to_str()}
                         </div>
                         <div>{match_.match_ended_since.clone()}</div>
                     </div>
@@ -205,8 +205,8 @@ pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch, summoner:
                 <MatchDetails
                     match_id=match_.match_id
                     summoner
-                    riot_match_id=match_.riot_match_id.clone()
-                    platform=match_.platform.clone()
+                    riot_match_id=match_.riot_match_id
+                    platform=match_.platform
                 />
             </Show>
         </div>
@@ -308,7 +308,7 @@ pub fn SummonerEncounterParticipantComponent(encounter_participant: SummonerEnco
                         /
                         <span class="text-white">{encounter_participant.assists}</span>
                     </div>
-                    <div>{encounter_participant.kda}:1 KDA</div>
+                    <div>{format!("{:.2}",encounter_participant.kda)}:1 KDA</div>
                 </div>
                 <div
                     class="flex flex-col h-[58px]  "
@@ -320,7 +320,7 @@ pub fn SummonerEncounterParticipantComponent(encounter_participant: SummonerEnco
                     class=("border-blue-500", move || encounter_participant.won)
                 >
                     <div class="text-red-300 text-sm">
-                        P/Kill {encounter_participant.kill_participation}%
+                        P/Kill {format!("{:.2}",encounter_participant.kill_participation)}%
                     </div>
                 </div>
             </div>
@@ -424,10 +424,10 @@ pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, 
             >
                 <div>
                     <a href=summoner_url(
-                        summoner.platform.to_string().as_str(),
-                        summoner.game_name.clone().as_str(),
-                        summoner.tag_line.clone().as_str(),
-                    )>{summoner.game_name.clone()}# {summoner.tag_line.clone()}</a>
+                        summoner.platform.to_string(),
+                        summoner.game_name.to_string(),
+                        summoner.tag_line.to_string(),
+                    )>{summoner.game_name.to_string()}# {summoner.tag_line.to_string()}</a>
                 </div>
                 <div>
                     <span>lvl. {summoner.summoner_level}</span>
@@ -437,7 +437,7 @@ pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, 
                             target="_blank"
                             href=format!(
                                 "https://lolpros.gg/player/{}",
-                                summoner.pro_slug.clone().unwrap(),
+                                summoner.pro_slug.clone().unwrap().to_str(),
                             )
                             class=" bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
                         >
@@ -454,16 +454,15 @@ pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, 
                 <div>
                     {stats.total_wins}W {stats.total_loses}L {stats.total_wins + stats.total_loses}G
                     {format!(
-                        "{}%",
-                        ((stats.total_wins as f64
-                            / (stats.total_wins + stats.total_loses).max(1) as f64) * 100.0)
-                            .round() as i32,
+                        "{:.2}%",
+                        (stats.total_wins as f32
+                            / (stats.total_wins + stats.total_loses).max(1) as f32) * 100.0,
                     )}
                 </div>
                 <div class="flex flex-col">
-                    <div>{stats.avg_kills}/ {stats.avg_deaths}/ {stats.avg_assists}</div>
+                    <div>{format!("{:.2}", stats.avg_kills)}/ {format!("{:.2}", stats.avg_deaths)}/ {format!("{:.2}", stats.avg_assists)}</div>
                     <div>
-                        {stats.avg_kda}:1 P/kill {(stats.avg_kill_participation * 100.0).round()}%
+                        {format!("{:.2}", stats.avg_kda)}:1 P/kill {format!("{:.2}",stats.avg_kill_participation)}%
                     </div>
                 </div>
 
@@ -475,7 +474,7 @@ pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, 
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterResult {
-    pub total_pages: i32,
+    pub total_pages: u16,
     pub matches: Vec<SummonerEncounterMatch>,
     pub summoner_stats: SummonerEncounterStats,
     pub encounter_stats: SummonerEncounterStats,
@@ -485,31 +484,28 @@ pub struct SummonerEncounterResult {
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterStats {
-    pub total_wins: i32,
-    pub total_loses: i32,
-    pub avg_kills: f64,
-    pub avg_deaths: f64,
-    pub avg_assists: f64,
-    pub avg_kda: f64,
-    pub avg_kill_participation: f64,
+    pub total_wins: u16,
+    pub total_loses: u16,
+    pub avg_kills: f32,
+    pub avg_deaths: f32,
+    pub avg_assists: f32,
+    pub avg_kda: f32,
+    pub avg_kill_participation: f32,
 }
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterParticipant {
-    pub summoner_id: i32,
     pub won: bool,
     pub champion_id: u16,
-    pub champion_name: String,
-    pub champ_level: i32,
-    pub kills: i32,
-    pub deaths: i32,
-    pub assists: i32,
-    pub kda: f64,
-    pub kill_participation: f64,
+    pub champ_level: u16,
+    pub kills: u16,
+    pub deaths: u16,
+    pub assists: u16,
     pub summoner_spell1_id: u16,
     pub summoner_spell2_id: u16,
     pub perk_primary_selection_id: u16,
     pub perk_sub_style_id: u16,
+    pub summoner_id: i32,
     pub item0_id: u32,
     pub item1_id: u32,
     pub item2_id: u32,
@@ -517,16 +513,18 @@ pub struct SummonerEncounterParticipant {
     pub item4_id: u32,
     pub item5_id: u32,
     pub item6_id: u32,
+    pub kda: f32,
+    pub kill_participation: f32,
 }
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterMatch {
+    pub platform: PlatformRoute,
+    pub queue: Queue,
     pub match_id: i32,
-    pub riot_match_id: String,
+    pub riot_match_id: RiotMatchId,
     pub match_ended_since: String,
     pub match_duration: String,
-    pub queue: String,
-    pub platform: String,
     pub participant: SummonerEncounterParticipant,
     pub encounter: SummonerEncounterParticipant,
 }

@@ -4,27 +4,28 @@ use crate::utils::{summoner_not_found_url, summoner_url};
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
+use crate::utils::{FixedToString, GameName, TagLine};
 
-#[server(input = Rkyv)]
+#[server(input = Rkyv, output = Rkyv)]
 pub async fn search_summoner(
     platform_route: PlatformRoute,
-    game_name: String,
-    tag_line: String
+    game_name: GameName,
+    tag_line: TagLine
 ) -> Result<(), ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
     let riven_pr = platform_route.to_riven();
-    match ssr::find_summoner_by_game_name_tag_line(&db, &platform_route, game_name.as_str(), tag_line.as_str()).await {
+    match ssr::find_summoner_by_game_name_tag_line(&db, &platform_route, game_name.to_string().as_str(), tag_line.to_string().as_str()).await {
         Ok(summoner) => {
-            leptos_axum::redirect(summoner_url(platform_route.to_string().as_str(), &summoner.game_name, &summoner.tag_line).as_str());
+            leptos_axum::redirect(summoner_url(platform_route.to_string(), summoner.game_name.to_string(), summoner.tag_line.to_string()).as_str());
         }
         Err(_) => {
-            let not_found_url = summoner_not_found_url(platform_route.to_string().as_str(), game_name.as_str(), tag_line.as_str());
+            let not_found_url = summoner_not_found_url(platform_route.to_string(), game_name.to_string(), tag_line.to_string());
             let riot_api = state.riot_api.clone();
             match riot_api
                 .account_v1()
-                .get_by_riot_id(riven_pr.to_regional(), game_name.as_str(), tag_line.as_str())
+                .get_by_riot_id(riven_pr.to_regional(), game_name.to_string().as_str(), tag_line.to_string().as_str())
                 .await
             {
                 Ok(Some(account)) => {
@@ -34,7 +35,7 @@ pub async fn search_summoner(
                         .await
                     {
                         Ok(summoner_data) => {
-                            let redirect_url = summoner_url(platform_route.to_string().as_str(), &account.game_name.clone().expect("search summoner: account game name not found"), &account.tag_line.clone().expect("search summoner: account tag line not found"));
+                            let redirect_url = summoner_url(platform_route.to_string(), account.game_name.clone().expect("search summoner: account game name not found"), account.tag_line.clone().expect("search summoner: account tag line not found"));
                             ssr::insert_or_update_account_and_summoner(
                                 &db,
                                 platform_route,

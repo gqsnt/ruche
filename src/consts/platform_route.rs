@@ -21,6 +21,7 @@ pub const PLATFORM_ROUTE_OPTIONS: [PlatformRoute; 16] = [
 ];
 
 /// Platform routes for League of Legends (LoL), Teamfight Tactics (TFT), and Legends of Runeterra (LoR).
+#[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, Archive)]
 #[derive(Clone, Copy,Debug)]
 #[repr(u8)]

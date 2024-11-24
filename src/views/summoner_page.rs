@@ -4,12 +4,13 @@ use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::consts::platform_route::PlatformRoute;
 use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::HasStaticAsset;
-use crate::utils::summoner_url;
+use crate::utils::{string_to_fixed_array, summoner_url, FixedToString, GameName, ProPlayerSlug, Puuid, TagLine};
 use crate::views::summoner_page::summoner_nav::SummonerNav;
 use leptos::context::provide_context;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use leptos::prelude::Read;
 use leptos_router::hooks::use_params_map;
 use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
 
@@ -42,7 +43,7 @@ pub fn SummonerPage() -> impl IntoView {
         move || (update_summoner_action.version().get(), platform_type(), summoner_slug()),
         |(_, platform, summoner_slug)| async move {
             //log!("Client::Fetching summoner: {}", ss);
-            get_summoner(PlatformRoute::from(platform.as_str()), summoner_slug).await
+            get_summoner(PlatformRoute::from(platform.as_str()), string_to_fixed_array::<22>(summoner_slug.as_str())).await
         },
     );
 
@@ -70,7 +71,7 @@ pub fn SummonerPage() -> impl IntoView {
                                         />
                                         <div class="flex flex-col items-start">
                                             <div>
-                                                {summoner_signal().game_name}#{summoner_signal().tag_line}
+                                                {summoner_signal().game_name.to_string()}#{summoner_signal().tag_line.to_string()}
                                             </div>
                                             <div>
                                                 <span>lvl. {summoner.summoner_level}</span>
@@ -80,7 +81,7 @@ pub fn SummonerPage() -> impl IntoView {
                                                         target="_blank"
                                                         href=format!(
                                                             "https://lolpros.gg/player/{}",
-                                                            summoner_signal().pro_slug.clone().unwrap(),
+                                                            summoner_signal().pro_slug.as_ref().unwrap().to_string(),
                                                         )
                                                         class=" bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
                                                     >
@@ -93,7 +94,7 @@ pub fn SummonerPage() -> impl IntoView {
                                         <div>
                                         <button class="my-button" on:click=move |_| {
                                                 update_summoner_action.dispatch(UpdateSummoner {
-                                            puuid: summoner_signal().puuid.clone(),
+                                            puuid: summoner_signal().puuid,
                                             platform_route: summoner_signal().platform});
                             }>
                                                 Update
@@ -121,23 +122,23 @@ pub fn SummonerPage() -> impl IntoView {
 
 
 
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, Archive)]
+#[derive(Clone, PartialEq, Eq,Debug, Serialize, Deserialize, Archive)]
 pub struct Summoner {
-    pub id: i32,
-    pub summoner_level: i32,
-    pub profile_icon_id: u16,
     pub platform: PlatformRoute,
-    pub game_name: String,
-    pub tag_line: String,
-    pub puuid: String,
+    pub profile_icon_id: u16,
+    pub summoner_level: u16,
+    pub id: i32,
+    pub game_name: GameName,
+    pub tag_line: TagLine,
+    pub puuid: Puuid,
+    pub pro_slug: Option<ProPlayerSlug>,
     pub updated_at: String,
-    pub pro_slug: Option<String>,
 }
 
 
 impl Summoner {
     pub fn to_route_path(&self) -> String {
-        summoner_url(self.platform.to_string().as_str(), &self.game_name, &self.tag_line)
+        summoner_url(self.platform.to_string(), self.game_name.to_string(), self.tag_line.to_string())
     }
 }
 

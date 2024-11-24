@@ -2,7 +2,7 @@ use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_encounters::get_encounters;
 use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::HasStaticAsset;
-use crate::utils::{summoner_encounter_url, summoner_url};
+use crate::utils::{string_to_fixed_array, summoner_encounter_url, summoner_url, FixedToString, GameName, TagLine};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
 use crate::views::{BackEndMatchFiltersSearch};
@@ -12,6 +12,7 @@ use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
+use crate::consts::platform_route::PlatformRoute;
 
 #[component]
 pub fn SummonerEncountersPage() -> impl IntoView {
@@ -19,7 +20,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
 
-    let (page_number, set_page_number) = query_signal_with_options::<i32>(
+    let (page_number, set_page_number) = query_signal_with_options::<u16>(
         "page",
         NavigateOptions {
             scroll: false,
@@ -51,12 +52,12 @@ pub fn SummonerEncountersPage() -> impl IntoView {
         move || (search_summoner.get(), match_filters_updated.get(), summoner(), page_number()),
         |(search_summoner, filters, summoner, page_number)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_encounters(summoner.id, page_number.unwrap_or(1) as u16, Some(filters), search_summoner).await
+            get_encounters(summoner.id, page_number.unwrap_or(1) as u16, Some(filters),search_summoner.map(|r|string_to_fixed_array::<16>(r.as_str()))).await
         },
     );
 
-    meta_store.title().set(format!("{}#{} | Encounters | Broken.gg", summoner().game_name, summoner().tag_line));
-    meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner().game_name, summoner().tag_line));
+    meta_store.title().set(format!("{}#{} | Encounters | Broken.gg", summoner().game_name.to_str(), summoner().tag_line.to_str()));
+    meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner().game_name.to_str(), summoner().tag_line.to_str()));
     meta_store.url().set(format!("{}?tab=encounters", summoner().to_route_path()));
     view! {
         <div>
@@ -94,7 +95,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                         Ok(encounters_result) => {
                             let total_pages = encounters_result.total_pages;
                             let current_page = page_number().unwrap_or(1);
-                            if total_pages == 0 || (total_pages as i32) < current_page {
+                            if total_pages == 0 || total_pages < current_page {
                                 set_reset_page_number(true);
                             }
                             if !encounters_result.encounters.is_empty() {
@@ -120,9 +121,9 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                         >
                                                             {
                                                                 let encounter: SummonerEncountersSummoner = encounter;
-                                                                let encounter_platform = encounter.platform.clone();
-                                                                let encounter_game_name = encounter.game_name.clone();
-                                                                let encounter_tag_line = encounter.tag_line.clone();
+                                                                let encounter_platform = encounter.platform.to_string();
+                                                                let encounter_game_name = encounter.game_name.to_string();
+                                                                let encounter_tag_line = encounter.tag_line.to_string();
                                                                 view! {
                                                                     <tr>
                                                                         <td class="text-left w-[200px]">
@@ -141,13 +142,13 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                                 <div class="ml-2">
                                                                                     <a
                                                                                         href=summoner_url(
-                                                                                            encounter.platform.clone().as_str(),
-                                                                                            encounter.game_name.clone().as_str(),
-                                                                                            encounter.tag_line.clone().as_str(),
+                                                                                           encounter_platform.clone(),
+                                                                                            encounter_game_name.clone(),
+                                                                                            encounter_tag_line.clone(),
                                                                                         )
                                                                                         class="text-blue-300 hover:underline"
                                                                                     >
-                                                                                        {encounter.game_name.clone()}
+                                                                                        {encounter.game_name.to_string()}
                                                                                     </a>
                                                                                 </div>
                                                                             </div>
@@ -157,9 +158,9 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                             {encounter.with_match_count - encounter.with_win_count}L
                                                                             <span class="mx-1">{encounter.with_match_count}G</span>
                                                                             {format!(
-                                                                                "{}%",
-                                                                                ((encounter.with_win_count as f64
-                                                                                    / encounter.with_match_count as f64) * 100.0) as i32,
+                                                                                "{:.2}%",
+                                                                                (encounter.with_win_count as f32
+                                                                                    / encounter.with_match_count as f32) * 100.0,
                                                                             )}
                                                                         </td>
                                                                         <td class="px-2">
@@ -167,9 +168,9 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                             {encounter.vs_match_count - encounter.vs_win_count}L
                                                                             <span class="mx-1">{encounter.vs_match_count}G</span>
                                                                             {format!(
-                                                                                "{}%",
-                                                                                ((encounter.vs_win_count as f64
-                                                                                    / encounter.vs_match_count as f64) * 100.0) as i32,
+                                                                                "{:.2}%",
+                                                                                (encounter.vs_win_count as f32
+                                                                                    / encounter.vs_match_count as f32) * 100.0,
                                                                             )}
                                                                         </td>
                                                                         <td class="px-2 ">{encounter.match_count}</td>
@@ -177,12 +178,12 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                             <a
                                                                                 class="my-button font-bold"
                                                                                 href=summoner_encounter_url(
-                                                                                    summoner().platform.to_string().as_str(),
-                                                                                    summoner().game_name.as_str(),
-                                                                                    summoner().tag_line.as_str(),
-                                                                                    encounter_platform.as_str(),
-                                                                                    encounter_game_name.as_str(),
-                                                                                    encounter_tag_line.as_str(),
+                                                                                    summoner().platform.to_string(),
+                                                                                    summoner().game_name.to_string(),
+                                                                                    summoner().tag_line.to_string(),
+                                                                                    encounter_platform.clone(),
+                                                                                    encounter_game_name.clone(),
+                                                                                    encounter_tag_line.clone(),
                                                                                 )
                                                                             >
                                                                                 >
@@ -197,7 +198,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                             </div>
 
                                             <Show when=move || (total_pages > 1)>
-                                                <Pagination max_page=total_pages as usize />
+                                                <Pagination max_page=total_pages />
                                             </Show>
                                         },
                                     ),
@@ -222,21 +223,22 @@ pub fn SummonerEncountersPage() -> impl IntoView {
 
 #[derive(Clone, Serialize, Deserialize, Default, Archive)]
 pub struct SummonerEncountersResult {
+    pub total_pages: u16,
     pub encounters: Vec<SummonerEncountersSummoner>,
-    pub total_pages: i64,
 }
 
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncountersSummoner {
-    pub id: i32,
-    pub match_count: i64,
-    pub with_match_count: i64,
-    pub with_win_count: i64,
-    pub vs_match_count: i64,
-    pub vs_win_count: i64,
-    pub game_name: String,
-    pub tag_line: String,
-    pub platform: String,
+    pub match_count: u16,
+    pub with_match_count: u16,
+    pub with_win_count: u16,
+    pub vs_match_count: u16,
+    pub vs_win_count: u16,
     pub profile_icon_id: u16,
+    pub id: i32,
+    pub game_name: GameName,
+    pub tag_line: TagLine,
+    pub platform: PlatformRoute,
+
 }

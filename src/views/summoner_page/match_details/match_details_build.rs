@@ -7,12 +7,13 @@ use crate::consts::champion::Champion;
 use crate::consts::item::Item;
 use crate::consts::perk::Perk;
 use crate::consts::HasStaticAsset;
-use crate::views::summoner_page::match_details::{ItemEventType, LolMatchParticipantDetails};
+use crate::utils::FixedToString;
+use crate::views::summoner_page::match_details::{ItemEventType, LolMatchParticipantDetails, Skill};
 
 #[component]
 pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantDetails>>) -> impl IntoView {
     let summoner_name_with_champion = |participant: &LolMatchParticipantDetails| {
-        format!("{}({})", participant.summoner_name, Champion::from(participant.champion_id).to_str())
+        format!("{}({})", participant.game_name.to_string().as_str(), Champion::from(participant.champion_id).to_str())
     };
     let participant_ids = match_details.read().iter().map(|x| (x.summoner_id, summoner_name_with_champion(x))).collect::<HashMap<i32, String>>();
     let find_participant = move |summoner_id: i32| match_details.read().iter().find(|x| x.summoner_id == summoner_id).cloned().expect("Participant not found");
@@ -113,24 +114,18 @@ pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatc
                             .skills_timeline
                             .clone()
                             .into_iter()
-                            .map(|skill_id| {
+                            .map(|skill| {
                                 view! {
                                     <div
-                                        class:text-blue-400=move || skill_id == 1
-                                        class:text-green-400=move || skill_id == 2
-                                        class:text-orange-400=move || skill_id == 3
-                                        class:bg-indigo-500=move || skill_id == 4
-                                        class:bg-zinc-700=move || skill_id != 4
+                                        class:text-blue-400=move || skill == Skill::Q
+                                        class:text-green-400=move || skill == Skill::W
+                                        class:text-orange-400=move || skill == Skill::E
+                                        class:bg-indigo-500=move || skill == Skill::R
+                                        class:bg-zinc-700=move || skill != Skill::R
                                         class=" font-bold rounded w-4 h-4 text-center"
                                     >
 
-                                        {match skill_id {
-                                            1 => "Q",
-                                            2 => "W",
-                                            3 => "E",
-                                            4 => "R",
-                                            _ => "",
-                                        }}
+                                        {skill.to_string()}
                                     </div>
                                 }
                             })

@@ -1,6 +1,6 @@
 use crate::backend::ssr::{AppError, AppResult};
 use crate::consts::platform_route::PlatformRoute;
-use crate::views::summoner_page::match_details::{ItemEvent, ItemEventType};
+use crate::views::summoner_page::match_details::{ItemEvent, ItemEventType, Skill};
 use chrono::NaiveDateTime;
 use leptos::server_fn::serde::{Deserialize, Serialize};
 use riven::RiotApi;
@@ -63,7 +63,7 @@ pub async fn update_match_timeline(
                     let participant = lol_match_timelines.get_mut(&participant_id).ok_or_else(|| {
                         AppError::CustomError(format!("Participant with ID {} not found", participant_id))
                     })?;
-                    participant.skills_timeline.push(skill_slot);
+                    participant.skills_timeline.push(Skill::from(skill_slot as u8));
                 }
                 EventType::ItemPurchased => {
                     let item_id = event.item_id.ok_or_else(|| {
@@ -143,15 +143,15 @@ pub async fn update_match_timeline(
 
 pub fn push_item_event_into_participant_id(participants: &mut HashMap<i32, TempLolMatchTimeline>, participant_id: i32, timestamp: i64, event: ItemEvent) {
     let participant = participants.get_mut(&participant_id).expect("Participant not found");
-    participant.items_event_timeline.push((timestamp, event));
+    participant.items_event_timeline.push(((timestamp / 60000) as u16, event));
 }
 
 
 pub struct TempLolMatchTimeline {
     pub lol_match_id: i32,
     pub summoner_id: i32,
-    pub items_event_timeline: Vec<(i64, ItemEvent)>,
-    pub skills_timeline: Vec<i32>,
+    pub items_event_timeline: Vec<(u16, ItemEvent)>,
+    pub skills_timeline: Vec<Skill>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -215,7 +215,7 @@ async fn bulk_insert_match_timeline(db: &PgPool, timelines: Vec<TempLolMatchTime
         b.push_bind(rec.lol_match_id);
         b.push_bind(rec.summoner_id);
         b.push_bind(serde_json::to_value(&items_event_timeline).unwrap_or_default());
-        b.push_bind(rec.skills_timeline.clone());
+        b.push_bind(rec.skills_timeline.iter().map(|&x| x as u8).collect::<Vec<_>>());
     });
     qb.build().fetch_all(db).await?;
     Ok(())

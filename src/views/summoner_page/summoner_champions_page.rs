@@ -9,6 +9,7 @@ use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
+use crate::utils::{format_with_spaces, FixedToString};
 
 #[component]
 pub fn SummonerChampionsPage() -> impl IntoView {
@@ -37,8 +38,8 @@ pub fn SummonerChampionsPage() -> impl IntoView {
     };
 
 
-    meta_store.title().set(format!("{}#{} | Champions | Broken.gg", summoner().game_name, summoner().tag_line));
-    meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner().game_name, summoner().tag_line));
+    meta_store.title().set(format!("{}#{} | Champions | Broken.gg", summoner().game_name.to_str(), summoner().tag_line.to_str()));
+    meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner().game_name.to_str(), summoner().tag_line.to_str()));
     meta_store.url().set(format!("{}?tab=champions", summoner().to_route_path()));
     view! {
         <div>
@@ -242,42 +243,39 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                             <div class="py-1">
                                                                                 <img
                                                                                     src=Champion::get_static_asset_url(champion.champion_id)
-                                                                                    alt=format!(
-                                                                                        "Champion {}",
-                                                                                        Champion::from(champion.champion_id).to_str(),
-                                                                                    )
+                                                                                    alt=Champion::from(champion.champion_id).to_str()
                                                                                     class="w-[32px] h-[32px] rounded-full"
                                                                                     width="32"
                                                                                     height="32"
                                                                                 />
                                                                             </div>
-                                                                            <div class="ml-2 text-center">{champion.champion_name}</div>
+                                                                            <div class="ml-2 text-center">{Champion::from(champion.champion_id).to_str()}</div>
                                                                         </div>
                                                                     </td>
                                                                     <td class="text-xs border border-gray-800">
                                                                         {champion.total_wins}W {champion.total_lose}L
-                                                                        {champion.win_rate}%
+                                                                        {format!("{:.2}",champion.win_rate)}%
                                                                     </td>
                                                                     <td class="text-xs border border-gray-800">
                                                                         <div>
-                                                                            <div>{champion.avg_kda}:1</div>
+                                                                            <div>{format!("{:.2}",champion.avg_kda)}:1</div>
                                                                             <div>
-                                                                                {champion.avg_kills}/ {champion.avg_deaths}/
-                                                                                {champion.avg_assists}
+                                                                                {format!("{:.2}",champion.avg_kills)}/ {format!("{:.2}",champion.avg_deaths)}/
+                                                                                {format!("{:.2}",champion.avg_assists)}
                                                                             </div>
                                                                         </div>
                                                                     </td>
                                                                     <td class="border border-gray-800 text-xs">
-                                                                        {champion.avg_gold_earned.round()}
+                                                                        {format_with_spaces(champion.avg_gold_earned)}
                                                                     </td>
                                                                     <td class="border border-gray-800 text-xs">
-                                                                        {champion.avg_cs.round()}
+                                                                        {champion.avg_cs}
                                                                     </td>
                                                                     <td class="border border-gray-800 text-xs">
-                                                                        {champion.avg_damage_dealt_to_champions.round()}
+                                                                        {format_with_spaces(champion.avg_damage_dealt_to_champions)}
                                                                     </td>
                                                                     <td class="border border-gray-800 text-xs">
-                                                                        {champion.avg_damage_taken.round()}
+                                                                        {format_with_spaces(champion.avg_damage_taken)}
                                                                     </td>
                                                                     <td class="border border-gray-800 text-xs">
                                                                         {champion.total_double_kills}
@@ -375,7 +373,7 @@ impl TableSortType {
         // is reversed because we want to sort in descending order
         let ordering = match self {
             TableSortType::Index => idx_b.cmp(idx_a),
-            TableSortType::Champion => a.champion_name.cmp(&b.champion_name),
+            TableSortType::Champion => Champion::from(b.champion_id).to_str().cmp(&Champion::from(a.champion_id).to_str()),
             TableSortType::WinRate => a.win_rate.partial_cmp(&b.win_rate).unwrap(),
             TableSortType::AvgKDA => a.avg_kda.partial_cmp(&b.avg_kda).unwrap(),
             TableSortType::AvgGold => a.avg_gold_earned.partial_cmp(&b.avg_gold_earned).unwrap(),
@@ -399,22 +397,21 @@ impl TableSortType {
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct ChampionStats {
     pub champion_id: u16,
-    pub champion_name: String,
-    pub total_matches: i64,
-    pub total_wins: i64,
-    pub total_lose: i64,
-    pub win_rate: f64,
-    pub avg_kda: f64,
-    pub avg_kill_participation: f64,
-    pub avg_kills: f64,
-    pub avg_deaths: f64,
-    pub avg_assists: f64,
-    pub avg_gold_earned: f64,
-    pub avg_cs: f64,
-    pub avg_damage_dealt_to_champions: f64,
-    pub avg_damage_taken: f64,
-    pub total_double_kills: i64,
-    pub total_triple_kills: i64,
-    pub total_quadra_kills: i64,
-    pub total_penta_kills: i64,
+    pub total_matches: u16,
+    pub total_wins: u16,
+    pub total_lose: u16,
+    pub total_double_kills: u16,
+    pub total_triple_kills: u16,
+    pub total_quadra_kills: u16,
+    pub total_penta_kills: u16,
+    pub win_rate: f32,
+    pub avg_kda: f32,
+    pub avg_kill_participation: f32,
+    pub avg_kills: f32,
+    pub avg_deaths: f32,
+    pub avg_assists: f32,
+    pub avg_gold_earned: u32,
+    pub avg_cs: u32,
+    pub avg_damage_dealt_to_champions: u32,
+    pub avg_damage_taken: u32,
 }

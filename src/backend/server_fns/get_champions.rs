@@ -16,12 +16,13 @@ pub async fn get_champions(summoner_id: i32, filters: Option<BackEndMatchFilters
 pub mod ssr {
     use crate::backend::ssr::AppResult;
     use crate::consts::champion::Champion;
-    use crate::utils::round_to_2_decimal_places;
+    use crate::utils::{round_to_2_decimal_places};
     use crate::views::summoner_page::summoner_champions_page::ChampionStats;
     use crate::views::{BackEndMatchFiltersSearch};
     use bigdecimal::{BigDecimal, ToPrimitive};
     use itertools::Itertools;
     use sqlx::{FromRow, PgPool, QueryBuilder};
+    use crate::consts::queue::Queue;
 
     pub async fn inner_get_champions(
         db: &PgPool,
@@ -58,12 +59,12 @@ pub mod ssr {
         if let Some(champion_id) = filters.champion_id {
             let sql_filter = " AND lmp.champion_id = ";
             query.push(sql_filter);
-            query.push_bind(champion_id);
+            query.push_bind(champion_id as i32);
         }
         if let Some(queue_id) = filters.queue_id {
             let sql_filter = " AND lm.queue_id = ";
             query.push(sql_filter);
-            query.push_bind(queue_id);
+            query.push_bind((Queue::from(queue_id) as u16) as i32);
         }
 
         if let Some(start_date) = start_date {
@@ -82,29 +83,27 @@ pub mod ssr {
             .fetch_all(db).await?
             .into_iter()
             .map(|champion_stats| {
-                let total_lose = champion_stats.total_matches - champion_stats.total_wins;
-                let win_rate = round_to_2_decimal_places((champion_stats.total_wins as f64 / champion_stats.total_matches as f64) * 100.0);
+                let total_lose = (champion_stats.total_matches - champion_stats.total_wins) as u16;
+                let win_rate = (champion_stats.total_wins as f32 / champion_stats.total_matches as f32) * 100.0;
                 ChampionStats {
                     champion_id: champion_stats.champion_id as u16,
-                    champion_name: Champion::from(champion_stats.champion_id as u16)
-                        .to_str().to_string(),
-                    total_matches: champion_stats.total_matches,
-                    total_wins: champion_stats.total_wins,
+                    total_matches: champion_stats.total_matches as u16,
+                    total_wins: champion_stats.total_wins as u16 ,
                     total_lose,
                     win_rate,
-                    avg_kda: round_to_2_decimal_places(champion_stats.avg_kda.to_f64().unwrap_or_default()),
-                    avg_kill_participation: round_to_2_decimal_places(champion_stats.avg_kill_participation.to_f64().unwrap_or_default()),
-                    avg_kills: round_to_2_decimal_places(champion_stats.avg_kills.to_f64().unwrap_or_default()),
-                    avg_deaths: round_to_2_decimal_places(champion_stats.avg_deaths.to_f64().unwrap_or_default()),
-                    avg_assists: round_to_2_decimal_places(champion_stats.avg_assists.to_f64().unwrap_or_default()),
-                    avg_gold_earned: round_to_2_decimal_places(champion_stats.avg_gold_earned.to_f64().unwrap_or_default()),
-                    avg_cs: round_to_2_decimal_places(champion_stats.avg_cs.to_f64().unwrap_or_default()),
-                    avg_damage_dealt_to_champions: round_to_2_decimal_places(champion_stats.avg_damage_dealt_to_champions.to_f64().unwrap_or_default()),
-                    avg_damage_taken: round_to_2_decimal_places(champion_stats.avg_damage_taken.to_f64().unwrap_or_default()),
-                    total_double_kills: champion_stats.total_double_kills,
-                    total_triple_kills: champion_stats.total_triple_kills,
-                    total_quadra_kills: champion_stats.total_quadra_kills,
-                    total_penta_kills: champion_stats.total_penta_kills,
+                    avg_kda: champion_stats.avg_kda.to_f32().unwrap_or_default(),
+                    avg_kill_participation: champion_stats.avg_kill_participation.to_f32().unwrap_or_default(),
+                    avg_kills: champion_stats.avg_kills.to_f32().unwrap_or_default(),
+                    avg_deaths: champion_stats.avg_deaths.to_f32().unwrap_or_default(),
+                    avg_assists: champion_stats.avg_assists.to_f32().unwrap_or_default(),
+                    avg_gold_earned: champion_stats.avg_gold_earned.to_f64().unwrap_or_default() as u32,
+                    avg_cs: champion_stats.avg_cs.to_f32().unwrap_or_default() as u32,
+                    avg_damage_dealt_to_champions: champion_stats.avg_damage_dealt_to_champions.to_f32().unwrap_or_default() as u32,
+                    avg_damage_taken: champion_stats.avg_damage_taken.to_f32().unwrap_or_default() as u32,
+                    total_double_kills: champion_stats.total_double_kills as u16,
+                    total_triple_kills: champion_stats.total_triple_kills as u16,
+                    total_quadra_kills: champion_stats.total_quadra_kills as u16,
+                    total_penta_kills: champion_stats.total_penta_kills as u16,
                 }
             })
             .collect_vec())

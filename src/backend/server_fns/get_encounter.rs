@@ -4,12 +4,13 @@ use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
 use crate::consts::platform_route::PlatformRoute;
+use crate::utils::{FixedToString, SummonerSlug};
 
 #[server(input=Rkyv, output=Rkyv)]
-pub async fn get_encounter( is_with: bool,summoner_id: i32,page_number: u16 ,filters: Option<BackEndMatchFiltersSearch>, encounter_slug: String, encounter_platform: PlatformRoute) -> Result<SummonerEncounterResult, ServerFnError> {
+pub async fn get_encounter( is_with: bool,summoner_id: i32,page_number: u16 ,filters: Option<BackEndMatchFiltersSearch>, encounter_platform: PlatformRoute,encounter_slug: SummonerSlug,) -> Result<SummonerEncounterResult, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
-    Ok(ssr::get_encounter_data(&db, summoner_id, filters.unwrap_or_default(), page_number as i32, encounter_slug, encounter_platform, is_with).await?)
+    Ok(ssr::get_encounter_data(&db, summoner_id, filters.unwrap_or_default(), page_number as i32, encounter_slug.to_string(), encounter_platform, is_with).await?)
 }
 
 
@@ -20,7 +21,7 @@ pub mod ssr {
     use crate::consts::champion::Champion;
     use crate::consts::platform_route::PlatformRoute;
     use crate::consts::queue::Queue;
-    use crate::utils::{parse_summoner_slug, round_to_2_decimal_places};
+    use crate::utils::{parse_summoner_slug, round_to_2_decimal_places, string_to_fixed_array};
     use crate::views::summoner_page::summoner_encounter_page::{SummonerEncounterMatch, SummonerEncounterParticipant, SummonerEncounterResult, SummonerEncounterStats};
     use crate::views::summoner_page::Summoner;
     use crate::views::{BackEndMatchFiltersSearch};
@@ -32,7 +33,7 @@ pub mod ssr {
 
     pub async fn get_encounter_data(db: &PgPool, summoner_id: i32, filters: BackEndMatchFiltersSearch, page_number: i32, encounter_slug: String, encounter_platform: PlatformRoute, is_with: bool) -> AppResult<SummonerEncounterResult> {
         let (encounter_game_name, encounter_tag_line) = parse_summoner_slug(encounter_slug.as_str());
-        let encounter = find_summoner_by_exact_game_name_tag_line(db, &encounter_platform, &encounter_game_name, &encounter_tag_line).await?;
+        let encounter = find_summoner_by_exact_game_name_tag_line(db, encounter_platform, encounter_game_name, encounter_tag_line).await?;
         let summoner = find_summoner_by_id(db, summoner_id).await?;
         let per_page = 20;
         let offset = (page_number.max(1) - 1) * per_page;
@@ -101,13 +102,13 @@ pub mod ssr {
         if let Some(champion_id) = filters.champion_id {
             let sql_filter = " AND lmp1.champion_id = ";
             query.push(sql_filter);
-            query.push_bind(champion_id);
+            query.push_bind(champion_id as i32);
         }
 
         if let Some(queue_id) = filters.queue_id {
             let sql_filter = " AND lm.queue_id = ";
             query.push(sql_filter);
-            query.push_bind(queue_id);
+            query.push_bind((Queue::from(queue_id) as u16) as i32);
         }
 
         if let Some(start_date) = start_date {
@@ -146,28 +147,26 @@ pub mod ssr {
                 );
 
                 // Safely handle floating point operations
-                let kda = (row.kda.unwrap_or_default().to_f64().unwrap_or(0.0).max(0.0) * 100.0).round() / 100.0;
-                let kill_participation = (row.kill_participation.unwrap_or_default().to_f64().unwrap_or(0.0).max(0.0) * 100.0).round();
-                let encounter_kda = (row.encounter_kda.unwrap_or_default().to_f64().unwrap_or(0.0).max(0.0) * 100.0).round() / 100.0;
-                let encounter_kill_participation = (row.encounter_kill_participation.unwrap_or_default().to_f64().unwrap_or(0.0).max(0.0) * 100.0).round();
+                let kda = (row.kda.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round() / 100.0;
+                let kill_participation = (row.kill_participation.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round();
+                let encounter_kda = (row.encounter_kda.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round() / 100.0;
+                let encounter_kill_participation = (row.encounter_kill_participation.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round();
 
                 SummonerEncounterMatch {
                     match_id: row.lol_match_id,
-                    riot_match_id: row.riot_match_id,
+                    riot_match_id: string_to_fixed_array::<17>(row.riot_match_id.as_str()),
                     match_ended_since,
                     match_duration: match_duration_str,
-                    queue: row.queue_id.map(|q| Queue::from(q as u16).to_str()).unwrap_or_default().to_string(),
-                    platform: row.platform.to_string(),
+                    queue: row.queue_id.map(|q| Queue::from(q as u16)).unwrap(),
+                    platform: row.platform.into(),
                     participant: SummonerEncounterParticipant {
                         summoner_id,
                         won: row.won,
                         champion_id: row.champion_id as u16,
-                        champion_name: Champion::from(row.champion_id as u16)
-                            .to_str().to_string(),
-                        champ_level: row.champ_level,
-                        kills: row.kills,
-                        deaths: row.deaths,
-                        assists: row.assists,
+                        champ_level: row.champ_level as u16,
+                        kills: row.kills as u16,
+                        deaths: row.deaths as u16,
+                        assists: row.assists as u16,
                         kda,
                         kill_participation,
                         summoner_spell1_id: row.summoner_spell1_id.unwrap_or_default() as u16,
@@ -186,12 +185,10 @@ pub mod ssr {
                         summoner_id: row.encounter_summoner_id,
                         won: row.encounter_won,
                         champion_id: row.encounter_champion_id as u16,
-                        champion_name: Champion::from(row.encounter_champion_id as u16)
-                            .to_str().to_string(),
-                        champ_level: row.encounter_champ_level,
-                        kills: row.encounter_kills,
-                        deaths: row.encounter_deaths,
-                        assists: row.encounter_assists,
+                        champ_level: row.encounter_champ_level as u16,
+                        kills: row.encounter_kills as u16,
+                        deaths: row.encounter_deaths as u16,
+                        assists: row.encounter_assists as u16,
                         kda: encounter_kda,
                         kill_participation: encounter_kill_participation,
                         summoner_spell1_id: row.encounter_summoner_spell1_id.unwrap_or_default() as u16,
@@ -234,26 +231,26 @@ pub mod ssr {
             .bind(summoner_id)
             .fetch_one(db)
             .await?;
-        let total_pages = (encounter_stats.total_matches as f64 / per_page as f64).ceil() as i32;
+        let total_pages = (encounter_stats.total_matches as f64 / per_page as f64).ceil() as u16;
         let summoner_stats = SummonerEncounterStats {
-            total_wins: encounter_stats.total_wins as i32,
-            total_loses: (encounter_stats.total_matches - encounter_stats.total_wins) as i32,
-            avg_kills: round_to_2_decimal_places(encounter_stats.avg_kills.to_f64().unwrap_or_default()),
-            avg_deaths: round_to_2_decimal_places(encounter_stats.avg_deaths.to_f64().unwrap_or_default()),
-            avg_assists: round_to_2_decimal_places(encounter_stats.avg_assists.to_f64().unwrap_or_default()),
-            avg_kda: round_to_2_decimal_places(encounter_stats.avg_kda.to_f64().unwrap_or_default()),
-            avg_kill_participation: round_to_2_decimal_places(encounter_stats.avg_kill_participation.to_f64().unwrap_or_default()),
+            total_wins: encounter_stats.total_wins as u16,
+            total_loses: (encounter_stats.total_matches - encounter_stats.total_wins) as u16,
+            avg_kills: encounter_stats.avg_kills.to_f32().unwrap_or_default(),
+            avg_deaths: encounter_stats.avg_deaths.to_f32().unwrap_or_default(),
+            avg_assists: encounter_stats.avg_assists.to_f32().unwrap_or_default(),
+            avg_kda: encounter_stats.avg_kda.to_f32().unwrap_or_default(),
+            avg_kill_participation: encounter_stats.avg_kill_participation.to_f32().unwrap_or_default() * 100.0,
 
         };
 
         let encounter_stats = SummonerEncounterStats {
-            total_wins: encounter_stats.encounter_total_wins as i32,
-            total_loses: (encounter_stats.total_matches - encounter_stats.encounter_total_wins) as i32,
-            avg_kills: round_to_2_decimal_places(encounter_stats.encounter_avg_kills.to_f64().unwrap_or_default()),
-            avg_deaths: round_to_2_decimal_places(encounter_stats.encounter_avg_deaths.to_f64().unwrap_or_default()),
-            avg_assists: round_to_2_decimal_places(encounter_stats.encounter_avg_assists.to_f64().unwrap_or_default()),
-            avg_kda: round_to_2_decimal_places(encounter_stats.encounter_avg_kda.to_f64().unwrap_or_default()),
-            avg_kill_participation: round_to_2_decimal_places(encounter_stats.encounter_avg_kill_participation.to_f64().unwrap_or_default()),
+            total_wins: encounter_stats.encounter_total_wins as u16,
+            total_loses: (encounter_stats.total_matches - encounter_stats.encounter_total_wins) as u16,
+            avg_kills: encounter_stats.encounter_avg_kills.to_f32().unwrap_or_default(),
+            avg_deaths: encounter_stats.encounter_avg_deaths.to_f32().unwrap_or_default(),
+            avg_assists: encounter_stats.encounter_avg_assists.to_f32().unwrap_or_default(),
+            avg_kda: encounter_stats.encounter_avg_kda.to_f32().unwrap_or_default(),
+            avg_kill_participation: encounter_stats.encounter_avg_kill_participation.to_f32().unwrap_or_default() * 100.0,
         };
         Ok(SummonerEncounterResult {
             total_pages,
@@ -288,14 +285,14 @@ pub mod ssr {
             .map(|summoner_db| {
                 Summoner {
                     id: summoner_db.id,
-                    game_name: summoner_db.game_name,
-                    tag_line: summoner_db.tag_line,
-                    puuid: summoner_db.puuid,
+                    game_name: string_to_fixed_array::<16>(summoner_db.game_name.as_str()),
+                    tag_line: string_to_fixed_array::<5>(summoner_db.tag_line.as_str()),
+                    puuid: string_to_fixed_array::<78>(summoner_db.puuid.as_str()),
                     platform: PlatformRoute::from(summoner_db.platform),
                     updated_at: summoner_db.updated_at.format(DATE_FORMAT).to_string(),
-                    summoner_level: summoner_db.summoner_level,
+                    summoner_level: summoner_db.summoner_level as u16,
                     profile_icon_id: summoner_db.profile_icon_id as u16,
-                    pro_slug: summoner_db.pro_slug,
+                    pro_slug: summoner_db.pro_slug.map(|slug| string_to_fixed_array::<16>(slug.as_str())),
                 }
             })
             .map_err(|e| e.into())
@@ -335,8 +332,8 @@ pub mod ssr {
         pub kills: i32,
         pub deaths: i32,
         pub assists: i32,
-        pub kda: Option<BigDecimal>,
-        pub kill_participation: Option<BigDecimal>,
+        pub kda: BigDecimal,
+        pub kill_participation: BigDecimal,
         pub summoner_spell1_id: Option<i32>,
         pub summoner_spell2_id: Option<i32>,
         pub perk_primary_selection_id: Option<i32>,
@@ -355,8 +352,8 @@ pub mod ssr {
         pub encounter_kills: i32,
         pub encounter_deaths: i32,
         pub encounter_assists: i32,
-        pub encounter_kda: Option<BigDecimal>,
-        pub encounter_kill_participation: Option<BigDecimal>,
+        pub encounter_kda: BigDecimal,
+        pub encounter_kill_participation: BigDecimal,
         pub encounter_summoner_spell1_id: Option<i32>,
         pub encounter_summoner_spell2_id: Option<i32>,
         pub encounter_perk_primary_selection_id: Option<i32>,

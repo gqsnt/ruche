@@ -3,12 +3,15 @@ use crate::views::{BackEndMatchFiltersSearch};
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
+use crate::backend::server_fns::search_summoner::search_summoner;
+use crate::utils::{string_to_fixed_array, FixedToString, GameName};
+
 #[server(input=Rkyv,output=Rkyv)]
-pub async fn get_encounters(summoner_id: i32, page_number: u16, filters: Option<BackEndMatchFiltersSearch>, search_summoner: Option<String>) -> Result<SummonerEncountersResult, ServerFnError> {
+pub async fn get_encounters(summoner_id: i32, page_number: u16, filters: Option<BackEndMatchFiltersSearch>, search_summoner: Option<GameName>) -> Result<SummonerEncountersResult, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
-    ssr::inner_get_encounters(&db, summoner_id, page_number as i32, filters.unwrap_or_default(), search_summoner).await.map_err(|e| e.to_server_fn_error())
+    ssr::inner_get_encounters(&db, summoner_id, page_number as i32, filters.unwrap_or_default(),search_summoner.map(|r|r.to_string())).await.map_err(|e| e.to_server_fn_error())
 }
 
 
@@ -19,6 +22,8 @@ pub mod ssr {
     use crate::views::{BackEndMatchFiltersSearch};
     use sqlx::{FromRow, PgPool, QueryBuilder};
     use std::collections::HashMap;
+    use crate::consts::queue::Queue;
+    use crate::utils::string_to_fixed_array;
 
     pub async fn inner_get_encounters(
         db: &PgPool,
@@ -59,7 +64,7 @@ pub mod ssr {
         if let Some(champion_id) = filters.champion_id {
             let sql_filter = " AND tm.champion_id = ";
             query.push(sql_filter);
-            query.push_bind(champion_id);
+            query.push_bind(champion_id as i32);
         }
         if filters.queue_id.is_some()  || start_date.is_some() || end_date.is_some() || search_summoner.is_some() {
             query.push(" JOIN lol_matches lm ON lm.id = lmp.lol_match_id ");
@@ -75,7 +80,7 @@ pub mod ssr {
         if let Some(queue_id) = filters.queue_id {
             let sql_filter = " AND lm.queue_id = ";
             query.push(sql_filter);
-            query.push_bind(queue_id);
+            query.push_bind((Queue::from(queue_id) as u16) as i32);
         }
 
         if let Some(start_date) = start_date {
@@ -102,14 +107,14 @@ pub mod ssr {
             .await?
             .into_iter()
             .map(|(id, game_name, tag_line, platform, profile_icon_id)| {
-                (id, (game_name, tag_line, platform.to_string(), profile_icon_id))
-            }).collect::<HashMap<i32, (String, String, String, i32)>>();
+                (id, (game_name, tag_line, platform, profile_icon_id))
+            }).collect::<HashMap<i32, (String, String, PlatformRouteDb, i32)>>();
 
 
         let total_pages = if results.is_empty() {
             0
         } else {
-            (results.first().unwrap().total_count as f64 / per_page as f64).ceil() as i64
+            (results.first().unwrap().total_count as f32 / per_page as f32).ceil() as u16
         };
         Ok(SummonerEncountersResult {
             total_pages,
@@ -118,14 +123,14 @@ pub mod ssr {
                 SummonerEncountersSummoner {
                     id: encounter.summoner_id,
                     profile_icon_id: profile_icon_id as u16,
-                    match_count: encounter.match_count,
-                    with_match_count: encounter.with_match_count,
-                    with_win_count: encounter.with_win_count,
-                    vs_match_count: encounter.vs_match_count,
-                    vs_win_count: encounter.vs_win_count,
-                    game_name,
-                    tag_line,
-                    platform,
+                    match_count: encounter.match_count as u16,
+                    with_match_count: encounter.with_match_count as u16,
+                    with_win_count: encounter.with_win_count as u16,
+                    vs_match_count: encounter.vs_match_count as u16,
+                    vs_win_count: encounter.vs_win_count as u16,
+                    game_name: string_to_fixed_array::<16>(game_name.as_str()),
+                    tag_line: string_to_fixed_array::<5>(tag_line.as_str()),
+                    platform: platform.into(),
                 }
             }).collect::<Vec<_>>(),
         })

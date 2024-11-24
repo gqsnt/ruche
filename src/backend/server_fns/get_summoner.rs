@@ -1,3 +1,4 @@
+use leptos::logging::log;
 use crate::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use crate::utils::{parse_summoner_slug, summoner_not_found_url};
@@ -5,24 +6,26 @@ use crate::views::summoner_page::Summoner;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
+use crate::utils::{FixedToString, SummonerSlug};
+
 #[server( input=Rkyv,output=Rkyv)]
 pub async fn get_summoner(
     platform_route: PlatformRoute,
-    summoner_slug: String,
+    summoner_slug: SummonerSlug,
 ) -> Result<Summoner, ServerFnError> {
     //log!("Server::Fetching summoner: {}", summoner_slug);
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
+    let slug = summoner_slug.to_string();
 
-
-    let (game_name, tag_line) = parse_summoner_slug(summoner_slug.as_str());
-    match ssr::find_summoner_by_exact_game_name_tag_line(&db, &platform_route, game_name.as_str(), tag_line.as_str()).await {
+    let (game_name, tag_line) = parse_summoner_slug(slug.as_str());
+    match ssr::find_summoner_by_exact_game_name_tag_line(&db, platform_route, game_name.clone(), tag_line.clone()).await {
         Ok(summoner) => {
             Ok(summoner)
         }
         Err(e) => {
-            let (game_name, tag_line) = parse_summoner_slug(summoner_slug.as_str());
-            leptos_axum::redirect(summoner_not_found_url(platform_route.to_string().as_str(), game_name.as_str(), tag_line.as_str()).as_str());
+            log!("Server::Summoner not found: {}: {:?}", summoner_slug.to_string(), e);
+            leptos_axum::redirect(summoner_not_found_url(platform_route.to_string(), game_name, tag_line).as_str());
             e.as_server_fn_error()
         }
     }
@@ -36,12 +39,13 @@ pub mod ssr {
     use crate::views::summoner_page::Summoner;
     use crate::DATE_FORMAT;
     use chrono::NaiveDateTime;
+    use crate::utils::string_to_fixed_array;
 
     pub async fn find_summoner_by_exact_game_name_tag_line(
         db: &sqlx::PgPool,
-        platform_route: &PlatformRoute,
-        game_name: &str,
-        tag_line: &str,
+        platform_route: PlatformRoute,
+        game_name: String,
+        tag_line: String,
     ) -> AppResult<Summoner> {
         sqlx::query_as::<_, SummonerModel>(
             r#"
@@ -62,20 +66,20 @@ pub mod ssr {
   "#
         ).bind(game_name)
             .bind(tag_line)
-            .bind(PlatformRouteDb::from(*platform_route))
+            .bind(PlatformRouteDb::from(platform_route))
             .fetch_one(db)
             .await
             .map(|summoner_db| {
                 Summoner {
                     id: summoner_db.id,
-                    game_name: summoner_db.game_name,
-                    tag_line: summoner_db.tag_line,
-                    puuid: summoner_db.puuid,
+                    game_name: string_to_fixed_array::<16>(summoner_db.game_name.as_str()),
+                    tag_line: string_to_fixed_array::<5>(summoner_db.tag_line.as_str()),
+                    puuid: string_to_fixed_array::<78>(summoner_db.puuid.as_str()),
                     platform: PlatformRoute::from(summoner_db.platform),
                     updated_at: summoner_db.updated_at.format(DATE_FORMAT).to_string(),
-                    summoner_level: summoner_db.summoner_level,
+                    summoner_level: summoner_db.summoner_level as u16,
                     profile_icon_id: summoner_db.profile_icon_id as u16,
-                    pro_slug: summoner_db.pro_slug,
+                    pro_slug: summoner_db.pro_slug.map(|s|string_to_fixed_array::<16>(s.as_str())),
                 }
             })
             .map_err(|e| e.into())

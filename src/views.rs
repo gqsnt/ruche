@@ -9,16 +9,16 @@ pub mod summoner_page;
 
 #[derive(Params, PartialEq, Clone, Default)]
 pub struct MatchFiltersSearch {
-    pub queue_id: Option<i32>,
-    pub champion_id: Option<i32>,
+    pub queue_id: Option<u8>,
+    pub champion_id: Option<u16>,
     pub start_date: Option<String>,
     pub end_date: Option<String>,
 }
 
 #[derive(Debug, Archive,Serialize, Deserialize, Default, PartialEq, Clone, Copy)]
 pub struct BackEndMatchFiltersSearch {
-    pub queue_id: Option<i32>,
-    pub champion_id: Option<i32>,
+    pub queue_id: Option<u8>,
+    pub champion_id: Option<u16>,
     pub start_date: Option<(u16, u8, u8)>,
     pub end_date: Option<(u16, u8, u8)>,
 }
@@ -48,8 +48,8 @@ impl BackEndMatchFiltersSearch {
         end_date: Option<String>,
     ) -> Self {
         Self {
-            queue_id: queue_id.map(|x| x.parse::<i32>().unwrap_or_default()),
-            champion_id: champion_id.map(|x| x.parse::<i32>().unwrap_or_default()),
+            queue_id: queue_id.map(|x| x.parse::<u8>().unwrap_or_default()),
+            champion_id: champion_id.map(|x| x.parse::<u16>().unwrap_or_default()),
             start_date: parse_date(start_date),
             end_date: parse_date(end_date),
         }
