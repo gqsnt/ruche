@@ -5,8 +5,6 @@ use crate::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use crate::utils::summoner_url;
 #[cfg(feature = "ssr")]
-use crate::utils::FixedToString;
-#[cfg(feature = "ssr")]
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos::server;

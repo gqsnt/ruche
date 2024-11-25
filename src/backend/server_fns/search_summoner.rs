@@ -5,8 +5,6 @@ use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
 use crate::utils::{GameName, TagLine};
-#[cfg(feature = "ssr")]
-use crate::utils::FixedToString;
 
 
 #[server(input = Rkyv, output = Rkyv)]

@@ -6,7 +6,7 @@ use crate::consts::item::Item;
 use crate::consts::perk::Perk;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{format_float_to_2digits, summoner_encounter_url, summoner_url, FixedToString, GameName, ProPlayerSlug, RiotMatchId, TagLine};
+use crate::utils::{format_duration, format_float_to_2digits, summoner_encounter_url, summoner_url, DurationSince, GameName, ProPlayerSlug, RiotMatchId, TagLine};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
@@ -173,7 +173,7 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Summoner>) -> impl 
                             >
                                 {match_.queue.to_str()}
                             </div>
-                            <div>{match_.match_ended_since.clone()}</div>
+                            <div>{match_.match_ended_since.to_string()}</div>
                         </div>
                         <hr
                             class:border-red-500=move || !match_.won
@@ -182,7 +182,7 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Summoner>) -> impl 
                         />
                         <div class="flex flex-col items-start">
                             <div>{if match_.won { "Victory" } else { "Defeat" }}</div>
-                            <div>{match_.match_duration.clone()}</div>
+                            <div>{format_duration(match_.match_duration)}</div>
                         </div>
                     </div>
                     <div class="flex flex-col h-full w-[308px]  gap-0.5 justify-start">
@@ -264,7 +264,7 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Summoner>) -> impl 
                                     /
                                     <span class="text-white">{match_.assists}</span>
                                 </div>
-                                <div>{format_float_to_2digits( match_.kda)}:1 KDA</div>
+                                <div>{format_float_to_2digits(match_.kda)}:1 KDA</div>
                             </div>
                             <div
                                 class:border-red-500=move || !match_.won
@@ -272,7 +272,7 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Summoner>) -> impl 
                                 class="flex flex-col h-[58px] pl-2 border-l-2"
                             >
                                 <div class="text-red-300">
-                                    P/Kill {format_float_to_2digits( match_.kill_participation)}%
+                                    P/Kill {format_float_to_2digits(match_.kill_participation)}%
                                 </div>
                             </div>
                         </div>
@@ -495,6 +495,7 @@ pub struct SummonerMatch {
     pub summoner_id: i32,
     pub match_id: i32,
     pub champ_level: i32,
+    pub match_duration: Option<i32>,
     pub kda: f32,
     pub kill_participation: f32,
     pub item0_id: u32,
@@ -516,19 +517,18 @@ pub struct SummonerMatch {
     pub queue: Queue,
     pub platform: PlatformRoute,
     pub riot_match_id: RiotMatchId,
-    pub match_ended_since: String,
-    pub match_duration: String,
+    pub match_ended_since: DurationSince,
     pub participants: Vec<SummonerMatchParticipant>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerMatchParticipant {
-    pub platform: PlatformRoute,
+    pub lol_match_id: i32,
+    pub summoner_id: i32,
     pub champion_id: u16,
     pub team_id: u16,
     pub encounter_count: u16,
-    pub lol_match_id: i32,
-    pub summoner_id: i32,
+    pub platform: PlatformRoute,
     pub game_name: GameName,
     pub tag_line: TagLine,
     pub pro_player_slug: Option<ProPlayerSlug>,

@@ -4,7 +4,7 @@ use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::consts::platform_route::PlatformRoute;
 use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::HasStaticAsset;
-use crate::utils::{string_to_fixed_array, summoner_url, FixedToString, GameName, ProPlayerSlug, Puuid, TagLine};
+use crate::utils::{summoner_url, GameName, ProPlayerSlug, Puuid, SummonerSlug, TagLine};
 use crate::views::summoner_page::summoner_nav::SummonerNav;
 use leptos::context::provide_context;
 use leptos::either::Either;
@@ -43,7 +43,7 @@ pub fn SummonerPage() -> impl IntoView {
         move || (update_summoner_action.version().get(), platform_type(), summoner_slug()),
         |(_, platform, summoner_slug)| async move {
             //log!("Client::Fetching summoner: {}", ss);
-            get_summoner(PlatformRoute::from(platform.as_str()), string_to_fixed_array::<22>(summoner_slug.as_str())).await
+            get_summoner(PlatformRoute::from(platform.as_str()), SummonerSlug::new(summoner_slug.as_str())).await
         },
     );
 
@@ -137,8 +137,7 @@ pub struct Summoner {
     pub game_name: GameName,
     pub tag_line: TagLine,
     pub puuid: Puuid,
-    pub pro_slug: Option<ProPlayerSlug>,
-    pub updated_at: String,
+    pub pro_slug: Option<ProPlayerSlug>
 }
 
 

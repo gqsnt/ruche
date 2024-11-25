@@ -7,7 +7,6 @@ use crate::consts::champion::Champion;
 use crate::consts::item::Item;
 use crate::consts::perk::Perk;
 use crate::consts::HasStaticAsset;
-use crate::utils::FixedToString;
 use crate::views::summoner_page::match_details::{ItemEventType, LolMatchParticipantDetails, Skill};
 
 #[component]

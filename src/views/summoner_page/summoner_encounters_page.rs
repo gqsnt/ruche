@@ -2,7 +2,7 @@ use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_encounters::get_encounters;
 use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::HasStaticAsset;
-use crate::utils::{string_to_fixed_array, summoner_encounter_url, summoner_url, FixedToString, GameName, TagLine};
+use crate::utils::{summoner_encounter_url, summoner_url, GameName, TagLine};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
 use crate::views::{BackEndMatchFiltersSearch};
@@ -52,7 +52,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
         move || (search_summoner.get(), match_filters_updated.get(), summoner(), page_number()),
         |(search_summoner, filters, summoner, page_number)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_encounters(summoner.id, page_number.unwrap_or(1) , Some(filters),search_summoner.map(|r|string_to_fixed_array::<16>(r.as_str()))).await
+            get_encounters(summoner.id, page_number.unwrap_or(1) , Some(filters),search_summoner.map(|r|GameName::new(r.as_str()))).await
         },
     );
 

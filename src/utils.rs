@@ -1,41 +1,51 @@
+use rkyv::{Archive, Deserialize, Serialize};
 
-pub type GameName= [u8;16];
-pub type TagLine= [u8;5];
-pub type Puuid= [u8;78];
-pub type ProPlayerSlug= [u8;20];
-pub type SummonerSlug = [u8;22];
-pub type RiotMatchId = [u8;17];
-pub type GameMode= [u8;15];
-pub type Version= [u8;5];
+#[derive(Clone, Copy, PartialEq, Eq,Debug, Hash, Serialize, Deserialize, Archive)]
+pub struct FixedSizeString<const N: usize>([u8; N]);
 
-
-pub trait FixedToString{
-    fn to_string(&self) -> String;
-    fn to_str(&self) -> &str;
-}
-
-// impl fiex to string for u8 N
-impl<const N: usize> FixedToString for [u8; N] {
-    fn to_string(&self) -> String {
-        String::from_utf8_lossy(self.trim_end_zeros()).to_string()
+impl <const N: usize> FixedSizeString<N> {
+    pub fn new(value: &str) -> Self {
+        let mut result = [0u8; N]; // Initialize the fixed-size array with zeros.
+        let bytes = value.as_bytes(); // Get the string as a slice of bytes.
+        let len = bytes.len().min(N); // Determine how much of the string fits into the array.
+        result[..len].copy_from_slice(&bytes[..len]); // Copy the bytes into the fixed-size array.
+        FixedSizeString(result)
     }
 
-    fn to_str(&self) -> &str {
+    pub fn to_str(&self) -> &str {
         std::str::from_utf8(self.trim_end_zeros()).unwrap()
     }
-}
 
-trait TrimEndZeros {
-    fn trim_end_zeros(&self) -> &[u8];
-}
-
-impl TrimEndZeros for [u8] {
     fn trim_end_zeros(&self) -> &[u8] {
-        let end = self.iter().rposition(|&b| b != 0).map_or(0, |pos| pos + 1);
-        &self[..end]
+        let end = self.0.iter().rposition(|&b| b != 0).map_or(0, |pos| pos + 1);
+        &self.0[..end]
     }
 }
 
+impl <const N: usize>  std::fmt::Display for FixedSizeString<N> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", String::from_utf8_lossy(self.trim_end_zeros()))
+    }
+}
+
+
+pub type GameName = FixedSizeString<16>;
+pub type TagLine = FixedSizeString<5>;
+pub type Puuid = FixedSizeString<78>;
+pub type ProPlayerSlug = FixedSizeString<20>;
+pub type SummonerSlug = FixedSizeString<22>;
+pub type RiotMatchId = FixedSizeString<17>;
+pub type DurationSince=FixedSizeString<14>;
+
+
+pub fn format_duration(seconds: Option<i32>) -> String {
+    let seconds = seconds.unwrap_or(0);
+    let hours = seconds / 3600;
+    let minutes = (seconds % 3600) / 60;
+    let seconds = seconds % 60;
+
+    format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
+}
 
 
 pub fn version_to_major_minor(version: &str) -> String {
@@ -98,13 +108,6 @@ pub fn round_to_2_decimal_places(value: f64) -> f64 {
     (value * 100.0).round() / 100.0
 }
 
-pub fn string_to_fixed_array<const N: usize>(input: &str) -> [u8; N] {
-    let mut result = [0u8; N]; // Initialize the fixed-size array with zeros.
-    let bytes = input.as_bytes(); // Get the string as a slice of bytes.
-    let len = bytes.len().min(N); // Determine how much of the string fits into the array.
-    result[..len].copy_from_slice(&bytes[..len]); // Copy the bytes into the fixed-size array.
-    result
-}
 
 pub fn format_float_to_2digits(value: f32) -> String {
     let value = (value * 100.0).round()/100.0;

@@ -4,8 +4,6 @@ use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
 use crate::utils::{GameName};
-#[cfg(feature = "ssr")]
-use crate::utils::FixedToString;
 
 
 #[server(input=Rkyv,output=Rkyv)]
@@ -25,7 +23,7 @@ pub mod ssr {
     use sqlx::{FromRow, PgPool, QueryBuilder};
     use std::collections::HashMap;
     use crate::consts::queue::Queue;
-    use crate::utils::string_to_fixed_array;
+    use crate::utils::{GameName, TagLine};
 
     pub async fn inner_get_encounters(
         db: &PgPool,
@@ -130,8 +128,8 @@ pub mod ssr {
                     with_win_count: encounter.with_win_count as u16,
                     vs_match_count: encounter.vs_match_count as u16,
                     vs_win_count: encounter.vs_win_count as u16,
-                    game_name: string_to_fixed_array::<16>(game_name.as_str()),
-                    tag_line: string_to_fixed_array::<5>(tag_line.as_str()),
+                    game_name: GameName::new(game_name.as_str()),
+                    tag_line: TagLine::new(tag_line.as_str()),
                     platform: platform.into(),
                 }
             }).collect::<Vec<_>>(),

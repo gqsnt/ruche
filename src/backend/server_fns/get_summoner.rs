@@ -8,8 +8,6 @@ use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
 use crate::utils::{SummonerSlug};
-#[cfg(feature = "ssr")]
-use crate::utils::FixedToString;
 
 
 #[server( input=Rkyv,output=Rkyv)]
@@ -41,9 +39,7 @@ pub mod ssr {
     use crate::backend::ssr::{AppResult, PlatformRouteDb};
     use crate::consts::platform_route::PlatformRoute;
     use crate::views::summoner_page::Summoner;
-    use crate::DATE_FORMAT;
-    use chrono::NaiveDateTime;
-    use crate::utils::string_to_fixed_array;
+    use crate::utils::{GameName, ProPlayerSlug, Puuid, TagLine};
 
     pub async fn find_summoner_by_exact_game_name_tag_line(
         db: &sqlx::PgPool,
@@ -61,7 +57,6 @@ pub mod ssr {
                ss.profile_icon_id as profile_icon_id,
                ss.summoner_level  as summoner_level,
                ss.puuid           as puuid,
-               ss.updated_at      as updated_at,
                ss.pro_player_slug as pro_slug
             FROM summoners as ss
             WHERE ss.game_name = $1
@@ -76,14 +71,13 @@ pub mod ssr {
             .map(|summoner_db| {
                 Summoner {
                     id: summoner_db.id,
-                    game_name: string_to_fixed_array::<16>(summoner_db.game_name.as_str()),
-                    tag_line: string_to_fixed_array::<5>(summoner_db.tag_line.as_str()),
-                    puuid: string_to_fixed_array::<78>(summoner_db.puuid.as_str()),
+                    game_name: GameName::new(summoner_db.game_name.as_str()),
+                    tag_line: TagLine::new(summoner_db.tag_line.as_str()),
+                    puuid: Puuid::new(summoner_db.puuid.as_str()),
                     platform: PlatformRoute::from(summoner_db.platform),
-                    updated_at: summoner_db.updated_at.format(DATE_FORMAT).to_string(),
                     summoner_level: summoner_db.summoner_level as u16,
                     profile_icon_id: summoner_db.profile_icon_id as u16,
-                    pro_slug: summoner_db.pro_slug.map(|s|string_to_fixed_array::<20>(s.as_str())),
+                    pro_slug: summoner_db.pro_slug.map(|s|ProPlayerSlug::new(s.as_str())),
                 }
             })
             .map_err(|e| e.into())
@@ -97,7 +91,6 @@ pub mod ssr {
         pub tag_line: String,
         pub puuid: String,
         pub platform: PlatformRouteDb,
-        pub updated_at: NaiveDateTime,
         pub summoner_level: i32,
         pub profile_icon_id: i32,
         pub pro_slug: Option<String>,

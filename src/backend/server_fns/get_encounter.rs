@@ -5,8 +5,6 @@ use leptos::server;
 use leptos::server_fn::codec::Rkyv;
 use crate::consts::platform_route::PlatformRoute;
 use crate::utils::{SummonerSlug};
-#[cfg(feature = "ssr")]
-use crate::utils::FixedToString;
 
 
 #[server(input=Rkyv, output=Rkyv)]
@@ -23,13 +21,12 @@ pub mod ssr {
     use crate::backend::ssr::{format_duration_since, AppResult, PlatformRouteDb};
     use crate::consts::platform_route::PlatformRoute;
     use crate::consts::queue::Queue;
-    use crate::utils::{parse_summoner_slug, string_to_fixed_array};
+    use crate::utils::{parse_summoner_slug, DurationSince, GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine};
     use crate::views::summoner_page::summoner_encounter_page::{SummonerEncounterMatch, SummonerEncounterParticipant, SummonerEncounterResult, SummonerEncounterStats};
     use crate::views::summoner_page::Summoner;
     use crate::views::{BackEndMatchFiltersSearch};
-    use crate::DATE_FORMAT;
     use bigdecimal::{BigDecimal, ToPrimitive};
-    use chrono::{Duration, NaiveDateTime};
+    use chrono::{NaiveDateTime};
     use itertools::Itertools;
     use sqlx::{PgPool, QueryBuilder};
 
@@ -171,17 +168,9 @@ pub mod ssr {
         let matches =matches
             .into_iter()
             .map(|row| {
-                let match_duration = Duration::seconds(row.match_duration.unwrap_or_default() as i64);
-                let match_duration_str = format!(
-                    "{:02}:{:02}:{:02}",
-                    match_duration.num_hours(),
-                    match_duration.num_minutes() % 60,
-                    match_duration.num_seconds() % 60
-                );
-
                 // Calculate time since match ended
                 let match_ended_since = row.match_end.map_or_else(
-                    || "Unknown".to_string(),
+                    || DurationSince::new("Unknown"),
                     format_duration_since,
                 );
 
@@ -193,9 +182,9 @@ pub mod ssr {
 
                 SummonerEncounterMatch {
                     match_id: row.lol_match_id,
-                    riot_match_id: string_to_fixed_array::<17>(row.riot_match_id.as_str()),
+                    riot_match_id: RiotMatchId::new(row.riot_match_id.as_str()),
                     match_ended_since,
-                    match_duration: match_duration_str,
+                    match_duration: row.match_duration,
                     queue: row.queue_id.map(|q| Queue::from_u16(q as u16)).unwrap(),
                     platform: row.platform.into(),
                     participant: SummonerEncounterParticipant {
@@ -288,7 +277,6 @@ pub mod ssr {
                    ss.profile_icon_id as profile_icon_id,
                    ss.summoner_level  as summoner_level,
                    ss.puuid           as puuid,
-                   ss.updated_at      as updated_at,
                    ss.pro_player_slug            as pro_slug
             FROM summoners as ss
             WHERE
@@ -299,14 +287,13 @@ pub mod ssr {
             .map(|summoner_db| {
                 Summoner {
                     id: summoner_db.id,
-                    game_name: string_to_fixed_array::<16>(summoner_db.game_name.as_str()),
-                    tag_line: string_to_fixed_array::<5>(summoner_db.tag_line.as_str()),
-                    puuid: string_to_fixed_array::<78>(summoner_db.puuid.as_str()),
+                    game_name: GameName::new(summoner_db.game_name.as_str()),
+                    tag_line: TagLine::new(summoner_db.tag_line.as_str()),
+                    puuid: Puuid::new(summoner_db.puuid.as_str()),
                     platform: PlatformRoute::from(summoner_db.platform),
-                    updated_at: summoner_db.updated_at.format(DATE_FORMAT).to_string(),
                     summoner_level: summoner_db.summoner_level as u16,
                     profile_icon_id: summoner_db.profile_icon_id as u16,
-                    pro_slug: summoner_db.pro_slug.map(|slug| string_to_fixed_array::<20>(slug.as_str())),
+                    pro_slug: summoner_db.pro_slug.map(|slug| ProPlayerSlug::new(slug.as_str())),
                 }
             })
             .map_err(|e| e.into())

@@ -5,7 +5,7 @@ use crate::consts::perk::Perk;
 use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{format_float_to_2digits, string_to_fixed_array, summoner_url, FixedToString, RiotMatchId};
+use crate::utils::{format_duration, format_float_to_2digits, summoner_url, DurationSince, RiotMatchId, SummonerSlug};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
@@ -43,7 +43,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
         move || (summoner(), match_filters_updated.get(), page_number(), encounter_slug(), encounter_platform(), is_with.get()),
         |(summoner, filters, page_number, encounter_slug, encounter_platform, is_with)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_encounter(is_with, summoner.id,page_number.unwrap_or(1),  Some(filters), PlatformRoute::from(encounter_platform.as_str()), string_to_fixed_array::<22>(encounter_slug.as_str())).await
+            get_encounter(is_with, summoner.id,page_number.unwrap_or(1),  Some(filters), PlatformRoute::from(encounter_platform.as_str()), SummonerSlug::new(encounter_slug.as_str())).await
         },
     );
 
@@ -152,11 +152,11 @@ pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch, summoner:
                         <div class="uppercase font-bold text-ellipsis max-w-[90%] overflow-hidden whitespace-nowrap">
                             {match_.queue.to_str()}
                         </div>
-                        <div>{match_.match_ended_since.clone()}</div>
+                        <div>{match_.match_ended_since.to_string()}</div>
                     </div>
                     <hr class="w-1/2" />
                     <div class="flex flex-col items-start w-[108px]">
-                        <div>{match_.match_duration.clone()}</div>
+                        <div>{format_duration(match_.match_duration)}</div>
                     </div>
                 </div>
                 <div class="flex w-full">
@@ -308,7 +308,7 @@ pub fn SummonerEncounterParticipantComponent(encounter_participant: SummonerEnco
                         /
                         <span class="text-white">{encounter_participant.assists}</span>
                     </div>
-                    <div>{format_float_to_2digits( encounter_participant.kda)}:1 KDA</div>
+                    <div>{format_float_to_2digits(encounter_participant.kda)}:1 KDA</div>
                 </div>
                 <div
                     class="flex flex-col h-[58px]  "
@@ -320,7 +320,7 @@ pub fn SummonerEncounterParticipantComponent(encounter_participant: SummonerEnco
                     class=("border-blue-500", move || encounter_participant.won)
                 >
                     <div class="text-red-300 text-sm">
-                        P/Kill {format_float_to_2digits( encounter_participant.kill_participation)}%
+                        P/Kill {format_float_to_2digits(encounter_participant.kill_participation)}%
                     </div>
                 </div>
             </div>
@@ -454,19 +454,21 @@ pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, 
                 <div>
                     {stats.total_wins}W {stats.total_loses}L {stats.total_wins + stats.total_loses}G
                     {format!(
-                        "{:.2}%",
-                        (stats.total_wins as f32
-                            / (stats.total_wins + stats.total_loses).max(1) as f32) * 100.0,
-                    )}
+                        "{}",
+                        ((stats.total_wins as f32
+                            / (stats.total_wins + stats.total_loses).max(1) as f32) * 100.0)
+                            .round(),
+                    )}%
                 </div>
                 <div class="flex flex-col">
                     <div>
-                        {format_float_to_2digits( stats.avg_kills)}/ {format_float_to_2digits( stats.avg_deaths)}/
-                        {format_float_to_2digits( stats.avg_assists)}
+                        {format_float_to_2digits(stats.avg_kills)}/
+                        {format_float_to_2digits(stats.avg_deaths)}/
+                        {format_float_to_2digits(stats.avg_assists)}
                     </div>
                     <div>
-                        {format_float_to_2digits( stats.avg_kda)}:1 P/kill
-                        {format_float_to_2digits( stats.avg_kill_participation)}%
+                        {format_float_to_2digits(stats.avg_kda)}:1 P/kill
+                        {format_float_to_2digits(stats.avg_kill_participation)}%
                     </div>
                 </div>
 
@@ -524,11 +526,11 @@ pub struct SummonerEncounterParticipant {
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterMatch {
     pub match_id: i32,
+    pub match_duration: Option<i32>,
     pub platform: PlatformRoute,
     pub queue: Queue,
     pub riot_match_id: RiotMatchId,
-    pub match_ended_since: String,
-    pub match_duration: String,
+    pub match_ended_since: DurationSince,
     pub participant: SummonerEncounterParticipant,
     pub encounter: SummonerEncounterParticipant,
 }

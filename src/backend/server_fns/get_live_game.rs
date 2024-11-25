@@ -4,9 +4,6 @@ use leptos::server;
 use leptos::server_fn::codec::Rkyv;
 use crate::consts::platform_route::PlatformRoute;
 use crate::utils::{Puuid};
-#[cfg(feature = "ssr")]
-use crate::utils::FixedToString;
-
 
 #[server(input=Rkyv,output=Rkyv)]
 pub async fn get_live_game(summoner_id: i32, platform_route:PlatformRoute, puuid:Puuid) -> Result<Option<LiveGame>, ServerFnError> {
@@ -50,7 +47,6 @@ pub mod ssr {
     use crate::consts::map::Map;
     use crate::consts::platform_route::PlatformRoute;
     use crate::consts::queue::Queue;
-    use crate::utils::{string_to_fixed_array};
     use crate::views::summoner_page::summoner_live_page::{LiveGame, LiveGameParticipant, LiveGameParticipantChampionStats, LiveGameParticipantRankedStats};
     use bigdecimal::{BigDecimal, ToPrimitive};
     use futures::stream::FuturesUnordered;
@@ -60,7 +56,7 @@ pub mod ssr {
     use sqlx::PgPool;
     use std::collections::HashMap;
     use std::sync::Arc;
-
+    use crate::utils::{GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine};
 
     pub async fn add_encounters(db: &PgPool, mut game_data: LiveGame, summoner_id: i32) -> AppResult<LiveGame> {
         let summoners_ids = game_data.participants.iter().map(|x| x.summoner_id).collect::<Vec<i32>>();
@@ -145,25 +141,25 @@ pub mod ssr {
                     summoner_ids.push(summoner_detail.id);
                     participants.push(LiveGameParticipant {
                         summoner_id: summoner_detail.id,
-                        puuid: string_to_fixed_array::<78>(participant_puuid.as_str()),
+                        puuid: Puuid::new(participant_puuid.as_str()),
                         champion_id: participant.champion_id.0 as u16,
                         summoner_spell1_id: participant.spell1_id as u16,
                         summoner_spell2_id: participant.spell2_id as u16,
                         perk_primary_selection_id,
                         perk_sub_style_id,
-                        game_name: string_to_fixed_array::<16>(summoner_detail.game_name.as_str()),
-                        tag_line: string_to_fixed_array::<5>(summoner_detail.tag_line.as_str()),
+                        game_name: GameName::new(summoner_detail.game_name.as_str()),
+                        tag_line: TagLine::new(summoner_detail.tag_line.as_str()),
                         platform: summoner_detail.platform.into(),
                         summoner_level: summoner_detail.summoner_level as u16,
                         team_id: participant.team_id as u16,
                         ranked_stats,
                         champion_stats,
                         encounter_count: 0,
-                        pro_player_slug: summoner_detail.pro_slug.clone().map(|s|string_to_fixed_array::<20>(s.as_str())),
+                        pro_player_slug: summoner_detail.pro_slug.clone().map(|s|ProPlayerSlug::new(s.as_str())),
                     })
                 }
                 Ok(Some(LiveGame {
-                    game_id: string_to_fixed_array::<17>(format!("{}_{}", current_game_info.game_id, current_game_info.platform_id).as_str()),
+                    game_id: RiotMatchId::new(format!("{}_{}", current_game_info.game_id, current_game_info.platform_id).as_str()),
                     game_length: current_game_info.game_length as u16,
                     game_map: Map::from(current_game_info.map_id.0),
                     queue: current_game_info.game_queue_config_id.map(|x| Queue::from_u16(x.0)).unwrap(),

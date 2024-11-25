@@ -1,6 +1,4 @@
 #[cfg(feature = "ssr")]
-use crate::utils::FixedToString;
-#[cfg(feature = "ssr")]
 use crate::backend::updates::update_match_timeline::update_match_timeline;
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use leptos::prelude::*;
@@ -45,7 +43,7 @@ pub mod ssr {
     use sqlx::types::JsonValue;
     use sqlx::{FromRow, PgPool};
     use std::collections::HashMap;
-    use crate::utils::string_to_fixed_array;
+    use crate::utils::{GameName, ProPlayerSlug, TagLine};
 
     pub async fn get_match_participants_details(db: &PgPool, match_id: i32, summoner_id: Option<i32>) -> AppResult<Vec<LolMatchParticipantDetails>> {
         let lol_match_participant_details = sqlx::query_as::<_, LolMatchParticipantDetailsModel>(
@@ -114,10 +112,10 @@ pub mod ssr {
                     id: lmp.id,
                     lol_match_id: lmp.lol_match_id,
                     summoner_id: lmp.summoner_id,
-                    game_name: string_to_fixed_array::<16>(lmp.game_name.as_str()),
-                    tag_line: string_to_fixed_array::<5>(lmp.tag_line.as_str()),
+                    game_name: GameName::new(lmp.game_name.as_str()),
+                    tag_line: TagLine::new(lmp.tag_line.as_str()),
                     platform: lmp.platform.into(),
-                    summoner_pro_player_slug: lmp.pro_player_slug.map(|s| string_to_fixed_array::<20>(s.as_str())),
+                    summoner_pro_player_slug: lmp.pro_player_slug.map(|s| ProPlayerSlug::new(s.as_str())),
                     summoner_icon_id: lmp.profile_icon_id as u16,
                     summoner_level: lmp.summoner_level as u16,
                     encounter_count: encounter_count.unwrap_or_default() as u16,

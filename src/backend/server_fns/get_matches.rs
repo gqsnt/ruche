@@ -22,13 +22,13 @@ pub mod ssr {
     use crate::views::summoner_page::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo, SummonerMatch, SummonerMatchParticipant};
     use crate::views::{BackEndMatchFiltersSearch};
     use bigdecimal::{BigDecimal, ToPrimitive};
-    use chrono::{Duration, NaiveDateTime};
+    use chrono::{NaiveDateTime};
     use itertools::Itertools;
 
     use sqlx::{FromRow, PgPool, QueryBuilder};
     use std::collections::HashMap;
     use crate::consts::platform_route::PlatformRoute;
-    use crate::utils::string_to_fixed_array;
+    use crate::utils::{DurationSince, GameName, ProPlayerSlug, RiotMatchId, TagLine};
 
     pub async fn fetch_matches(
         db: &PgPool,
@@ -154,17 +154,9 @@ pub mod ssr {
 
         let matches_ids: Vec<_> = matches_participants.iter().map(|row| row.lol_match_id).collect();
         let mut matches = matches_participants.into_iter().map(|row| {
-            let match_duration = Duration::seconds(row.lol_match_match_duration.unwrap_or_default() as i64);
-            let match_duration_str = format!(
-                "{:02}:{:02}:{:02}",
-                match_duration.num_hours(),
-                match_duration.num_minutes() % 60,
-                match_duration.num_seconds() % 60
-            );
-
             // Calculate time since match ended
             let match_ended_since = row.lol_match_match_end.map_or_else(
-                || "Unknown".to_string(),
+                || DurationSince::new("Unknown"),
                 format_duration_since,
             );
 
@@ -174,10 +166,10 @@ pub mod ssr {
             SummonerMatch {
                 summoner_id: row.summoner_id,
                 match_id: row.lol_match_id,
-                riot_match_id: string_to_fixed_array::<17>(row.riot_match_id.as_str()),
+                riot_match_id: RiotMatchId::new(row.riot_match_id.as_str()),
                 platform: row.platform.into(),
                 match_ended_since,
-                match_duration: match_duration_str,
+                match_duration: row.lol_match_match_duration,
                 queue: Queue::from_u16(row.lol_match_queue_id.unwrap_or_default() as u16),
                 champion_id: row.champion_id as u16,
                 champ_level: row.champ_level,
@@ -231,10 +223,10 @@ pub mod ssr {
                     lol_match_id: row.lol_match_id,
                     summoner_id: row.summoner_id,
                     champion_id: row.champion_id as u16,
-                    game_name: string_to_fixed_array::<16>(game_name.as_str()),
-                    tag_line: string_to_fixed_array::<5>(tag_line.as_str()),
+                    game_name: GameName::new(game_name.as_str()),
+                    tag_line: TagLine::new(tag_line.as_str()),
                     platform: *platform,
-                    pro_player_slug: pro_player_slug.clone().map(|pps|string_to_fixed_array::<20>(pps.as_str())),
+                    pro_player_slug: pro_player_slug.clone().map(|pps|ProPlayerSlug::new(pps.as_str())),
                     encounter_count,
                 }
             }).collect_vec()

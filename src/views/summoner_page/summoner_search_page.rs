@@ -4,7 +4,7 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos::html::{Input, Select};
 use leptos_router::hooks::{use_params_map, use_query_map};
-use crate::utils::string_to_fixed_array;
+use crate::utils::{GameName, TagLine};
 
 #[component]
 pub fn SummonerSearchPage() -> impl IntoView {
@@ -40,12 +40,12 @@ pub fn SummonerSearchPage() -> impl IntoView {
                                 .value()
                                 .as_str(),
                         ),
-                        game_name: string_to_fixed_array::<
-                            16,
-                        >(game_name_node.get().expect("game_name not valid").value().as_str()),
-                        tag_line: string_to_fixed_array::<
-                            5,
-                        >(tag_line_node.get().expect("tag_line not valid").value().as_str()),
+                        game_name: GameName::new(
+                            game_name_node.get().expect("game_name not valid").value().as_str(),
+                        ),
+                        tag_line: TagLine::new(
+                            tag_line_node.get().expect("tag_line not valid").value().as_str(),
+                        ),
                     });
             }>
                 <div class="my-2 flex space-x-2 items-center max-w-[768px]">

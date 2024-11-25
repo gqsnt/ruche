@@ -26,6 +26,7 @@ pub mod ssr {
     use std::num::ParseIntError;
     use std::sync::Arc;
     use thiserror::Error;
+    use crate::utils::DurationSince;
 
     pub type AppResult<T> = Result<T, AppError>;
 
@@ -36,20 +37,18 @@ pub mod ssr {
     // }
 
 
-    pub fn format_duration_since(dt: NaiveDateTime) -> String {
-        let match_end = dt.and_utc();
-        let now = Utc::now();
-        let duration = now.signed_duration_since(match_end);
+    pub fn format_duration_since(date_time: NaiveDateTime) -> DurationSince {
+        let now = Utc::now().naive_utc();
+        let seconds = (now - date_time).num_seconds();
 
-        if duration.num_days() > 0 {
-            format!("{} days ago", duration.num_days())
-        } else if duration.num_hours() > 0 {
-            format!("{} hours ago", duration.num_hours())
-        } else if duration.num_minutes() > 0 {
-            format!("{} minutes ago", duration.num_minutes())
-        } else {
-            format!("{} seconds ago", duration.num_seconds())
-        }
+        DurationSince::new(match seconds {
+            0..=59 => format!("{} seconds ago", seconds),
+            60..=3599 => format!("{} minutes ago", seconds / 60),
+            3600..=86_399 => format!("{} hours ago", seconds / 3600),
+            86_400..=2_592_000 => format!("{} days ago", seconds / 86_400),
+            2_592_001..=31_536_000 => format!("{} months ago", seconds / 2_592_000), // Approx 30 days per month
+            _ => format!("{} years ago", seconds / 31_536_000), // Approx 365 days per year
+        }.as_str())
     }
 
     pub fn parse_date(date: Option<String>) -> Option<NaiveDateTime> {
