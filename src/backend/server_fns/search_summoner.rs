@@ -7,7 +7,7 @@ use leptos::server_fn::codec::Rkyv;
 use crate::utils::{GameName, TagLine};
 
 
-#[server(input = Rkyv, output = Rkyv)]
+#[server(input = Rkyv)]
 pub async fn search_summoner(
     platform_route: PlatformRoute,
     game_name: GameName,
