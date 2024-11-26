@@ -1,10 +1,10 @@
 use crate::backend::server_fns::search_summoner::SearchSummoner;
 use crate::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
+use crate::utils::{GameName, TagLine};
+use leptos::html::{Input, Select};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos::html::{Input, Select};
 use leptos_router::hooks::{use_params_map, use_query_map};
-use crate::utils::{GameName, TagLine};
 
 #[component]
 pub fn SummonerSearchPage() -> impl IntoView {
@@ -12,16 +12,9 @@ pub fn SummonerSearchPage() -> impl IntoView {
     let params = use_params_map();
     let search_summoner = ServerAction::<SearchSummoner>::new();
 
-
-    let game_name = move || {
-        query.read().get("game_name").unwrap_or_default()
-    };
-    let tag_line = move || {
-        query.read().get("tag_line").unwrap_or_default()
-    };
-    let platform_type = move || {
-        params.read().get("platform_type").unwrap_or_default()
-    };
+    let game_name = move || query.read().get("game_name").unwrap_or_default();
+    let tag_line = move || query.read().get("tag_line").unwrap_or_default();
+    let platform_type = move || params.read().get("platform_type").unwrap_or_default();
 
     let game_name_node = NodeRef::<Input>::new();
     let tag_line_node = NodeRef::<Input>::new();
@@ -94,4 +87,3 @@ pub fn SummonerSearchPage() -> impl IntoView {
         </div>
     }
 }
-

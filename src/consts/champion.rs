@@ -1,12 +1,5 @@
 #[repr(u16)]
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    Eq,
-    PartialEq,
-    Hash,
-)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum Champion {
     UNKNOWN = 0,
     Aatrox = 266,
@@ -179,7 +172,6 @@ pub enum Champion {
     Zoe = 142,
     Zyra = 143,
 }
-
 
 impl Champion {
     pub const fn to_str(&self) -> &'static str {
@@ -358,7 +350,6 @@ impl Champion {
     }
 }
 
-
 impl From<u16> for Champion {
     fn from(value: u16) -> Self {
         match value {
@@ -536,7 +527,6 @@ impl From<u16> for Champion {
     }
 }
 
-
 pub static CHAMPION_OPTIONS: &[(u16, &str)] = &[
     (Champion::Aatrox as u16, Champion::Aatrox.to_str()),
     (Champion::Ahri as u16, Champion::Ahri.to_str()),
@@ -571,7 +561,10 @@ pub static CHAMPION_OPTIONS: &[(u16, &str)] = &[
     (Champion::Elise as u16, Champion::Elise.to_str()),
     (Champion::Evelynn as u16, Champion::Evelynn.to_str()),
     (Champion::Ezreal as u16, Champion::Ezreal.to_str()),
-    (Champion::Fiddlesticks as u16, Champion::Fiddlesticks.to_str()),
+    (
+        Champion::Fiddlesticks as u16,
+        Champion::Fiddlesticks.to_str(),
+    ),
     (Champion::Fiora as u16, Champion::Fiora.to_str()),
     (Champion::Fizz as u16, Champion::Fizz.to_str()),
     (Champion::Galio as u16, Champion::Galio.to_str()),
@@ -582,7 +575,10 @@ pub static CHAMPION_OPTIONS: &[(u16, &str)] = &[
     (Champion::Graves as u16, Champion::Graves.to_str()),
     (Champion::Gwen as u16, Champion::Gwen.to_str()),
     (Champion::Hecarim as u16, Champion::Hecarim.to_str()),
-    (Champion::Heimerdinger as u16, Champion::Heimerdinger.to_str()),
+    (
+        Champion::Heimerdinger as u16,
+        Champion::Heimerdinger.to_str(),
+    ),
     (Champion::Hwei as u16, Champion::Hwei.to_str()),
     (Champion::Illaoi as u16, Champion::Illaoi.to_str()),
     (Champion::Irelia as u16, Champion::Irelia.to_str()),

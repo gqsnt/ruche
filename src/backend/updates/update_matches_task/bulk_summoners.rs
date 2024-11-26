@@ -4,9 +4,9 @@ use chrono::{DateTime, Utc};
 use itertools::Itertools;
 use std::collections::HashMap;
 
-
 pub async fn bulk_update_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]) -> AppResult<()> {
-    let (game_names, tag_lines, puuids, platforms, summoner_levels, profile_icon_ids, updated_ats) = summoners_multiunzip(summoners);
+    let (game_names, tag_lines, puuids, platforms, summoner_levels, profile_icon_ids, updated_ats) =
+        summoners_multiunzip(summoners);
 
     let sql = r"
         UPDATE summoners
@@ -45,8 +45,12 @@ pub async fn bulk_update_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
     Ok(())
 }
 
-pub async fn bulk_insert_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]) -> AppResult<HashMap<String, (i32, String, String, String)>> {
-    let (game_names, tag_lines, puuids, platforms, summoner_levels, profile_icon_ids, updated_ats) = summoners_multiunzip(summoners);
+pub async fn bulk_insert_summoners(
+    db: &sqlx::PgPool,
+    summoners: &[TempSummoner],
+) -> AppResult<HashMap<String, (i32, String, String, String)>> {
+    let (game_names, tag_lines, puuids, platforms, summoner_levels, profile_icon_ids, updated_ats) =
+        summoners_multiunzip(summoners);
     let sql = r"
         INSERT INTO
             summoners
@@ -88,33 +92,48 @@ pub async fn bulk_insert_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
         .bind(updated_ats)
         .fetch_all(db)
         .await?;
-    Ok(rows.into_iter().enumerate().map(|(index, r)| {
-        let summoner_index = summoners.get(index).unwrap();
-        (
-            summoner_index.puuid.clone(),
+    Ok(rows
+        .into_iter()
+        .enumerate()
+        .map(|(index, r)| {
+            let summoner_index = summoners.get(index).unwrap();
             (
-                r.id,
-                summoner_index.platform.clone(),
-                summoner_index.game_name.clone(),
-                summoner_index.tag_line.clone(),
+                summoner_index.puuid.clone(),
+                (
+                    r.id,
+                    summoner_index.platform.clone(),
+                    summoner_index.game_name.clone(),
+                    summoner_index.tag_line.clone(),
+                ),
             )
-        )
-    }).collect::<HashMap<String, (i32, String, String, String)>>())
+        })
+        .collect::<HashMap<String, (i32, String, String, String)>>())
 }
 
 #[allow(clippy::type_complexity)]
-pub fn summoners_multiunzip(summoners: &[TempSummoner]) -> (Vec<&str>, Vec<&str>, Vec<&str>, Vec<PlatformRouteDb>, Vec<i32>, Vec<i32>, Vec<DateTime<Utc>>) {
-    summoners.iter().map(|s| {
-        (
-            s.game_name.as_str(),
-            s.tag_line.as_str(),
-            s.puuid.as_str(),
-            PlatformRouteDb::from_raw_str(s.platform.as_str()),
-            s.summoner_level,
-            s.profile_icon_id as i32,
-            s.updated_at
-        )
-    })
+pub fn summoners_multiunzip(
+    summoners: &[TempSummoner],
+) -> (
+    Vec<&str>,
+    Vec<&str>,
+    Vec<&str>,
+    Vec<PlatformRouteDb>,
+    Vec<i32>,
+    Vec<i32>,
+    Vec<DateTime<Utc>>,
+) {
+    summoners
+        .iter()
+        .map(|s| {
+            (
+                s.game_name.as_str(),
+                s.tag_line.as_str(),
+                s.puuid.as_str(),
+                PlatformRouteDb::from_raw_str(s.platform.as_str()),
+                s.summoner_level,
+                s.profile_icon_id as i32,
+                s.updated_at,
+            )
+        })
         .multiunzip()
 }
-

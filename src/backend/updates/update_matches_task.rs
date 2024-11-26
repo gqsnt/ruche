@@ -1,27 +1,32 @@
-pub mod bulk_summoners;
-pub mod bulk_lol_matches;
 pub mod bulk_lol_match_participants;
+pub mod bulk_lol_matches;
+pub mod bulk_summoners;
 
 use crate::backend::ssr::{AppError, AppResult, PlatformRouteDb};
 use crate::backend::updates::update_matches_task::bulk_lol_match_participants::bulk_insert_lol_match_participants;
-use crate::backend::updates::update_matches_task::bulk_lol_matches::{bulk_trashed_matches, bulk_update_matches};
-use crate::backend::updates::update_matches_task::bulk_summoners::{bulk_insert_summoners, bulk_update_summoners};
+use crate::backend::updates::update_matches_task::bulk_lol_matches::{
+    bulk_trashed_matches, bulk_update_matches,
+};
+use crate::backend::updates::update_matches_task::bulk_summoners::{
+    bulk_insert_summoners, bulk_update_summoners,
+};
+use crate::ssr::{RiotApiState, SubscriberMap};
 use crate::{consts, DB_CHUNK_SIZE};
 use chrono::NaiveDateTime;
 use futures::stream::{FuturesOrdered, FuturesUnordered, StreamExt};
 use leptos::logging::log;
 use riven::consts::{Champion, PlatformRoute};
-use riven::RiotApi;
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::FromRow;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::Arc;
 
 pub async fn schedule_update_matches_task(
     db: sqlx::PgPool,
-    api: Arc<RiotApi>,
+    api: RiotApiState,
     update_interval_duration: tokio::time::Duration,
+    update_matches_sender: Arc<SubscriberMap>,
 ) {
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(update_interval_duration);
@@ -33,7 +38,12 @@ pub async fn schedule_update_matches_task(
                 let before = std::time::Instant::now();
                 let match_len = matches.len();
                 match update_matches_task(&db, &api, matches).await {
-                    Ok(_) => {
+                    Ok(summoner_ids) => {
+                        for id in summoner_ids {
+                            if let Some(sender) = update_matches_sender.get(&id) {
+                                let _ = sender.send(());
+                            }
+                        }
                         log!("Updated {} matches in {:?}", match_len, before.elapsed());
                     }
                     Err(e) => {
@@ -48,14 +58,16 @@ pub async fn schedule_update_matches_task(
 
 async fn update_matches_task(
     db: &sqlx::PgPool,
-    api: &Arc<RiotApi>,
+    api: &RiotApiState,
     matches_to_update: Vec<LolMatchNotUpdated>,
-) -> AppResult<()> {
+) -> AppResult<HashSet<i32>> {
     let match_data_futures = matches_to_update.iter().map(|match_| {
         let api = Arc::clone(api);
         let pt = consts::platform_route::PlatformRoute::from(match_.platform).to_riven();
         async move {
-            api.match_v5().get_match(pt.to_regional(), &match_.match_id).await
+            api.match_v5()
+                .get_match(pt.to_regional(), &match_.match_id)
+                .await
         }
     });
 
@@ -64,11 +76,14 @@ async fn update_matches_task(
         .collect()
         .await;
 
-
-    let (trashed_matches, match_datas): (Vec<_>, Vec<_>) = match_raw_datas.into_iter().zip(matches_to_update.into_iter())
-        .partition(|(match_, _)| match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
-            || match_.info.game_version.is_empty()
-            || match_.info.game_id == 0);
+    let (trashed_matches, match_datas): (Vec<_>, Vec<_>) = match_raw_datas
+        .into_iter()
+        .zip(matches_to_update.into_iter())
+        .partition(|(match_, _)| {
+            match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
+                || match_.info.game_version.is_empty()
+                || match_.info.game_id == 0
+        });
 
     // Collect TempSummoner data from match data
     let mut participants_map = HashMap::new();
@@ -95,8 +110,9 @@ async fn update_matches_task(
                     summoner_level: participant.summoner_level,
                     profile_icon_id: participant.profile_icon as u16,
                     updated_at: DateTime::from_timestamp_millis(
-                        match_data.info.game_end_timestamp.unwrap_or(0)
-                    ).expect("update match task:timestamp error"),
+                        match_data.info.game_end_timestamp.unwrap_or(0),
+                    )
+                    .expect("update match task:timestamp error"),
                 });
         }
     }
@@ -111,7 +127,10 @@ async fn update_matches_task(
 
     for summoner in participants_map.values() {
         if let Some((_, existing_timestamp)) = existing_summoners.get(&summoner.puuid) {
-            if summoner.updated_at.timestamp() > *existing_timestamp as i64 && !summoner.game_name.is_empty() && !summoner.tag_line.is_empty() {
+            if summoner.updated_at.timestamp() > *existing_timestamp as i64
+                && !summoner.game_name.is_empty()
+                && !summoner.tag_line.is_empty()
+            {
                 summoners_to_update.push(summoner.clone());
             }
         } else if summoner.game_name.is_empty() || summoner.tag_line.is_empty() {
@@ -130,7 +149,12 @@ async fn update_matches_task(
         let pt = consts::platform_route::PlatformRoute::from(summoner.platform.as_str()).to_riven();
         let puuid = summoner.puuid.clone();
         async move {
-            (summoner, api.account_v1().get_by_puuid(pt.to_regional(), &puuid).await)
+            (
+                summoner,
+                api.account_v1()
+                    .get_by_puuid(pt.to_regional(), &puuid)
+                    .await,
+            )
         }
     });
 
@@ -141,9 +165,11 @@ async fn update_matches_task(
     for (mut summoner, summoner_data) in summoners_data {
         match summoner_data {
             Ok(account) => {
-                summoner.game_name = account.game_name.expect("update match task:game name not set");
-                summoner.tag_line = account.tag_line.expect("update match task:tag line not set");
-                summoners_to_insert.push(summoner);
+                if account.game_name.is_some() && account.tag_line.is_some() {
+                    summoner.game_name = account.game_name.unwrap();
+                    summoner.tag_line = account.tag_line.unwrap();
+                    summoners_to_insert.push(summoner);
+                }
             }
             Err(e) => {
                 log!("Summoner not found: {:?} on ", summoner);
@@ -151,7 +177,6 @@ async fn update_matches_task(
             }
         }
     }
-
 
     // Map of puuid to summoner ID
     let mut summoner_map: HashMap<String, i32> = existing_summoners
@@ -163,7 +188,12 @@ async fn update_matches_task(
     if !summoners_to_insert.is_empty() {
         for summoners_to_insert in summoners_to_insert.chunks(DB_CHUNK_SIZE) {
             let inserted_summoners = bulk_insert_summoners(db, summoners_to_insert).await?;
-            summoner_map.extend(inserted_summoners.into_iter().map(|(puuid, (id, _, _, _))| (puuid, id)).collect::<HashMap<String, i32>>());
+            summoner_map.extend(
+                inserted_summoners
+                    .into_iter()
+                    .map(|(puuid, (id, _, _, _))| (puuid, id))
+                    .collect::<HashMap<String, i32>>(),
+            );
         }
     }
 
@@ -198,9 +228,16 @@ async fn update_matches_task(
                 .info
                 .participants
                 .iter()
-                .filter(|participant| participant.puuid != "BOT")
-                .map(|participant| {
-                    let summoner_id = *summoner_map.get(&participant.puuid).unwrap();
+                .filter_map(|participant| {
+                    if participant.puuid == "BOT" {
+                        return None;
+                    }
+                    let summoner_id =
+                        if let Some(summoner_id) = summoner_map.get(&participant.puuid) {
+                            *summoner_id
+                        } else {
+                            return None;
+                        };
                     let team_kill_count = *team_kills.get(&participant.team_id).unwrap_or(&0);
 
                     let kda = if participant.deaths == 0 {
@@ -216,8 +253,10 @@ async fn update_matches_task(
                         (participant.kills + participant.assists) as f64 / team_kill_count as f64
                     };
                     let kill_participation = (kill_participation * 100.0).round() / 100.0;
-                    let champion_id = Champion::try_from(participant.champion_name.as_str()).unwrap().0;
-                    TempParticipant {
+                    let champion_id = Champion::try_from(participant.champion_name.as_str())
+                        .unwrap()
+                        .0;
+                    Some(TempParticipant {
                         champion_id,
                         summoner_id,
                         lol_match_id: match_.id,
@@ -236,7 +275,8 @@ async fn update_matches_task(
                         gold_earned: participant.gold_earned,
                         wards_placed: participant.wards_placed,
                         cs: participant.total_minions_killed,
-                        cs_per_minute: participant.total_minions_killed as f64 / (match_data.info.game_duration as f64 / 60.0),
+                        cs_per_minute: participant.total_minions_killed as f64
+                            / (match_data.info.game_duration as f64 / 60.0),
                         double_kills: participant.double_kills,
                         triple_kills: participant.triple_kills,
                         quadra_kills: participant.quadra_kills,
@@ -297,7 +337,7 @@ async fn update_matches_task(
                         item4_id: participant.item4,
                         item5_id: participant.item5,
                         item6_id: participant.item6,
-                    }
+                    })
                 })
                 .collect::<Vec<_>>() // Collect the iterator into a Vec
         })
@@ -310,9 +350,8 @@ async fn update_matches_task(
     // Bulk update matches
     bulk_update_matches(db, match_datas).await?;
     bulk_trashed_matches(db, trashed_matches).await?;
-    Ok(())
+    Ok(summoner_map.into_values().collect::<HashSet<i32>>())
 }
-
 
 #[derive(Clone, Debug)]
 pub struct TempSummoner {
@@ -370,17 +409,21 @@ pub struct TempParticipant {
     pub item6_id: i32,
 }
 
-
-pub async fn get_not_updated_match(db: &sqlx::PgPool, limit: i32) -> AppResult<Vec<LolMatchNotUpdated>> {
-    let result = sqlx::query_as::<_, LolMatchNotUpdated>(r#"
+pub async fn get_not_updated_match(
+    db: &sqlx::PgPool,
+    limit: i32,
+) -> AppResult<Vec<LolMatchNotUpdated>> {
+    let result = sqlx::query_as::<_, LolMatchNotUpdated>(
+        r#"
             SELECT id, match_id, platform, updated FROM lol_matches
             WHERE updated = false
             ORDER BY match_id DESC
             LIMIT $1;
-        "#)
-        .bind(limit)
-        .fetch_all(db)
-        .await?;
+        "#,
+    )
+    .bind(limit)
+    .fetch_all(db)
+    .await?;
     if !result.is_empty() {
         Ok(result)
     } else {
@@ -392,48 +435,50 @@ pub async fn fetch_existing_summoners(
     db: &sqlx::PgPool,
     puuids: &[String],
 ) -> AppResult<HashMap<String, (i32, i32)>> {
-    Ok(sqlx::query_as::<_, SummonerShortModel>("
+    Ok(sqlx::query_as::<_, SummonerShortModel>(
+        "
             SELECT puuid, id, updated_at
             FROM summoners
             WHERE puuid = ANY($1)
-        ")
-        .bind(puuids)
-
-        .fetch_all(db)
-        .await?
-        .into_iter()
-        .map(|row| {
-            (row.puuid, (row.id, row.updated_at.and_utc().timestamp() as i32))
-        })
-        .collect::<HashMap<String, (i32, i32)>>())
+        ",
+    )
+    .bind(puuids)
+    .fetch_all(db)
+    .await?
+    .into_iter()
+    .map(|row| {
+        (
+            row.puuid,
+            (row.id, row.updated_at.and_utc().timestamp() as i32),
+        )
+    })
+    .collect::<HashMap<String, (i32, i32)>>())
 }
 
-
-pub async fn resolve_summoner_conflicts(
-    db: &sqlx::PgPool,
-    api: &Arc<RiotApi>,
-) -> AppResult<()> {
+pub async fn resolve_summoner_conflicts(db: &sqlx::PgPool, api: &RiotApiState) -> AppResult<()> {
     let conflicts = find_conflicting_summoners(db).await?;
     for (game_name, tag_line, platform, conflict_records) in conflicts {
-        println!("Resolving conflict for {}#{} on {} with {:?}", game_name, tag_line, platform, conflict_records);
+        println!(
+            "Resolving conflict for {}#{} on {} with {:?}",
+            game_name, tag_line, platform, conflict_records
+        );
         for record in conflict_records {
             // Obtenir les informations actuelles pour chaque `puuid`
             let platform_route = PlatformRoute::from_str(&platform).unwrap();
-            let riven_ptr = riven::consts::PlatformRoute::from_str(&platform_route.to_string()).unwrap();
-            if let Ok(account) = api.account_v1().get_by_puuid(riven_ptr.to_regional(), &record.puuid).await {
-                update_summoner_account_by_id(
-                    db,
-                    record.id,
-                    account,
-                )
-                    .await?;
+            let riven_ptr =
+                riven::consts::PlatformRoute::from_str(&platform_route.to_string()).unwrap();
+            if let Ok(account) = api
+                .account_v1()
+                .get_by_puuid(riven_ptr.to_regional(), &record.puuid)
+                .await
+            {
+                update_summoner_account_by_id(db, record.id, account).await?;
             }
         }
     }
 
     Ok(())
 }
-
 
 pub async fn find_conflicting_summoners(
     db: &sqlx::PgPool,
@@ -447,22 +492,28 @@ pub async fn find_conflicting_summoners(
             GROUP BY game_name, tag_line, platform
             HAVING COUNT(*) > 1
         )
-        ORDER BY game_name, tag_line, platform, updated_at DESC"
+        ORDER BY game_name, tag_line, platform, updated_at DESC",
     )
-        .fetch_all(db)
-        .await?
-        .into_iter()
-        .fold(HashMap::new(), |mut acc: HashMap<(String, String, String), Vec<SummonerModel>>, row| {
-            acc.entry((row.game_name.clone(), row.tag_line.clone(), row.platform.to_string()))
-                .or_default()
-                .push(row);
+    .fetch_all(db)
+    .await?
+    .into_iter()
+    .fold(
+        HashMap::new(),
+        |mut acc: HashMap<(String, String, String), Vec<SummonerModel>>, row| {
+            acc.entry((
+                row.game_name.clone(),
+                row.tag_line.clone(),
+                row.platform.to_string(),
+            ))
+            .or_default()
+            .push(row);
             acc
-        })
-        .into_iter()
-        .map(|((game_name, tag_line, platform), ids)| (game_name, tag_line, platform, ids))
-        .collect())
+        },
+    )
+    .into_iter()
+    .map(|((game_name, tag_line, platform), ids)| (game_name, tag_line, platform, ids))
+    .collect())
 }
-
 
 pub async fn update_summoner_account_by_id(
     db: &sqlx::PgPool,
@@ -470,16 +521,15 @@ pub async fn update_summoner_account_by_id(
     account: riven::models::account_v1::Account,
 ) -> AppResult<()> {
     sqlx::query(
-        "UPDATE summoners SET game_name = $1, tag_line = $2 , updated_at = NOW() WHERE id = $3"
+        "UPDATE summoners SET game_name = $1, tag_line = $2 , updated_at = NOW() WHERE id = $3",
     )
-        .bind(account.game_name.unwrap_or_default())
-        .bind(account.tag_line.unwrap_or_default())
-        .bind(id)
-        .execute(db)
-        .await?;
+    .bind(account.game_name.unwrap_or_default())
+    .bind(account.tag_line.unwrap_or_default())
+    .bind(id)
+    .execute(db)
+    .await?;
     Ok(())
 }
-
 
 #[derive(sqlx::FromRow, Debug)]
 pub struct SummonerModel {
@@ -499,7 +549,6 @@ pub struct SummonerShortModel {
     pub puuid: String,
     pub updated_at: NaiveDateTime,
 }
-
 
 #[derive(FromRow)]
 pub struct LolMatchNotUpdated {

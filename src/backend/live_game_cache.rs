@@ -1,11 +1,9 @@
+use crate::utils::{Puuid, RiotMatchId};
 use crate::views::summoner_page::summoner_live_page::LiveGame;
 use dashmap::DashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
-use crate::utils::{Puuid, RiotMatchId};
-
-
 
 pub struct LiveGameCache {
     game_cache: DashMap<RiotMatchId, (LiveGame, Instant)>,
@@ -55,7 +53,6 @@ impl LiveGameCache {
         }
     }
 }
-
 
 pub async fn schedule_live_game_cache_cleanup_task(cache: Arc<LiveGameCache>, interval: Duration) {
     tokio::spawn(async move {

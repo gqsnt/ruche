@@ -1,2 +1,2 @@
-pub mod pagination;
 pub mod match_filters;
+pub mod pagination;

@@ -1,26 +1,40 @@
-use std::fmt::Formatter;
 use crate::backend::server_fns::get_match_details::get_match_details;
+use crate::consts::platform_route::PlatformRoute;
+use crate::utils::{GameName, ProPlayerSlug, RiotMatchId, TagLine};
 use crate::views::summoner_page::match_details::match_details_build::MatchDetailsBuild;
 use crate::views::summoner_page::match_details::match_details_overview::MatchDetailsOverview;
 use crate::views::summoner_page::match_details::match_details_team::MatchDetailsTeam;
 use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
 use leptos::prelude::*;
-use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
+use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
-use crate::consts::platform_route::PlatformRoute;
-use crate::utils::{GameName, ProPlayerSlug, RiotMatchId, TagLine};
+use std::fmt::Formatter;
 
+pub mod match_details_build;
 pub mod match_details_overview;
 pub mod match_details_team;
-pub mod match_details_build;
 
 #[component]
-pub fn MatchDetails(match_id: i32, riot_match_id: RiotMatchId, platform: PlatformRoute, summoner: ReadSignal<Summoner>) -> impl IntoView {
+pub fn MatchDetails(
+    match_id: i32,
+    riot_match_id: RiotMatchId,
+    platform: PlatformRoute,
+    summoner: ReadSignal<Option<Summoner>>,
+) -> impl IntoView {
+    let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let match_details = Resource::new_rkyv(
-        move || (match_id, riot_match_id, platform, summoner().id),
-        |(match_id, riot_match_id, platform, summoner_id)| async move {
-            get_match_details(match_id, Some(summoner_id), platform,riot_match_id ).await
+        move || {
+            (
+                summoner_update_version.get().unwrap_or_default(),
+                match_id,
+                riot_match_id,
+                platform,
+                summoner().unwrap().id,
+            )
+        },
+        |(_, match_id, riot_match_id, platform, summoner_id)| async move {
+            get_match_details(match_id, Some(summoner_id), platform, riot_match_id).await
         },
     );
     let (match_detail_tab, set_match_detail_tab) = signal("overview".to_string());
@@ -35,18 +49,18 @@ pub fn MatchDetails(match_id: i32, riot_match_id: RiotMatchId, platform: Platfor
                     <Show when=move || match_detail_tab() == "team">
                         <MatchDetailsTeam
                             _match_details=match_details_signal
-                            _summoner_id=summoner().id
+                            _summoner_id=summoner().unwrap().id
                         />
                     </Show>
                     <Show when=move || match_detail_tab() == "build">
                         <MatchDetailsBuild
                             match_details=match_details_signal
-                            summoner_id=summoner().id
+                            summoner_id=summoner().unwrap().id
                         />
                     </Show>
                 }
             }),
-            Err(_) => Either::Right(())
+            Err(_) => Either::Right(()),
         }
     });
 
@@ -86,7 +100,6 @@ pub fn MatchDetails(match_id: i32, riot_match_id: RiotMatchId, platform: Platfor
         </div>
     }
 }
-
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct LolMatchParticipantDetails {
@@ -138,7 +151,6 @@ pub struct LolMatchParticipantDetails {
     pub skills_timeline: Vec<Skill>,
 }
 
-
 #[derive(Clone)]
 pub struct LolMatchTimeline {
     pub id: i32,
@@ -148,14 +160,12 @@ pub struct LolMatchTimeline {
     pub items_event_timeline: Vec<(u16, Vec<ItemEvent>)>,
 }
 
-
 #[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Deserialize, Serialize, Archive)]
 pub struct ItemEvent {
     pub item_id: u32,
     pub event_type: ItemEventType,
 }
-
 
 #[repr(u8)]
 #[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
@@ -165,18 +175,17 @@ pub enum ItemEventType {
     Sold,
 }
 
-
 #[repr(u8)]
 #[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Deserialize, Serialize, Archive, PartialEq, Copy)]
 pub enum Skill {
-    Q=1,
-    W=2,
-    E=3,
-    R=4,
+    Q = 1,
+    W = 2,
+    E = 3,
+    R = 4,
 }
 
-impl std::fmt::Display for Skill{
+impl std::fmt::Display for Skill {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Skill::Q => write!(f, "Q"),
@@ -198,6 +207,3 @@ impl From<u8> for Skill {
         }
     }
 }
-
-
-

@@ -1,24 +1,20 @@
 use crate::backend::ssr::{AppError, AppResult, PlatformRouteDb};
 use crate::backend::updates::update_matches_task::bulk_summoners::bulk_insert_summoners;
 use crate::backend::updates::update_matches_task::TempSummoner;
+use crate::ssr::RiotApiState;
 use crate::{consts, DB_CHUNK_SIZE};
 use chrono::{Duration, Local, Timelike, Utc};
 use futures::stream::FuturesUnordered;
 use futures::{stream, StreamExt};
 use itertools::Itertools;
 use leptos::logging::log;
-use riven::RiotApi;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::PgPool;
 use std::collections::HashMap;
-use std::sync::Arc;
-use serde::{Deserialize, Serialize};
 use tokio::time::{sleep_until, Instant};
 
-pub async fn schedule_update_pro_player_task(
-    db: PgPool,
-    api: Arc<RiotApi>,
-) {
+pub async fn schedule_update_pro_player_task(db: PgPool, api: RiotApiState) {
     let start_hour = 2;
     tokio::spawn(async move {
         if let Err(e) = update_pro_player_task(&db, api.clone()).await {
@@ -29,14 +25,27 @@ pub async fn schedule_update_pro_player_task(
             let now = Local::now();
             let target_time = if now.hour() >= start_hour {
                 // If it's past 2 a.m. today, schedule for 2 a.m. the next day
-                (now + Duration::days(1)).with_hour(start_hour).unwrap_or_default().with_minute(0).unwrap_or_default().with_second(0).unwrap_or_default()
+                (now + Duration::days(1))
+                    .with_hour(start_hour)
+                    .unwrap_or_default()
+                    .with_minute(0)
+                    .unwrap_or_default()
+                    .with_second(0)
+                    .unwrap_or_default()
             } else {
                 // Otherwise, schedule for 2 a.m. today
-                now.with_hour(start_hour).unwrap_or_default().with_minute(0).unwrap_or_default().with_second(0).unwrap_or_default()
+                now.with_hour(start_hour)
+                    .unwrap_or_default()
+                    .with_minute(0)
+                    .unwrap_or_default()
+                    .with_second(0)
+                    .unwrap_or_default()
             };
 
             let duration_until_target = target_time - now;
-            let sleep_duration = duration_until_target.to_std().expect("Failed to calculate sleep duration");
+            let sleep_duration = duration_until_target
+                .to_std()
+                .expect("Failed to calculate sleep duration");
 
             // Wait until the next 2 a.m.
             sleep_until(Instant::now() + sleep_duration).await;
@@ -49,12 +58,7 @@ pub async fn schedule_update_pro_player_task(
     });
 }
 
-
-pub async fn update_pro_player_task(
-    db: &PgPool,
-    api: Arc<RiotApi>,
-)
-    -> AppResult<()> {
+pub async fn update_pro_player_task(db: &PgPool, api: RiotApiState) -> AppResult<()> {
     let mut start = Instant::now();
     let pro_players = get_all_pro_players().await?;
     log!("Found {} Pro players", pro_players.len());
@@ -65,80 +69,94 @@ pub async fn update_pro_player_task(
     let pro_players_data = stream::iter(
         pro_players
             .into_iter()
-            .map(|slug| {
-                async move {
-                    get_pro_player_info(slug.as_str()).await
-                }
-            })
+            .map(|slug| async move { get_pro_player_info(slug.as_str()).await }),
     )
-        .buffer_unordered(concurrency_limit)
-        .filter_map(|response| async {
-            match response {
-                Ok(r) => {
-                    Some(r)
-                }
-                Err(e) => {
-                    log!("Failed to fetch pro player: {:?}", e);
-                    None
-                }
+    .buffer_unordered(concurrency_limit)
+    .filter_map(|response| async {
+        match response {
+            Ok(r) => Some(r),
+            Err(e) => {
+                log!("Failed to fetch pro player: {:?}", e);
+                None
             }
-        })
-        .collect::<Vec<_>>()
-        .await;
+        }
+    })
+    .collect::<Vec<_>>()
+    .await;
     log!("Time to fetch pro_data: {:?}", start.elapsed());
     start = Instant::now();
-    let pro_accounts = pro_players_data.iter().flat_map(|pro_player| {
-        pro_player.accounts.iter().cloned().map(|acc| (acc, pro_player.slug.clone())).collect_vec()
-    }).collect::<HashMap<ProPlayerAccountShort, String>>();
+    let pro_accounts = pro_players_data
+        .iter()
+        .flat_map(|pro_player| {
+            pro_player
+                .accounts
+                .iter()
+                .cloned()
+                .map(|acc| (acc, pro_player.slug.clone()))
+                .collect_vec()
+        })
+        .collect::<HashMap<ProPlayerAccountShort, String>>();
     let keys = pro_accounts.keys().cloned().collect_vec();
     let mut existing_summoner_ids = fetch_existing_accounts(db, &keys).await?;
-    let not_found_accounts = keys.iter().filter(|&account| {
-        !existing_summoner_ids.keys().contains(account)
-    }).collect::<Vec<_>>();
+    let not_found_accounts = keys
+        .iter()
+        .filter(|&account| !existing_summoner_ids.keys().contains(account))
+        .collect::<Vec<_>>();
     println!("Not found accounts: {:?}", not_found_accounts.len());
-
 
     // dl summoners
     let summoners_futures = not_found_accounts.into_iter().map(|pro_player_account| {
         let api = api.clone();
-        let pt = consts::platform_route::PlatformRoute::from(pro_player_account.platform.as_str()).to_riven();
+        let pt = consts::platform_route::PlatformRoute::from(pro_player_account.platform.as_str())
+            .to_riven();
         async move {
-            let response = api.account_v1().get_by_riot_id(pt.to_regional(), pro_player_account.game_name.as_str(), pro_player_account.tag_line.as_str()).await;
+            let response = api
+                .account_v1()
+                .get_by_riot_id(
+                    pt.to_regional(),
+                    pro_player_account.game_name.as_str(),
+                    pro_player_account.tag_line.as_str(),
+                )
+                .await;
             match response {
-                Ok(Some(account)) => {
-                    Ok(TempSummoner {
-                        game_name: account.game_name.unwrap_or_default(),
-                        tag_line: account.tag_line.unwrap_or_default(),
-                        puuid: account.puuid,
-                        platform: pro_player_account.platform.clone(),
-                        summoner_level: 0,
-                        profile_icon_id: 0,
-                        updated_at: Utc::now(),
-                    })
-                }
-                _ => {
-                    Err(AppError::CustomError(format!("Summoner not found: {:?}", pro_player_account)))
-                }
+                Ok(Some(account)) => Ok(TempSummoner {
+                    game_name: account.game_name.unwrap_or_default(),
+                    tag_line: account.tag_line.unwrap_or_default(),
+                    puuid: account.puuid,
+                    platform: pro_player_account.platform.clone(),
+                    summoner_level: 0,
+                    profile_icon_id: 0,
+                    updated_at: Utc::now(),
+                }),
+                _ => Err(AppError::CustomError(format!(
+                    "Summoner not found: {:?}",
+                    pro_player_account
+                ))),
             }
         }
     });
     println!("Fetching summoners");
     let summoners_to_insert: Vec<_> = FuturesUnordered::from_iter(summoners_futures)
         .collect::<Vec<_>>()
-        .await.into_iter()
-        .filter_map(|result| {
-            result.ok()
-        }).collect::<Vec<_>>();
+        .await
+        .into_iter()
+        .filter_map(|result| result.ok())
+        .collect::<Vec<_>>();
     println!("Fetched summoners: {:?}", summoners_to_insert.len());
     for chunk in summoners_to_insert.chunks(DB_CHUNK_SIZE) {
         let inserted_summoners = bulk_insert_summoners(db, chunk).await?;
-        inserted_summoners.into_iter().for_each(|(_, (id, platform, game_name, tag_line))| {
-            existing_summoner_ids.insert(ProPlayerAccountShort {
-                game_name,
-                tag_line,
-                platform,
-            }, id);
-        })
+        inserted_summoners
+            .into_iter()
+            .for_each(|(_, (id, platform, game_name, tag_line))| {
+                existing_summoner_ids.insert(
+                    ProPlayerAccountShort {
+                        game_name,
+                        tag_line,
+                        platform,
+                    },
+                    id,
+                );
+            })
     }
     println!("Time taken to fetch summoners: {:?}", start.elapsed());
     start = Instant::now();
@@ -155,21 +173,19 @@ pub async fn remove_pro_players_from_summoners(db: &PgPool) -> AppResult<()> {
         SET pro_player_slug = null
         where pro_player_slug != null
     "#;
-    sqlx::query(query)
-        .execute(db)
-        .await?;
+    sqlx::query(query).execute(db).await?;
     Ok(())
 }
-
 
 pub async fn mass_update_adding_pro_player_to_summoners(
     db: &PgPool,
     summoner_ids: HashMap<ProPlayerAccountShort, i32>,
     pro_players_data: HashMap<ProPlayerAccountShort, String>,
 ) -> AppResult<()> {
-    let (summoner_ids, pro_player_slugs): (Vec<_>, Vec<_>) = summoner_ids.iter().map(|(account, id)| {
-        (*id, pro_players_data.get(account).unwrap().clone())
-    }).multiunzip();
+    let (summoner_ids, pro_player_slugs): (Vec<_>, Vec<_>) = summoner_ids
+        .iter()
+        .map(|(account, id)| (*id, pro_players_data.get(account).unwrap().clone()))
+        .multiunzip();
     let query = r#"
         UPDATE summoners
         SET pro_player_slug = data.pro_player_slug
@@ -188,9 +204,16 @@ pub async fn fetch_existing_accounts(
     db: &PgPool,
     player_shorts: &[ProPlayerAccountShort],
 ) -> AppResult<HashMap<ProPlayerAccountShort, i32>> {
-    let (platforms, game_names, tag_lines): (Vec<_>, Vec<_>, Vec<_>) = player_shorts.iter().map(|player_short| {
-        (PlatformRouteDb::from_raw_str(player_short.platform.as_str()), player_short.game_name.clone(), player_short.tag_line.clone())
-    }).multiunzip();
+    let (platforms, game_names, tag_lines): (Vec<_>, Vec<_>, Vec<_>) = player_shorts
+        .iter()
+        .map(|player_short| {
+            (
+                PlatformRouteDb::from_raw_str(player_short.platform.as_str()),
+                player_short.game_name.clone(),
+                player_short.tag_line.clone(),
+            )
+        })
+        .multiunzip();
 
     let query = r#"
         SELECT id, game_name, tag_line, platform
@@ -210,16 +233,18 @@ pub async fn fetch_existing_accounts(
     let existing_summoners = rows
         .into_iter()
         .map(|(id, game_name, tag_line, platform)| {
-            (ProPlayerAccountShort {
-                game_name,
-                tag_line,
-                platform: platform.to_string(),
-            }, id)
+            (
+                ProPlayerAccountShort {
+                    game_name,
+                    tag_line,
+                    platform: platform.to_string(),
+                },
+                id,
+            )
         })
         .collect::<HashMap<_, _>>();
     Ok(existing_summoners)
 }
-
 
 pub async fn get_all_pro_players() -> AppResult<Vec<String>> {
     let mut pro_player_slugs = Vec::new();
@@ -238,27 +263,44 @@ pub async fn get_all_pro_players() -> AppResult<Vec<String>> {
     Ok(pro_player_slugs)
 }
 
-
 pub async fn get_pro_player_info(slug: &str) -> AppResult<ProPlayerShort> {
-    let response: ProProfile = reqwest::get(
-        format!("https://api.lolpros.gg/es/profiles/{}", urlencoding::encode(slug))
-    ).await?.json().await?;
+    let response: ProProfile = reqwest::get(format!(
+        "https://api.lolpros.gg/es/profiles/{}",
+        urlencoding::encode(slug)
+    ))
+    .await?
+    .json()
+    .await?;
     Ok(ProPlayerShort {
         slug: response.slug,
         pro_uuid: response.uuid,
-        accounts: response.league_player.accounts.into_iter().map(|account| ProPlayerAccountShort {
-            game_name: account.gamename,
-            tag_line: account.tagline,
-            platform: account.server,
-        }).collect(),
+        accounts: response
+            .league_player
+            .accounts
+            .into_iter()
+            .map(|account| ProPlayerAccountShort {
+                game_name: account.gamename,
+                tag_line: account.tagline,
+                platform: account.server,
+            })
+            .collect(),
     })
 }
 
-
 pub async fn get_pro_players(page: i32, per_page: i32) -> AppResult<Vec<ProPlayer>> {
-    match reqwest::get(format!("https://api.lolpros.gg/es/ladder?page={}&page_size={}", page, per_page)).await?.json().await {
+    match reqwest::get(format!(
+        "https://api.lolpros.gg/es/ladder?page={}&page_size={}",
+        page, per_page
+    ))
+    .await?
+    .json()
+    .await
+    {
         Ok(pro_players) => Ok(pro_players),
-        Err(e) => Err(AppError::CustomError(format!("Failed to fetch pro players: {:?}", e)))
+        Err(e) => Err(AppError::CustomError(format!(
+            "Failed to fetch pro players: {:?}",
+            e
+        ))),
     }
 }
 
@@ -339,7 +381,6 @@ pub struct League {
     pub logo: Logo,
 }
 
-
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProProfile {
@@ -371,7 +412,6 @@ pub struct LeaguePlayer {
     #[serde(rename = "in_game")]
     pub in_game: bool,
 }
-
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

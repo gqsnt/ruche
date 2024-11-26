@@ -1,19 +1,25 @@
-
+#[cfg(feature = "ssr")]
+use crate::backend::server_fns::get_summoner::ssr::find_summoner_by_exact_game_name_tag_line;
 #[cfg(feature = "ssr")]
 use crate::backend::server_fns::search_summoner::ssr::insert_or_update_account_and_summoner;
 use crate::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use crate::utils::summoner_url;
+use crate::utils::{GameName, Puuid, TagLine};
+use crate::views::summoner_page::Summoner;
 #[cfg(feature = "ssr")]
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos::server;
-
 use leptos::server_fn::codec::Rkyv;
-use crate::utils::{Puuid};
 
-#[server( input=Rkyv)]
-pub async fn update_summoner(puuid: Puuid, platform_route: PlatformRoute) -> Result<(), ServerFnError> {
+#[server( input=Rkyv, output=Rkyv)]
+pub async fn update_summoner(
+    platform_route: PlatformRoute,
+    puuid: Puuid,
+    game_name: GameName,
+    tag_line: TagLine,
+) -> Result<Option<Summoner>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let riot_api = state.riot_api.clone();
     let max_matches = state.max_matches;
@@ -32,22 +38,11 @@ pub async fn update_summoner(puuid: Puuid, platform_route: PlatformRoute) -> Res
                 Ok(summoner) => {
                     let db = state.db.clone();
                     let puuid = summoner.puuid.clone();
-                    leptos_axum::redirect(
-                        summoner_url(
-                            platform_route.to_string(),
-                            account
-                                .game_name
-                                .clone()
-                                .expect("update summoner: game name not found"),
-                            account
-                                .tag_line
-                                .clone()
-                                .expect("update summoner: tag line not found"),
-                        )
-                        .as_str(),
-                    );
+                    let acc_game_name = account.game_name.clone().unwrap_or_default();
+                    let acc_tag_line_clone = account.tag_line.clone().unwrap_or_default();
                     insert_or_update_account_and_summoner(&db, platform_route, account, summoner)
                         .await?;
+
                     tokio::spawn(async move {
                         match ssr::update_summoner_default_matches(
                             db.clone(),
@@ -64,7 +59,28 @@ pub async fn update_summoner(puuid: Puuid, platform_route: PlatformRoute) -> Res
                             }
                         };
                     });
-                    Ok(())
+                    let has_changed = game_name.to_string() != acc_game_name
+                        || tag_line.to_string() != acc_tag_line_clone;
+                    if has_changed {
+                        leptos_axum::redirect(
+                            summoner_url(
+                                platform_route.to_string(),
+                                acc_game_name,
+                                acc_tag_line_clone,
+                            )
+                            .as_str(),
+                        );
+                        Ok(None)
+                    } else {
+                        find_summoner_by_exact_game_name_tag_line(
+                            &state.db,
+                            platform_route,
+                            game_name.to_string(),
+                            tag_line.to_string(),
+                        )
+                        .await
+                        .map_err(|e| e.into())
+                    }
                 }
                 _ => Err(ServerFnError::new("Summoner not found")),
             }
@@ -76,15 +92,15 @@ pub async fn update_summoner(puuid: Puuid, platform_route: PlatformRoute) -> Res
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::ssr::{AppResult, Id, PlatformRouteDb};
+    use crate::ssr::RiotApiState;
     use leptos::logging::log;
     use riven::consts::RegionalRoute;
     use riven::RiotApi;
     use std::collections::HashSet;
-    use std::sync::Arc;
 
     pub async fn update_summoner_default_matches(
         db: sqlx::PgPool,
-        api: Arc<RiotApi>,
+        api: RiotApiState,
         puuid: String,
         platform: riven::consts::PlatformRoute,
         max_matches: usize,

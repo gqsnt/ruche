@@ -1,22 +1,22 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_encounters::get_encounters;
+use crate::consts::platform_route::PlatformRoute;
 use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::HasStaticAsset;
 use crate::utils::{summoner_encounter_url, summoner_url, GameName, TagLine};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
-use crate::views::{BackEndMatchFiltersSearch};
+use crate::views::BackEndMatchFiltersSearch;
 use leptos::either::Either;
 use leptos::prelude::*;
-use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
+use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
-use crate::consts::platform_route::PlatformRoute;
 
 #[component]
-pub fn SummonerEncountersPage() -> impl IntoView {
-    let summoner = expect_context::<ReadSignal<Summoner>>();
+pub fn SummonerEncountersPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
+    let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
 
@@ -37,8 +37,8 @@ pub fn SummonerEncountersPage() -> impl IntoView {
             ..Default::default()
         },
     );
-    let (search_summoner_signal, set_search_summoner_signal) = signal(search_summoner.get().unwrap_or_default());
-
+    let (search_summoner_signal, set_search_summoner_signal) =
+        signal(search_summoner.get().unwrap_or_default());
 
     let (reset_page_number, set_reset_page_number) = signal::<bool>(false);
     Effect::new(move |_| {
@@ -49,16 +49,37 @@ pub fn SummonerEncountersPage() -> impl IntoView {
     });
 
     let encounters_resource = Resource::new_rkyv(
-        move || (search_summoner.get(), match_filters_updated.get(), summoner(), page_number()),
-        |(search_summoner, filters, summoner, page_number)| async move {
-            //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_encounters(summoner.id, page_number.unwrap_or(1) , Some(filters),search_summoner.map(|r|GameName::new(r.as_str()))).await
+        move || {
+            (
+                summoner_update_version.get().unwrap_or_default(),
+                search_summoner.get(),
+                match_filters_updated.get(),
+                summoner().unwrap().id,
+                page_number(),
+            )
+        },
+        |(_, search_summoner, filters, summoner_id, page_number)| async move {
+            //println!("{:?} {:?} {:?}", filters, summoner().unwrap(), page_number);
+            get_encounters(
+                summoner_id,
+                page_number.unwrap_or(1),
+                search_summoner.map(|r| GameName::new(r.as_str())),
+                Some(filters),
+            )
+            .await
         },
     );
 
-    meta_store.title().set(format!("{}#{} | Encounters | Broken.gg", summoner().game_name.to_str(), summoner().tag_line.to_str()));
-    meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner().game_name.to_str(), summoner().tag_line.to_str()));
-    meta_store.url().set(format!("{}?tab=encounters", summoner().to_route_path()));
+    meta_store.title().set(format!(
+        "{}#{} | Encounters | Broken.gg",
+        summoner().unwrap().game_name.to_str(),
+        summoner().unwrap().tag_line.to_str()
+    ));
+    meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner().unwrap().game_name.to_str(), summoner().unwrap().tag_line.to_str()));
+    meta_store.url().set(format!(
+        "{}?tab=encounters",
+        summoner().unwrap().to_route_path()
+    ));
     view! {
         <div>
             <div class="my-card flex space-x-2 my-2 w-fit">
@@ -178,9 +199,9 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                             <a
                                                                                 class="my-button font-bold"
                                                                                 href=summoner_encounter_url(
-                                                                                    summoner().platform.to_string(),
-                                                                                    summoner().game_name.to_string(),
-                                                                                    summoner().tag_line.to_string(),
+                                                                                    summoner().unwrap().platform.to_string(),
+                                                                                    summoner().unwrap().game_name.to_string(),
+                                                                                    summoner().unwrap().tag_line.to_string(),
                                                                                     encounter_platform.clone(),
                                                                                     encounter_game_name.clone(),
                                                                                     encounter_tag_line.clone(),
@@ -220,13 +241,11 @@ pub fn SummonerEncountersPage() -> impl IntoView {
     }
 }
 
-
 #[derive(Clone, Serialize, Deserialize, Default, Archive)]
 pub struct SummonerEncountersResult {
     pub total_pages: u16,
     pub encounters: Vec<SummonerEncountersSummoner>,
 }
-
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncountersSummoner {
@@ -240,5 +259,4 @@ pub struct SummonerEncountersSummoner {
     pub game_name: GameName,
     pub tag_line: TagLine,
     pub platform: PlatformRoute,
-
 }

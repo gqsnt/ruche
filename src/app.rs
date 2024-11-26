@@ -3,14 +3,16 @@ use crate::views::summoner_page::SummonerPage;
 use leptos::config::LeptosOptions;
 use leptos::prelude::GlobalAttributes;
 use leptos::prelude::*;
-use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
+use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 
 use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, Title};
 use leptos_router::components::{ParentRoute, Redirect};
-use leptos_router::{components::{Route, Router, Routes}, ParamSegment, StaticSegment};
+use leptos_router::{
+    components::{Route, Router, Routes},
+    ParamSegment, StaticSegment,
+};
 
 pub const SITE_URL: &str = "https://next-level.xyz";
-
 
 #[derive(Clone, reactive_stores_macro::Store, Serialize, Deserialize, Archive, Default)]
 pub struct MetaStore {
@@ -19,7 +21,6 @@ pub struct MetaStore {
     pub image: String,
     pub url: String,
 }
-
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {

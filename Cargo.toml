@@ -10,6 +10,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 axum = { version = "0.7", optional = true, features = ["macros", "http2"]}
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
+tokio-stream = { version = "0.1", optional = true, features = ["sync"] }
 tower = { version = "0.4", optional = true, features = ["util"] }
 tower-http = { version = "0.5", features = ["fs", "compression-full"], optional = true }
 sqlx = { version = "0.8", optional = true, features = ["postgres", "runtime-tokio-rustls", "chrono", "bigdecimal", "uuid"] }
@@ -17,7 +18,7 @@ bigdecimal = { version = "0.4", optional = true }
 riven = { git = "https://github.com/gqsnt/RivenBrokengg", optional = true }
 reqwest = { version = "0.12", optional = true, features = ["json", "rustls-tls"] }
 dotenv = { version = "0.15", optional = true }
-futures = { version = "0.3", optional = true }
+futures = { version = "0.3" }
 chrono = { version = "0.4", optional = true }
 tracing = { version = "0.1", optional = true }
 image = { version = "0.25", optional = true }
@@ -28,6 +29,7 @@ dashmap = {version = "6.1.0", optional = true}
 sitemap = {version = "0.4.1", optional = true}
 thiserror = {version = "2", optional = true}
 serde={version = "1", features = ["derive"], optional = true}
+async-stream = { version = "0.3.6", optional = true }
 
 serde_json = {version = "1", optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
@@ -47,6 +49,10 @@ urlencoding = "2"
 http = "1"
 console_error_panic_hook = "0.1"
 rkyv = "0.8.8"
+send_wrapper = "0.6.0"
+gloo-net = "0.6.0"
+
+
 
 
 [features]
@@ -54,6 +60,7 @@ hydrate = ["leptos/hydrate"]
 ssr = [
     "dep:axum",
     "dep:tokio",
+    "dep:tokio-stream",
     "dep:tower",
     "dep:tower-http",
     "dep:leptos_axum",
@@ -65,7 +72,6 @@ ssr = [
     "dep:riven",
     "dep:reqwest",
     "dep:dotenv",
-    "dep:futures",
     "dep:chrono",
     "dep:bigdecimal",
     "dep:ravif",
@@ -79,6 +85,7 @@ ssr = [
     "dep:rustls",
     "dep:serde_json",
     "dep:serde",
+    "dep:async-stream",
 ]
 
 [profile.release]

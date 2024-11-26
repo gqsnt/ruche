@@ -5,8 +5,14 @@ use itertools::Itertools;
 use riven::models::match_v5::Match;
 use sqlx::PgPool;
 
-pub async fn bulk_trashed_matches(db: &PgPool, matches: Vec<(Match, LolMatchNotUpdated)>) -> AppResult<()> {
-    let match_ids = matches.iter().map(|(_, db_match)| db_match.id).collect::<Vec<i32>>();
+pub async fn bulk_trashed_matches(
+    db: &PgPool,
+    matches: Vec<(Match, LolMatchNotUpdated)>,
+) -> AppResult<()> {
+    let match_ids = matches
+        .iter()
+        .map(|(_, db_match)| db_match.id)
+        .collect::<Vec<i32>>();
     let sql = r"
         UPDATE lol_matches
         SET
@@ -15,28 +21,51 @@ pub async fn bulk_trashed_matches(db: &PgPool, matches: Vec<(Match, LolMatchNotU
         WHERE id = ANY($1)
         RETURNING id;
         ";
-    sqlx::query(sql)
-        .bind(match_ids)
-        .fetch_all(db)
-        .await?;
+    sqlx::query(sql).bind(match_ids).fetch_all(db).await?;
     Ok(())
 }
 
-
-pub async fn bulk_update_matches(db: &PgPool, matches: Vec<(Match, LolMatchNotUpdated)>) -> AppResult<()> {
-    let (match_ids, match_creations, match_ends, match_durations, queue_ids, map_ids, versions, modes):
-        (Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>) = matches.iter().map(|(x, _)| {
-        (
-            x.metadata.match_id.as_str(),
-            chrono::DateTime::from_timestamp_millis(x.info.game_start_timestamp).unwrap_or_default(),
-            chrono::DateTime::from_timestamp_millis(x.info.game_end_timestamp.unwrap_or_default()).unwrap_or_default(),
-            x.info.game_duration as i32,
-            x.info.queue_id.0 as i32,
-            x.info.map_id.0 as i32,
-            version_to_major_minor(x.info.game_version.as_str()),
-            x.info.game_mode.to_string(),
-        )
-    }).multiunzip();
+pub async fn bulk_update_matches(
+    db: &PgPool,
+    matches: Vec<(Match, LolMatchNotUpdated)>,
+) -> AppResult<()> {
+    let (
+        match_ids,
+        match_creations,
+        match_ends,
+        match_durations,
+        queue_ids,
+        map_ids,
+        versions,
+        modes,
+    ): (
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+    ) = matches
+        .iter()
+        .map(|(x, _)| {
+            (
+                x.metadata.match_id.as_str(),
+                chrono::DateTime::from_timestamp_millis(x.info.game_start_timestamp)
+                    .unwrap_or_default(),
+                chrono::DateTime::from_timestamp_millis(
+                    x.info.game_end_timestamp.unwrap_or_default(),
+                )
+                .unwrap_or_default(),
+                x.info.game_duration as i32,
+                x.info.queue_id.0 as i32,
+                x.info.map_id.0 as i32,
+                version_to_major_minor(x.info.game_version.as_str()),
+                x.info.game_mode.to_string(),
+            )
+        })
+        .multiunzip();
 
     let sql = r"
         UPDATE lol_matches

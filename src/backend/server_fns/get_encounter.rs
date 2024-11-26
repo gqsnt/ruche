@@ -1,45 +1,85 @@
+use crate::consts::platform_route::PlatformRoute;
+use crate::utils::SummonerSlug;
 use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterResult;
-use crate::views::{BackEndMatchFiltersSearch};
+use crate::views::BackEndMatchFiltersSearch;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
-use crate::consts::platform_route::PlatformRoute;
-use crate::utils::{SummonerSlug};
-
 
 #[server(input=Rkyv, output=Rkyv)]
-pub async fn get_encounter( is_with: bool,summoner_id: i32,page_number: u16 ,filters: Option<BackEndMatchFiltersSearch>, encounter_platform: PlatformRoute,encounter_slug: SummonerSlug,) -> Result<SummonerEncounterResult, ServerFnError> {
+pub async fn get_encounter(
+    summoner_id: i32,
+    page_number: u16,
+    is_with: bool,
+    encounter_platform: PlatformRoute,
+    encounter_slug: SummonerSlug,
+    filters: Option<BackEndMatchFiltersSearch>,
+) -> Result<SummonerEncounterResult, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
-    Ok(ssr::get_encounter_data(&db, summoner_id, filters.unwrap_or_default(), page_number as i32, encounter_slug.to_string(), encounter_platform, is_with).await?)
-}
 
+    Ok(ssr::get_encounter_data(
+        &db,
+        summoner_id,
+        filters.unwrap_or_default(),
+        page_number as i32,
+        encounter_slug.to_string(),
+        encounter_platform,
+        is_with,
+    )
+    .await?)
+}
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use crate::backend::server_fns::get_summoner::ssr::{find_summoner_by_exact_game_name_tag_line, SummonerModel};
-    use crate::backend::ssr::{format_duration_since, AppResult, PlatformRouteDb};
+    use crate::backend::server_fns::get_summoner::ssr::{
+        find_summoner_by_exact_game_name_tag_line, SummonerModel,
+    };
+    use crate::backend::ssr::{format_duration_since, AppError, AppResult, PlatformRouteDb};
     use crate::consts::platform_route::PlatformRoute;
     use crate::consts::queue::Queue;
-    use crate::utils::{parse_summoner_slug, DurationSince, GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine};
-    use crate::views::summoner_page::summoner_encounter_page::{SummonerEncounterMatch, SummonerEncounterParticipant, SummonerEncounterResult, SummonerEncounterStats};
+    use crate::utils::{
+        parse_summoner_slug, DurationSince, GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine,
+    };
+    use crate::views::summoner_page::summoner_encounter_page::{
+        SummonerEncounterMatch, SummonerEncounterParticipant, SummonerEncounterResult,
+        SummonerEncounterStats,
+    };
     use crate::views::summoner_page::Summoner;
-    use crate::views::{BackEndMatchFiltersSearch};
+    use crate::views::BackEndMatchFiltersSearch;
     use bigdecimal::{BigDecimal, ToPrimitive};
-    use chrono::{NaiveDateTime};
+    use chrono::NaiveDateTime;
     use itertools::Itertools;
     use sqlx::{PgPool, QueryBuilder};
 
-    pub async fn get_encounter_data(db: &PgPool, summoner_id: i32, filters: BackEndMatchFiltersSearch, page_number: i32, encounter_slug: String, encounter_platform: PlatformRoute, is_with: bool) -> AppResult<SummonerEncounterResult> {
-        let (encounter_game_name, encounter_tag_line) = parse_summoner_slug(encounter_slug.as_str());
-        let encounter = find_summoner_by_exact_game_name_tag_line(db, encounter_platform, encounter_game_name, encounter_tag_line).await?;
+    pub async fn get_encounter_data(
+        db: &PgPool,
+        summoner_id: i32,
+        filters: BackEndMatchFiltersSearch,
+        page_number: i32,
+        encounter_slug: String,
+        encounter_platform: PlatformRoute,
+        is_with: bool,
+    ) -> AppResult<SummonerEncounterResult> {
+        let (encounter_game_name, encounter_tag_line) =
+            parse_summoner_slug(encounter_slug.as_str());
+
         let summoner = find_summoner_by_id(db, summoner_id).await?;
+        let encounter = find_summoner_by_exact_game_name_tag_line(
+            db,
+            encounter_platform,
+            encounter_game_name,
+            encounter_tag_line,
+        )
+        .await?
+        .ok_or(AppError::NotFound)?;
         let per_page = 20;
         let offset = (page_number.max(1) - 1) * per_page;
 
         let start_date = filters.start_date_to_naive();
         let end_date = filters.end_date_to_naive();
-        let mut stats_query = QueryBuilder::new(r#"
+        let mut stats_query = QueryBuilder::new(
+            r#"
             select
                 count(lmp1.lol_match_id) as total_matches,
                 sum(CASE WHEN lmp1.won THEN 1 ELSE 0 END) as total_wins,
@@ -57,10 +97,11 @@ pub mod ssr {
             FROM lol_match_participants lmp1
                      left JOIN lol_matches lm ON lm.id = lmp1.lol_match_id
                      JOIN lol_match_participants lmp2 ON lmp2.lol_match_id = lmp1.lol_match_id and lmp2.summoner_id =
-        "#);
+        "#,
+        );
 
-
-        let mut query = QueryBuilder::new(r#"
+        let mut query = QueryBuilder::new(
+            r#"
             SELECT
                lmp1.lol_match_id,
                lm.match_end,
@@ -111,7 +152,8 @@ pub mod ssr {
            FROM lol_match_participants lmp1
                      left JOIN lol_matches lm ON lm.id = lmp1.lol_match_id
                      JOIN lol_match_participants lmp2 ON lmp2.lol_match_id = lmp1.lol_match_id and lmp2.summoner_id =
-        "#);
+        "#,
+        );
         query.push_bind(encounter.id);
         stats_query.push_bind(encounter.id);
         query.push(" AND ");
@@ -129,7 +171,6 @@ pub mod ssr {
             query.push_bind(champion_id as i32);
             stats_query.push(sql_filter);
             stats_query.push_bind(champion_id as i32);
-
         }
 
         if let Some(queue_id) = filters.queue_id {
@@ -158,27 +199,36 @@ pub mod ssr {
 
         query.push(" order by lm.match_end desc limit 20 offset ");
         query.push_bind(offset);
-        let (encounter_stats , matches) = tokio::join!(
-          stats_query.build_query_as::<SummonerEncounterStatsModel>().fetch_one(db),
-          query.build_query_as::<EncounterRowModel>().fetch_all(db)
+        let (encounter_stats, matches) = tokio::join!(
+            stats_query
+                .build_query_as::<SummonerEncounterStatsModel>()
+                .fetch_one(db),
+            query.build_query_as::<EncounterRowModel>().fetch_all(db)
         );
         let encounter_stats = encounter_stats?;
         let matches = matches?;
 
-        let matches =matches
+        let matches = matches
             .into_iter()
             .map(|row| {
                 // Calculate time since match ended
-                let match_ended_since = row.match_end.map_or_else(
-                    || DurationSince::new("Unknown"),
-                    format_duration_since,
-                );
+                let match_ended_since = row
+                    .match_end
+                    .map_or_else(|| DurationSince::new("Unknown"), format_duration_since);
 
                 // Safely handle floating point operations
                 let kda = (row.kda.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round() / 100.0;
-                let kill_participation = (row.kill_participation.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round();
-                let encounter_kda = (row.encounter_kda.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round() / 100.0;
-                let encounter_kill_participation = (row.encounter_kill_participation.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round();
+                let kill_participation =
+                    (row.kill_participation.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round();
+                let encounter_kda =
+                    (row.encounter_kda.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round() / 100.0;
+                let encounter_kill_participation = (row
+                    .encounter_kill_participation
+                    .to_f32()
+                    .unwrap_or(0.0)
+                    .max(0.0)
+                    * 100.0)
+                    .round();
 
                 SummonerEncounterMatch {
                     match_id: row.lol_match_id,
@@ -199,7 +249,8 @@ pub mod ssr {
                         kill_participation,
                         summoner_spell1_id: row.summoner_spell1_id.unwrap_or_default() as u16,
                         summoner_spell2_id: row.summoner_spell2_id.unwrap_or_default() as u16,
-                        perk_primary_selection_id: row.perk_primary_selection_id.unwrap_or_default() as u16,
+                        perk_primary_selection_id: row.perk_primary_selection_id.unwrap_or_default()
+                            as u16,
                         perk_sub_style_id: row.perk_sub_style_id.unwrap_or_default() as u16,
                         item0_id: row.item0_id.unwrap_or_default() as u32,
                         item1_id: row.item1_id.unwrap_or_default() as u32,
@@ -219,10 +270,16 @@ pub mod ssr {
                         assists: row.encounter_assists as u16,
                         kda: encounter_kda,
                         kill_participation: encounter_kill_participation,
-                        summoner_spell1_id: row.encounter_summoner_spell1_id.unwrap_or_default() as u16,
-                        summoner_spell2_id: row.encounter_summoner_spell2_id.unwrap_or_default() as u16,
-                        perk_primary_selection_id: row.encounter_perk_primary_selection_id.unwrap_or_default() as u16,
-                        perk_sub_style_id: row.encounter_perk_sub_style_id.unwrap_or_default() as u16,
+                        summoner_spell1_id: row.encounter_summoner_spell1_id.unwrap_or_default()
+                            as u16,
+                        summoner_spell2_id: row.encounter_summoner_spell2_id.unwrap_or_default()
+                            as u16,
+                        perk_primary_selection_id: row
+                            .encounter_perk_primary_selection_id
+                            .unwrap_or_default()
+                            as u16,
+                        perk_sub_style_id: row.encounter_perk_sub_style_id.unwrap_or_default()
+                            as u16,
                         item0_id: row.encounter_item0_id.unwrap_or_default() as u32,
                         item1_id: row.encounter_item1_id.unwrap_or_default() as u32,
                         item2_id: row.encounter_item2_id.unwrap_or_default() as u32,
@@ -232,28 +289,75 @@ pub mod ssr {
                         item6_id: row.encounter_item6_id.unwrap_or_default() as u32,
                     },
                 }
-            }).collect_vec();
+            })
+            .collect_vec();
 
-        let total_pages = (encounter_stats.total_matches as f64 / per_page as f64).ceil() as u16;
+        let total_pages = (encounter_stats.total_matches.unwrap_or_default() as f64
+            / per_page as f64)
+            .ceil() as u16;
         let summoner_stats = SummonerEncounterStats {
-            total_wins: encounter_stats.total_wins as u16,
-            total_loses: (encounter_stats.total_matches - encounter_stats.total_wins) as u16,
-            avg_kills: encounter_stats.avg_kills.to_f32().unwrap_or_default(),
-            avg_deaths: encounter_stats.avg_deaths.to_f32().unwrap_or_default(),
-            avg_assists: encounter_stats.avg_assists.to_f32().unwrap_or_default(),
-            avg_kda: encounter_stats.avg_kda.to_f32().unwrap_or_default(),
-            avg_kill_participation: encounter_stats.avg_kill_participation.to_f32().unwrap_or_default() * 100.0,
-
+            total_wins: encounter_stats.total_wins.unwrap_or_default() as u16,
+            total_loses: (encounter_stats.total_matches.unwrap_or_default()
+                - encounter_stats.total_wins.unwrap_or_default()) as u16,
+            avg_kills: encounter_stats
+                .avg_kills
+                .unwrap_or_default()
+                .to_f32()
+                .unwrap_or_default(),
+            avg_deaths: encounter_stats
+                .avg_deaths
+                .unwrap_or_default()
+                .to_f32()
+                .unwrap_or_default(),
+            avg_assists: encounter_stats
+                .avg_assists
+                .unwrap_or_default()
+                .to_f32()
+                .unwrap_or_default(),
+            avg_kda: encounter_stats
+                .avg_kda
+                .unwrap_or_default()
+                .to_f32()
+                .unwrap_or_default(),
+            avg_kill_participation: encounter_stats
+                .avg_kill_participation
+                .unwrap_or_default()
+                .to_f32()
+                .unwrap_or_default()
+                * 100.0,
         };
 
         let encounter_stats = SummonerEncounterStats {
-            total_wins: encounter_stats.encounter_total_wins as u16,
-            total_loses: (encounter_stats.total_matches - encounter_stats.encounter_total_wins) as u16,
-            avg_kills: encounter_stats.encounter_avg_kills.to_f32().unwrap_or_default(),
-            avg_deaths: encounter_stats.encounter_avg_deaths.to_f32().unwrap_or_default(),
-            avg_assists: encounter_stats.encounter_avg_assists.to_f32().unwrap_or_default(),
-            avg_kda: encounter_stats.encounter_avg_kda.to_f32().unwrap_or_default(),
-            avg_kill_participation: encounter_stats.encounter_avg_kill_participation.to_f32().unwrap_or_default() * 100.0,
+            total_wins: encounter_stats.encounter_total_wins.unwrap_or_default() as u16,
+            total_loses: (encounter_stats.total_matches.unwrap_or_default()
+                - encounter_stats.encounter_total_wins.unwrap_or_default())
+                as u16,
+            avg_kills: encounter_stats
+                .encounter_avg_kills
+                .unwrap_or_default()
+                .to_f32()
+                .unwrap_or_default(),
+            avg_deaths: encounter_stats
+                .encounter_avg_deaths
+                .unwrap_or_default()
+                .to_f32()
+                .unwrap_or_default(),
+            avg_assists: encounter_stats
+                .encounter_avg_assists
+                .unwrap_or_default()
+                .to_f32()
+                .unwrap_or_default(),
+            avg_kda: encounter_stats
+                .encounter_avg_kda
+                .unwrap_or_default()
+                .to_f32()
+                .unwrap_or_default(),
+            avg_kill_participation: encounter_stats
+                .encounter_avg_kill_participation
+                .unwrap_or_default()
+                .to_f32()
+                .unwrap_or_default()
+                * 100.0,
         };
         Ok(SummonerEncounterResult {
             total_pages,
@@ -264,7 +368,6 @@ pub mod ssr {
             encounter,
         })
     }
-
 
     pub async fn find_summoner_by_id(db: &PgPool, summoner_id: i32) -> AppResult<Summoner> {
         sqlx::query_as::<_, SummonerModel>(
@@ -280,43 +383,42 @@ pub mod ssr {
                    ss.pro_player_slug            as pro_slug
             FROM summoners as ss
             WHERE
-                ss.id = $1"#
-        ).bind(summoner_id)
-            .fetch_one(db)
-            .await
-            .map(|summoner_db| {
-                Summoner {
-                    id: summoner_db.id,
-                    game_name: GameName::new(summoner_db.game_name.as_str()),
-                    tag_line: TagLine::new(summoner_db.tag_line.as_str()),
-                    puuid: Puuid::new(summoner_db.puuid.as_str()),
-                    platform: PlatformRoute::from(summoner_db.platform),
-                    summoner_level: summoner_db.summoner_level as u16,
-                    profile_icon_id: summoner_db.profile_icon_id as u16,
-                    pro_slug: summoner_db.pro_slug.map(|slug| ProPlayerSlug::new(slug.as_str())),
-                }
-            })
-            .map_err(|e| e.into())
+                ss.id = $1"#,
+        )
+        .bind(summoner_id)
+        .fetch_one(db)
+        .await
+        .map(|summoner_db| Summoner {
+            id: summoner_db.id,
+            game_name: GameName::new(summoner_db.game_name.as_str()),
+            tag_line: TagLine::new(summoner_db.tag_line.as_str()),
+            puuid: Puuid::new(summoner_db.puuid.as_str()),
+            platform: PlatformRoute::from(summoner_db.platform),
+            summoner_level: summoner_db.summoner_level as u16,
+            profile_icon_id: summoner_db.profile_icon_id as u16,
+            pro_slug: summoner_db
+                .pro_slug
+                .map(|slug| ProPlayerSlug::new(slug.as_str())),
+        })
+        .map_err(|e| e.into())
     }
-
 
     #[derive(sqlx::FromRow)]
     pub struct SummonerEncounterStatsModel {
-        pub total_matches: i64,
-        pub total_wins: i64,
-        pub avg_kills: BigDecimal,
-        pub avg_deaths: BigDecimal,
-        pub avg_assists: BigDecimal,
-        pub avg_kda: BigDecimal,
-        pub avg_kill_participation: BigDecimal,
-        pub encounter_total_wins: i64,
-        pub encounter_avg_kills: BigDecimal,
-        pub encounter_avg_deaths: BigDecimal,
-        pub encounter_avg_assists: BigDecimal,
-        pub encounter_avg_kda: BigDecimal,
-        pub encounter_avg_kill_participation: BigDecimal,
+        pub total_matches: Option<i64>,
+        pub total_wins: Option<i64>,
+        pub avg_kills: Option<BigDecimal>,
+        pub avg_deaths: Option<BigDecimal>,
+        pub avg_assists: Option<BigDecimal>,
+        pub avg_kda: Option<BigDecimal>,
+        pub avg_kill_participation: Option<BigDecimal>,
+        pub encounter_total_wins: Option<i64>,
+        pub encounter_avg_kills: Option<BigDecimal>,
+        pub encounter_avg_deaths: Option<BigDecimal>,
+        pub encounter_avg_assists: Option<BigDecimal>,
+        pub encounter_avg_kda: Option<BigDecimal>,
+        pub encounter_avg_kill_participation: Option<BigDecimal>,
     }
-
 
     #[derive(sqlx::FromRow)]
     pub struct EncounterRowModel {

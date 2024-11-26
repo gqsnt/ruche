@@ -2,8 +2,10 @@ use crate::backend::ssr::AppResult;
 use crate::backend::updates::update_matches_task::TempParticipant;
 use itertools::Itertools;
 
-
-pub async fn bulk_insert_lol_match_participants(db: &sqlx::PgPool, participants: &[TempParticipant]) -> AppResult<()> {
+pub async fn bulk_insert_lol_match_participants(
+    db: &sqlx::PgPool,
+    participants: &[TempParticipant],
+) -> AppResult<()> {
     let (
         champion_ids,
         summoner_ids,
@@ -15,20 +17,34 @@ pub async fn bulk_insert_lol_match_participants(db: &sqlx::PgPool, participants:
         champ_levels,
         kill_participations,
         kdas,
-    ): (Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>) = participants.iter().map(|p| {
-        (
-            p.champion_id,
-            p.summoner_id,
-            p.lol_match_id,
-            p.summoner_spell1_id,
-            p.summoner_spell2_id,
-            p.team_id,
-            p.won,
-            p.champ_level,
-            p.kill_participation,
-            p.kda
-        )
-    }).multiunzip();
+    ): (
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+    ) = participants
+        .iter()
+        .map(|p| {
+            (
+                p.champion_id,
+                p.summoner_id,
+                p.lol_match_id,
+                p.summoner_spell1_id,
+                p.summoner_spell2_id,
+                p.team_id,
+                p.won,
+                p.champ_level,
+                p.kill_participation,
+                p.kda,
+            )
+        })
+        .multiunzip();
 
     let (
         killss,
@@ -41,19 +57,34 @@ pub async fn bulk_insert_lol_match_participants(db: &sqlx::PgPool, participants:
         css,
         css_per_minute,
         double_kills,
-    ): (Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>) = participants.iter().map(|p| (
-        p.kills,
-        p.deaths,
-        p.assists,
-        p.damage_dealt_to_champions,
-        p.damage_taken,
-        p.gold_earned,
-        p.wards_placed,
-        p.cs,
-        p.cs_per_minute,
-        p.double_kills
-    )).multiunzip();
-
+    ): (
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+    ) = participants
+        .iter()
+        .map(|p| {
+            (
+                p.kills,
+                p.deaths,
+                p.assists,
+                p.damage_dealt_to_champions,
+                p.damage_taken,
+                p.gold_earned,
+                p.wards_placed,
+                p.cs,
+                p.cs_per_minute,
+                p.double_kills,
+            )
+        })
+        .multiunzip();
 
     let (
         triple_kills,
@@ -66,18 +97,34 @@ pub async fn bulk_insert_lol_match_participants(db: &sqlx::PgPool, participants:
         perk_sub_style_ids,
         perk_primary_selection_ids,
         perk_primary_selection1_ids,
-    ): (Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>) = participants.iter().map(|p| (
-        p.triple_kills,
-        p.quadra_kills,
-        p.penta_kills,
-        p.perk_defense_id,
-        p.perk_flex_id,
-        p.perk_offense_id,
-        p.perk_primary_style_id,
-        p.perk_sub_style_id,
-        p.perk_primary_selection_id,
-        p.perk_primary_selection1_id,
-    )).multiunzip();
+    ): (
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+    ) = participants
+        .iter()
+        .map(|p| {
+            (
+                p.triple_kills,
+                p.quadra_kills,
+                p.penta_kills,
+                p.perk_defense_id,
+                p.perk_flex_id,
+                p.perk_offense_id,
+                p.perk_primary_style_id,
+                p.perk_sub_style_id,
+                p.perk_primary_selection_id,
+                p.perk_primary_selection1_id,
+            )
+        })
+        .multiunzip();
 
     let (
         perk_primary_selection2_ids,
@@ -91,19 +138,36 @@ pub async fn bulk_insert_lol_match_participants(db: &sqlx::PgPool, participants:
         item4_ids,
         item5_ids,
         item6_ids,
-    ): (Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>) = participants.iter().map(|p| (
-        p.perk_primary_selection2_id,
-        p.perk_primary_selection3_id,
-        p.perk_sub_selection1_id,
-        p.perk_sub_selection2_id,
-        p.item0_id,
-        p.item1_id,
-        p.item2_id,
-        p.item3_id,
-        p.item4_id,
-        p.item5_id,
-        p.item6_id
-    )).multiunzip();
+    ): (
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+        Vec<_>,
+    ) = participants
+        .iter()
+        .map(|p| {
+            (
+                p.perk_primary_selection2_id,
+                p.perk_primary_selection3_id,
+                p.perk_sub_selection1_id,
+                p.perk_sub_selection2_id,
+                p.item0_id,
+                p.item1_id,
+                p.item2_id,
+                p.item3_id,
+                p.item4_id,
+                p.item5_id,
+                p.item6_id,
+            )
+        })
+        .multiunzip();
 
     let sql = r#"
             INSERT INTO lol_match_participants (

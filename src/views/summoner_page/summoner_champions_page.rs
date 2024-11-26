@@ -2,29 +2,36 @@ use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_champions::get_champions;
 use crate::consts::champion::Champion;
 use crate::consts::HasStaticAsset;
+use crate::utils::{format_float_to_2digits, format_with_spaces};
 use crate::views::summoner_page::Summoner;
-use crate::views::{BackEndMatchFiltersSearch};
+use crate::views::BackEndMatchFiltersSearch;
 use itertools::Itertools;
 use leptos::either::Either;
 use leptos::prelude::*;
+use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
-use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
-use crate::utils::{format_float_to_2digits, format_with_spaces};
 
 #[component]
-pub fn SummonerChampionsPage() -> impl IntoView {
-    let summoner = expect_context::<ReadSignal<Summoner>>();
+pub fn SummonerChampionsPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
+    let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
-    let (table_sort, set_table_sort) = signal::<(TableSortType, bool)>((TableSortType::default(), true));
+    let (table_sort, set_table_sort) =
+        signal::<(TableSortType, bool)>((TableSortType::default(), true));
     let current_sort_type = move || table_sort.get().0;
     let current_sort_normal_flow = move || table_sort.get().1;
 
     let champions_resource = Resource::new_rkyv(
-        move || (match_filters_updated.get(), summoner()),
-        |(filters, summoner)| async move {
+        move || {
+            (
+                summoner_update_version.get().unwrap_or_default(),
+                match_filters_updated.get(),
+                summoner().unwrap().id,
+            )
+        },
+        |(_, filters, summoner_id)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_champions(summoner.id, Some(filters)).await
+            get_champions(summoner_id, Some(filters)).await
         },
     );
 
@@ -37,10 +44,16 @@ pub fn SummonerChampionsPage() -> impl IntoView {
         }
     };
 
-
-    meta_store.title().set(format!("{}#{} | Champions | Broken.gg", summoner().game_name.to_str(), summoner().tag_line.to_str()));
-    meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner().game_name.to_str(), summoner().tag_line.to_str()));
-    meta_store.url().set(format!("{}?tab=champions", summoner().to_route_path()));
+    meta_store.title().set(format!(
+        "{}#{} | Champions | Broken.gg",
+        summoner().unwrap().game_name.to_str(),
+        summoner().unwrap().tag_line.to_str()
+    ));
+    meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner().unwrap().game_name.to_str(), summoner().unwrap().tag_line.to_str()));
+    meta_store.url().set(format!(
+        "{}?tab=champions",
+        summoner().unwrap().to_route_path()
+    ));
     view! {
         <div>
             <Suspense fallback=move || {
@@ -319,21 +332,19 @@ pub fn SummonerChampionsPage() -> impl IntoView {
     }
 }
 
-
 #[component]
 pub fn TableHeaderItem<S, R, T>(
     sort_type: TableSortType,
     current_sort_type: S,
     current_sort_normal_flow: R,
     toggle_sort: T,
-    #[prop(optional)]
-    class: Option<String>,
+    #[prop(optional)] class: Option<String>,
     children: Children,
 ) -> impl IntoView
 where
     S: Fn() -> TableSortType + Send + Copy + Sync + 'static,
     R: Fn() -> bool + Send + Sync + Copy + 'static,
-    T: Fn(TableSortType)+ 'static,
+    T: Fn(TableSortType) + 'static,
 {
     view! {
         <button
@@ -353,7 +364,6 @@ where
     }
 }
 
-
 #[derive(Copy, Clone, PartialEq, Eq, Default)]
 pub enum TableSortType {
     #[default]
@@ -372,17 +382,31 @@ pub enum TableSortType {
 }
 
 impl TableSortType {
-    pub fn sort(&self, idx_a: &usize, a: &ChampionStats, idx_b: &usize, b: &ChampionStats, is_desc: bool) -> std::cmp::Ordering {
+    pub fn sort(
+        &self,
+        idx_a: &usize,
+        a: &ChampionStats,
+        idx_b: &usize,
+        b: &ChampionStats,
+        is_desc: bool,
+    ) -> std::cmp::Ordering {
         // is reversed because we want to sort in descending order
         let ordering = match self {
             TableSortType::Index => idx_b.cmp(idx_a),
-            TableSortType::Champion => Champion::from(b.champion_id).to_str().cmp(Champion::from(a.champion_id).to_str()),
+            TableSortType::Champion => Champion::from(b.champion_id)
+                .to_str()
+                .cmp(Champion::from(a.champion_id).to_str()),
             TableSortType::WinRate => a.win_rate.partial_cmp(&b.win_rate).unwrap(),
             TableSortType::AvgKDA => a.avg_kda.partial_cmp(&b.avg_kda).unwrap(),
             TableSortType::AvgGold => a.avg_gold_earned.partial_cmp(&b.avg_gold_earned).unwrap(),
             TableSortType::AvgCs => a.avg_cs.partial_cmp(&b.avg_cs).unwrap(),
-            TableSortType::AvgDamageDealt => a.avg_damage_dealt_to_champions.partial_cmp(&b.avg_damage_dealt_to_champions).unwrap(),
-            TableSortType::AvgDamageTaken => a.avg_damage_taken.partial_cmp(&b.avg_damage_taken).unwrap(),
+            TableSortType::AvgDamageDealt => a
+                .avg_damage_dealt_to_champions
+                .partial_cmp(&b.avg_damage_dealt_to_champions)
+                .unwrap(),
+            TableSortType::AvgDamageTaken => {
+                a.avg_damage_taken.partial_cmp(&b.avg_damage_taken).unwrap()
+            }
             TableSortType::DoubleKills => a.total_double_kills.cmp(&b.total_double_kills),
             TableSortType::TripleKills => a.total_triple_kills.cmp(&b.total_triple_kills),
             TableSortType::QuadraKills => a.total_quadra_kills.cmp(&b.total_quadra_kills),
@@ -395,7 +419,6 @@ impl TableSortType {
         }
     }
 }
-
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct ChampionStats {

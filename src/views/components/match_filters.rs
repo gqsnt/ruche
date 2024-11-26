@@ -1,6 +1,6 @@
 use crate::consts::champion::CHAMPION_OPTIONS;
 use crate::consts::queue::QUEUE_OPTIONS;
-use crate::views::{BackEndMatchFiltersSearch};
+use crate::views::BackEndMatchFiltersSearch;
 use leptos::context::provide_context;
 use leptos::prelude::*;
 use leptos::reactive::wrappers::write::SignalSetter;
@@ -54,12 +54,10 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
     ));
     provide_context(filters_signal);
 
-    let set_optional_value = move |setter: SignalSetter<Option<String>>, value: String, name: &str| {
-        let value = if value.is_empty() {
-            None
-        } else {
-            Some(value)
-        };
+    let set_optional_value = move |setter: SignalSetter<Option<String>>,
+                                   value: String,
+                                   name: &str| {
+        let value = if value.is_empty() { None } else { Some(value) };
         setter.set(value.clone());
         let filters = if name == "start_date" {
             BackEndMatchFiltersSearch::from_signals(queue_id(), champion_id(), value, end_date())
@@ -78,14 +76,19 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
             {champion.to_string()}
         </option>
     }).collect::<Vec<_>>();
-    let queue_options = QUEUE_OPTIONS.iter().map(|(inner_queue_id, queue_name)| view! {
-        <option
-            value=*inner_queue_id
-            selected=move || inner_queue_id.to_string() == queue_id().unwrap_or_default()
-        >
-            {queue_name.to_string()}
-        </option>
-    }).collect::<Vec<_>>();
+    let queue_options = QUEUE_OPTIONS
+        .iter()
+        .map(|(inner_queue_id, queue_name)| {
+            view! {
+                <option
+                    value=*inner_queue_id
+                    selected=move || inner_queue_id.to_string() == queue_id().unwrap_or_default()
+                >
+                    {queue_name.to_string()}
+                </option>
+            }
+        })
+        .collect::<Vec<_>>();
 
     view! {
         <div class="flex justify-center">

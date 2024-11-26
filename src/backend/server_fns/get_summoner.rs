@@ -1,14 +1,11 @@
-#[cfg(feature = "ssr")]
-use leptos::logging::log;
 use crate::consts::platform_route::PlatformRoute;
+use crate::utils::SummonerSlug;
 #[cfg(feature = "ssr")]
 use crate::utils::{parse_summoner_slug, summoner_not_found_url};
 use crate::views::summoner_page::Summoner;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
-use crate::utils::{SummonerSlug};
-
 
 #[server( input=Rkyv,output=Rkyv)]
 pub async fn get_summoner(
@@ -21,32 +18,37 @@ pub async fn get_summoner(
     let slug = summoner_slug.to_string();
 
     let (game_name, tag_line) = parse_summoner_slug(slug.as_str());
-    match ssr::find_summoner_by_exact_game_name_tag_line(&db, platform_route, game_name.clone(), tag_line.clone()).await {
-        Ok(summoner) => {
-            Ok(summoner)
-        }
-        Err(e) => {
-            log!("Server::Summoner not found: {}: {:?}", summoner_slug.to_string(), e);
-            leptos_axum::redirect(summoner_not_found_url(platform_route.to_string(), game_name, tag_line).as_str());
-            e.as_server_fn_error()
+    match ssr::find_summoner_by_exact_game_name_tag_line(
+        &db,
+        platform_route,
+        game_name.clone(),
+        tag_line.clone(),
+    )
+    .await
+    {
+        Ok(Some(summoner)) => Ok(summoner),
+        _ => {
+            leptos_axum::redirect(
+                summoner_not_found_url(platform_route.to_string(), game_name, tag_line).as_str(),
+            );
+            Err(ServerFnError::new("Summoner not found"))
         }
     }
 }
-
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::ssr::{AppResult, PlatformRouteDb};
     use crate::consts::platform_route::PlatformRoute;
-    use crate::views::summoner_page::Summoner;
     use crate::utils::{GameName, ProPlayerSlug, Puuid, TagLine};
+    use crate::views::summoner_page::Summoner;
 
     pub async fn find_summoner_by_exact_game_name_tag_line(
         db: &sqlx::PgPool,
         platform_route: PlatformRoute,
         game_name: String,
         tag_line: String,
-    ) -> AppResult<Summoner> {
+    ) -> AppResult<Option<Summoner>> {
         sqlx::query_as::<_, SummonerModel>(
             r#"
             SELECT
@@ -62,27 +64,27 @@ pub mod ssr {
             WHERE ss.game_name = $1
               AND lower(ss.tag_line) = lower($2)
               AND ss.platform = $3
-  "#
-        ).bind(game_name)
-            .bind(tag_line)
-            .bind(PlatformRouteDb::from(platform_route))
-            .fetch_one(db)
-            .await
-            .map(|summoner_db| {
-                Summoner {
-                    id: summoner_db.id,
-                    game_name: GameName::new(summoner_db.game_name.as_str()),
-                    tag_line: TagLine::new(summoner_db.tag_line.as_str()),
-                    puuid: Puuid::new(summoner_db.puuid.as_str()),
-                    platform: PlatformRoute::from(summoner_db.platform),
-                    summoner_level: summoner_db.summoner_level as u16,
-                    profile_icon_id: summoner_db.profile_icon_id as u16,
-                    pro_slug: summoner_db.pro_slug.map(|s|ProPlayerSlug::new(s.as_str())),
-                }
+  "#,
+        )
+        .bind(game_name)
+        .bind(tag_line)
+        .bind(PlatformRouteDb::from(platform_route))
+        .fetch_optional(db)
+        .await
+        .map(|summoner_db| {
+            summoner_db.map(|summoner_db| Summoner {
+                id: summoner_db.id,
+                game_name: GameName::new(summoner_db.game_name.as_str()),
+                tag_line: TagLine::new(summoner_db.tag_line.as_str()),
+                puuid: Puuid::new(summoner_db.puuid.as_str()),
+                platform: PlatformRoute::from(summoner_db.platform),
+                summoner_level: summoner_db.summoner_level as u16,
+                profile_icon_id: summoner_db.profile_icon_id as u16,
+                pro_slug: summoner_db.pro_slug.map(|s| ProPlayerSlug::new(s.as_str())),
             })
-            .map_err(|e| e.into())
+        })
+        .map_err(|e| e.into())
     }
-
 
     #[derive(sqlx::FromRow, Debug)]
     pub struct SummonerModel {

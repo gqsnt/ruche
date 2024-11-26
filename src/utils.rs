@@ -1,9 +1,9 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
-#[derive(Clone, Copy, PartialEq, Eq,Debug, Hash, Serialize, Deserialize, Archive)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize, Archive)]
 pub struct FixedSizeString<const N: usize>([u8; N]);
 
-impl <const N: usize> FixedSizeString<N> {
+impl<const N: usize> FixedSizeString<N> {
     pub fn new(value: &str) -> Self {
         let mut result = [0u8; N]; // Initialize the fixed-size array with zeros.
         let bytes = value.as_bytes(); // Get the string as a slice of bytes.
@@ -17,17 +17,20 @@ impl <const N: usize> FixedSizeString<N> {
     }
 
     fn trim_end_zeros(&self) -> &[u8] {
-        let end = self.0.iter().rposition(|&b| b != 0).map_or(0, |pos| pos + 1);
+        let end = self
+            .0
+            .iter()
+            .rposition(|&b| b != 0)
+            .map_or(0, |pos| pos + 1);
         &self.0[..end]
     }
 }
 
-impl <const N: usize>  std::fmt::Display for FixedSizeString<N> {
+impl<const N: usize> std::fmt::Display for FixedSizeString<N> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", String::from_utf8_lossy(self.trim_end_zeros()))
     }
 }
-
 
 pub type GameName = FixedSizeString<16>;
 pub type TagLine = FixedSizeString<5>;
@@ -35,8 +38,7 @@ pub type Puuid = FixedSizeString<78>;
 pub type ProPlayerSlug = FixedSizeString<20>;
 pub type SummonerSlug = FixedSizeString<22>;
 pub type RiotMatchId = FixedSizeString<17>;
-pub type DurationSince=FixedSizeString<14>;
-
+pub type DurationSince = FixedSizeString<14>;
 
 pub fn format_duration(seconds: Option<i32>) -> String {
     let seconds = seconds.unwrap_or(0);
@@ -46,7 +48,6 @@ pub fn format_duration(seconds: Option<i32>) -> String {
 
     format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
 }
-
 
 pub fn version_to_major_minor(version: &str) -> String {
     let mut split = version.split(".");
@@ -72,7 +73,6 @@ pub fn format_with_spaces(number: u32) -> String {
     result
 }
 
-
 pub fn summoner_to_slug(game_name: String, tag_line: String) -> String {
     format!(
         "{}-{}",
@@ -86,30 +86,51 @@ pub fn parse_summoner_slug(slug: &str) -> (String, String) {
     let len = parts.len();
     let game_name = urlencoding::decode(parts[0]).ok().unwrap().into_owned();
     if len == 2 {
-        return (game_name, urlencoding::decode(parts[1]).ok().unwrap().into_owned());
+        return (
+            game_name,
+            urlencoding::decode(parts[1]).ok().unwrap().into_owned(),
+        );
     }
     (game_name, String::new())
 }
 
 pub fn summoner_url(platform: String, game_name: String, tag_line: String) -> String {
-    format!("/platform/{}/summoners/{}", platform, summoner_to_slug(game_name, tag_line))
+    format!(
+        "/platform/{}/summoners/{}",
+        platform,
+        summoner_to_slug(game_name, tag_line)
+    )
 }
 
 pub fn summoner_not_found_url(platform: String, game_name: String, tag_line: String) -> String {
-    format!("/platform/{}?game_name={}&tag_line={}", platform, game_name, tag_line)
+    format!(
+        "/platform/{}?game_name={}&tag_line={}",
+        platform, game_name, tag_line
+    )
 }
 
-pub fn summoner_encounter_url(platform: String, game_name: String, tag_line: String, encounter_platform: String, encounter_game_name: String, encounter_tag_line: String) -> String {
-    format!("/platform/{}/summoners/{}?tab=encounter&encounter_slug={}&encounter_platform={}", platform, summoner_to_slug(game_name, tag_line), summoner_to_slug(encounter_game_name, encounter_tag_line), encounter_platform)
+pub fn summoner_encounter_url(
+    platform: String,
+    game_name: String,
+    tag_line: String,
+    encounter_platform: String,
+    encounter_game_name: String,
+    encounter_tag_line: String,
+) -> String {
+    format!(
+        "/platform/{}/summoners/{}?tab=encounter&encounter_slug={}&encounter_platform={}",
+        platform,
+        summoner_to_slug(game_name, tag_line),
+        summoner_to_slug(encounter_game_name, encounter_tag_line),
+        encounter_platform
+    )
 }
-
 
 pub fn round_to_2_decimal_places(value: f64) -> f64 {
     (value * 100.0).round() / 100.0
 }
 
-
 pub fn format_float_to_2digits(value: f32) -> String {
-    let value = (value * 100.0).round()/100.0;
+    let value = (value * 100.0).round() / 100.0;
     value.to_string()
 }

@@ -1,14 +1,7 @@
 use std::fmt::Formatter;
 
 #[repr(u16)]
-#[derive(
-    Eq,
-    PartialEq,
-    Hash,
-    Debug,
-    Clone,
-    Copy,
-)]
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
 pub enum Perk {
     UNKNOWN = 0,
     StatsHealScaling = 5001,

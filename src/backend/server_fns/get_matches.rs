@@ -1,34 +1,43 @@
 use crate::views::summoner_page::summoner_matches_page::GetSummonerMatchesResult;
-use crate::views::{BackEndMatchFiltersSearch};
+use crate::views::BackEndMatchFiltersSearch;
 use leptos::prelude::*;
 use leptos::server_fn::codec::Rkyv;
 
-
-
-
 #[server(input=Rkyv,output=Rkyv)]
-pub async fn get_matches(summoner_id: i32, page_number: u16, filters: Option<BackEndMatchFiltersSearch>) -> Result<GetSummonerMatchesResult, ServerFnError> {
+pub async fn get_matches(
+    summoner_id: i32,
+    page_number: u16,
+    filters: Option<BackEndMatchFiltersSearch>,
+) -> Result<GetSummonerMatchesResult, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
-    ssr::fetch_matches(&db, summoner_id, page_number as i32, filters.unwrap_or_default()).await.map_err(|e| e.to_server_fn_error())
+    ssr::fetch_matches(
+        &db,
+        summoner_id,
+        page_number as i32,
+        filters.unwrap_or_default(),
+    )
+    .await
+    .map_err(|e| e.to_server_fn_error())
 }
-
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::ssr::{format_duration_since, AppResult, PlatformRouteDb};
     use crate::consts::queue::Queue;
-    use crate::views::summoner_page::summoner_matches_page::{GetSummonerMatchesResult, MatchesResultInfo, SummonerMatch, SummonerMatchParticipant};
-    use crate::views::{BackEndMatchFiltersSearch};
+    use crate::views::summoner_page::summoner_matches_page::{
+        GetSummonerMatchesResult, MatchesResultInfo, SummonerMatch, SummonerMatchParticipant,
+    };
+    use crate::views::BackEndMatchFiltersSearch;
     use bigdecimal::{BigDecimal, ToPrimitive};
-    use chrono::{NaiveDateTime};
+    use chrono::NaiveDateTime;
     use itertools::Itertools;
 
-    use sqlx::{FromRow, PgPool, QueryBuilder};
-    use std::collections::HashMap;
     use crate::consts::platform_route::PlatformRoute;
     use crate::utils::{DurationSince, GameName, ProPlayerSlug, RiotMatchId, TagLine};
+    use sqlx::{FromRow, PgPool, QueryBuilder};
+    use std::collections::HashMap;
 
     pub async fn fetch_matches(
         db: &PgPool,
@@ -42,8 +51,8 @@ pub mod ssr {
         let start_date = filters.start_date_to_naive();
         let end_date = filters.end_date_to_naive();
 
-
-        let mut statistics_query = QueryBuilder::new(r#"
+        let mut statistics_query = QueryBuilder::new(
+            r#"
             SELECT
                count(*) as total_matches,
                sum(CASE WHEN lmp.won THEN 1 ELSE 0 END) as total_wins,
@@ -55,8 +64,10 @@ pub mod ssr {
             FROM lol_match_participants as lmp
                      left JOIN lol_matches as lm ON lm.id = lmp.lol_match_id
             WHERE lmp.summoner_id =
-        "#);
-        let mut participants_query = QueryBuilder::new(r#"
+        "#,
+        );
+        let mut participants_query = QueryBuilder::new(
+            r#"
             SELECT lmp.id,
                    lmp.lol_match_id,
                    lmp.champion_id,
@@ -89,7 +100,8 @@ pub mod ssr {
                        JOIN lol_matches as lm
                                 ON lm.id = lmp.lol_match_id
             WHERE lmp.summoner_id =
-        "#);
+        "#,
+        );
         statistics_query.push_bind(summoner_id);
         participants_query.push_bind(summoner_id);
 
@@ -124,76 +136,105 @@ pub mod ssr {
             participants_query.push_bind(end_date);
         }
 
-
         participants_query.push(" ORDER BY lm.match_end DESC LIMIT 20 OFFSET ");
         participants_query.push_bind(offset);
         let (matches_statistics, matches_participants) = tokio::join!(
-            statistics_query.build_query_as::<MatchesResultInfoModel>().fetch_one(db),
-            participants_query.build_query_as::<SummonerMatchModel>().fetch_all(db),
+            statistics_query
+                .build_query_as::<MatchesResultInfoModel>()
+                .fetch_one(db),
+            participants_query
+                .build_query_as::<SummonerMatchModel>()
+                .fetch_all(db),
         );
         let matches_statistics = matches_statistics?;
         let matches_participants = matches_participants?;
-        let total_matches = matches_statistics.total_matches as u16;
+        let total_matches = matches_statistics.total_matches.unwrap_or_default() as u16;
         let total_pages = (total_matches as f32 / per_page as f32).ceil() as u16;
 
-
         let matches_result_info = {
-            let total_wins = matches_statistics.total_wins as u16;
+            let total_wins = matches_statistics.total_wins.unwrap_or_default() as u16;
             let total_losses = total_matches - total_wins;
             MatchesResultInfo {
                 total_matches,
                 total_wins,
                 total_losses,
-                avg_kills: matches_statistics.avg_kills.to_f32().unwrap_or_default(),
-                avg_deaths: matches_statistics.avg_deaths.to_f32().unwrap_or_default(),
-                avg_assists: matches_statistics.avg_assists.to_f32().unwrap_or_default(),
-                avg_kda: matches_statistics.avg_kda.to_f32().unwrap_or_default(),
-                avg_kill_participation: matches_statistics.avg_kill_participation.to_f32().unwrap_or_default() * 100.0,
+                avg_kills: matches_statistics
+                    .avg_kills
+                    .unwrap_or_default()
+                    .to_f32()
+                    .unwrap_or_default(),
+                avg_deaths: matches_statistics
+                    .avg_deaths
+                    .unwrap_or_default()
+                    .to_f32()
+                    .unwrap_or_default(),
+                avg_assists: matches_statistics
+                    .avg_assists
+                    .unwrap_or_default()
+                    .to_f32()
+                    .unwrap_or_default(),
+                avg_kda: matches_statistics
+                    .avg_kda
+                    .unwrap_or_default()
+                    .to_f32()
+                    .unwrap_or_default(),
+                avg_kill_participation: matches_statistics
+                    .avg_kill_participation
+                    .unwrap_or_default()
+                    .to_f32()
+                    .unwrap_or_default()
+                    * 100.0,
             }
         };
 
-        let matches_ids: Vec<_> = matches_participants.iter().map(|row| row.lol_match_id).collect();
-        let mut matches = matches_participants.into_iter().map(|row| {
-            // Calculate time since match ended
-            let match_ended_since = row.lol_match_match_end.map_or_else(
-                || DurationSince::new("Unknown"),
-                format_duration_since,
-            );
+        let matches_ids: Vec<_> = matches_participants
+            .iter()
+            .map(|row| row.lol_match_id)
+            .collect();
+        let mut matches = matches_participants
+            .into_iter()
+            .map(|row| {
+                // Calculate time since match ended
+                let match_ended_since = row
+                    .lol_match_match_end
+                    .map_or_else(|| DurationSince::new("Unknown"), format_duration_since);
 
-            // Safely handle floating point operations
-            let kda = (row.kda.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round() / 100.0;
-            let kill_participation = (row.kill_participation.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round();
-            SummonerMatch {
-                summoner_id: row.summoner_id,
-                match_id: row.lol_match_id,
-                riot_match_id: RiotMatchId::new(row.riot_match_id.as_str()),
-                platform: row.platform.into(),
-                match_ended_since,
-                match_duration: row.lol_match_match_duration,
-                queue: Queue::from_u16(row.lol_match_queue_id.unwrap_or_default() as u16),
-                champion_id: row.champion_id as u16,
-                champ_level: row.champ_level,
-                won: row.won,
-                kda,
-                kills: row.kills as u16,
-                deaths: row.deaths as u16,
-                assists: row.assists as u16,
-                kill_participation,
-                summoner_spell1_id: row.summoner_spell1_id.unwrap_or_default() as u16,
-                summoner_spell2_id: row.summoner_spell2_id.unwrap_or_default() as u16,
-                perk_primary_selection_id: row.perk_primary_selection_id.unwrap_or_default() as u16,
-                perk_sub_style_id: row.perk_sub_style_id.unwrap_or_default() as u16,
-                item0_id: row.item0_id.unwrap_or_default() as u32,
-                item1_id: row.item1_id.unwrap_or_default() as u32,
-                item2_id: row.item2_id.unwrap_or_default() as u32,
-                item3_id: row.item3_id.unwrap_or_default() as u32,
-                item4_id: row.item4_id.unwrap_or_default() as u32,
-                item5_id: row.item5_id.unwrap_or_default() as u32,
-                item6_id: row.item6_id.unwrap_or_default() as u32,
-                participants: vec![],
-            }
-        }).collect::<Vec<_>>();
-
+                // Safely handle floating point operations
+                let kda = (row.kda.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round() / 100.0;
+                let kill_participation =
+                    (row.kill_participation.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round();
+                SummonerMatch {
+                    summoner_id: row.summoner_id,
+                    match_id: row.lol_match_id,
+                    riot_match_id: RiotMatchId::new(row.riot_match_id.as_str()),
+                    platform: row.platform.into(),
+                    match_ended_since,
+                    match_duration: row.lol_match_match_duration,
+                    queue: Queue::from_u16(row.lol_match_queue_id.unwrap_or_default() as u16),
+                    champion_id: row.champion_id as u16,
+                    champ_level: row.champ_level,
+                    won: row.won,
+                    kda,
+                    kills: row.kills as u16,
+                    deaths: row.deaths as u16,
+                    assists: row.assists as u16,
+                    kill_participation,
+                    summoner_spell1_id: row.summoner_spell1_id.unwrap_or_default() as u16,
+                    summoner_spell2_id: row.summoner_spell2_id.unwrap_or_default() as u16,
+                    perk_primary_selection_id: row.perk_primary_selection_id.unwrap_or_default()
+                        as u16,
+                    perk_sub_style_id: row.perk_sub_style_id.unwrap_or_default() as u16,
+                    item0_id: row.item0_id.unwrap_or_default() as u32,
+                    item1_id: row.item1_id.unwrap_or_default() as u32,
+                    item2_id: row.item2_id.unwrap_or_default() as u32,
+                    item3_id: row.item3_id.unwrap_or_default() as u32,
+                    item4_id: row.item4_id.unwrap_or_default() as u32,
+                    item5_id: row.item5_id.unwrap_or_default() as u32,
+                    item6_id: row.item6_id.unwrap_or_default() as u32,
+                    participants: vec![],
+                }
+            })
+            .collect::<Vec<_>>();
 
         // Fetch participants for the collected match_ids
 
@@ -206,30 +247,42 @@ pub mod ssr {
                         lmp.team_id
                 FROM lol_match_participants as lmp
                 WHERE lmp.lol_match_id = ANY($1)
-                ORDER BY lmp.team_id"
+                ORDER BY lmp.team_id",
             )
-                .bind(&matches_ids)
-                .fetch_all(db)
-                .await?;
-            let unique_summoner_ids = participant_rows.iter().map(|p| p.summoner_id).unique().collect::<Vec<_>>();
+            .bind(&matches_ids)
+            .fetch_all(db)
+            .await?;
+            let unique_summoner_ids = participant_rows
+                .iter()
+                .map(|p| p.summoner_id)
+                .unique()
+                .collect::<Vec<_>>();
             let summoners = get_summoner_infos_by_ids(db, unique_summoner_ids.clone()).await?;
-            let encounter_counts = get_summoner_encounters(db, summoner_id, &unique_summoner_ids).await?;
+            let encounter_counts =
+                get_summoner_encounters(db, summoner_id, &unique_summoner_ids).await?;
 
-            participant_rows.into_iter().map(|row| {
-                let (game_name, tag_line, platform, pro_player_slug) = summoners.get(&row.summoner_id).unwrap();
-                let encounter_count = (*encounter_counts.get(&row.summoner_id).unwrap_or(&0)) as u16;
-                SummonerMatchParticipant {
-                    team_id: row.team_id as u16,
-                    lol_match_id: row.lol_match_id,
-                    summoner_id: row.summoner_id,
-                    champion_id: row.champion_id as u16,
-                    game_name: GameName::new(game_name.as_str()),
-                    tag_line: TagLine::new(tag_line.as_str()),
-                    platform: *platform,
-                    pro_player_slug: pro_player_slug.clone().map(|pps|ProPlayerSlug::new(pps.as_str())),
-                    encounter_count,
-                }
-            }).collect_vec()
+            participant_rows
+                .into_iter()
+                .map(|row| {
+                    let (game_name, tag_line, platform, pro_player_slug) =
+                        summoners.get(&row.summoner_id).unwrap();
+                    let encounter_count =
+                        (*encounter_counts.get(&row.summoner_id).unwrap_or(&0)) as u16;
+                    SummonerMatchParticipant {
+                        team_id: row.team_id as u16,
+                        lol_match_id: row.lol_match_id,
+                        summoner_id: row.summoner_id,
+                        champion_id: row.champion_id as u16,
+                        game_name: GameName::new(game_name.as_str()),
+                        tag_line: TagLine::new(tag_line.as_str()),
+                        platform: *platform,
+                        pro_player_slug: pro_player_slug
+                            .clone()
+                            .map(|pps| ProPlayerSlug::new(pps.as_str())),
+                        encounter_count,
+                    }
+                })
+                .collect_vec()
         } else {
             Vec::new()
         };
@@ -245,11 +298,18 @@ pub mod ssr {
                 match_.participants = participants.clone();
             }
         }
-        Ok(GetSummonerMatchesResult { matches, total_pages , matches_result_info })
+        Ok(GetSummonerMatchesResult {
+            matches,
+            total_pages,
+            matches_result_info,
+        })
     }
 
-
-    pub async fn get_summoner_encounters(db: &PgPool, summoner_id: i32, encounters_ids: &[i32]) -> AppResult<HashMap<i32, u16>> {
+    pub async fn get_summoner_encounters(
+        db: &PgPool,
+        summoner_id: i32,
+        encounters_ids: &[i32],
+    ) -> AppResult<HashMap<i32, u16>> {
         Ok(
             sqlx::query_as::<_, (i32, i64)>(
                 r#"
@@ -272,8 +332,10 @@ pub mod ssr {
         )
     }
 
-
-    pub async fn get_summoner_infos_by_ids(db: &PgPool, summoner_ids: Vec<i32>) -> AppResult<HashMap<i32, (String, String, PlatformRoute, Option<String>)>> {
+    pub async fn get_summoner_infos_by_ids(
+        db: &PgPool,
+        summoner_ids: Vec<i32>,
+    ) -> AppResult<HashMap<i32, (String, String, PlatformRoute, Option<String>)>> {
         Ok(
             sqlx::query_as::<_, (i32, String, String, PlatformRouteDb, Option<String>)>(
                 "SELECT
@@ -283,29 +345,28 @@ pub mod ssr {
                     ss.platform,
                     ss.pro_player_slug as pro_player_slug
             FROM summoners as ss
-            WHERE ss.id = ANY($1);"
+            WHERE ss.id = ANY($1);",
             )
-                .bind(&summoner_ids)
-                .fetch_all(db)
-                .await?
-                .into_iter()
-                .map(|(id, game_name, tag_line, platform, pro_player_slug)| {
-                    (id, (game_name, tag_line, platform.into(), pro_player_slug))
-                })
-                .collect::<HashMap<_, _>>()
+            .bind(&summoner_ids)
+            .fetch_all(db)
+            .await?
+            .into_iter()
+            .map(|(id, game_name, tag_line, platform, pro_player_slug)| {
+                (id, (game_name, tag_line, platform.into(), pro_player_slug))
+            })
+            .collect::<HashMap<_, _>>(),
         )
     }
 
-
     #[derive(FromRow)]
     pub struct MatchesResultInfoModel {
-        pub total_matches: i64,
-        pub total_wins: i64,
-        pub avg_kills: BigDecimal,
-        pub avg_deaths: BigDecimal,
-        pub avg_assists: BigDecimal,
-        pub avg_kda: BigDecimal,
-        pub avg_kill_participation: BigDecimal,
+        pub total_matches: Option<i64>,
+        pub total_wins: Option<i64>,
+        pub avg_kills: Option<BigDecimal>,
+        pub avg_deaths: Option<BigDecimal>,
+        pub avg_assists: Option<BigDecimal>,
+        pub avg_kda: Option<BigDecimal>,
+        pub avg_kill_participation: Option<BigDecimal>,
     }
 
     #[derive(FromRow)]
@@ -354,7 +415,3 @@ pub mod ssr {
         // pub pro_player_slug:Option<String>,
     }
 }
-
-
-
-

@@ -1,17 +1,17 @@
 use crate::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use crate::utils::{summoner_not_found_url, summoner_url};
+use crate::utils::{GameName, TagLine};
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
-use crate::utils::{GameName, TagLine};
 
 
 #[server(input = Rkyv)]
 pub async fn search_summoner(
     platform_route: PlatformRoute,
     game_name: GameName,
-    tag_line: TagLine
+    tag_line: TagLine,
 ) -> Result<(), ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();

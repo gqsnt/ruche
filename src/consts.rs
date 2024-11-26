@@ -1,13 +1,12 @@
 pub mod champion;
-pub mod platform_route;
+pub mod game_mode;
 pub mod item;
 pub mod map;
+pub mod perk;
+pub mod platform_route;
 pub mod profile_icon;
 pub mod queue;
-pub mod game_mode;
 pub mod summoner_spell;
-pub mod perk;
-
 
 pub trait HasStaticAsset {
     const PATH: &'static str;
@@ -19,21 +18,17 @@ pub trait HasStaticAsset {
     }
 }
 
-
 impl HasStaticAsset for item::Item {
     const PATH: &'static str = "items";
 }
-
 
 impl HasStaticAsset for profile_icon::ProfileIcon {
     const PATH: &'static str = "profile_icons";
 }
 
-
 impl HasStaticAsset for summoner_spell::SummonerSpell {
     const PATH: &'static str = "summoner_spells";
 }
-
 
 impl HasStaticAsset for perk::Perk {
     const PATH: &'static str = "perks";
@@ -42,5 +37,3 @@ impl HasStaticAsset for perk::Perk {
 impl HasStaticAsset for champion::Champion {
     const PATH: &'static str = "champions";
 }
-
-

@@ -1,36 +1,53 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_live_game::get_live_game;
 use crate::consts::champion::Champion;
+use crate::consts::map::Map;
 use crate::consts::perk::Perk;
+use crate::consts::platform_route::PlatformRoute;
+use crate::consts::queue::Queue;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{format_float_to_2digits, summoner_encounter_url, summoner_url, GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine};
+use crate::utils::{
+    format_float_to_2digits, summoner_encounter_url, summoner_url, GameName, ProPlayerSlug, Puuid,
+    RiotMatchId, TagLine,
+};
 use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
 use leptos::prelude::*;
-use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
+use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
-use crate::consts::map::Map;
-use crate::consts::platform_route::PlatformRoute;
-use crate::consts::queue::Queue;
 
 #[component]
-pub fn SummonerLivePage() -> impl IntoView {
-    let summoner = expect_context::<ReadSignal<Summoner>>();
+pub fn SummonerLivePage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
+    let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
     let (refresh_signal, set_refresh_signal) = signal(0);
 
     let live_game_resource = Resource::new_rkyv(
-        move || (refresh_signal.get(), summoner().puuid, summoner().id, summoner().platform.to_string()),
-        |(_, puuid, id, platform_type)| async move {
-            get_live_game(id, PlatformRoute::from(platform_type.as_str()),puuid).await
+        move || {
+            (
+                summoner_update_version.get().unwrap_or_default(),
+                refresh_signal.get(),
+                summoner().unwrap().puuid,
+                summoner().unwrap().id,
+                summoner().unwrap().platform.to_string(),
+            )
+        },
+        |(_, _, puuid, id, platform_type)| async move {
+            get_live_game(id, PlatformRoute::from(platform_type.as_str()), puuid).await
         },
     );
 
-    meta_store.title().set(format!("{}#{} | Live Game | Broken.gg", summoner().game_name.to_str(), summoner().tag_line.to_str()));
-    meta_store.description().set(format!("Watch {}#{}'s live game now on Broken.gg. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner().game_name.to_str(), summoner().tag_line.to_str()));
-    meta_store.url().set(format!("{}?tab=live", summoner().to_route_path()));
+    meta_store.title().set(format!(
+        "{}#{} | Live Game | Broken.gg",
+        summoner().unwrap().game_name.to_str(),
+        summoner().unwrap().tag_line.to_str()
+    ));
+    meta_store.description().set(format!("Watch {}#{}'s live game now on Broken.gg. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner().unwrap().game_name.to_str(), summoner().unwrap().tag_line.to_str()));
+    meta_store
+        .url()
+        .set(format!("{}?tab=live", summoner().unwrap().to_route_path()));
     view! {
         <div class="w-[768px]">
             <div class="flex justify-start mb-2">
@@ -96,9 +113,12 @@ pub fn SummonerLivePage() -> impl IntoView {
     }
 }
 
-
 #[component]
-pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summoner: ReadSignal<Summoner>) -> impl IntoView {
+pub fn MatchLiveTable(
+    team_id: i32,
+    participants: Vec<LiveGameParticipant>,
+    summoner: ReadSignal<Option<Summoner>>,
+) -> impl IntoView {
     let is_blue_team = || team_id == 100;
     view! {
         <table class="table-fixed text-xs w-full">
@@ -210,9 +230,9 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
                                         <Show when=move || (participant.encounter_count > 0)>
                                             <a
                                                 href=summoner_encounter_url(
-                                                    summoner().platform.to_string(),
-                                                    summoner().game_name.to_string(),
-                                                    summoner().tag_line.to_string(),
+                                                    summoner().unwrap().platform.to_string(),
+                                                    summoner().unwrap().game_name.to_string(),
+                                                    summoner().unwrap().tag_line.to_string(),
                                                     participant.platform.to_string(),
                                                     participant.game_name.to_string(),
                                                     participant.tag_line.to_string(),
@@ -333,7 +353,6 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>, summ
     }
 }
 
-
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct LiveGame {
     pub game_length: u16,
@@ -363,7 +382,6 @@ pub struct LiveGameParticipant {
     pub champion_stats: Option<LiveGameParticipantChampionStats>,
 }
 
-
 #[derive(Clone, Serialize, Deserialize, Default, Archive)]
 pub struct LiveGameParticipantRankedStats {
     pub total_ranked: u16,
@@ -371,7 +389,6 @@ pub struct LiveGameParticipantRankedStats {
     pub total_ranked_losses: u16,
     pub ranked_win_rate: f32,
 }
-
 
 #[derive(Clone, Serialize, Deserialize, Default, Archive)]
 pub struct LiveGameParticipantChampionStats {

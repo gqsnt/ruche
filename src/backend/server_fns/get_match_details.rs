@@ -1,18 +1,23 @@
 #[cfg(feature = "ssr")]
 use crate::backend::updates::update_match_timeline::update_match_timeline;
+use crate::consts::platform_route::PlatformRoute;
+use crate::utils::RiotMatchId;
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
-use crate::consts::platform_route::PlatformRoute;
-use crate::utils::{RiotMatchId};
 
 #[server(input=Rkyv,output=Rkyv)]
-pub async fn get_match_details(match_id: i32,  summoner_id: Option<i32>, platform: PlatformRoute, riot_match_id: RiotMatchId) -> Result<Vec<LolMatchParticipantDetails>, ServerFnError> {
+pub async fn get_match_details(
+    match_id: i32,
+    summoner_id: Option<i32>,
+    platform: PlatformRoute,
+    riot_match_id: RiotMatchId,
+) -> Result<Vec<LolMatchParticipantDetails>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
-    let (details , match_timelines) = tokio::join!(
+    let (details, match_timelines) = tokio::join!(
         ssr::get_match_participants_details(&db, match_id, summoner_id),
         ssr::get_match_timeline(&db, match_id)
     );
@@ -20,11 +25,22 @@ pub async fn get_match_details(match_id: i32,  summoner_id: Option<i32>, platfor
     let mut match_timelines = match_timelines?;
 
     if match_timelines.is_empty() {
-        update_match_timeline(&db, state.riot_api.clone(), match_id, riot_match_id.to_string(), platform).await?;
+        update_match_timeline(
+            &db,
+            state.riot_api.clone(),
+            match_id,
+            riot_match_id.to_string(),
+            platform,
+        )
+        .await?;
         match_timelines = ssr::get_match_timeline(&db, match_id).await?;
     }
     for detail in details.iter_mut() {
-        if let Some(timeline) = match_timelines.iter().find(|x| x.summoner_id == detail.summoner_id).cloned() {
+        if let Some(timeline) = match_timelines
+            .iter()
+            .find(|x| x.summoner_id == detail.summoner_id)
+            .cloned()
+        {
             detail.items_event_timeline = timeline.items_event_timeline;
             detail.skills_timeline = timeline.skills_timeline;
         }
@@ -32,20 +48,25 @@ pub async fn get_match_details(match_id: i32,  summoner_id: Option<i32>, platfor
     Ok(details)
 }
 
-
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::server_fns::get_matches::ssr::get_summoner_encounters;
     use crate::backend::ssr::{AppResult, PlatformRouteDb};
-    use crate::views::summoner_page::match_details::{LolMatchParticipantDetails, LolMatchTimeline, Skill};
+    use crate::utils::{GameName, ProPlayerSlug, TagLine};
+    use crate::views::summoner_page::match_details::{
+        LolMatchParticipantDetails, LolMatchTimeline, Skill,
+    };
     use bigdecimal::{BigDecimal, ToPrimitive};
     use itertools::Itertools;
     use sqlx::types::JsonValue;
     use sqlx::{FromRow, PgPool};
     use std::collections::HashMap;
-    use crate::utils::{GameName, ProPlayerSlug, TagLine};
 
-    pub async fn get_match_participants_details(db: &PgPool, match_id: i32, summoner_id: Option<i32>) -> AppResult<Vec<LolMatchParticipantDetails>> {
+    pub async fn get_match_participants_details(
+        db: &PgPool,
+        match_id: i32,
+        summoner_id: Option<i32>,
+    ) -> AppResult<Vec<LolMatchParticipantDetails>> {
         let lol_match_participant_details = sqlx::query_as::<_, LolMatchParticipantDetailsModel>(
             r#"
             SELECT
@@ -95,18 +116,24 @@ pub mod ssr {
             FROM lol_match_participants as lmp
                 left JOIN summoners as ss ON ss.id = lmp.summoner_id
             WHERE lmp.lol_match_id = $1;
-        "#)
-            .bind(match_id)
-            .fetch_all(db)
-            .await?;
-        let unique_summoner_ids = lol_match_participant_details.iter().map(|p| p.summoner_id).unique().collect::<Vec<_>>();
+        "#,
+        )
+        .bind(match_id)
+        .fetch_all(db)
+        .await?;
+        let unique_summoner_ids = lol_match_participant_details
+            .iter()
+            .map(|p| p.summoner_id)
+            .unique()
+            .collect::<Vec<_>>();
         let encounters = if let Some(summoner_id) = summoner_id {
             get_summoner_encounters(db, summoner_id, &unique_summoner_ids).await?
         } else {
             HashMap::new()
         };
-        Ok(
-            lol_match_participant_details.into_iter().map(|lmp| {
+        Ok(lol_match_participant_details
+            .into_iter()
+            .map(|lmp| {
                 let encounter_count = encounters.get(&lmp.summoner_id).cloned();
                 LolMatchParticipantDetails {
                     id: lmp.id,
@@ -115,7 +142,9 @@ pub mod ssr {
                     game_name: GameName::new(lmp.game_name.as_str()),
                     tag_line: TagLine::new(lmp.tag_line.as_str()),
                     platform: lmp.platform.into(),
-                    summoner_pro_player_slug: lmp.pro_player_slug.map(|s| ProPlayerSlug::new(s.as_str())),
+                    summoner_pro_player_slug: lmp
+                        .pro_player_slug
+                        .map(|s| ProPlayerSlug::new(s.as_str())),
                     summoner_icon_id: lmp.profile_icon_id as u16,
                     summoner_level: lmp.summoner_level as u16,
                     encounter_count: encounter_count.unwrap_or_default() as u16,
@@ -127,7 +156,10 @@ pub mod ssr {
                     assists: lmp.assists as u16,
                     champ_level: lmp.champ_level as u16,
                     kda: lmp.kda.map_or(0.0, |bd| bd.to_f32().unwrap_or(0.0)),
-                    kill_participation: lmp.kill_participation.map_or(0.0, |bd| bd.to_f32().unwrap_or(0.0)) * 100.0,
+                    kill_participation: lmp
+                        .kill_participation
+                        .map_or(0.0, |bd| bd.to_f32().unwrap_or(0.0))
+                        * 100.0,
                     damage_dealt_to_champions: lmp.damage_dealt_to_champions as u32,
                     damage_taken: lmp.damage_taken as u32,
                     gold_earned: lmp.gold_earned as u32,
@@ -140,10 +172,14 @@ pub mod ssr {
                     perk_offense_id: lmp.perk_offense_id.unwrap_or_default() as u16,
                     perk_primary_style_id: lmp.perk_primary_style_id.unwrap_or_default() as u16,
                     perk_sub_style_id: lmp.perk_sub_style_id.unwrap_or_default() as u16,
-                    perk_primary_selection_id: lmp.perk_primary_selection_id.unwrap_or_default() as u16,
-                    perk_primary_selection1_id: lmp.perk_primary_selection1_id.unwrap_or_default() as u16,
-                    perk_primary_selection2_id: lmp.perk_primary_selection2_id.unwrap_or_default() as u16,
-                    perk_primary_selection3_id: lmp.perk_primary_selection3_id.unwrap_or_default() as u16,
+                    perk_primary_selection_id: lmp.perk_primary_selection_id.unwrap_or_default()
+                        as u16,
+                    perk_primary_selection1_id: lmp.perk_primary_selection1_id.unwrap_or_default()
+                        as u16,
+                    perk_primary_selection2_id: lmp.perk_primary_selection2_id.unwrap_or_default()
+                        as u16,
+                    perk_primary_selection3_id: lmp.perk_primary_selection3_id.unwrap_or_default()
+                        as u16,
                     perk_sub_selection1_id: lmp.perk_sub_selection1_id.unwrap_or_default() as u16,
                     perk_sub_selection2_id: lmp.perk_sub_selection2_id.unwrap_or_default() as u16,
                     item0_id: lmp.item0_id.unwrap_or_default() as u32,
@@ -156,25 +192,34 @@ pub mod ssr {
                     items_event_timeline: Vec::new(),
                     skills_timeline: vec![],
                 }
-            }).collect_vec()
-        )
+            })
+            .collect_vec())
     }
 
-
-    pub async fn get_match_timeline(db: &PgPool, match_id: i32) -> AppResult<Vec<LolMatchTimeline>> {
+    pub async fn get_match_timeline(
+        db: &PgPool,
+        match_id: i32,
+    ) -> AppResult<Vec<LolMatchTimeline>> {
         let timelines = sqlx::query_as::<_, LolMatchTimelineModel>(
-            "SELECT * FROM lol_match_timelines WHERE lol_match_id = $1"
-        ).bind(match_id)
-            .fetch_all(db)
-            .await?
-            .into_iter()
-            .map(|x| LolMatchTimeline {
-                id: x.id,
-                lol_match_id: x.lol_match_id,
-                summoner_id: x.summoner_id,
-                items_event_timeline: serde_json::from_value(x.items_event_timeline).unwrap_or_default(),
-                skills_timeline: x.skills_timeline.into_iter().map(|s|Skill::from(s as u8)).collect_vec(),
-            }).collect();
+            "SELECT * FROM lol_match_timelines WHERE lol_match_id = $1",
+        )
+        .bind(match_id)
+        .fetch_all(db)
+        .await?
+        .into_iter()
+        .map(|x| LolMatchTimeline {
+            id: x.id,
+            lol_match_id: x.lol_match_id,
+            summoner_id: x.summoner_id,
+            items_event_timeline: serde_json::from_value(x.items_event_timeline)
+                .unwrap_or_default(),
+            skills_timeline: x
+                .skills_timeline
+                .into_iter()
+                .map(|s| Skill::from(s as u8))
+                .collect_vec(),
+        })
+        .collect();
         Ok(timelines)
     }
 
@@ -224,7 +269,6 @@ pub mod ssr {
         pub item5_id: Option<i64>,
         pub item6_id: Option<i64>,
     }
-
 
     #[derive(FromRow)]
     struct LolMatchTimelineModel {

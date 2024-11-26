@@ -3,26 +3,38 @@ use crate::consts::item::Item;
 use crate::consts::perk::Perk;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{format_float_to_2digits, format_with_spaces, summoner_encounter_url, summoner_url};
+use crate::utils::{
+    format_float_to_2digits, format_with_spaces, summoner_encounter_url, summoner_url,
+};
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use crate::views::summoner_page::Summoner;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 
 #[component]
-pub fn MatchDetailsOverview(summoner: ReadSignal<Summoner>, match_details: ReadSignal<Vec<LolMatchParticipantDetails>>) -> impl IntoView {
+pub fn MatchDetailsOverview(
+    summoner: ReadSignal<Option<Summoner>>,
+    match_details: ReadSignal<Vec<LolMatchParticipantDetails>>,
+) -> impl IntoView {
     let details = match_details();
     let (summoner_team, summoner_team_won) = {
-        let detail = details.iter().find(|participant| participant.summoner_id == summoner().id).expect("Summoner id not found");
+        let detail = details
+            .iter()
+            .find(|participant| participant.summoner_id == summoner().unwrap().id)
+            .expect("Summoner id not found");
         (detail.team_id, detail.won)
     };
-    let other_team = if summoner_team == 100 {
-        200
-    } else {
-        100
-    };
-    let first_team = details.iter().filter(|participant| participant.team_id == summoner_team).cloned().collect::<Vec<_>>();
-    let second_team = details.iter().filter(|participant| participant.team_id != summoner_team).cloned().collect::<Vec<_>>();
+    let other_team = if summoner_team == 100 { 200 } else { 100 };
+    let first_team = details
+        .iter()
+        .filter(|participant| participant.team_id == summoner_team)
+        .cloned()
+        .collect::<Vec<_>>();
+    let second_team = details
+        .iter()
+        .filter(|participant| participant.team_id != summoner_team)
+        .cloned()
+        .collect::<Vec<_>>();
     view! {
         <div>
             <MatchDetailsOverviewTable
@@ -41,9 +53,13 @@ pub fn MatchDetailsOverview(summoner: ReadSignal<Summoner>, match_details: ReadS
     }
 }
 
-
 #[component]
-pub fn MatchDetailsOverviewTable(won: bool, team_id: u16, summoner: ReadSignal<Summoner>, participants: Vec<LolMatchParticipantDetails>) -> impl IntoView {
+pub fn MatchDetailsOverviewTable(
+    won: bool,
+    team_id: u16,
+    summoner: ReadSignal<Option<Summoner>>,
+    participants: Vec<LolMatchParticipantDetails>,
+) -> impl IntoView {
     view! {
         <table class="table-fixed text-xs w-full border-collapse">
             <colgroup>
@@ -87,19 +103,19 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: u16, summoner: ReadSignal<S
                             <tr
                                 class=(
                                     "bg-red-900",
-                                    !won && participant.summoner_id != summoner().id,
+                                    !won && participant.summoner_id != summoner().unwrap().id,
                                 )
                                 class=(
                                     "bg-blue-900",
-                                    won && participant.summoner_id != summoner().id,
+                                    won && participant.summoner_id != summoner().unwrap().id,
                                 )
                                 class=(
                                     "bg-red-800",
-                                    !won && participant.summoner_id == summoner().id,
+                                    !won && participant.summoner_id == summoner().unwrap().id,
                                 )
                                 class=(
                                     "bg-blue-800",
-                                    won && participant.summoner_id == summoner().id,
+                                    won && participant.summoner_id == summoner().unwrap().id,
                                 )
                             >
                                 <td class="pl-2.5 py-1">
@@ -172,9 +188,9 @@ pub fn MatchDetailsOverviewTable(won: bool, team_id: u16, summoner: ReadSignal<S
                                         <Show when=move || (participant.encounter_count > 1)>
                                             <a
                                                 href=summoner_encounter_url(
-                                                    summoner().platform.to_string(),
-                                                    summoner().tag_line.to_string(),
-                                                    summoner().game_name.to_string(),
+                                                    summoner().unwrap().platform.to_string(),
+                                                    summoner().unwrap().tag_line.to_string(),
+                                                    summoner().unwrap().game_name.to_string(),
                                                     participant.platform.to_string(),
                                                     participant.game_name.to_string(),
                                                     participant.tag_line.to_string(),

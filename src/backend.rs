@@ -13,20 +13,19 @@ pub mod generate_sitemap;
 #[cfg(feature = "ssr")]
 pub mod live_game_cache;
 
-
 pub type ServerResult<T> = Result<T, ServerFnError>;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use std::fmt::Formatter;
     use crate::consts::platform_route::PlatformRoute;
+    use crate::utils::DurationSince;
     use chrono::{NaiveDateTime, Utc};
     use http::status::StatusCode;
     use leptos::prelude::ServerFnError;
+    use std::fmt::Formatter;
     use std::num::ParseIntError;
     use std::sync::Arc;
     use thiserror::Error;
-    use crate::utils::DurationSince;
 
     pub type AppResult<T> = Result<T, AppError>;
 
@@ -36,19 +35,21 @@ pub mod ssr {
     //     }
     // }
 
-
     pub fn format_duration_since(date_time: NaiveDateTime) -> DurationSince {
         let now = Utc::now().naive_utc();
         let seconds = (now - date_time).num_seconds();
 
-        DurationSince::new(match seconds {
-            0..=59 => format!("{} seconds ago", seconds),
-            60..=3599 => format!("{} minutes ago", seconds / 60),
-            3600..=86_399 => format!("{} hours ago", seconds / 3600),
-            86_400..=2_592_000 => format!("{} days ago", seconds / 86_400),
-            2_592_001..=31_536_000 => format!("{} months ago", seconds / 2_592_000), // Approx 30 days per month
-            _ => format!("{} years ago", seconds / 31_536_000), // Approx 365 days per year
-        }.as_str())
+        DurationSince::new(
+            match seconds {
+                0..=59 => format!("{} seconds ago", seconds),
+                60..=3599 => format!("{} minutes ago", seconds / 60),
+                3600..=86_399 => format!("{} hours ago", seconds / 3600),
+                86_400..=2_592_000 => format!("{} days ago", seconds / 86_400),
+                2_592_001..=31_536_000 => format!("{} months ago", seconds / 2_592_000), // Approx 30 days per month
+                _ => format!("{} years ago", seconds / 31_536_000), // Approx 365 days per year
+            }
+            .as_str(),
+        )
     }
 
     pub fn parse_date(date: Option<String>) -> Option<NaiveDateTime> {
@@ -65,7 +66,6 @@ pub mod ssr {
     pub struct Id {
         pub id: i32,
     }
-
 
     #[derive(Clone, Debug, Error)]
     pub enum AppError {
@@ -91,16 +91,13 @@ pub mod ssr {
         ChronoError(Arc<chrono::ParseError>),
         #[error("Std Io Error: {0}")]
         StdIoError(Arc<std::io::Error>),
-
     }
-
 
     impl From<std::io::Error> for AppError {
         fn from(e: std::io::Error) -> Self {
             AppError::StdIoError(Arc::new(e))
         }
     }
-
 
     impl From<serde_json::Error> for AppError {
         fn from(e: serde_json::Error) -> Self {
@@ -138,7 +135,6 @@ pub mod ssr {
         }
     }
 
-
     impl From<reqwest::Error> for AppError {
         fn from(e: reqwest::Error) -> Self {
             AppError::ReqwestError(Arc::new(e))
@@ -150,7 +146,6 @@ pub mod ssr {
             AppError::SiteMapError(Arc::new(e))
         }
     }
-
 
     impl AppError {
         pub fn status_code(&self) -> StatusCode {
@@ -177,7 +172,9 @@ pub mod ssr {
         }
     }
 
-    #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, sqlx::Type, serde::Serialize, serde::Deserialize)]
+    #[derive(
+        Clone, Copy, Debug, PartialEq, PartialOrd, sqlx::Type, serde::Serialize, serde::Deserialize,
+    )]
     #[sqlx(type_name = "platform_type")]
     pub enum PlatformRouteDb {
         BR,
@@ -199,7 +196,6 @@ pub mod ssr {
         VN,
         PBE,
     }
-
 
     impl From<PlatformRouteDb> for PlatformRoute {
         fn from(value: PlatformRouteDb) -> Self {
@@ -252,18 +248,14 @@ pub mod ssr {
     }
 
     impl PlatformRouteDb {
-
         pub fn from_raw_str(str: &str) -> Self {
             PlatformRoute::from_raw_str(str).into()
         }
     }
 
-    impl std::fmt::Display for PlatformRouteDb{
+    impl std::fmt::Display for PlatformRouteDb {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(f, "{}", PlatformRoute::from(*self))
         }
     }
 }
-
-
-

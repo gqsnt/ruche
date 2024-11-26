@@ -4,18 +4,22 @@ use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterPage;
 use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersPage;
 use crate::views::summoner_page::summoner_live_page::SummonerLivePage;
 use crate::views::summoner_page::summoner_matches_page::SummonerMatchesPage;
+use crate::views::summoner_page::Summoner;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos_router::hooks::{query_signal_with_options};
+use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 
 #[component]
-pub fn SummonerNav() -> impl IntoView {
-    let (tab, set_tab) = query_signal_with_options::<String>("tab", NavigateOptions {
-        scroll: false,
-        replace: true,
-        ..Default::default()
-    });
+pub fn SummonerNav(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
+    let (tab, set_tab) = query_signal_with_options::<String>(
+        "tab",
+        NavigateOptions {
+            scroll: false,
+            replace: true,
+            ..Default::default()
+        },
+    );
 
     let (_, set_page_number) = query_signal_with_options::<u16>(
         "page",
@@ -44,13 +48,12 @@ pub fn SummonerNav() -> impl IntoView {
         },
     );
 
-    let switch_tab =  move |tab: Tabs| {
+    let switch_tab = move |tab: Tabs| {
         set_page_number(None);
         set_encounter_slug(None);
         set_encounter_platform(None);
         set_tab(Some(tab.to_string()));
     };
-
 
     view! {
         <div class="flex justify-center">
@@ -128,32 +131,31 @@ pub fn SummonerNav() -> impl IntoView {
         <div class="my-4 ">
             <Show when=move || tab().is_none() || tab() == Some(Tabs::Matches.to_string())>
                 <MatchFilters>
-                    <SummonerMatchesPage />
+                    <SummonerMatchesPage summoner />
                 </MatchFilters>
             </Show>
             <Show when=move || tab() == Some(Tabs::Champions.to_string())>
                 <MatchFilters>
-                    <SummonerChampionsPage />
+                    <SummonerChampionsPage summoner />
                 </MatchFilters>
             </Show>
             <Show when=move || tab() == Some(Tabs::Encounters.to_string())>
                 <MatchFilters>
-                    <SummonerEncountersPage />
+                    <SummonerEncountersPage summoner />
                 </MatchFilters>
             </Show>
             <Show when=move || tab() == Some(Tabs::Live.to_string())>
-                <SummonerLivePage />
+                <SummonerLivePage summoner />
             </Show>
             <Show when=move || tab() == Some(Tabs::Encounter.to_string())>
                 <MatchFilters>
-                    <SummonerEncounterPage />
+                    <SummonerEncounterPage summoner />
                 </MatchFilters>
             </Show>
 
         </div>
     }
 }
-
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum Tabs {
@@ -176,4 +178,3 @@ impl std::fmt::Display for Tabs {
         }
     }
 }
-

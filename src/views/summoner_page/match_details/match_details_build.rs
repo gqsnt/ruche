@@ -2,20 +2,39 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use std::collections::HashMap;
 
-
 use crate::consts::champion::Champion;
 use crate::consts::item::Item;
 use crate::consts::perk::Perk;
 use crate::consts::HasStaticAsset;
-use crate::views::summoner_page::match_details::{ItemEventType, LolMatchParticipantDetails, Skill};
+use crate::views::summoner_page::match_details::{
+    ItemEventType, LolMatchParticipantDetails, Skill,
+};
 
 #[component]
-pub fn MatchDetailsBuild(summoner_id: i32, match_details: ReadSignal<Vec<LolMatchParticipantDetails>>) -> impl IntoView {
+pub fn MatchDetailsBuild(
+    summoner_id: i32,
+    match_details: ReadSignal<Vec<LolMatchParticipantDetails>>,
+) -> impl IntoView {
     let summoner_name_with_champion = |participant: &LolMatchParticipantDetails| {
-        format!("{}({})", participant.game_name.to_string().as_str(), Champion::from(participant.champion_id).to_str())
+        format!(
+            "{}({})",
+            participant.game_name.to_string().as_str(),
+            Champion::from(participant.champion_id).to_str()
+        )
     };
-    let participant_ids = match_details.read().iter().map(|x| (x.summoner_id, summoner_name_with_champion(x))).collect::<HashMap<i32, String>>();
-    let find_participant = move |summoner_id: i32| match_details.read().iter().find(|x| x.summoner_id == summoner_id).cloned().expect("Participant not found");
+    let participant_ids = match_details
+        .read()
+        .iter()
+        .map(|x| (x.summoner_id, summoner_name_with_champion(x)))
+        .collect::<HashMap<i32, String>>();
+    let find_participant = move |summoner_id: i32| {
+        match_details
+            .read()
+            .iter()
+            .find(|x| x.summoner_id == summoner_id)
+            .cloned()
+            .expect("Participant not found")
+    };
     let (selected_participant, set_selected_participant) = signal(find_participant(summoner_id));
     view! {
         <div class="text-left">

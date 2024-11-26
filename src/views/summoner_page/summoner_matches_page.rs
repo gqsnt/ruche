@@ -1,28 +1,30 @@
-
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_matches::get_matches;
 use crate::consts::champion::Champion;
 use crate::consts::item::Item;
 use crate::consts::perk::Perk;
+use crate::consts::platform_route::PlatformRoute;
+use crate::consts::queue::Queue;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{format_duration, format_float_to_2digits, summoner_encounter_url, summoner_url, DurationSince, GameName, ProPlayerSlug, RiotMatchId, TagLine};
+use crate::utils::{
+    format_duration, format_float_to_2digits, summoner_encounter_url, summoner_url, DurationSince,
+    GameName, ProPlayerSlug, RiotMatchId, TagLine,
+};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
-use crate::views::{BackEndMatchFiltersSearch};
+use crate::views::BackEndMatchFiltersSearch;
 use leptos::either::Either;
 use leptos::prelude::*;
+use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
-use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
-use crate::consts::platform_route::PlatformRoute;
-use crate::consts::queue::Queue;
 
 #[component]
-pub fn SummonerMatchesPage() -> impl IntoView {
-    let summoner = expect_context::<ReadSignal<Summoner>>();
+pub fn SummonerMatchesPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
+    let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
@@ -43,18 +45,27 @@ pub fn SummonerMatchesPage() -> impl IntoView {
         }
     });
 
-
     let matches_resource = Resource::new_rkyv(
-        move || (match_filters_updated.get(), summoner(), page_number()),
-        |(filters, summoner, page_number)| async move {
-            //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_matches(summoner.id, page_number.unwrap_or(1), Some(filters)).await
+        move || {
+            (
+                summoner_update_version.get().unwrap_or_default(),
+                match_filters_updated.get(),
+                summoner().unwrap().id,
+                page_number(),
+            )
+        },
+        |(_, filters, id, page_number)| async move {
+            get_matches(id, page_number.unwrap_or(1), Some(filters)).await
         },
     );
 
-    meta_store.title().set(format!("{}#{} | Matches | Broken.gg", summoner().game_name.to_str(), summoner().tag_line.to_str()));
-    meta_store.description().set(format!("Explore {}#{}'s match history on Broken.gg. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner().game_name.to_str(), summoner().tag_line.to_str()));
-    meta_store.url().set(summoner().to_route_path());
+    meta_store.title().set(format!(
+        "{}#{} | Matches | Broken.gg",
+        summoner().unwrap().game_name.to_str(),
+        summoner().unwrap().tag_line.to_str()
+    ));
+    meta_store.description().set(format!("Explore {}#{}'s match history on Broken.gg. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner().unwrap().game_name.to_str(), summoner().unwrap().tag_line.to_str()));
+    meta_store.url().set(summoner().unwrap().to_route_path());
     view! {
         <div class="w-[768px] inline-block align-top justify-center">
             <div class="">
@@ -147,9 +158,8 @@ pub fn SummonerMatchesPage() -> impl IntoView {
     }
 }
 
-
 #[component]
-pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Summoner>) -> impl IntoView {
+pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
     let (show_details, set_show_details) = signal(false);
     view! {
         <div class="flex flex-col">
@@ -378,9 +388,9 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Summoner>) -> impl 
                                         <Show when=move || (participant.encounter_count > 1)>
                                             <a
                                                 href=summoner_encounter_url(
-                                                    summoner().platform.to_string(),
-                                                    summoner().game_name.to_string(),
-                                                    summoner().tag_line.to_string(),
+                                                    summoner().unwrap().platform.to_string(),
+                                                    summoner().unwrap().game_name.to_string(),
+                                                    summoner().unwrap().tag_line.to_string(),
                                                     participant.platform.to_string(),
                                                     participant.game_name.to_string(),
                                                     participant.tag_line.to_string(),
@@ -474,24 +484,24 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Summoner>) -> impl 
 #[derive(Clone, Deserialize, Serialize, Default, Archive)]
 pub struct GetSummonerMatchesResult {
     pub total_pages: u16,
-    pub matches_result_info: MatchesResultInfo,
     pub matches: Vec<SummonerMatch>,
-
+    pub matches_result_info: MatchesResultInfo,
 }
 
 #[derive(Clone, Deserialize, Serialize, Default, Archive)]
 pub struct MatchesResultInfo {
-    pub total_matches: u16,
-    pub total_wins: u16,
-    pub total_losses: u16,
     pub avg_kills: f32,
     pub avg_deaths: f32,
     pub avg_assists: f32,
     pub avg_kda: f32,
     pub avg_kill_participation: f32,
+    pub total_matches: u16,
+    pub total_wins: u16,
+    pub total_losses: u16,
 }
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerMatch {
+    pub participants: Vec<SummonerMatchParticipant>,
     pub summoner_id: i32,
     pub match_id: i32,
     pub champ_level: i32,
@@ -513,24 +523,22 @@ pub struct SummonerMatch {
     pub summoner_spell2_id: u16,
     pub perk_primary_selection_id: u16,
     pub perk_sub_style_id: u16,
+    pub riot_match_id: RiotMatchId,
+    pub match_ended_since: DurationSince,
     pub won: bool,
     pub queue: Queue,
     pub platform: PlatformRoute,
-    pub riot_match_id: RiotMatchId,
-    pub match_ended_since: DurationSince,
-    pub participants: Vec<SummonerMatchParticipant>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerMatchParticipant {
     pub lol_match_id: i32,
     pub summoner_id: i32,
+    pub game_name: GameName,
+    pub pro_player_slug: Option<ProPlayerSlug>,
     pub champion_id: u16,
     pub team_id: u16,
     pub encounter_count: u16,
-    pub platform: PlatformRoute,
-    pub game_name: GameName,
     pub tag_line: TagLine,
-    pub pro_player_slug: Option<ProPlayerSlug>,
-
+    pub platform: PlatformRoute,
 }

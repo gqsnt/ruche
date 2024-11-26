@@ -2,27 +2,29 @@ use crate::backend::server_fns::get_encounter::get_encounter;
 use crate::consts::champion::Champion;
 use crate::consts::item::Item;
 use crate::consts::perk::Perk;
+use crate::consts::platform_route::PlatformRoute;
 use crate::consts::profile_icon::ProfileIcon;
+use crate::consts::queue::Queue;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{format_duration, format_float_to_2digits, summoner_url, DurationSince, RiotMatchId, SummonerSlug};
+use crate::utils::{
+    format_duration, format_float_to_2digits, summoner_url, DurationSince, RiotMatchId,
+    SummonerSlug,
+};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
-use crate::views::{BackEndMatchFiltersSearch};
+use crate::views::BackEndMatchFiltersSearch;
 use leptos::either::Either;
 use leptos::prelude::*;
+use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, IntoView};
 use leptos_router::hooks::{query_signal_with_options, use_query_map};
 use leptos_router::NavigateOptions;
-use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
-use crate::consts::platform_route::PlatformRoute;
-use crate::consts::queue::Queue;
 
 #[component]
-pub fn SummonerEncounterPage() -> impl IntoView {
-    let summoner = expect_context::<ReadSignal<Summoner>>();
-
+pub fn SummonerEncounterPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
+    let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let queries = use_query_map();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
     let (is_with, set_is_with) = signal(true);
@@ -40,10 +42,28 @@ pub fn SummonerEncounterPage() -> impl IntoView {
     );
 
     let encounter_resource = leptos_server::Resource::new_rkyv(
-        move || (summoner(), match_filters_updated.get(), page_number(), encounter_slug(), encounter_platform(), is_with.get()),
-        |(summoner, filters, page_number, encounter_slug, encounter_platform, is_with)| async move {
+        move || {
+            (
+                summoner_update_version.get().unwrap_or_default(),
+                summoner().unwrap().id,
+                match_filters_updated.get(),
+                page_number(),
+                encounter_slug(),
+                encounter_platform(),
+                is_with.get(),
+            )
+        },
+        |(_, summoner_id, filters, page_number, encounter_slug, encounter_platform, is_with)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_encounter(is_with, summoner.id,page_number.unwrap_or(1),  Some(filters), PlatformRoute::from(encounter_platform.as_str()), SummonerSlug::new(encounter_slug.as_str())).await
+            get_encounter(
+                summoner_id,
+                page_number.unwrap_or(1),
+                is_with,
+                PlatformRoute::from(encounter_platform.as_str()),
+                SummonerSlug::new(encounter_slug.as_str()),
+                Some(filters),
+            )
+            .await
         },
     );
 
@@ -140,9 +160,11 @@ pub fn SummonerEncounterPage() -> impl IntoView {
     }
 }
 
-
 #[component]
-pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch, summoner: ReadSignal<Summoner>) -> impl IntoView {
+pub fn SummonerEncounterMatchComponent(
+    match_: SummonerEncounterMatch,
+    summoner: ReadSignal<Option<Summoner>>,
+) -> impl IntoView {
     let (show_details, set_show_details) = signal(false);
     view! {
         <div class="flex flex-col">
@@ -214,7 +236,10 @@ pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch, summoner:
 }
 
 #[component]
-pub fn SummonerEncounterParticipantComponent(encounter_participant: SummonerEncounterParticipant, is_self: bool) -> impl IntoView {
+pub fn SummonerEncounterParticipantComponent(
+    encounter_participant: SummonerEncounterParticipant,
+    is_self: bool,
+) -> impl IntoView {
     view! {
         <div
             class="flex flex-col h-full gap-0.5 justify-start w-full px-2 "
@@ -408,7 +433,11 @@ pub fn SummonerEncounterParticipantComponent(encounter_participant: SummonerEnco
 }
 
 #[component]
-pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, is_self: bool) -> impl IntoView {
+pub fn SummonerEncounterStat(
+    summoner: Summoner,
+    stats: SummonerEncounterStats,
+    is_self: bool,
+) -> impl IntoView {
     let has_slug = summoner.pro_slug.is_some();
     view! {
         <div class="flex w-1/2 " class=("flex-row-reverse", move || !is_self)>
@@ -477,7 +506,6 @@ pub fn SummonerEncounterStat(summoner: Summoner, stats: SummonerEncounterStats, 
     }
 }
 
-
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterResult {
     pub total_pages: u16,
@@ -488,7 +516,7 @@ pub struct SummonerEncounterResult {
     pub encounter: Summoner,
 }
 
-#[derive(Clone, Serialize, Deserialize, Archive)]
+#[derive(Clone, Serialize, Deserialize, Archive, Default)]
 pub struct SummonerEncounterStats {
     pub avg_kills: f32,
     pub avg_deaths: f32,

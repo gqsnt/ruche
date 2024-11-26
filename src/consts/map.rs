@@ -1,8 +1,7 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Archive)]
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Archive, Eq, PartialEq, Hash)]
 pub enum Map {
     SummonersRiftOriginalSummerVariant = 1,
     SummonersRiftOriginalAutumnVariant = 2,
@@ -22,7 +21,6 @@ pub enum Map {
     Arena = 30,
     Swarm = 33,
 }
-
 
 impl Map {
     pub const fn get_static_name(&self) -> &'static str {
@@ -68,7 +66,7 @@ impl From<u8> for Map {
             22 => Map::Convergence,
             30 => Map::Arena,
             33 => Map::Swarm,
-            _ => panic!("Invalid map id")
+            _ => panic!("Invalid map id"),
         }
     }
 }

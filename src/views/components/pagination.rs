@@ -6,11 +6,14 @@ use leptos_router::NavigateOptions;
 #[component]
 pub fn Pagination(max_page: u16) -> impl IntoView {
     // Use query_signal_with_options to get the current page from query parameters
-    let (page, set_page) = query_signal_with_options::<u16>("page", NavigateOptions {
-        scroll: false,
-        replace: true,
-        ..Default::default()
-    });
+    let (page, set_page) = query_signal_with_options::<u16>(
+        "page",
+        NavigateOptions {
+            scroll: false,
+            replace: true,
+            ..Default::default()
+        },
+    );
 
     // Set default page to 1 if not present
     let current_page = move || page().unwrap_or(1).clamp(1, max_page);
@@ -47,7 +50,11 @@ pub fn Pagination(max_page: u16) -> impl IntoView {
 
             // Determine the range of page numbers to display around the current page
             let start = if current > 4 { current - 1 } else { 2 };
-            let end = if current < max_page - 3 { current + 1 } else { max_page - 1 };
+            let end = if current < max_page - 3 {
+                current + 1
+            } else {
+                max_page - 1
+            };
 
             pages.extend(start..=end);
 

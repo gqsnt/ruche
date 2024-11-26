@@ -1,33 +1,39 @@
+use crate::consts::platform_route::PlatformRoute;
+use crate::utils::Puuid;
 use crate::views::summoner_page::summoner_live_page::LiveGame;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
-use crate::consts::platform_route::PlatformRoute;
-use crate::utils::{Puuid};
 
 #[server(input=Rkyv,output=Rkyv)]
-pub async fn get_live_game(summoner_id: i32, platform_route:PlatformRoute, puuid:Puuid) -> Result<Option<LiveGame>, ServerFnError> {
+pub async fn get_live_game(
+    summoner_id: i32,
+    platform_route: PlatformRoute,
+    puuid: Puuid,
+) -> Result<Option<LiveGame>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let live_cache = state.live_game_cache.clone();
     let db = state.db.clone();
     if let Some(live_data) = live_cache.get_game_data(&puuid) {
-        Ok(Some(ssr::add_encounters(&db, live_data, summoner_id).await?))
+        Ok(Some(
+            ssr::add_encounters(&db, live_data, summoner_id).await?,
+        ))
     } else {
         let riot_api = state.riot_api.clone();
         match ssr::get_live_game_data(&db, riot_api, puuid.to_string(), platform_route).await {
-            Ok(live_data) => {
-                match live_data {
-                    None => Ok(None),
-                    Some(live_data) => {
-                        live_cache.set_game_data(
-                            live_data.game_id,
-                            live_data.participants.iter().map(|x| x.puuid).collect(),
-                            live_data.clone(),
-                        );
-                        Ok(Some(ssr::add_encounters(&db, live_data, summoner_id).await?))
-                    }
+            Ok(live_data) => match live_data {
+                None => Ok(None),
+                Some(live_data) => {
+                    live_cache.set_game_data(
+                        live_data.game_id,
+                        live_data.participants.iter().map(|x| x.puuid).collect(),
+                        live_data.clone(),
+                    );
+                    Ok(Some(
+                        ssr::add_encounters(&db, live_data, summoner_id).await?,
+                    ))
                 }
-            }
+            },
             Err(er) => {
                 println!("Error getting live game data: {}", er);
                 Ok(None)
@@ -35,7 +41,6 @@ pub async fn get_live_game(summoner_id: i32, platform_route:PlatformRoute, puuid
         }
     }
 }
-
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
@@ -47,19 +52,29 @@ pub mod ssr {
     use crate::consts::map::Map;
     use crate::consts::platform_route::PlatformRoute;
     use crate::consts::queue::Queue;
-    use crate::views::summoner_page::summoner_live_page::{LiveGame, LiveGameParticipant, LiveGameParticipantChampionStats, LiveGameParticipantRankedStats};
+    use crate::ssr::RiotApiState;
+    use crate::utils::{GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine};
+    use crate::views::summoner_page::summoner_live_page::{
+        LiveGame, LiveGameParticipant, LiveGameParticipantChampionStats,
+        LiveGameParticipantRankedStats,
+    };
     use bigdecimal::{BigDecimal, ToPrimitive};
     use futures::stream::FuturesUnordered;
     use futures::StreamExt;
     use riven::models::spectator_v5::CurrentGameInfo;
-    use riven::RiotApi;
     use sqlx::PgPool;
     use std::collections::HashMap;
-    use std::sync::Arc;
-    use crate::utils::{GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine};
 
-    pub async fn add_encounters(db: &PgPool, mut game_data: LiveGame, summoner_id: i32) -> AppResult<LiveGame> {
-        let summoners_ids = game_data.participants.iter().map(|x| x.summoner_id).collect::<Vec<i32>>();
+    pub async fn add_encounters(
+        db: &PgPool,
+        mut game_data: LiveGame,
+        summoner_id: i32,
+    ) -> AppResult<LiveGame> {
+        let summoners_ids = game_data
+            .participants
+            .iter()
+            .map(|x| x.summoner_id)
+            .collect::<Vec<i32>>();
         let encounters = get_summoner_encounters(db, summoner_id, &summoners_ids).await?;
         for participant in game_data.participants.iter_mut() {
             if let Some(encounter_count) = encounters.get(&participant.summoner_id) {
@@ -69,8 +84,12 @@ pub mod ssr {
         Ok(game_data)
     }
 
-
-    pub async fn get_live_game_data(db: &PgPool, riot_api: Arc<RiotApi>, puuid: String, platform_route: PlatformRoute) -> AppResult<Option<LiveGame>> {
+    pub async fn get_live_game_data(
+        db: &PgPool,
+        riot_api: RiotApiState,
+        puuid: String,
+        platform_route: PlatformRoute,
+    ) -> AppResult<Option<LiveGame>> {
         let riven_pr = platform_route.to_riven();
         let current_game_info = riot_api
             .spectator_v5()
@@ -78,20 +97,37 @@ pub mod ssr {
             .await?;
 
         match current_game_info {
-            None => {
-                Ok(None)
-            }
+            None => Ok(None),
             Some(current_game_info) => {
-                let participant_puuids = current_game_info.participants.iter().filter(|x| !x.puuid.clone().unwrap_or_default().is_empty()).map(|x| x.puuid.clone().expect("puuid not found")).collect::<Vec<String>>();
-                let mut summoner_details = find_summoner_live_by_puuids(db, &participant_puuids).await?;
+                let participant_puuids = current_game_info
+                    .participants
+                    .iter()
+                    .filter(|x| !x.puuid.clone().unwrap_or_default().is_empty())
+                    .map(|x| x.puuid.clone().expect("puuid not found"))
+                    .collect::<Vec<String>>();
+                let mut summoner_details =
+                    find_summoner_live_by_puuids(db, &participant_puuids).await?;
 
-                let puuids_not_found = participant_puuids.iter().filter(|&x| !summoner_details.contains_key(x)).cloned().collect::<Vec<String>>();
-                find_and_insert_new_summoners(db, riot_api, &puuids_not_found, platform_route, &current_game_info).await?;
+                let puuids_not_found = participant_puuids
+                    .iter()
+                    .filter(|&x| !summoner_details.contains_key(x))
+                    .cloned()
+                    .collect::<Vec<String>>();
+                find_and_insert_new_summoners(
+                    db,
+                    riot_api,
+                    &puuids_not_found,
+                    platform_route,
+                    &current_game_info,
+                )
+                .await?;
                 let new_summoners = find_summoner_live_by_puuids(db, &puuids_not_found).await?;
                 summoner_details.extend(new_summoners);
 
-
-                let summoner_ids = summoner_details.values().map(|x| x.id).collect::<Vec<i32>>();
+                let summoner_ids = summoner_details
+                    .values()
+                    .map(|x| x.id)
+                    .collect::<Vec<i32>>();
 
                 let live_game_stats = get_summoners_live_stats(db, &summoner_ids).await?;
                 let mut participants = vec![];
@@ -99,22 +135,38 @@ pub mod ssr {
                 let mut summoner_ids = vec![];
                 for participant in current_game_info.participants {
                     let participant_puuid = participant.puuid.clone();
-                    if participant_puuid.is_none() || participant_puuid.unwrap_or_default().is_empty() {
+                    if participant_puuid.is_none()
+                        || participant_puuid.unwrap_or_default().is_empty()
+                    {
                         continue;
                     }
-                    let participant_puuid = participant.puuid.clone().expect("participant puuid is empty");
-                    let summoner_detail = summoner_details.get(participant_puuid.as_str()).expect("summoner not found");
-                    let stats = live_game_stats.get(&summoner_detail.id).unwrap_or(&default_hashmap);
-                    let champion_stats = stats.get(&(participant.champion_id.0 as i32)).map(|champion_stats| LiveGameParticipantChampionStats {
-                        total_champion_played: champion_stats.total_match as u16,
-                        total_champion_wins: champion_stats.total_win as u16,
-                        total_champion_losses: champion_stats.total_match as u16 - champion_stats.total_win as u16,
-                        champion_win_rate: champion_stats.total_win as f32 / champion_stats.total_match as f32,
-                        avg_kills: champion_stats.avg_kills.to_f32().unwrap_or_default(),
-                        avg_deaths: champion_stats.avg_deaths.to_f32().unwrap_or_default(),
-                        avg_assists: champion_stats.avg_assists.to_f32().unwrap_or_default(),
-                    });
-
+                    let participant_puuid = participant
+                        .puuid
+                        .clone()
+                        .expect("participant puuid is empty");
+                    let summoner_detail = summoner_details
+                        .get(participant_puuid.as_str())
+                        .expect("summoner not found");
+                    let stats = live_game_stats
+                        .get(&summoner_detail.id)
+                        .unwrap_or(&default_hashmap);
+                    let champion_stats =
+                        stats
+                            .get(&(participant.champion_id.0 as i32))
+                            .map(|champion_stats| LiveGameParticipantChampionStats {
+                                total_champion_played: champion_stats.total_match as u16,
+                                total_champion_wins: champion_stats.total_win as u16,
+                                total_champion_losses: champion_stats.total_match as u16
+                                    - champion_stats.total_win as u16,
+                                champion_win_rate: champion_stats.total_win as f32
+                                    / champion_stats.total_match as f32,
+                                avg_kills: champion_stats.avg_kills.to_f32().unwrap_or_default(),
+                                avg_deaths: champion_stats.avg_deaths.to_f32().unwrap_or_default(),
+                                avg_assists: champion_stats
+                                    .avg_assists
+                                    .to_f32()
+                                    .unwrap_or_default(),
+                            });
 
                     let (total_wins, total_ranked) = stats.iter().fold((0, 0), |acc, (_, v)| {
                         (acc.0 + v.total_win, acc.1 + v.total_match)
@@ -130,14 +182,15 @@ pub mod ssr {
                             ranked_win_rate: total_wins as f32 / total_ranked as f32,
                         })
                     };
-                    let (perk_primary_selection_id, perk_sub_style_id) = match participant.perks.clone() {
-                        None => (0, 0),
-                        Some(perks) => {
-                            let primary = perks.perk_ids.first().cloned().unwrap_or_default();
-                            let sub_style = perks.perk_sub_style;
-                            (primary as u16, sub_style as u16)
-                        }
-                    };
+                    let (perk_primary_selection_id, perk_sub_style_id) =
+                        match participant.perks.clone() {
+                            None => (0, 0),
+                            Some(perks) => {
+                                let primary = perks.perk_ids.first().cloned().unwrap_or_default();
+                                let sub_style = perks.perk_sub_style;
+                                (primary as u16, sub_style as u16)
+                            }
+                        };
                     summoner_ids.push(summoner_detail.id);
                     participants.push(LiveGameParticipant {
                         summoner_id: summoner_detail.id,
@@ -155,51 +208,76 @@ pub mod ssr {
                         ranked_stats,
                         champion_stats,
                         encounter_count: 0,
-                        pro_player_slug: summoner_detail.pro_slug.clone().map(|s|ProPlayerSlug::new(s.as_str())),
+                        pro_player_slug: summoner_detail
+                            .pro_slug
+                            .clone()
+                            .map(|s| ProPlayerSlug::new(s.as_str())),
                     })
                 }
                 Ok(Some(LiveGame {
-                    game_id: RiotMatchId::new(format!("{}_{}", current_game_info.game_id, current_game_info.platform_id).as_str()),
+                    game_id: RiotMatchId::new(
+                        format!(
+                            "{}_{}",
+                            current_game_info.game_id, current_game_info.platform_id
+                        )
+                        .as_str(),
+                    ),
                     game_length: current_game_info.game_length as u16,
                     game_map: Map::from(current_game_info.map_id.0),
-                    queue: current_game_info.game_queue_config_id.map(|x| Queue::from_u16(x.0)).unwrap(),
+                    queue: current_game_info
+                        .game_queue_config_id
+                        .map(|x| Queue::from_u16(x.0))
+                        .unwrap(),
                     participants,
                 }))
             }
         }
     }
 
-
-    async fn find_and_insert_new_summoners(db: &PgPool, riot_api: Arc<RiotApi>, puuids: &[String], platform_route: PlatformRoute, game_info: &CurrentGameInfo) -> AppResult<()> {
+    async fn find_and_insert_new_summoners(
+        db: &PgPool,
+        riot_api: RiotApiState,
+        puuids: &[String],
+        platform_route: PlatformRoute,
+        game_info: &CurrentGameInfo,
+    ) -> AppResult<()> {
         let riven_pr = platform_route.to_riven();
         let summoners_accounts_futures = puuids.iter().map(|puuid| {
             let api = riot_api.clone();
             async move {
-                api.account_v1().get_by_puuid(riven_pr.to_regional(), puuid.as_str()).await
+                api.account_v1()
+                    .get_by_puuid(riven_pr.to_regional(), puuid.as_str())
+                    .await
             }
         });
         let summoners_accounts: Vec<_> = FuturesUnordered::from_iter(summoners_accounts_futures)
             .filter_map(|result| async move { result.ok() })
             .collect()
             .await;
-        let new_summoners = summoners_accounts.iter().map(|account| {
-            let current_participant = game_info.participants.iter().find(|x| x.puuid.clone().unwrap_or_default() == account.puuid).unwrap();
-            TempSummoner {
-                game_name: account.game_name.clone().unwrap_or_default(),
-                tag_line: account.tag_line.clone().unwrap_or_default(),
-                puuid: account.puuid.clone(),
-                platform: platform_route.to_string(),
-                summoner_level: 0,
-                profile_icon_id: current_participant.profile_icon_id as u16,
-                updated_at: chrono::Utc::now(),
-            }
-        }).collect::<Vec<_>>();
+        let new_summoners = summoners_accounts
+            .iter()
+            .map(|account| {
+                let current_participant = game_info
+                    .participants
+                    .iter()
+                    .find(|x| x.puuid.clone().unwrap_or_default() == account.puuid)
+                    .unwrap();
+                TempSummoner {
+                    game_name: account.game_name.clone().unwrap_or_default(),
+                    tag_line: account.tag_line.clone().unwrap_or_default(),
+                    puuid: account.puuid.clone(),
+                    platform: platform_route.to_string(),
+                    summoner_level: 0,
+                    profile_icon_id: current_participant.profile_icon_id as u16,
+                    updated_at: chrono::Utc::now(),
+                }
+            })
+            .collect::<Vec<_>>();
         if !new_summoners.is_empty() {
             bulk_insert_summoners(db, &new_summoners).await?;
         }
         Ok(())
     }
-
 
     async fn get_summoners_live_stats(
         db: &PgPool,
@@ -235,7 +313,10 @@ pub mod ssr {
         Ok(nested_map)
     }
 
-    async fn find_summoner_live_by_puuids(db: &PgPool, puuids: &[String]) -> AppResult<HashMap<String, SummonerLiveModel>> {
+    async fn find_summoner_live_by_puuids(
+        db: &PgPool,
+        puuids: &[String],
+    ) -> AppResult<HashMap<String, SummonerLiveModel>> {
         Ok(sqlx::query_as::<_, SummonerLiveModel>(
             r#"
             SELECT
@@ -247,16 +328,15 @@ pub mod ssr {
                 summoner_level,
                 pro_player_slug as pro_slug
             FROM summoners as ss
-            WHERE ss.puuid = ANY($1)"#
+            WHERE ss.puuid = ANY($1)"#,
         )
-            .bind(puuids)
-            .fetch_all(db)
-            .await?
-            .into_iter()
-            .map(|x| (x.puuid.clone(), x))
-            .collect::<HashMap<String, SummonerLiveModel>>())
+        .bind(puuids)
+        .fetch_all(db)
+        .await?
+        .into_iter()
+        .map(|x| (x.puuid.clone(), x))
+        .collect::<HashMap<String, SummonerLiveModel>>())
     }
-
 
     #[derive(sqlx::FromRow)]
     struct ParticipantLiveStats {

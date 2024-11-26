@@ -1,5 +1,4 @@
-#[derive(Debug, Clone)]
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 #[repr(u8)]
 pub enum GameMode {
     /// Catch-all variant for new, unknown game modes.

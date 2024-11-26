@@ -1,5 +1,4 @@
-use leptos::server_fn::rkyv::{Deserialize, Serialize, Archive};
-
+use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 
 pub const PLATFORM_ROUTE_OPTIONS: [PlatformRoute; 16] = [
     PlatformRoute::BR1,
@@ -22,8 +21,9 @@ pub const PLATFORM_ROUTE_OPTIONS: [PlatformRoute; 16] = [
 
 /// Platform routes for League of Legends (LoL), Teamfight Tactics (TFT), and Legends of Runeterra (LoR).
 #[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
-#[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, Archive)]
-#[derive(Clone, Copy,Debug)]
+#[derive(
+    PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, Archive, Clone, Copy, Debug,
+)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum PlatformRoute {

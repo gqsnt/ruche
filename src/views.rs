@@ -1,5 +1,5 @@
 use leptos::Params;
-use leptos_router::params::{Params};
+use leptos_router::params::Params;
 
 use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
@@ -15,30 +15,23 @@ pub struct MatchFiltersSearch {
     pub end_date: Option<String>,
 }
 
-#[derive(Debug, Archive,Serialize, Deserialize, Default, PartialEq, Clone, Copy)]
+#[derive(Debug, Archive, Serialize, Deserialize, Default, PartialEq, Clone, Copy)]
 pub struct BackEndMatchFiltersSearch {
     pub start_date: Option<CompactDate>,
     pub end_date: Option<CompactDate>,
     pub champion_id: Option<u16>,
     pub queue_id: Option<u8>,
-
 }
 
 impl BackEndMatchFiltersSearch {
     #[cfg(feature = "ssr")]
     pub fn start_date_to_naive(&self) -> Option<chrono::NaiveDateTime> {
-        crate::backend::ssr::parse_date(
-            self.start_date
-                .map(|x| x.to_string()),
-        )
+        crate::backend::ssr::parse_date(self.start_date.map(|x| x.to_string()))
     }
 
     #[cfg(feature = "ssr")]
     pub fn end_date_to_naive(&self) -> Option<chrono::NaiveDateTime> {
-        crate::backend::ssr::parse_date(
-            self.end_date
-                .map(|x| x.to_string()),
-        )
+        crate::backend::ssr::parse_date(self.end_date.map(|x| x.to_string()))
     }
     pub fn from_signals(
         queue_id: Option<String>,
@@ -69,7 +62,6 @@ pub fn parse_date(date: Option<String>) -> Option<CompactDate> {
     })
 }
 
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Archive, Serialize, Deserialize)]
 pub struct CompactDate(u16);
 
@@ -90,7 +82,7 @@ impl CompactDate {
     }
 }
 
-impl std::fmt::Display for CompactDate{
+impl std::fmt::Display for CompactDate {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let y = ((self.0 >> 9) & 0x7F) + 2000;
         let m = ((self.0 >> 5) & 0x0F) + 1;

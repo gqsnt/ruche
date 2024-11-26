@@ -1,8 +1,7 @@
 use std::fmt::Formatter;
 
 #[repr(u16)]
-#[derive(Debug, Clone, Copy)]
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum SummonerSpell {
     UNKNOWN = 0,
     SummonerBarrier = 21,
@@ -55,7 +54,6 @@ impl From<u16> for SummonerSpell {
     }
 }
 
-
 pub static SUMMONER_SPELL_OPTIONS: &[u16] = &[
     SummonerSpell::SummonerBarrier as u16,
     SummonerSpell::SummonerBoost as u16,
@@ -76,7 +74,6 @@ pub static SUMMONER_SPELL_OPTIONS: &[u16] = &[
     SummonerSpell::Summoner_UltBookPlaceholder as u16,
     SummonerSpell::Summoner_UltBookSmitePlaceholder as u16,
 ];
-
 
 impl std::fmt::Display for SummonerSpell {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
