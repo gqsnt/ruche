@@ -21,6 +21,7 @@ use sqlx::FromRow;
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::Arc;
+use itertools::Itertools;
 
 pub async fn schedule_update_matches_task(
     db: sqlx::PgPool,
@@ -72,18 +73,23 @@ async fn update_matches_task(
     });
 
     let match_raw_datas: Vec<_> = FuturesOrdered::from_iter(match_data_futures)
-        .filter_map(|result| async move { result.ok().flatten() })
+        .filter_map(|result| async move { result.ok() })
         .collect()
         .await;
 
-    let (trashed_matches, match_datas): (Vec<_>, Vec<_>) = match_raw_datas
+    let (trashed_matches,  match_datas): (Vec<_>, Vec<_>) = match_raw_datas
         .into_iter()
         .zip(matches_to_update.into_iter())
         .partition(|(match_, _)| {
-            match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
-                || match_.info.game_version.is_empty()
-                || match_.info.game_id == 0
+            if let Some(match_) = match_ {
+                match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
+                    || match_.info.game_version.is_empty()
+                    || match_.info.game_id == 0
+            } else {
+                true
+            }
         });
+    let match_datas = match_datas.into_iter().map(|(match_, match_not_updated)| (match_.unwrap(), match_not_updated)).collect_vec();
 
     // Collect TempSummoner data from match data
     let mut participants_map = HashMap::new();
