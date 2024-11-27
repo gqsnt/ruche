@@ -56,7 +56,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
         .set(format!("{}?tab=champions", summoner.to_route_path()));
     view! {
         <div>
-            <Suspense fallback=move || {
+            <Transition fallback=move || {
                 view! { <div class="text-center">Loading Champions</div> }
             }>
                 {move || Suspend::new(async move {
@@ -333,7 +333,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                         Err(e) => Err(e),
                     }
                 })}
-            </Suspense>
+            </Transition>
         </div>
     }
 }

@@ -72,9 +72,9 @@ pub fn SummonerMatchesPage() -> impl IntoView {
     view! {
         <div class="w-[768px] inline-block align-top justify-center">
             <div class="">
-                <Suspense fallback=move || {
-                    view! { <div class="text-center">Loading Matches</div> }
-                }>
+                <Transition fallback=move || {
+                view! { <div class="text-center">Loading Matches</div> }
+            }>
                     {move || Suspend::new(async move {
                         match matches_resource.await {
                             Ok(matches_result) => {
@@ -157,7 +157,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                             Err(e) => Err(e),
                         }
                     })}
-                </Suspense>
+                </Transition>
             </div>
         </div>
     }

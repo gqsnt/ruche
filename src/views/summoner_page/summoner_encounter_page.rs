@@ -97,7 +97,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
             </button>
         </div>
         <div class="w-[768px]">
-            <Suspense fallback=move || {
+            <Transition fallback=move || {
                 view! { <div class="text-center">Loading Encounter</div> }
             }>
                 {move || Suspend::new(async move {
@@ -156,7 +156,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
                         Err(e) => Err(e),
                     }
                 })}
-            </Suspense>
+            </Transition>
         </div>
     }
 }

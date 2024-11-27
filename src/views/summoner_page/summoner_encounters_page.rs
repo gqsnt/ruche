@@ -111,7 +111,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                     Clear
                 </button>
             </div>
-            <Suspense fallback=move || {
+            <Transition fallback=move || {
                 view! { <div class="text-center">Loading Encounters</div> }
             }>
                 {move || {
@@ -241,7 +241,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                         }
                     })
                 }}
-            </Suspense>
+            </Transition>
 
         </div>
     }
