@@ -18,7 +18,7 @@ pub fn MatchDetailsBuild(
     let summoner_name_with_champion = |participant: &LolMatchParticipantDetails| {
         format!(
             "{}({})",
-            participant.game_name.to_string().as_str(),
+            participant.game_name.as_str(),
             Champion::from(participant.champion_id).to_str()
         )
     };

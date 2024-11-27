@@ -1,7 +1,7 @@
+use axum::async_trait;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
-use axum::async_trait;
-use tokio::time::{Instant, Duration};
+use tokio::time::{Duration, Instant};
 
 #[async_trait]
 pub trait Task: Send + Sync {
@@ -70,8 +70,6 @@ impl Ord for ScheduledTask {
 }
 
 impl TaskDirector {
-
-
     /// Adds a task to the TaskDirector.
     pub fn add_task<T: Task + 'static>(&mut self, task: T) {
         let next_run = task.next_execution();

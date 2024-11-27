@@ -1,11 +1,11 @@
-#[cfg(feature = "ssr")]
-use update_match_timeline::update_match_timeline;
 use crate::consts::platform_route::PlatformRoute;
 use crate::utils::RiotMatchId;
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
+#[cfg(feature = "ssr")]
+use update_match_timeline::update_match_timeline;
 
 #[cfg(feature = "ssr")]
 pub mod update_match_timeline;
@@ -32,7 +32,7 @@ pub async fn get_match_details(
             &db,
             state.riot_api.clone(),
             match_id,
-            riot_match_id.to_string(),
+            riot_match_id.as_ref(),
             platform,
         )
         .await?;
@@ -55,7 +55,7 @@ pub async fn get_match_details(
 pub mod ssr {
     use crate::backend::server_fns::get_matches::ssr::get_summoner_encounters;
     use crate::backend::ssr::{AppResult, PlatformRouteDb};
-    use crate::utils::{GameName, ProPlayerSlug, TagLine};
+    use crate::utils::ProPlayerSlug;
     use crate::views::summoner_page::match_details::{
         LolMatchParticipantDetails, LolMatchTimeline, Skill,
     };
@@ -135,63 +135,64 @@ pub mod ssr {
         };
         Ok(lol_match_participant_details
             .into_iter()
-            .map(|lmp| {
-                LolMatchParticipantDetails {
-                    id: lmp.id,
-                    lol_match_id: lmp.lol_match_id,
-                    summoner_id: lmp.summoner_id,
-                    game_name: GameName::new(lmp.game_name.as_str()),
-                    tag_line: TagLine::new(lmp.tag_line.as_str()),
-                    platform: lmp.platform.into(),
-                    summoner_pro_player_slug: lmp
-                        .pro_player_slug
-                        .map(|s| ProPlayerSlug::new(s.as_str())),
-                    summoner_icon_id: lmp.profile_icon_id as u16,
-                    summoner_level: lmp.summoner_level as u16,
-                    encounter_count: encounters.get(&lmp.summoner_id).cloned().unwrap_or_default(),
-                    champion_id: lmp.champion_id as u16,
-                    team_id: lmp.team_id as u16,
-                    won: lmp.won,
-                    kills: lmp.kills as u16,
-                    deaths: lmp.deaths as u16,
-                    assists: lmp.assists as u16,
-                    champ_level: lmp.champ_level as u16,
-                    kill_participation: (lmp
-                        .kill_participation
-                        .map_or(0.0, |bd| bd.to_f32().unwrap_or(0.0))
-                        * 100.0).round() as u16,
-                    damage_dealt_to_champions: lmp.damage_dealt_to_champions as u32,
-                    damage_taken: lmp.damage_taken as u32,
-                    gold_earned: lmp.gold_earned as u32,
-                    wards_placed: lmp.wards_placed as u16,
-                    cs: lmp.cs as u16,
-                    summoner_spell1_id: lmp.summoner_spell1_id.unwrap_or_default() as u16,
-                    summoner_spell2_id: lmp.summoner_spell2_id.unwrap_or_default() as u16,
-                    perk_defense_id: lmp.perk_defense_id.unwrap_or_default() as u16,
-                    perk_flex_id: lmp.perk_flex_id.unwrap_or_default() as u16,
-                    perk_offense_id: lmp.perk_offense_id.unwrap_or_default() as u16,
-                    perk_primary_style_id: lmp.perk_primary_style_id.unwrap_or_default() as u16,
-                    perk_sub_style_id: lmp.perk_sub_style_id.unwrap_or_default() as u16,
-                    perk_primary_selection_id: lmp.perk_primary_selection_id.unwrap_or_default()
-                        as u16,
-                    perk_primary_selection1_id: lmp.perk_primary_selection1_id.unwrap_or_default()
-                        as u16,
-                    perk_primary_selection2_id: lmp.perk_primary_selection2_id.unwrap_or_default()
-                        as u16,
-                    perk_primary_selection3_id: lmp.perk_primary_selection3_id.unwrap_or_default()
-                        as u16,
-                    perk_sub_selection1_id: lmp.perk_sub_selection1_id.unwrap_or_default() as u16,
-                    perk_sub_selection2_id: lmp.perk_sub_selection2_id.unwrap_or_default() as u16,
-                    item0_id: lmp.item0_id.unwrap_or_default() as u32,
-                    item1_id: lmp.item1_id.unwrap_or_default() as u32,
-                    item2_id: lmp.item2_id.unwrap_or_default() as u32,
-                    item3_id: lmp.item3_id.unwrap_or_default() as u32,
-                    item4_id: lmp.item4_id.unwrap_or_default() as u32,
-                    item5_id: lmp.item5_id.unwrap_or_default() as u32,
-                    item6_id: lmp.item6_id.unwrap_or_default() as u32,
-                    items_event_timeline: Vec::new(),
-                    skills_timeline: vec![],
-                }
+            .map(|lmp| LolMatchParticipantDetails {
+                id: lmp.id,
+                lol_match_id: lmp.lol_match_id,
+                summoner_id: lmp.summoner_id,
+                game_name: lmp.game_name,
+                tag_line: lmp.tag_line,
+                platform: lmp.platform.into(),
+                summoner_pro_player_slug: lmp
+                    .pro_player_slug
+                    .map(|s| ProPlayerSlug::new(s.as_str())),
+                summoner_icon_id: lmp.profile_icon_id as u16,
+                summoner_level: lmp.summoner_level as u16,
+                encounter_count: encounters
+                    .get(&lmp.summoner_id)
+                    .cloned()
+                    .unwrap_or_default(),
+                champion_id: lmp.champion_id as u16,
+                team_id: lmp.team_id as u16,
+                won: lmp.won,
+                kills: lmp.kills as u16,
+                deaths: lmp.deaths as u16,
+                assists: lmp.assists as u16,
+                champ_level: lmp.champ_level as u16,
+                kill_participation: (lmp
+                    .kill_participation
+                    .map_or(0.0, |bd| bd.to_f32().unwrap_or(0.0))
+                    * 100.0)
+                    .round() as u16,
+                damage_dealt_to_champions: lmp.damage_dealt_to_champions as u32,
+                damage_taken: lmp.damage_taken as u32,
+                gold_earned: lmp.gold_earned as u32,
+                wards_placed: lmp.wards_placed as u16,
+                cs: lmp.cs as u16,
+                summoner_spell1_id: lmp.summoner_spell1_id.unwrap_or_default() as u16,
+                summoner_spell2_id: lmp.summoner_spell2_id.unwrap_or_default() as u16,
+                perk_defense_id: lmp.perk_defense_id.unwrap_or_default() as u16,
+                perk_flex_id: lmp.perk_flex_id.unwrap_or_default() as u16,
+                perk_offense_id: lmp.perk_offense_id.unwrap_or_default() as u16,
+                perk_primary_style_id: lmp.perk_primary_style_id.unwrap_or_default() as u16,
+                perk_sub_style_id: lmp.perk_sub_style_id.unwrap_or_default() as u16,
+                perk_primary_selection_id: lmp.perk_primary_selection_id.unwrap_or_default() as u16,
+                perk_primary_selection1_id: lmp.perk_primary_selection1_id.unwrap_or_default()
+                    as u16,
+                perk_primary_selection2_id: lmp.perk_primary_selection2_id.unwrap_or_default()
+                    as u16,
+                perk_primary_selection3_id: lmp.perk_primary_selection3_id.unwrap_or_default()
+                    as u16,
+                perk_sub_selection1_id: lmp.perk_sub_selection1_id.unwrap_or_default() as u16,
+                perk_sub_selection2_id: lmp.perk_sub_selection2_id.unwrap_or_default() as u16,
+                item0_id: lmp.item0_id.unwrap_or_default() as u32,
+                item1_id: lmp.item1_id.unwrap_or_default() as u32,
+                item2_id: lmp.item2_id.unwrap_or_default() as u32,
+                item3_id: lmp.item3_id.unwrap_or_default() as u32,
+                item4_id: lmp.item4_id.unwrap_or_default() as u32,
+                item5_id: lmp.item5_id.unwrap_or_default() as u32,
+                item6_id: lmp.item6_id.unwrap_or_default() as u32,
+                items_event_timeline: Vec::new(),
+                skills_timeline: vec![],
             })
             .collect_vec())
     }

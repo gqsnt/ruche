@@ -24,7 +24,7 @@ pub async fn get_live_game(
         ))
     } else {
         let riot_api = state.riot_api.clone();
-        match ssr::get_live_game_data(&db, riot_api, puuid.to_string(), platform_route).await {
+        match ssr::get_live_game_data(&db, riot_api, puuid.as_ref(), platform_route).await {
             Ok(live_data) => match live_data {
                 None => Ok(None),
                 Some(live_data) => {
@@ -57,7 +57,7 @@ pub mod ssr {
     use crate::consts::platform_route::PlatformRoute;
     use crate::consts::queue::Queue;
     use crate::ssr::RiotApiState;
-    use crate::utils::{GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine};
+    use crate::utils::{ProPlayerSlug, Puuid, RiotMatchId};
     use crate::views::summoner_page::summoner_live_page::{
         LiveGame, LiveGameParticipant, LiveGameParticipantChampionStats,
         LiveGameParticipantRankedStats,
@@ -91,13 +91,13 @@ pub mod ssr {
     pub async fn get_live_game_data(
         db: &PgPool,
         riot_api: RiotApiState,
-        puuid: String,
+        puuid: &str,
         platform_route: PlatformRoute,
     ) -> AppResult<Option<LiveGame>> {
         let riven_pr = platform_route.to_riven();
         let current_game_info = riot_api
             .spectator_v5()
-            .get_current_game_info_by_puuid(riven_pr, puuid.as_str())
+            .get_current_game_info_by_puuid(riven_pr, puuid)
             .await?;
 
         match current_game_info {
@@ -198,8 +198,8 @@ pub mod ssr {
                         summoner_spell2_id: participant.spell2_id as u16,
                         perk_primary_selection_id,
                         perk_sub_style_id,
-                        game_name: GameName::new(summoner_detail.game_name.as_str()),
-                        tag_line: TagLine::new(summoner_detail.tag_line.as_str()),
+                        game_name: summoner_detail.game_name.clone(),
+                        tag_line: summoner_detail.tag_line.clone(),
                         platform: summoner_detail.platform.into(),
                         summoner_level: summoner_detail.summoner_level as u16,
                         team_id: participant.team_id as u16,

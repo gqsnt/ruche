@@ -9,8 +9,8 @@ use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
 use crate::utils::{
     calculate_and_format_kda, calculate_loss_and_win_rate, format_duration,
-    format_float_to_2digits, summoner_encounter_url, summoner_url, DurationSince, GameName,
-    ProPlayerSlug, RiotMatchId, TagLine,
+    format_float_to_2digits, summoner_encounter_url, summoner_url, DurationSince, ProPlayerSlug,
+    RiotMatchId,
 };
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
@@ -25,7 +25,8 @@ use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 
 #[component]
-pub fn SummonerMatchesPage(summoner: Summoner) -> impl IntoView {
+pub fn SummonerMatchesPage() -> impl IntoView {
+    let summoner = expect_context::<Summoner>();
     let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
@@ -63,10 +64,10 @@ pub fn SummonerMatchesPage(summoner: Summoner) -> impl IntoView {
 
     meta_store.title().set(format!(
         "{}#{} | Matches | Broken.gg",
-        summoner.game_name.to_str(),
-        summoner.tag_line.to_str()
+        summoner.game_name.as_str(),
+        summoner.tag_line.as_str()
     ));
-    meta_store.description().set(format!("Explore {}#{}'s match history on Broken.gg. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner.game_name.to_str(), summoner.tag_line.to_str()));
+    meta_store.description().set(format!("Explore {}#{}'s match history on Broken.gg. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
     meta_store.url().set(summoner.to_route_path());
     view! {
         <div class="w-[768px] inline-block align-top justify-center">
@@ -142,7 +143,7 @@ pub fn SummonerMatchesPage(summoner: Summoner) -> impl IntoView {
                                                         key=|match_| match_.match_id
                                                         let:match_
                                                     >
-                                                        <MatchCard match_=match_ summoner />
+                                                        <MatchCard match_=match_ />
                                                     </For>
                                                 </div>
                                                 <Show when=move || (total_pages > 1)>
@@ -163,7 +164,8 @@ pub fn SummonerMatchesPage(summoner: Summoner) -> impl IntoView {
 }
 
 #[component]
-pub fn MatchCard(match_: SummonerMatch, summoner: Summoner) -> impl IntoView {
+pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
+    let summoner = expect_context::<Summoner>();
     let (show_details, set_show_details) = signal(false);
     let champion = Champion::from(match_.champion_id);
     let summoner_spell1 = SummonerSpell::from(match_.summoner_spell1_id);
@@ -430,12 +432,19 @@ pub fn MatchCard(match_: SummonerMatch, summoner: Summoner) -> impl IntoView {
                         class="flex gap-x-2 gap-y-0.5 w-[266px] max-h-[89px]"
                         style="flex-flow:column wrap"
                     >
-                        {match_
-                            .participants
-                            .into_iter()
-                            .map(|participant| {
+                        <For
+                            each=move || match_.participants.clone()
+                            key=|match_| match_.summoner_id
+                            let:participant
+                        >
+                            {
+                                let participant: SummonerMatchParticipant = participant;
                                 let is_pro_player = participant.pro_player_slug.is_some();
                                 let champion = Champion::from(participant.champion_id);
+                                let p_gn_clone = participant.game_name.clone();
+                                let p_tl_clone = participant.tag_line.clone();
+                                let s_gn_clone = summoner.game_name.clone();
+                                let s_tl_clone = summoner.tag_line.clone();
                                 view! {
                                     <div class="flex items-center gap-1 w-[130px]">
                                         <img
@@ -448,12 +457,12 @@ pub fn MatchCard(match_: SummonerMatch, summoner: Summoner) -> impl IntoView {
                                         <Show when=move || (participant.encounter_count > 1)>
                                             <a
                                                 href=summoner_encounter_url(
-                                                    summoner.platform.to_string(),
-                                                    summoner.game_name.to_string(),
-                                                    summoner.tag_line.to_string(),
-                                                    participant.platform.to_string(),
-                                                    participant.game_name.to_string(),
-                                                    participant.tag_line.to_string(),
+                                                    summoner.platform.as_ref(),
+                                                    s_gn_clone.as_str(),
+                                                    s_tl_clone.as_str(),
+                                                    participant.platform.as_ref(),
+                                                    p_gn_clone.as_str(),
+                                                    p_tl_clone.as_str(),
                                                 )
                                                 class="text-xs bg-green-800 rounded px-0.5 text-center"
                                             >
@@ -465,7 +474,7 @@ pub fn MatchCard(match_: SummonerMatch, summoner: Summoner) -> impl IntoView {
                                                 target="_blank"
                                                 href=format!(
                                                     "https://lolpros.gg/player/{}",
-                                                    participant.pro_player_slug.unwrap().to_string().as_str(),
+                                                    participant.pro_player_slug.unwrap().as_ref(),
                                                 )
                                                 class="text-xs bg-purple-800 rounded px-0.5 text-center"
                                             >
@@ -475,21 +484,21 @@ pub fn MatchCard(match_: SummonerMatch, summoner: Summoner) -> impl IntoView {
                                         <a
                                             target="_blank"
                                             href=summoner_url(
-                                                participant.platform.to_string(),
-                                                participant.game_name.to_string(),
-                                                participant.tag_line.to_string(),
+                                                participant.platform.as_ref(),
+                                                participant.game_name.as_str(),
+                                                participant.tag_line.as_str(),
                                             )
                                             class:text-white=move || {
                                                 participant.summoner_id == match_.summoner_id
                                             }
                                             class="text-ellipsis overflow-hidden whitespace-nowrap "
                                         >
-                                            {participant.game_name.to_string()}
+                                            {participant.game_name.clone()}
                                         </a>
                                     </div>
                                 }
-                            })
-                            .collect::<Vec<_>>()}
+                            }
+                        </For>
                     </div>
                 </div>
                 <div class="w-[40px] flex relative flex-col">
@@ -532,7 +541,6 @@ pub fn MatchCard(match_: SummonerMatch, summoner: Summoner) -> impl IntoView {
             <Show when=move || show_details()>
                 <MatchDetails
                     match_id=match_.match_id
-                    summoner
                     riot_match_id=match_.riot_match_id
                     platform=match_.platform
                 />
@@ -594,8 +602,8 @@ pub struct SummonerMatchParticipant {
     pub champion_id: u16,
     pub team_id: u16,
     pub encounter_count: u16,
-    pub game_name: GameName,
+    pub game_name: String,
     pub pro_player_slug: Option<ProPlayerSlug>,
-    pub tag_line: TagLine,
+    pub tag_line: String,
     pub platform: PlatformRoute,
 }

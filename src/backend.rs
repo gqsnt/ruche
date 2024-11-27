@@ -2,7 +2,6 @@ use leptos::prelude::ServerFnError;
 
 pub mod server_fns;
 
-
 #[cfg(feature = "ssr")]
 pub mod lol_static;
 
@@ -10,9 +9,9 @@ pub mod lol_static;
 pub mod tasks;
 
 #[cfg(feature = "ssr")]
-pub mod task_director;
-#[cfg(feature = "ssr")]
 pub mod live_game_cache;
+#[cfg(feature = "ssr")]
+pub mod task_director;
 
 pub type ServerResult<T> = Result<T, ServerFnError>;
 

@@ -1,6 +1,6 @@
 use crate::backend::server_fns::get_match_details::get_match_details;
 use crate::consts::platform_route::PlatformRoute;
-use crate::utils::{GameName, ProPlayerSlug, RiotMatchId, TagLine};
+use crate::utils::{ProPlayerSlug, RiotMatchId};
 use crate::views::summoner_page::match_details::match_details_build::MatchDetailsBuild;
 use crate::views::summoner_page::match_details::match_details_overview::MatchDetailsOverview;
 use crate::views::summoner_page::match_details::match_details_team::MatchDetailsTeam;
@@ -20,8 +20,8 @@ pub fn MatchDetails(
     match_id: i32,
     riot_match_id: RiotMatchId,
     platform: PlatformRoute,
-    summoner: Summoner,
 ) -> impl IntoView {
+    let summoner = expect_context::<Summoner>();
     let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let match_details = Resource::new_rkyv(
         move || {
@@ -44,7 +44,10 @@ pub fn MatchDetails(
                 let (match_details_signal, _) = signal(match_details);
                 view! {
                     <Show when=move || match_detail_tab() == "overview">
-                        <MatchDetailsOverview match_details=match_details_signal summoner />
+                        <MatchDetailsOverview
+                            match_details=match_details_signal
+                            summoner_id=summoner.id
+                        />
                     </Show>
                     <Show when=move || match_detail_tab() == "team">
                         <MatchDetailsTeam
@@ -143,8 +146,8 @@ pub struct LolMatchParticipantDetails {
     pub perk_sub_selection2_id: u16,
     pub won: bool,
     pub platform: PlatformRoute,
-    pub game_name: GameName,
-    pub tag_line: TagLine,
+    pub game_name: String,
+    pub tag_line: String,
     pub summoner_pro_player_slug: Option<ProPlayerSlug>,
     pub items_event_timeline: Vec<(u16, Vec<ItemEvent>)>,
     pub skills_timeline: Vec<Skill>,

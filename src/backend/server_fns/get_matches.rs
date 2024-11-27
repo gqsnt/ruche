@@ -35,7 +35,7 @@ pub mod ssr {
     use itertools::Itertools;
 
     use crate::consts::platform_route::PlatformRoute;
-    use crate::utils::{DurationSince, GameName, ProPlayerSlug, RiotMatchId, TagLine};
+    use crate::utils::{DurationSince, ProPlayerSlug, RiotMatchId};
     use sqlx::{FromRow, PgPool, QueryBuilder};
     use std::collections::HashMap;
 
@@ -261,8 +261,8 @@ pub mod ssr {
                         lol_match_id: row.lol_match_id,
                         summoner_id: row.summoner_id,
                         champion_id: row.champion_id as u16,
-                        game_name: GameName::new(game_name.as_str()),
-                        tag_line: TagLine::new(tag_line.as_str()),
+                        game_name: game_name.clone(),
+                        tag_line: tag_line.clone(),
                         platform: *platform,
                         pro_player_slug: pro_player_slug
                             .clone()

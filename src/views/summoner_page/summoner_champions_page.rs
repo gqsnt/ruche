@@ -12,7 +12,8 @@ use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 
 #[component]
-pub fn SummonerChampionsPage(summoner: Summoner) -> impl IntoView {
+pub fn SummonerChampionsPage() -> impl IntoView {
+    let summoner = expect_context::<Summoner>();
     let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
@@ -46,10 +47,10 @@ pub fn SummonerChampionsPage(summoner: Summoner) -> impl IntoView {
 
     meta_store.title().set(format!(
         "{}#{} | Champions | Broken.gg",
-        summoner.game_name.to_str(),
-        summoner.tag_line.to_str()
+        summoner.game_name.as_str(),
+        summoner.tag_line.as_str()
     ));
-    meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner.game_name.to_str(), summoner.tag_line.to_str()));
+    meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
     meta_store
         .url()
         .set(format!("{}?tab=champions", summoner.to_route_path()));

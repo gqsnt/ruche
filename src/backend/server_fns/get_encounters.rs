@@ -1,4 +1,3 @@
-use crate::utils::GameName;
 use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersResult;
 use crate::views::BackEndMatchFiltersSearch;
 use leptos::prelude::*;
@@ -9,7 +8,7 @@ use leptos::server_fn::codec::Rkyv;
 pub async fn get_encounters(
     summoner_id: i32,
     page_number: u16,
-    search_summoner: Option<GameName>,
+    search_summoner: Option<String>,
     filters: Option<BackEndMatchFiltersSearch>,
 ) -> Result<SummonerEncountersResult, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
@@ -30,7 +29,6 @@ pub async fn get_encounters(
 pub mod ssr {
     use crate::backend::ssr::{AppResult, PlatformRouteDb};
     use crate::consts::queue::Queue;
-    use crate::utils::{GameName, TagLine};
     use crate::views::summoner_page::summoner_encounters_page::{
         SummonerEncountersResult, SummonerEncountersSummoner,
     };
@@ -157,8 +155,8 @@ pub mod ssr {
                         with_match_count: encounter.with_match_count as u16,
                         with_win_count: encounter.with_win_count as u16,
                         vs_win_count: encounter.vs_win_count as u16,
-                        game_name: GameName::new(game_name.as_str()),
-                        tag_line: TagLine::new(tag_line.as_str()),
+                        game_name,
+                        tag_line,
                         platform: platform.into(),
                     }
                 })

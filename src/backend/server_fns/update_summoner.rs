@@ -1,26 +1,26 @@
-
 #[cfg(feature = "ssr")]
-use std::string::ToString;
-#[cfg(feature = "ssr")]
-use crate::backend::server_fns::get_encounter::ssr::{find_summoner_by_id, find_summoner_puuid_by_id};
+use crate::backend::server_fns::get_encounter::ssr::{
+    find_summoner_by_id, find_summoner_puuid_by_id,
+};
 #[cfg(feature = "ssr")]
 use crate::backend::server_fns::search_summoner::ssr::insert_or_update_account_and_summoner;
 use crate::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use crate::utils::summoner_url;
-use crate::utils::{GameName, TagLine};
 use crate::views::summoner_page::Summoner;
 #[cfg(feature = "ssr")]
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
+#[cfg(feature = "ssr")]
+use std::string::ToString;
 
 #[server( input=Rkyv, output=Rkyv)]
 pub async fn update_summoner(
     summoner_id: i32,
-    game_name:GameName,
-    tag_line: TagLine,
+    game_name: String,
+    tag_line: String,
     platform_route: PlatformRoute,
 ) -> Result<Option<Summoner>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
@@ -31,10 +31,7 @@ pub async fn update_summoner(
 
     match riot_api
         .account_v1()
-        .get_by_puuid(
-            platform_route.to_riven().to_regional(),
-            puuid.as_str(),
-        )
+        .get_by_puuid(platform_route.to_riven().to_regional(), puuid.as_str())
         .await
     {
         Ok(account) => {
@@ -67,12 +64,16 @@ pub async fn update_summoner(
                             }
                         };
                     });
-                    let has_changed = game_name.to_string() != acc_game_name
-                        || tag_line.to_string() != acc_tag_line;
+                    let has_changed = game_name.as_str() != acc_game_name.as_str()
+                        || tag_line.as_str() != acc_tag_line.as_str();
                     if has_changed {
                         leptos_axum::redirect(
-                            summoner_url(platform_route.to_string(), acc_game_name, acc_tag_line)
-                                .as_str(),
+                            summoner_url(
+                                platform_route.as_ref(),
+                                acc_game_name.as_str(),
+                                acc_tag_line.as_str(),
+                            )
+                            .as_str(),
                         );
                         Ok(None)
                     } else {

@@ -14,15 +14,14 @@ pub trait HasStaticAsset {
         format!("/assets/{}/{}.avif", Self::PATH, self.get_id())
     }
 
-    fn get_id(&self) -> i32 ;
-
+    fn get_id(&self) -> i32;
 }
 
 impl HasStaticAsset for item::Item {
     const PATH: &'static str = "items";
 
-    fn get_id(&self) -> i32  {
-       self.0 as i32
+    fn get_id(&self) -> i32 {
+        self.0 as i32
     }
 }
 
@@ -30,7 +29,7 @@ impl HasStaticAsset for profile_icon::ProfileIcon {
     const PATH: &'static str = "profile_icons";
 
     fn get_id(&self) -> i32 {
-        self.0  as i32
+        self.0 as i32
     }
 }
 

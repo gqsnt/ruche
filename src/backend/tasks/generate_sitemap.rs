@@ -1,7 +1,7 @@
 use crate::backend::ssr::{AppResult, PlatformRouteDb};
 use crate::backend::task_director::Task;
 use crate::backend::tasks::calculate_next_run_to_fixed_start_hour;
-use crate::consts::platform_route::PLATFORM_ROUTE_OPTIONS;
+use crate::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
 use crate::utils::summoner_url;
 use axum::async_trait;
 use chrono::NaiveDateTime;
@@ -98,10 +98,11 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
         for page in 1..=total_pages {
             let summoners = get_platforms_summoners_taglines(db, per_page, page).await?;
             for (game_name, tag_line, platform, updated_at) in summoners {
+                let pt: PlatformRoute = platform.into();
                 let url = format!(
                     "{}{}",
                     base_url,
-                    summoner_url(platform.to_string(), game_name, tag_line)
+                    summoner_url(pt.as_ref(), game_name.as_str(), tag_line.as_str())
                 );
                 url_writer.url(
                     UrlEntry::builder()

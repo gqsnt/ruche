@@ -9,7 +9,7 @@ use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
 use crate::utils::{
     calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits,
-    summoner_encounter_url, summoner_url, GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine,
+    summoner_encounter_url, summoner_url, ProPlayerSlug, Puuid, RiotMatchId,
 };
 use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
@@ -18,7 +18,8 @@ use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 
 #[component]
-pub fn SummonerLivePage(summoner: Summoner) -> impl IntoView {
+pub fn SummonerLivePage() -> impl IntoView {
+    let summoner = expect_context::<Summoner>();
     let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
@@ -40,10 +41,10 @@ pub fn SummonerLivePage(summoner: Summoner) -> impl IntoView {
 
     meta_store.title().set(format!(
         "{}#{} | Live Game | Broken.gg",
-        summoner.game_name.to_str(),
-        summoner.tag_line.to_str()
+        summoner.game_name.as_str(),
+        summoner.tag_line.as_str()
     ));
-    meta_store.description().set(format!("Watch {}#{}'s live game now on Broken.gg. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner.game_name.to_str(), summoner.tag_line.to_str()));
+    meta_store.description().set(format!("Watch {}#{}'s live game now on Broken.gg. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
     meta_store
         .url()
         .set(format!("{}?tab=live", summoner.to_route_path()));
@@ -89,16 +90,8 @@ pub fn SummonerLivePage(summoner: Summoner) -> impl IntoView {
                                                 )}
                                             </div>
                                         </div>
-                                        <MatchLiveTable
-                                            team_id=100
-                                            participants=first_team
-                                            summoner=summoner
-                                        />
-                                        <MatchLiveTable
-                                            team_id=200
-                                            participants=second_team
-                                            summoner=summoner
-                                        />
+                                        <MatchLiveTable team_id=100 participants=first_team />
+                                        <MatchLiveTable team_id=200 participants=second_team />
 
                                     </div>
                                 },
@@ -113,12 +106,10 @@ pub fn SummonerLivePage(summoner: Summoner) -> impl IntoView {
 }
 
 #[component]
-pub fn MatchLiveTable(
-    team_id: i32,
-    participants: Vec<LiveGameParticipant>,
-    summoner: Summoner,
-) -> impl IntoView {
+pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> impl IntoView {
+    let summoner = expect_context::<Summoner>();
     let is_blue_team = || team_id == 100;
+
     view! {
         <table class="table-fixed text-xs w-full">
             <colgroup>
@@ -161,6 +152,10 @@ pub fn MatchLiveTable(
                             participant.perk_primary_selection_id,
                         );
                         let perk_sub_style = Perk::from(participant.perk_sub_style_id);
+                        let participant_game_name_clone = participant.game_name.clone();
+                        let participant_tag_line_clone = participant.tag_line.clone();
+                        let summoner_game_name_clone = summoner.game_name.clone();
+                        let summoner_tag_line_clone = summoner.tag_line.clone();
 
                         view! {
                             <tr>
@@ -225,12 +220,12 @@ pub fn MatchLiveTable(
                                         <Show when=move || (participant.encounter_count > 0)>
                                             <a
                                                 href=summoner_encounter_url(
-                                                    summoner.platform.to_string(),
-                                                    summoner.game_name.to_string(),
-                                                    summoner.tag_line.to_string(),
-                                                    participant.platform.to_string(),
-                                                    participant.game_name.to_string(),
-                                                    participant.tag_line.to_string(),
+                                                    summoner.platform.as_ref(),
+                                                    summoner_game_name_clone.as_str(),
+                                                    summoner_tag_line_clone.as_str(),
+                                                    participant.platform.as_ref(),
+                                                    participant_game_name_clone.as_str(),
+                                                    participant_tag_line_clone.as_str(),
                                                 )
                                                 class="text-xs bg-green-800 rounded px-0.5 text-center"
                                             >
@@ -242,7 +237,7 @@ pub fn MatchLiveTable(
                                                 target="_blank"
                                                 href=format!(
                                                     "https://lolpros.gg/player/{}",
-                                                    participant.pro_player_slug.unwrap().to_str(),
+                                                    participant.pro_player_slug.unwrap().as_ref(),
                                                 )
                                                 class="text-xs bg-purple-800 rounded px-0.5 text-center"
                                             >
@@ -252,14 +247,14 @@ pub fn MatchLiveTable(
                                         <a
                                             target="_blank"
                                             href=summoner_url(
-                                                participant.platform.to_string(),
-                                                participant.game_name.to_string(),
-                                                participant.tag_line.to_string(),
+                                                participant.platform.as_ref(),
+                                                participant.game_name.as_str(),
+                                                participant.tag_line.as_str(),
                                             )
                                         >
-                                            {participant.game_name.to_string()}
+                                            {participant.game_name.clone()}
                                             #
-                                            {participant.tag_line.to_string()}
+                                            {participant.tag_line.clone()}
                                         </a>
                                     </div>
                                     <span class="text-[11px]">
@@ -269,7 +264,7 @@ pub fn MatchLiveTable(
                                 <td></td>
                                 <td></td>
                                 <td class="py-1">
-                                    {match &participant.ranked_stats {
+                                    {match participant.ranked_stats {
                                         Some(ranked_stats) => {
                                             let (losses, win_rate) = calculate_loss_and_win_rate(
                                                 ranked_stats.total_ranked,
@@ -353,7 +348,6 @@ pub fn MatchLiveTable(
         </table>
     }
 }
-
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct LiveGame {
     pub game_length: u16,
@@ -376,8 +370,8 @@ pub struct LiveGameParticipant {
     pub summoner_level: u16,
     pub platform: PlatformRoute,
     pub puuid: Puuid,
-    pub game_name: GameName,
-    pub tag_line: TagLine,
+    pub game_name: String,
+    pub tag_line: String,
     pub pro_player_slug: Option<ProPlayerSlug>,
     pub ranked_stats: Option<LiveGameParticipantRankedStats>,
     pub champion_stats: Option<LiveGameParticipantChampionStats>,

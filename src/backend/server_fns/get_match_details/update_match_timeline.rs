@@ -12,14 +12,14 @@ pub async fn update_match_timeline(
     db: &PgPool,
     api: RiotApiState,
     match_id: i32,
-    riot_match_id: String,
+    riot_match_id: &str,
     platform_route: PlatformRoute,
 ) -> AppResult<()> {
     // Fetch the match timeline
     let riven_pr = platform_route.to_riven();
     let timeline = api
         .match_v5()
-        .get_timeline(riven_pr.to_regional(), &riot_match_id)
+        .get_timeline(riven_pr.to_regional(), riot_match_id)
         .await?
         .ok_or_else(|| AppError::CustomError("Timeline not found".into()))?;
 

@@ -1,8 +1,8 @@
-use std::time::Duration;
-use dashmap::DashMap;
-use tokio::time::Instant;
 use crate::utils::{Puuid, RiotMatchId};
 use crate::views::summoner_page::summoner_live_page::LiveGame;
+use dashmap::DashMap;
+use std::time::Duration;
+use tokio::time::Instant;
 
 pub struct LiveGameCache {
     pub game_cache: DashMap<RiotMatchId, (LiveGame, Instant)>,

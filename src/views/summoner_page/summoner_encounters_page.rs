@@ -5,7 +5,6 @@ use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::HasStaticAsset;
 use crate::utils::{
     calculate_loss_and_win_rate, format_float_to_2digits, summoner_encounter_url, summoner_url,
-    GameName, TagLine,
 };
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
@@ -18,7 +17,8 @@ use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 
 #[component]
-pub fn SummonerEncountersPage(summoner: Summoner) -> impl IntoView {
+pub fn SummonerEncountersPage() -> impl IntoView {
+    let summoner = expect_context::<Summoner>();
     let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
@@ -66,7 +66,7 @@ pub fn SummonerEncountersPage(summoner: Summoner) -> impl IntoView {
             get_encounters(
                 summoner_id,
                 page_number.unwrap_or(1),
-                search_summoner.map(|r| GameName::new(r.as_str())),
+                search_summoner,
                 Some(filters),
             )
             .await
@@ -75,13 +75,14 @@ pub fn SummonerEncountersPage(summoner: Summoner) -> impl IntoView {
 
     meta_store.title().set(format!(
         "{}#{} | Encounters | Broken.gg",
-        summoner.game_name.to_str(),
-        summoner.tag_line.to_str()
+        summoner.game_name.as_str(),
+        summoner.tag_line.as_str()
     ));
-    meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner.game_name.to_str(), summoner.tag_line.to_str()));
+    meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
     meta_store
         .url()
         .set(format!("{}?tab=encounters", summoner.to_route_path()));
+
     view! {
         <div>
             <div class="my-card flex space-x-2 my-2 w-fit">
@@ -113,129 +114,133 @@ pub fn SummonerEncountersPage(summoner: Summoner) -> impl IntoView {
             <Suspense fallback=move || {
                 view! { <div class="text-center">Loading Encounters</div> }
             }>
-                {move || Suspend::new(async move {
-                    match encounters_resource.await {
-                        Ok(encounters_result) => {
-                            let total_pages = encounters_result.total_pages;
-                            let current_page = page_number().unwrap_or(1);
-                            if total_pages == 0 || total_pages < current_page {
-                                set_reset_page_number(true);
-                            }
-                            if !encounters_result.encounters.is_empty() {
-                                Ok(
-                                    Either::Left(
-                                        view! {
-                                            <div class="flex my-card w-fit">
-                                                <table class="text-gray-200 space-y-2">
-                                                    <thead>
-                                                        <tr>
-                                                            <th class="text-left px-2">Summoner</th>
-                                                            <th class="px-2">With</th>
-                                                            <th class=" px-2">Vs</th>
-                                                            <th class=" px-2">Total</th>
-                                                            <th class=" px-2"></th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <For
-                                                            each=move || encounters_result.encounters.clone()
-                                                            key=|encounter| encounter.id
-                                                            let:encounter
-                                                        >
-                                                            {
-                                                                let encounter: SummonerEncountersSummoner = encounter;
-                                                                let encounter_platform = encounter.platform.to_string();
-                                                                let encounter_game_name = encounter.game_name.to_string();
-                                                                let encounter_tag_line = encounter.tag_line.to_string();
-                                                                let profile_icon = ProfileIcon(encounter.profile_icon_id);
-                                                                let vs_match_count = encounter.match_count
-                                                                    - encounter.with_match_count;
-                                                                let (vs_losses, vs_winrate) = calculate_loss_and_win_rate(
-                                                                    encounter.vs_win_count,
-                                                                    vs_match_count,
-                                                                );
-                                                                let (with_losses, with_winrate) = calculate_loss_and_win_rate(
-                                                                    encounter.with_win_count,
-                                                                    encounter.with_match_count,
-                                                                );
-                                                                view! {
-                                                                    <tr>
-                                                                        <td class="text-left w-[200px]">
-                                                                            <div class="flex items-center py-0.5">
-                                                                                <div>
-                                                                                    <img
-                                                                                        alt=profile_icon.to_string()
-                                                                                        src=profile_icon.get_static_asset_url()
-                                                                                        class="w-8 h-8 rounded"
-                                                                                        height="32"
-                                                                                        width="32"
-                                                                                    />
-                                                                                </div>
-                                                                                <div class="ml-2">
-                                                                                    <a
-                                                                                        href=summoner_url(
-                                                                                            encounter_platform.clone(),
-                                                                                            encounter_game_name.clone(),
-                                                                                            encounter_tag_line.clone(),
-                                                                                        )
-                                                                                        class="text-blue-300 hover:underline"
-                                                                                    >
-                                                                                        {encounter.game_name.to_string()}
-                                                                                    </a>
-                                                                                </div>
-                                                                            </div>
-                                                                        </td>
-                                                                        <td class="px-2">
-                                                                            {encounter.with_win_count}W {with_losses as u16}L
-                                                                            <span class="mx-1">{encounter.with_match_count}G</span>
-                                                                            {format_float_to_2digits(with_winrate)}%
-                                                                        </td>
-                                                                        <td class="px-2">
-                                                                            {encounter.vs_win_count}W {vs_losses as u16}L
-                                                                            <span class="mx-1">{vs_match_count}G</span>
-                                                                            {format_float_to_2digits(vs_winrate)}%
-                                                                        </td>
-                                                                        <td class="px-2 ">{encounter.match_count}</td>
-                                                                        <td class="px-2">
-                                                                            <a
-                                                                                class="my-button font-bold"
-                                                                                href=summoner_encounter_url(
-                                                                                    summoner.platform.to_string(),
-                                                                                    summoner.game_name.to_string(),
-                                                                                    summoner.tag_line.to_string(),
-                                                                                    encounter_platform.clone(),
-                                                                                    encounter_game_name.clone(),
-                                                                                    encounter_tag_line.clone(),
-                                                                                )
-                                                                            >
-                                                                                >
-                                                                            </a>
-                                                                        </td>
-                                                                    </tr>
-                                                                }
-                                                            }
-                                                        </For>
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                {move || {
+                    let summoner_clone = summoner.clone();
+                    Suspend::new(async move {
+                        match encounters_resource.await {
+                            Ok(encounters_result) => {
+                                let total_pages = encounters_result.total_pages;
+                                let current_page = page_number().unwrap_or(1);
+                                if total_pages == 0 || total_pages < current_page {
+                                    set_reset_page_number(true);
+                                }
+                                if !encounters_result.encounters.is_empty() {
+                                    Ok(
+                                        Either::Left(
 
-                                            <Show when=move || (total_pages > 1)>
-                                                <Pagination max_page=total_pages />
-                                            </Show>
-                                        },
-                                    ),
-                                )
-                            } else {
-                                Ok(
-                                    Either::Right(
-                                        view! { <div class="text-center">No Encounters Found</div> },
-                                    ),
-                                )
+                                            view! {
+                                                <div class="flex my-card w-fit">
+                                                    <table class="text-gray-200 space-y-2">
+                                                        <thead>
+                                                            <tr>
+                                                                <th class="text-left px-2">Summoner</th>
+                                                                <th class="px-2">With</th>
+                                                                <th class=" px-2">Vs</th>
+                                                                <th class=" px-2">Total</th>
+                                                                <th class=" px-2"></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <For
+                                                                each=move || encounters_result.encounters.clone()
+                                                                key=|encounter| encounter.id
+                                                                let:encounter
+                                                            >
+                                                                {
+                                                                    let encounter: SummonerEncountersSummoner = encounter;
+                                                                    let profile_icon = ProfileIcon(encounter.profile_icon_id);
+                                                                    let vs_match_count = encounter.match_count
+                                                                        - encounter.with_match_count;
+                                                                    let (vs_losses, vs_winrate) = calculate_loss_and_win_rate(
+                                                                        encounter.vs_win_count,
+                                                                        vs_match_count,
+                                                                    );
+                                                                    let (with_losses, with_winrate) = calculate_loss_and_win_rate(
+                                                                        encounter.with_win_count,
+                                                                        encounter.with_match_count,
+                                                                    );
+                                                                    let s_gn_clone = summoner_clone.game_name.clone();
+                                                                    let s_tl_clone = summoner_clone.tag_line.clone();
+
+                                                                    view! {
+                                                                        <tr>
+                                                                            <td class="text-left w-[200px]">
+                                                                                <div class="flex items-center py-0.5">
+                                                                                    <div>
+                                                                                        <img
+                                                                                            alt=profile_icon.to_string()
+                                                                                            src=profile_icon.get_static_asset_url()
+                                                                                            class="w-8 h-8 rounded"
+                                                                                            height="32"
+                                                                                            width="32"
+                                                                                        />
+                                                                                    </div>
+                                                                                    <div class="ml-2">
+                                                                                        <a
+                                                                                            href=summoner_url(
+                                                                                                encounter.platform.as_ref(),
+                                                                                                encounter.game_name.as_str(),
+                                                                                                encounter.tag_line.as_str(),
+                                                                                            )
+                                                                                            class="text-blue-300 hover:underline"
+                                                                                        >
+                                                                                            {encounter.game_name.to_string()}
+                                                                                        </a>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </td>
+                                                                            <td class="px-2">
+                                                                                {encounter.with_win_count}W {with_losses as u16}L
+                                                                                <span class="mx-1">{encounter.with_match_count}G</span>
+                                                                                {format_float_to_2digits(with_winrate)}%
+                                                                            </td>
+                                                                            <td class="px-2">
+                                                                                {encounter.vs_win_count}W {vs_losses as u16}L
+                                                                                <span class="mx-1">{vs_match_count}G</span>
+                                                                                {format_float_to_2digits(vs_winrate)}%
+                                                                            </td>
+                                                                            <td class="px-2 ">{encounter.match_count}</td>
+                                                                            <td class="px-2">
+                                                                                <a
+                                                                                    class="my-button font-bold"
+                                                                                    href=summoner_encounter_url(
+                                                                                        summoner.platform.as_ref(),
+                                                                                        s_gn_clone.as_str(),
+                                                                                        s_tl_clone.as_str(),
+                                                                                        encounter.platform.as_ref(),
+                                                                                        encounter.game_name.as_str(),
+                                                                                        encounter.tag_line.as_str(),
+                                                                                    )
+                                                                                >
+                                                                                    >
+                                                                                </a>
+                                                                            </td>
+                                                                        </tr>
+                                                                    }
+                                                                }
+                                                            </For>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+
+                                                <Show when=move || (total_pages > 1)>
+                                                    <Pagination max_page=total_pages />
+                                                </Show>
+                                            },
+                                        ),
+                                    )
+                                } else {
+                                    Ok(
+                                        Either::Right(
+                                            view! { <div class="text-center">No Encounters Found</div> },
+                                        ),
+                                    )
+                                }
                             }
+                            Err(e) => Err(e),
                         }
-                        Err(e) => Err(e),
-                    }
-                })}
+                    })
+                }}
             </Suspense>
 
         </div>
@@ -256,7 +261,7 @@ pub struct SummonerEncountersSummoner {
     pub with_win_count: u16,
     pub vs_win_count: u16,
     pub profile_icon_id: u16,
-    pub game_name: GameName,
-    pub tag_line: TagLine,
+    pub game_name: String,
+    pub tag_line: String,
     pub platform: PlatformRoute,
 }

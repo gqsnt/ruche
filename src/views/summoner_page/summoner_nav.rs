@@ -4,14 +4,14 @@ use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterPage;
 use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersPage;
 use crate::views::summoner_page::summoner_live_page::SummonerLivePage;
 use crate::views::summoner_page::summoner_matches_page::SummonerMatchesPage;
-use crate::views::summoner_page::Summoner;
+
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 
 #[component]
-pub fn SummonerNav(summoner: Summoner) -> impl IntoView {
+pub fn SummonerNav() -> impl IntoView {
     let (tab, set_tab) = query_signal_with_options::<String>(
         "tab",
         NavigateOptions {
@@ -131,25 +131,25 @@ pub fn SummonerNav(summoner: Summoner) -> impl IntoView {
         <div class="my-4 ">
             <Show when=move || tab().is_none() || tab() == Some(Tabs::Matches.to_string())>
                 <MatchFilters>
-                    <SummonerMatchesPage summoner />
+                    <SummonerMatchesPage />
                 </MatchFilters>
             </Show>
             <Show when=move || tab() == Some(Tabs::Champions.to_string())>
                 <MatchFilters>
-                    <SummonerChampionsPage summoner />
+                    <SummonerChampionsPage />
                 </MatchFilters>
             </Show>
             <Show when=move || tab() == Some(Tabs::Encounters.to_string())>
                 <MatchFilters>
-                    <SummonerEncountersPage summoner />
+                    <SummonerEncountersPage />
                 </MatchFilters>
             </Show>
             <Show when=move || tab() == Some(Tabs::Live.to_string())>
-                <SummonerLivePage summoner />
+                <SummonerLivePage />
             </Show>
             <Show when=move || tab() == Some(Tabs::Encounter.to_string())>
                 <MatchFilters>
-                    <SummonerEncounterPage summoner />
+                    <SummonerEncounterPage />
                 </MatchFilters>
             </Show>
 

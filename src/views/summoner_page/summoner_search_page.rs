@@ -1,6 +1,5 @@
 use crate::backend::server_fns::search_summoner::SearchSummoner;
 use crate::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
-use crate::utils::{GameName, TagLine};
 use leptos::html::{Input, Select};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
@@ -33,12 +32,8 @@ pub fn SummonerSearchPage() -> impl IntoView {
                                 .value()
                                 .as_str(),
                         ),
-                        game_name: GameName::new(
-                            game_name_node.get().expect("game_name not valid").value().as_str(),
-                        ),
-                        tag_line: TagLine::new(
-                            tag_line_node.get().expect("tag_line not valid").value().as_str(),
-                        ),
+                        game_name: game_name_node.get().expect("game_name not valid").value(),
+                        tag_line: tag_line_node.get().expect("tag_line not valid").value(),
                     });
             }>
                 <div class="my-2 flex space-x-2 items-center max-w-[768px]">

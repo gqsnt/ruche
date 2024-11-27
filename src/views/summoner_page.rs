@@ -4,7 +4,7 @@ use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::consts::platform_route::PlatformRoute;
 use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::HasStaticAsset;
-use crate::utils::{summoner_url, GameName, ProPlayerSlug, SummonerSlug, TagLine};
+use crate::utils::{summoner_url, ProPlayerSlug};
 use crate::views::summoner_page::summoner_nav::SummonerNav;
 use leptos::context::provide_context;
 use leptos::either::Either;
@@ -48,11 +48,7 @@ pub fn SummonerPage() -> impl IntoView {
     let summoner_resource = leptos_server::Resource::new_rkyv(
         move || (platform_type(), summoner_slug()),
         |(platform, summoner_slug)| async move {
-            get_summoner(
-                PlatformRoute::from(platform.as_str()),
-                SummonerSlug::new(summoner_slug.as_str()),
-            )
-            .await
+            get_summoner(PlatformRoute::from(platform.as_str()), summoner_slug).await
         },
     );
 
@@ -61,7 +57,7 @@ pub fn SummonerPage() -> impl IntoView {
             Ok(summoner) => Either::Left({
                 let (level_signal, set_level) = signal(summoner.summoner_level);
                 let (profile_icon_signal, set_profile_icon) = signal(summoner.profile_icon_id);
-                provide_context(summoner);
+                provide_context(summoner.clone());
                 let update_summoner_action = ServerAction::<UpdateSummoner>::new();
                 Effect::new(move |_| {
                     let _ = update_summoner_action.version().get();
@@ -113,9 +109,8 @@ pub fn SummonerPage() -> impl IntoView {
                 meta_store
                     .image()
                     .set(ProfileIcon(summoner.profile_icon_id).get_static_asset_url());
-
                 view! {
-                    {move || {
+                    {
                         view! {
                             <div class="flex justify-center">
                                 <div class="flex justify-between w-[768px] mb-2">
@@ -129,11 +124,9 @@ pub fn SummonerPage() -> impl IntoView {
                                                     class="w-16 h-16"
                                                 />
                                             }
-                                        }}
-                                        <div class="flex flex-col items-start">
+                                        }} <div class="flex flex-col items-start">
                                             <div>
-                                                {summoner.game_name.to_string()}#
-                                                {summoner.tag_line.to_string()}
+                                                {summoner.game_name.clone()}# {summoner.tag_line.clone()}
                                             </div>
                                             <div>
                                                 <span>lvl. {move || level_signal()}</span>
@@ -143,7 +136,7 @@ pub fn SummonerPage() -> impl IntoView {
                                                         target="_blank"
                                                         href=format!(
                                                             "https://lolpros.gg/player/{}",
-                                                            summoner.pro_slug.unwrap().to_string(),
+                                                            summoner.pro_slug.unwrap().as_ref(),
                                                         )
                                                         class=" bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
                                                     >
@@ -160,8 +153,8 @@ pub fn SummonerPage() -> impl IntoView {
                                                     update_summoner_action
                                                         .dispatch(UpdateSummoner {
                                                             summoner_id: summoner.id,
-                                                            game_name: summoner.game_name,
-                                                            tag_line: summoner.tag_line,
+                                                            game_name: summoner.game_name.clone(),
+                                                            tag_line: summoner.tag_line.clone(),
                                                             platform_route: summoner.platform,
                                                         });
                                                 }
@@ -173,9 +166,9 @@ pub fn SummonerPage() -> impl IntoView {
                                 </div>
                             </div>
                         }
-                    }}
+                    }
 
-                    <SummonerNav summoner />
+                    <SummonerNav />
                 }
             }),
             Err(_) => Either::Right(()),
@@ -189,12 +182,12 @@ pub fn SummonerPage() -> impl IntoView {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Copy, Serialize, Deserialize, Archive)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Archive)]
 pub struct Summoner {
     pub id: i32,
-    pub game_name: GameName,
+    pub game_name: String,
     pub pro_slug: Option<ProPlayerSlug>,
-    pub tag_line: TagLine,
+    pub tag_line: String,
     pub profile_icon_id: u16,
     pub summoner_level: u16,
     pub platform: PlatformRoute,
@@ -203,9 +196,9 @@ pub struct Summoner {
 impl Summoner {
     pub fn to_route_path(&self) -> String {
         summoner_url(
-            self.platform.to_string(),
-            self.game_name.to_string(),
-            self.tag_line.to_string(),
+            self.platform.as_ref(),
+            self.game_name.as_ref(),
+            self.tag_line.as_ref(),
         )
     }
 }

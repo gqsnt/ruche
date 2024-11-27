@@ -9,7 +9,7 @@ use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
 use crate::utils::{
     calculate_and_format_kda, calculate_loss_and_win_rate, format_duration,
-    format_float_to_2digits, summoner_url, DurationSince, RiotMatchId, SummonerSlug,
+    format_float_to_2digits, summoner_url, DurationSince, RiotMatchId,
 };
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
@@ -23,7 +23,8 @@ use leptos_router::hooks::{query_signal_with_options, use_query_map};
 use leptos_router::NavigateOptions;
 
 #[component]
-pub fn SummonerEncounterPage(summoner: Summoner) -> impl IntoView {
+pub fn SummonerEncounterPage() -> impl IntoView {
+    let summoner = expect_context::<Summoner>();
     let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let queries = use_query_map();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
@@ -60,7 +61,7 @@ pub fn SummonerEncounterPage(summoner: Summoner) -> impl IntoView {
                 page_number.unwrap_or(1),
                 is_with,
                 PlatformRoute::from(encounter_platform.as_str()),
-                SummonerSlug::new(encounter_slug.as_str()),
+                encounter_slug,
                 Some(filters),
             )
             .await
@@ -140,7 +141,7 @@ pub fn SummonerEncounterPage(summoner: Summoner) -> impl IntoView {
                                                     key=|match_| match_.match_id
                                                     let:match_
                                                 >
-                                                    <SummonerEncounterMatchComponent match_=match_ summoner />
+                                                    <SummonerEncounterMatchComponent match_=match_ />
                                                 </For>
                                             </div>
 
@@ -161,10 +162,7 @@ pub fn SummonerEncounterPage(summoner: Summoner) -> impl IntoView {
 }
 
 #[component]
-pub fn SummonerEncounterMatchComponent(
-    match_: SummonerEncounterMatch,
-    summoner: Summoner,
-) -> impl IntoView {
+pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl IntoView {
     let (show_details, set_show_details) = signal(false);
     view! {
         <div class="flex flex-col">
@@ -226,7 +224,6 @@ pub fn SummonerEncounterMatchComponent(
             <Show when=move || show_details()>
                 <MatchDetails
                     match_id=match_.match_id
-                    summoner
                     riot_match_id=match_.riot_match_id
                     platform=match_.platform
                 />
@@ -504,9 +501,9 @@ pub fn SummonerEncounterStat(
             >
                 <div>
                     <a href=summoner_url(
-                        summoner.platform.to_string(),
-                        summoner.game_name.to_string(),
-                        summoner.tag_line.to_string(),
+                        summoner.platform.as_ref(),
+                        summoner.game_name.as_ref(),
+                        summoner.tag_line.as_ref(),
                     )>{summoner.game_name.to_string()}# {summoner.tag_line.to_string()}</a>
                 </div>
                 <div>
@@ -517,7 +514,7 @@ pub fn SummonerEncounterStat(
                             target="_blank"
                             href=format!(
                                 "https://lolpros.gg/player/{}",
-                                summoner.pro_slug.unwrap().to_str(),
+                                summoner.pro_slug.unwrap().as_ref(),
                             )
                             class=" bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
                         >

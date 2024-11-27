@@ -1,5 +1,4 @@
 use crate::consts::platform_route::PlatformRoute;
-use crate::utils::SummonerSlug;
 use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterResult;
 use crate::views::BackEndMatchFiltersSearch;
 use leptos::prelude::*;
@@ -12,7 +11,7 @@ pub async fn get_encounter(
     page_number: u16,
     is_with: bool,
     encounter_platform: PlatformRoute,
-    encounter_slug: SummonerSlug,
+    encounter_slug: String,
     filters: Option<BackEndMatchFiltersSearch>,
 ) -> Result<SummonerEncounterResult, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
@@ -23,7 +22,7 @@ pub async fn get_encounter(
         summoner_id,
         filters.unwrap_or_default(),
         page_number as i32,
-        encounter_slug.to_string(),
+        encounter_slug.as_ref(),
         encounter_platform,
         is_with,
     )
@@ -38,9 +37,7 @@ pub mod ssr {
     use crate::backend::ssr::{format_duration_since, AppError, AppResult, PlatformRouteDb};
     use crate::consts::platform_route::PlatformRoute;
     use crate::consts::queue::Queue;
-    use crate::utils::{
-        parse_summoner_slug, DurationSince, GameName, ProPlayerSlug, RiotMatchId, TagLine,
-    };
+    use crate::utils::{parse_summoner_slug, DurationSince, ProPlayerSlug, RiotMatchId};
     use crate::views::summoner_page::summoner_encounter_page::{
         SummonerEncounterMatch, SummonerEncounterParticipant, SummonerEncounterResult,
         SummonerEncounterStats,
@@ -57,12 +54,11 @@ pub mod ssr {
         summoner_id: i32,
         filters: BackEndMatchFiltersSearch,
         page_number: i32,
-        encounter_slug: String,
+        encounter_slug: &str,
         encounter_platform: PlatformRoute,
         is_with: bool,
     ) -> AppResult<SummonerEncounterResult> {
-        let (encounter_game_name, encounter_tag_line) =
-            parse_summoner_slug(encounter_slug.as_str());
+        let (encounter_game_name, encounter_tag_line) = parse_summoner_slug(encounter_slug);
 
         let summoner = find_summoner_by_id(db, summoner_id).await?;
         let encounter = find_summoner_by_exact_game_name_tag_line(
@@ -397,8 +393,8 @@ pub mod ssr {
             .await
             .map(|summoner_db| Summoner {
                 id: summoner_db.id,
-                game_name: GameName::new(summoner_db.game_name.as_str()),
-                tag_line: TagLine::new(summoner_db.tag_line.as_str()),
+                game_name: summoner_db.game_name,
+                tag_line: summoner_db.tag_line,
                 platform: PlatformRoute::from(summoner_db.platform),
                 summoner_level: summoner_db.summoner_level as u16,
                 profile_icon_id: summoner_db.profile_icon_id as u16,

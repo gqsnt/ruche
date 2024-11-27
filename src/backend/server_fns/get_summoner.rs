@@ -1,5 +1,4 @@
 use crate::consts::platform_route::PlatformRoute;
-use crate::utils::SummonerSlug;
 #[cfg(feature = "ssr")]
 use crate::utils::{parse_summoner_slug, summoner_not_found_url};
 use crate::views::summoner_page::Summoner;
@@ -10,14 +9,13 @@ use leptos::server_fn::codec::Rkyv;
 #[server( input=Rkyv,output=Rkyv)]
 pub async fn get_summoner(
     platform_route: PlatformRoute,
-    summoner_slug: SummonerSlug,
+    summoner_slug: String,
 ) -> Result<Summoner, ServerFnError> {
     //log!("Server::Fetching summoner: {}", summoner_slug);
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
-    let slug = summoner_slug.to_string();
 
-    let (game_name, tag_line) = parse_summoner_slug(slug.as_str());
+    let (game_name, tag_line) = parse_summoner_slug(summoner_slug.as_ref());
     match ssr::find_summoner_by_exact_game_name_tag_line(
         &db,
         platform_route,
@@ -29,7 +27,12 @@ pub async fn get_summoner(
         Ok(Some(summoner)) => Ok(summoner),
         _ => {
             leptos_axum::redirect(
-                summoner_not_found_url(platform_route.to_string(), game_name, tag_line).as_str(),
+                summoner_not_found_url(
+                    platform_route.as_ref(),
+                    game_name.as_str(),
+                    tag_line.as_str(),
+                )
+                .as_str(),
             );
             Err(ServerFnError::new("Summoner not found"))
         }
@@ -40,7 +43,7 @@ pub async fn get_summoner(
 pub mod ssr {
     use crate::backend::ssr::{AppResult, PlatformRouteDb};
     use crate::consts::platform_route::PlatformRoute;
-    use crate::utils::{GameName, ProPlayerSlug, TagLine};
+    use crate::utils::ProPlayerSlug;
     use crate::views::summoner_page::Summoner;
 
     pub async fn find_summoner_by_exact_game_name_tag_line(
@@ -74,8 +77,8 @@ pub mod ssr {
         .map(|summoner_db| {
             summoner_db.map(|summoner_db| Summoner {
                 id: summoner_db.id,
-                game_name: GameName::new(summoner_db.game_name.as_str()),
-                tag_line: TagLine::new(summoner_db.tag_line.as_str()),
+                game_name: summoner_db.game_name,
+                tag_line: summoner_db.tag_line,
                 platform: PlatformRoute::from(summoner_db.platform),
                 summoner_level: summoner_db.summoner_level as u16,
                 profile_icon_id: summoner_db.profile_icon_id as u16,

@@ -1,19 +1,24 @@
-
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
-    use leptos_broken_gg::backend::tasks::sse_broadcast_match_updated_cleanup::SummonerUpdatedSenderCleanupTask;
     use axum::routing::get;
     use axum::Router;
     use dashmap::DashMap;
     use dotenv::dotenv;
+    use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use leptos_broken_gg::app::*;
     use leptos_broken_gg::backend;
+    use leptos_broken_gg::backend::live_game_cache::LiveGameCache;
+    use leptos_broken_gg::backend::task_director::TaskDirector;
+    use leptos_broken_gg::backend::tasks::generate_sitemap::GenerateSiteMapTask;
+    use leptos_broken_gg::backend::tasks::live_game_cache_cleanup::LiveGameCacheCleanupTask;
+    use leptos_broken_gg::backend::tasks::sse_broadcast_match_updated_cleanup::SummonerUpdatedSenderCleanupTask;
+    use leptos_broken_gg::backend::tasks::update_matches::UpdateMatchesTask;
+    use leptos_broken_gg::backend::tasks::update_pro_players::UpdateProPlayerTask;
     use leptos_broken_gg::ssr::serve;
     use leptos_broken_gg::ssr::sse_broadcast_match_updated;
-    use leptos::logging::log;
     use leptos_broken_gg::ssr::AppState;
     use leptos_broken_gg::ssr::{init_database, init_riot_api};
     use memory_serve::{load_assets, CacheControl, MemoryServe};
@@ -23,12 +28,6 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     use tower_http::compression::predicate::SizeAbove;
     use tower_http::compression::CompressionLayer;
     use tower_http::compression::Predicate;
-    use leptos_broken_gg::backend::task_director::TaskDirector;
-    use leptos_broken_gg::backend::tasks::generate_sitemap::GenerateSiteMapTask;
-    use leptos_broken_gg::backend::live_game_cache::LiveGameCache;
-    use leptos_broken_gg::backend::tasks::live_game_cache_cleanup::LiveGameCacheCleanupTask;
-    use leptos_broken_gg::backend::tasks::update_matches::UpdateMatchesTask;
-    use leptos_broken_gg::backend::tasks::update_pro_players::UpdateProPlayerTask;
 
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
@@ -94,7 +93,6 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
         task_director.run().await;
     });
 
-
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
         riot_api,
@@ -133,7 +131,10 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
                 move || shell(leptos_options.clone())
             },
         )
-        .route("/sse/match_updated/:summoner_id", get(sse_broadcast_match_updated))
+        .route(
+            "/sse/match_updated/:summoner_id",
+            get(sse_broadcast_match_updated),
+        )
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(
             shell,
         ))

@@ -11,14 +11,14 @@ use leptos::{component, view, IntoView};
 
 #[component]
 pub fn MatchDetailsOverview(
-    summoner: Summoner,
+    summoner_id: i32,
     match_details: ReadSignal<Vec<LolMatchParticipantDetails>>,
 ) -> impl IntoView {
     let details = match_details();
     let (summoner_team, summoner_team_won) = {
         let detail = details
             .iter()
-            .find(|participant| participant.summoner_id == summoner.id)
+            .find(|participant| participant.summoner_id == summoner_id)
             .expect("Summoner id not found");
         (detail.team_id, detail.won)
     };
@@ -39,14 +39,13 @@ pub fn MatchDetailsOverview(
                 won=summoner_team_won
                 team_id=summoner_team
                 participants=first_team
-                summoner
             />
             <MatchDetailsOverviewTable
                 won=!summoner_team_won
                 team_id=other_team
                 participants=second_team
-                summoner
             />
+
         </div>
     }
 }
@@ -55,9 +54,9 @@ pub fn MatchDetailsOverview(
 pub fn MatchDetailsOverviewTable(
     won: bool,
     team_id: u16,
-    summoner: Summoner,
     participants: Vec<LolMatchParticipantDetails>,
 ) -> impl IntoView {
+    let summoner = expect_context::<Summoner>();
     view! {
         <table class="table-fixed text-xs w-full border-collapse">
             <colgroup>
@@ -103,6 +102,10 @@ pub fn MatchDetailsOverviewTable(
                         let item5 = Item::try_from(participant.item5_id).ok();
                         let item6 = Item::try_from(participant.item6_id).ok();
                         let is_pro_player = participant.summoner_pro_player_slug.is_some();
+                        let summoner_game_name_clone = summoner.game_name.clone();
+                        let summoner_tag_line_clone = summoner.tag_line.clone();
+                        let participant_game_name_clone = participant.game_name.clone();
+                        let participant_tag_line_clone = participant.tag_line.clone();
 
                         view! {
                             <tr
@@ -170,12 +173,12 @@ pub fn MatchDetailsOverviewTable(
                                         <Show when=move || (participant.encounter_count > 1)>
                                             <a
                                                 href=summoner_encounter_url(
-                                                    summoner.platform.to_string(),
-                                                    summoner.tag_line.to_string(),
-                                                    summoner.game_name.to_string(),
-                                                    participant.platform.to_string(),
-                                                    participant.game_name.to_string(),
-                                                    participant.tag_line.to_string(),
+                                                    summoner.platform.as_ref(),
+                                                    summoner_game_name_clone.as_str(),
+                                                    summoner_tag_line_clone.as_str(),
+                                                    participant.platform.as_ref(),
+                                                    participant_game_name_clone.as_str(),
+                                                    participant_tag_line_clone.as_str(),
                                                 )
                                                 class="text-xs bg-green-800 rounded px-0.5 text-center"
                                             >
@@ -187,7 +190,7 @@ pub fn MatchDetailsOverviewTable(
                                                 target="_blank"
                                                 href=format!(
                                                     "https://lolpros.gg/player/{}",
-                                                    participant.summoner_pro_player_slug.unwrap().to_str(),
+                                                    participant.summoner_pro_player_slug.unwrap().as_ref(),
                                                 )
                                                 class="text-xs bg-purple-800 rounded px-0.5 text-center"
                                             >
@@ -197,12 +200,12 @@ pub fn MatchDetailsOverviewTable(
                                         <a
                                             target="_blank"
                                             href=summoner_url(
-                                                participant.platform.to_string(),
-                                                participant.game_name.to_string(),
-                                                participant.tag_line.to_string(),
+                                                participant.platform.as_ref(),
+                                                participant.game_name.as_str(),
+                                                participant.tag_line.as_str(),
                                             )
                                         >
-                                            {participant.game_name.to_string()}
+                                            {participant.game_name.clone()}
                                         </a>
                                     </div>
                                     <span class="text-[11px]">

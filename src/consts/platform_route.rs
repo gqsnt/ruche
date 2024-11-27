@@ -177,31 +177,33 @@ impl From<&str> for PlatformRoute {
     }
 }
 
+impl AsRef<str> for PlatformRoute {
+    fn as_ref(&self) -> &str {
+        match self {
+            PlatformRoute::BR1 => "BR",
+            PlatformRoute::EUN1 => "EUNE",
+            PlatformRoute::EUW1 => "EUW",
+            PlatformRoute::JP1 => "JP",
+            PlatformRoute::KR => "KR",
+            PlatformRoute::LA1 => "LAN",
+            PlatformRoute::LA2 => "LAS",
+            PlatformRoute::ME1 => "MENA",
+            PlatformRoute::NA1 => "NA",
+            PlatformRoute::OC1 => "OCE",
+            PlatformRoute::PH2 => "PH",
+            PlatformRoute::RU => "RU",
+            PlatformRoute::SG2 => "SG",
+            PlatformRoute::TH2 => "TH",
+            PlatformRoute::TR1 => "TR",
+            PlatformRoute::TW2 => "TW",
+            PlatformRoute::VN2 => "VN",
+            PlatformRoute::PBE1 => "PBE",
+        }
+    }
+}
+
 impl std::fmt::Display for PlatformRoute {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                PlatformRoute::BR1 => "BR",
-                PlatformRoute::EUN1 => "EUNE",
-                PlatformRoute::EUW1 => "EUW",
-                PlatformRoute::JP1 => "JP",
-                PlatformRoute::KR => "KR",
-                PlatformRoute::LA1 => "LAN",
-                PlatformRoute::LA2 => "LAS",
-                PlatformRoute::ME1 => "MENA",
-                PlatformRoute::NA1 => "NA",
-                PlatformRoute::OC1 => "OCE",
-                PlatformRoute::PH2 => "PH",
-                PlatformRoute::RU => "RU",
-                PlatformRoute::SG2 => "SG",
-                PlatformRoute::TH2 => "TH",
-                PlatformRoute::TR1 => "TR",
-                PlatformRoute::TW2 => "TW",
-                PlatformRoute::VN2 => "VN",
-                PlatformRoute::PBE1 => "PBE",
-            }
-        )
+        write!(f, "{}", self.as_ref())
     }
 }

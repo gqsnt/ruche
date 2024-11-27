@@ -12,10 +12,6 @@ impl<const N: usize> FixedSizeString<N> {
         FixedSizeString(result)
     }
 
-    pub fn to_str(&self) -> &str {
-        std::str::from_utf8(self.trim_end_zeros()).unwrap()
-    }
-
     fn trim_end_zeros(&self) -> &[u8] {
         let end = self
             .0
@@ -26,17 +22,21 @@ impl<const N: usize> FixedSizeString<N> {
     }
 }
 
+impl<const N: usize> AsRef<str> for FixedSizeString<N> {
+    fn as_ref(&self) -> &str {
+        std::str::from_utf8(self.trim_end_zeros()).unwrap()
+    }
+}
+
 impl<const N: usize> std::fmt::Display for FixedSizeString<N> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", String::from_utf8_lossy(self.trim_end_zeros()))
     }
 }
 
-pub type GameName = FixedSizeString<16>;
-pub type TagLine = FixedSizeString<5>;
 pub type Puuid = FixedSizeString<78>;
 pub type ProPlayerSlug = FixedSizeString<20>;
-pub type SummonerSlug = FixedSizeString<22>;
+
 pub type RiotMatchId = FixedSizeString<17>;
 pub type DurationSince = FixedSizeString<14>;
 
@@ -56,11 +56,10 @@ pub fn calculate_loss_and_win_rate<T: Into<f32>>(wins: T, total: T) -> (f32, f32
     if total == 0.0 {
         return (0.0, 0.0);
     }
-    let loses= total - wins;
+    let loses = total - wins;
     let win_rate = (wins / total) * 100.0;
     (loses, win_rate)
 }
-
 
 pub fn calculate_and_format_kda<T: Into<f32>>(kills: T, deaths: T, assists: T) -> String {
     let kda = calculate_kda(kills, deaths, assists);
@@ -81,7 +80,6 @@ pub fn calculate_kda<T: Into<f32>>(kills: T, deaths: T, assists: T) -> f32 {
     (kills + assists) / deaths
 }
 
-
 pub fn version_to_major_minor(version: &str) -> String {
     let mut split = version.split(".");
     if split.clone().count() < 2 {
@@ -91,7 +89,6 @@ pub fn version_to_major_minor(version: &str) -> String {
     let minor = split.next().unwrap();
     format!("{}.{}", major, minor)
 }
-
 
 pub fn format_with_spaces(number: u32) -> String {
     // convert 4978521 -> 4 978 521
@@ -109,11 +106,11 @@ pub fn format_with_spaces(number: u32) -> String {
     result
 }
 
-pub fn summoner_to_slug(game_name: String, tag_line: String) -> String {
+pub fn summoner_to_slug(game_name: &str, tag_line: &str) -> String {
     format!(
         "{}-{}",
-        urlencoding::encode(game_name.as_str()),
-        urlencoding::encode(tag_line.as_str())
+        urlencoding::encode(game_name),
+        urlencoding::encode(tag_line)
     )
 }
 
@@ -130,7 +127,7 @@ pub fn parse_summoner_slug(slug: &str) -> (String, String) {
     (game_name, String::new())
 }
 
-pub fn summoner_url(platform: String, game_name: String, tag_line: String) -> String {
+pub fn summoner_url(platform: &str, game_name: &str, tag_line: &str) -> String {
     format!(
         "/platform/{}/summoners/{}",
         platform,
@@ -138,7 +135,7 @@ pub fn summoner_url(platform: String, game_name: String, tag_line: String) -> St
     )
 }
 
-pub fn summoner_not_found_url(platform: String, game_name: String, tag_line: String) -> String {
+pub fn summoner_not_found_url(platform: &str, game_name: &str, tag_line: &str) -> String {
     format!(
         "/platform/{}?game_name={}&tag_line={}",
         platform, game_name, tag_line
@@ -146,12 +143,12 @@ pub fn summoner_not_found_url(platform: String, game_name: String, tag_line: Str
 }
 
 pub fn summoner_encounter_url(
-    platform: String,
-    game_name: String,
-    tag_line: String,
-    encounter_platform: String,
-    encounter_game_name: String,
-    encounter_tag_line: String,
+    platform: &str,
+    game_name: &str,
+    tag_line: &str,
+    encounter_platform: &str,
+    encounter_game_name: &str,
+    encounter_tag_line: &str,
 ) -> String {
     format!(
         "/platform/{}/summoners/{}?tab=encounter&encounter_slug={}&encounter_platform={}",
