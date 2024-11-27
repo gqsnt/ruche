@@ -56,11 +56,10 @@ pub mod ssr {
             r#"
             SELECT
                     lmp.summoner_id,
-                    COUNT(*) AS match_count,
                     COUNT(*) OVER () AS total_count,
+                    COUNT(*) AS match_count,
                     COUNT(*) FILTER (WHERE lmp.team_id = tm.team_id) AS with_match_count,
                     SUM(CASE WHEN lmp.team_id = tm.team_id AND tm.won THEN 1 ELSE 0 END) AS with_win_count,
-                    COUNT(*) FILTER (WHERE lmp.team_id != tm.team_id) AS vs_match_count,
                     SUM(CASE WHEN lmp.team_id != tm.team_id AND tm.won THEN 1 ELSE 0 END) AS vs_win_count
                 FROM
                     lol_match_participants lmp
@@ -157,7 +156,6 @@ pub mod ssr {
                         match_count: encounter.match_count as u16,
                         with_match_count: encounter.with_match_count as u16,
                         with_win_count: encounter.with_win_count as u16,
-                        vs_match_count: encounter.vs_match_count as u16,
                         vs_win_count: encounter.vs_win_count as u16,
                         game_name: GameName::new(game_name.as_str()),
                         tag_line: TagLine::new(tag_line.as_str()),
@@ -179,7 +177,6 @@ pub mod ssr {
         pub total_count: i64,
         pub with_match_count: i64,
         pub with_win_count: i64,
-        pub vs_match_count: i64,
         pub vs_win_count: i64,
     }
 }

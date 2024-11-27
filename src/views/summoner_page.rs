@@ -4,7 +4,7 @@ use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::consts::platform_route::PlatformRoute;
 use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::HasStaticAsset;
-use crate::utils::{summoner_url, GameName, ProPlayerSlug, Puuid, SummonerSlug, TagLine};
+use crate::utils::{summoner_url, GameName, ProPlayerSlug, SummonerSlug, TagLine};
 use crate::views::summoner_page::summoner_nav::SummonerNav;
 use leptos::context::provide_context;
 use leptos::either::Either;
@@ -73,16 +73,19 @@ pub fn SummonerPage() -> impl IntoView {
                 let summoner_update_version = {
                     use futures::StreamExt;
                     use send_wrapper::SendWrapper;
+
                     let mut source = SendWrapper::new(
                         gloo_net::eventsource::futures::EventSource::new(
-                            format!("/subscribe/{}", summoner_signal().unwrap().id).as_str(),
+                            format!("/sse/match_updated/{}", summoner_signal().unwrap().id)
+                                .as_str(),
                         )
                         .expect("couldn't connect to SSE stream"),
                     );
+
                     let s = ReadSignal::from_stream_unsync(
                         source
                             .subscribe("message")
-                            .unwrap()
+                            .expect("couldn't subscribe to SSE stream")
                             .filter_map(|value| async move {
                                 value
                                     .map(|(_, message_event)| {
@@ -104,10 +107,8 @@ pub fn SummonerPage() -> impl IntoView {
                 #[cfg(feature = "ssr")]
                 let (summoner_update_version, _) = signal(None::<u16>);
                 provide_context(summoner_update_version);
-
-                meta_store.image().set(ProfileIcon::get_static_asset_url(
-                    summoner_signal().unwrap().profile_icon_id,
-                ));
+                let profile_icon = ProfileIcon(summoner_signal().unwrap().profile_icon_id);
+                meta_store.image().set(profile_icon.get_static_asset_url());
                 view! {
                     {move || {
                         view! {
@@ -115,10 +116,8 @@ pub fn SummonerPage() -> impl IntoView {
                                 <div class="flex justify-between w-[768px] mb-2">
                                     <div class="flex  mt-2 space-x-2">
                                         <img
-                                            alt="Profile Icon"
-                                            src=ProfileIcon::get_static_asset_url(
-                                                summoner_signal().unwrap().profile_icon_id,
-                                            )
+                                            alt=profile_icon.to_string()
+                                            src=profile_icon.get_static_asset_url()
                                             class="w-16 h-16"
                                         />
                                         <div class="flex flex-col items-start">
@@ -159,10 +158,10 @@ pub fn SummonerPage() -> impl IntoView {
                                                 on:click=move |_| {
                                                     update_summoner_action
                                                         .dispatch(UpdateSummoner {
-                                                            puuid: summoner_signal().unwrap().puuid,
-                                                            platform_route: summoner_signal().unwrap().platform,
-                                                            tag_line: summoner_signal().unwrap().tag_line,
+                                                            summoner_id: summoner_signal().unwrap().id,
                                                             game_name: summoner_signal().unwrap().game_name,
+                                                            tag_line: summoner_signal().unwrap().tag_line,
+                                                            platform_route: summoner_signal().unwrap().platform,
                                                         });
                                                 }
                                             >
@@ -195,7 +194,6 @@ pub struct SummonerMatchesVersion(u16);
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Archive)]
 pub struct Summoner {
     pub id: i32,
-    pub puuid: Puuid,
     pub game_name: GameName,
     pub pro_slug: Option<ProPlayerSlug>,
     pub tag_line: TagLine,

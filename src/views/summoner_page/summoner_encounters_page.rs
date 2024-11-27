@@ -3,7 +3,10 @@ use crate::backend::server_fns::get_encounters::get_encounters;
 use crate::consts::platform_route::PlatformRoute;
 use crate::consts::profile_icon::ProfileIcon;
 use crate::consts::HasStaticAsset;
-use crate::utils::{summoner_encounter_url, summoner_url, GameName, TagLine};
+use crate::utils::{
+    calculate_loss_and_win_rate, format_float_to_2digits, summoner_encounter_url, summoner_url,
+    GameName, TagLine,
+};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
 use crate::views::BackEndMatchFiltersSearch;
@@ -145,16 +148,25 @@ pub fn SummonerEncountersPage(summoner: ReadSignal<Option<Summoner>>) -> impl In
                                                                 let encounter_platform = encounter.platform.to_string();
                                                                 let encounter_game_name = encounter.game_name.to_string();
                                                                 let encounter_tag_line = encounter.tag_line.to_string();
+                                                                let profile_icon = ProfileIcon(encounter.profile_icon_id);
+                                                                let vs_match_count = encounter.match_count
+                                                                    - encounter.with_match_count;
+                                                                let (vs_losses, vs_winrate) = calculate_loss_and_win_rate(
+                                                                    encounter.vs_win_count,
+                                                                    vs_match_count,
+                                                                );
+                                                                let (with_losses, with_winrate) = calculate_loss_and_win_rate(
+                                                                    encounter.with_win_count,
+                                                                    encounter.with_match_count,
+                                                                );
                                                                 view! {
                                                                     <tr>
                                                                         <td class="text-left w-[200px]">
                                                                             <div class="flex items-center py-0.5">
                                                                                 <div>
                                                                                     <img
-                                                                                        alt="Profile Icon"
-                                                                                        src=ProfileIcon::get_static_asset_url(
-                                                                                            encounter.profile_icon_id,
-                                                                                        )
+                                                                                        alt=profile_icon.to_string()
+                                                                                        src=profile_icon.get_static_asset_url()
                                                                                         class="w-8 h-8 rounded"
                                                                                         height="32"
                                                                                         width="32"
@@ -175,24 +187,14 @@ pub fn SummonerEncountersPage(summoner: ReadSignal<Option<Summoner>>) -> impl In
                                                                             </div>
                                                                         </td>
                                                                         <td class="px-2">
-                                                                            {encounter.with_win_count}W
-                                                                            {encounter.with_match_count - encounter.with_win_count}L
+                                                                            {encounter.with_win_count}W {with_losses as u16}L
                                                                             <span class="mx-1">{encounter.with_match_count}G</span>
-                                                                            {format!(
-                                                                                "{:.2}%",
-                                                                                (encounter.with_win_count as f32
-                                                                                    / encounter.with_match_count as f32) * 100.0,
-                                                                            )}
+                                                                            {format_float_to_2digits(with_winrate)}%
                                                                         </td>
                                                                         <td class="px-2">
-                                                                            {encounter.vs_win_count}W
-                                                                            {encounter.vs_match_count - encounter.vs_win_count}L
-                                                                            <span class="mx-1">{encounter.vs_match_count}G</span>
-                                                                            {format!(
-                                                                                "{:.2}%",
-                                                                                (encounter.vs_win_count as f32
-                                                                                    / encounter.vs_match_count as f32) * 100.0,
-                                                                            )}
+                                                                            {encounter.vs_win_count}W {vs_losses as u16}L
+                                                                            <span class="mx-1">{vs_match_count}G</span>
+                                                                            {format_float_to_2digits(vs_winrate)}%
                                                                         </td>
                                                                         <td class="px-2 ">{encounter.match_count}</td>
                                                                         <td class="px-2">
@@ -253,7 +255,6 @@ pub struct SummonerEncountersSummoner {
     pub match_count: u16,
     pub with_match_count: u16,
     pub with_win_count: u16,
-    pub vs_match_count: u16,
     pub vs_win_count: u16,
     pub profile_icon_id: u16,
     pub game_name: GameName,

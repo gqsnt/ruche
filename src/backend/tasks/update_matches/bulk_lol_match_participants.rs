@@ -1,5 +1,5 @@
 use crate::backend::ssr::AppResult;
-use crate::backend::updates::update_matches_task::TempParticipant;
+use crate::backend::tasks::update_matches::TempParticipant;
 use itertools::Itertools;
 
 pub async fn bulk_insert_lol_match_participants(

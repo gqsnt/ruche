@@ -8,8 +8,8 @@ use crate::consts::queue::Queue;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
 use crate::utils::{
-    format_float_to_2digits, summoner_encounter_url, summoner_url, GameName, ProPlayerSlug, Puuid,
-    RiotMatchId, TagLine,
+    calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits,
+    summoner_encounter_url, summoner_url, GameName, ProPlayerSlug, Puuid, RiotMatchId, TagLine,
 };
 use crate::views::summoner_page::Summoner;
 use leptos::either::Either;
@@ -29,13 +29,12 @@ pub fn SummonerLivePage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView
             (
                 summoner_update_version.get().unwrap_or_default(),
                 refresh_signal.get(),
-                summoner().unwrap().puuid,
                 summoner().unwrap().id,
                 summoner().unwrap().platform.to_string(),
             )
         },
-        |(_, _, puuid, id, platform_type)| async move {
-            get_live_game(id, PlatformRoute::from(platform_type.as_str()), puuid).await
+        |(_, _, id, platform_type)| async move {
+            get_live_game(id, PlatformRoute::from(platform_type.as_str())).await
         },
     );
 
@@ -155,6 +154,13 @@ pub fn MatchLiveTable(
                     .into_iter()
                     .map(|participant| {
                         let is_pro_player = participant.pro_player_slug.is_some();
+                        let champion = Champion::from(participant.champion_id);
+                        let summoner_spell1 = SummonerSpell::from(participant.summoner_spell1_id);
+                        let summoner_spell2 = SummonerSpell::from(participant.summoner_spell2_id);
+                        let perk_primary_selection = Perk::from(
+                            participant.perk_primary_selection_id,
+                        );
+                        let perk_sub_style = Perk::from(participant.perk_sub_style_id);
 
                         view! {
                             <tr>
@@ -168,8 +174,8 @@ pub fn MatchLiveTable(
                                         <img
                                             width="32"
                                             height="32"
-                                            alt=Champion::from(participant.champion_id).to_str()
-                                            src=Champion::get_static_asset_url(participant.champion_id)
+                                            alt=champion.to_str()
+                                            src=champion.get_static_asset_url()
                                             class="w-8 h-8 rounded-full block"
                                         />
                                     </div>
@@ -179,11 +185,8 @@ pub fn MatchLiveTable(
                                         <img
                                             width="16"
                                             height="16"
-                                            alt=SummonerSpell::from(participant.summoner_spell1_id)
-                                                .to_string()
-                                            src=SummonerSpell::get_static_asset_url(
-                                                participant.summoner_spell1_id,
-                                            )
+                                            alt=summoner_spell1.to_string()
+                                            src=summoner_spell1.get_static_asset_url()
                                             class="w-4 h-4 rounded"
                                         />
                                     </div>
@@ -191,11 +194,8 @@ pub fn MatchLiveTable(
                                         <img
                                             width="16"
                                             height="16"
-                                            alt=SummonerSpell::from(participant.summoner_spell2_id)
-                                                .to_string()
-                                            src=SummonerSpell::get_static_asset_url(
-                                                participant.summoner_spell2_id,
-                                            )
+                                            alt=summoner_spell2.to_string()
+                                            src=summoner_spell2.get_static_asset_url()
                                             class="w-4 h-4 rounded"
                                         />
                                     </div>
@@ -203,13 +203,10 @@ pub fn MatchLiveTable(
                                 <td class="py-1">
                                     <div class="relative">
                                         <img
-                                            alt=Perk::from(participant.perk_primary_selection_id)
-                                                .to_string()
+                                            alt=perk_primary_selection.to_string()
                                             width="16"
                                             height="16"
-                                            src=Perk::get_static_asset_url(
-                                                participant.perk_primary_selection_id,
-                                            )
+                                            src=perk_primary_selection.get_static_asset_url()
                                             class="w-4 h-4 rounded"
                                         />
                                     </div>
@@ -217,10 +214,8 @@ pub fn MatchLiveTable(
                                         <img
                                             width="16"
                                             height="16"
-                                            alt=Perk::from(participant.perk_sub_style_id).to_string()
-                                            src=Perk::get_static_asset_url(
-                                                participant.perk_sub_style_id,
-                                            )
+                                            alt=perk_sub_style.to_string()
+                                            src=perk_sub_style.get_static_asset_url()
                                             class="w-4 h-4 rounded"
                                         />
                                     </div>
@@ -276,15 +271,18 @@ pub fn MatchLiveTable(
                                 <td class="py-1">
                                     {match &participant.ranked_stats {
                                         Some(ranked_stats) => {
+                                            let (losses, win_rate) = calculate_loss_and_win_rate(
+                                                ranked_stats.total_ranked,
+                                                ranked_stats.total_ranked_wins,
+                                            );
                                             Either::Left(
                                                 view! {
                                                     <div>
-                                                        {format_float_to_2digits(ranked_stats.ranked_win_rate)}%
+                                                        {format_float_to_2digits(win_rate)}%
                                                         {ranked_stats.total_ranked}G
                                                     </div>
                                                     <div>
-                                                        {ranked_stats.total_ranked_wins}W
-                                                        {ranked_stats.total_ranked_losses}L
+                                                        {ranked_stats.total_ranked_wins}W {losses as u16}L
                                                     </div>
                                                 },
                                             )
@@ -300,15 +298,18 @@ pub fn MatchLiveTable(
                                 <td class="py-1">
                                     {match &participant.champion_stats {
                                         Some(champion_stats) => {
+                                            let (losses, win_rate) = calculate_loss_and_win_rate(
+                                                champion_stats.total_champion_played,
+                                                champion_stats.total_champion_wins,
+                                            );
                                             Either::Left(
                                                 view! {
                                                     <div>
-                                                        {format_float_to_2digits(champion_stats.champion_win_rate)}%
+                                                        {format_float_to_2digits(win_rate)}%
                                                         {champion_stats.total_champion_played}G
                                                     </div>
                                                     <div>
-                                                        {champion_stats.total_champion_wins}W
-                                                        {champion_stats.total_champion_losses}L
+                                                        {champion_stats.total_champion_wins}W {losses as u16}L
                                                     </div>
                                                 },
                                             )
@@ -327,10 +328,10 @@ pub fn MatchLiveTable(
                                             Either::Left(
                                                 view! {
                                                     <div>
-                                                        {format!(
-                                                            "{:.2}",
-                                                            (champion_stats.avg_kills + champion_stats.avg_assists)
-                                                                / champion_stats.avg_deaths.max(1.0),
+                                                        {calculate_and_format_kda(
+                                                            champion_stats.avg_kills,
+                                                            champion_stats.avg_deaths,
+                                                            champion_stats.avg_assists,
                                                         )}:1
                                                     </div>
                                                     <div>
@@ -386,16 +387,12 @@ pub struct LiveGameParticipant {
 pub struct LiveGameParticipantRankedStats {
     pub total_ranked: u16,
     pub total_ranked_wins: u16,
-    pub total_ranked_losses: u16,
-    pub ranked_win_rate: f32,
 }
 
 #[derive(Clone, Serialize, Deserialize, Default, Archive)]
 pub struct LiveGameParticipantChampionStats {
     pub total_champion_played: u16,
     pub total_champion_wins: u16,
-    pub total_champion_losses: u16,
-    pub champion_win_rate: f32,
     pub avg_kills: f32,
     pub avg_deaths: f32,
     pub avg_assists: f32,

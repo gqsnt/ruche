@@ -1,55 +1,81 @@
 use crate::backend::ssr::{AppResult, PlatformRouteDb};
+use crate::backend::task_director::Task;
+use crate::backend::tasks::calculate_next_run_to_fixed_start_hour;
 use crate::consts::platform_route::PLATFORM_ROUTE_OPTIONS;
 use crate::utils::summoner_url;
-use chrono::{Duration, Local, NaiveDateTime, Timelike};
+use axum::async_trait;
+use chrono::NaiveDateTime;
 use leptos::leptos_dom::log;
 use sitemap::structs::UrlEntry;
 use sitemap::writer::SiteMapWriter;
 use sqlx::PgPool;
-use tokio::time::{sleep_until, Instant};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+use tokio::time::Instant;
 
-pub async fn schedule_generate_site_map(db: PgPool) {
-    let start_hour = 3;
-    tokio::spawn(async move {
-        if let Err(e) = generate_site_map(&db).await {
-            log!("Failed to update site map: {:?}", e);
+pub struct GenerateSiteMapTask {
+    db: PgPool,
+    start_hour: u32,
+    next_run: Instant,
+    running: Arc<AtomicBool>,
+}
+
+impl GenerateSiteMapTask {
+    pub fn new(db: PgPool, start_hour: u32) -> Self {
+        let next_run = calculate_next_run_to_fixed_start_hour(start_hour);
+        Self {
+            db,
+            start_hour,
+            next_run,
+            running: Arc::new(AtomicBool::new(false)),
         }
-        loop {
-            // Calculate the time until the next 2 a.m.
-            let now = Local::now();
-            let target_time = if now.hour() >= start_hour {
-                // If it's past 2 a.m. today, schedule for 2 a.m. the next day
-                (now + Duration::days(1))
-                    .with_hour(start_hour)
-                    .unwrap()
-                    .with_minute(0)
-                    .unwrap()
-                    .with_second(0)
-                    .unwrap()
-            } else {
-                // Otherwise, schedule for 2 a.m. today
-                now.with_hour(start_hour)
-                    .unwrap()
-                    .with_minute(0)
-                    .unwrap()
-                    .with_second(0)
-                    .unwrap()
-            };
+    }
+}
 
-            let duration_until_target = target_time - now;
-            let sleep_duration = duration_until_target
-                .to_std()
-                .expect("Failed to calculate sleep duration");
-
-            // Wait until the next 2 a.m.
-            sleep_until(Instant::now() + sleep_duration).await;
-
-            // Execute the task
-            if let Err(e) = generate_site_map(&db).await {
-                log!("Failed to update pro player data: {:?}", e);
-            }
+#[async_trait]
+impl Task for GenerateSiteMapTask {
+    async fn execute(&self) {
+        if let Err(e) = generate_site_map(&self.db).await {
+            log!("Failed to generate site map: {:?}", e);
+        } else {
+            log!("Site map generated successfully");
         }
-    });
+    }
+
+    fn next_execution(&self) -> Instant {
+        self.next_run
+    }
+
+    fn update_schedule(&mut self) {
+        self.next_run = calculate_next_run_to_fixed_start_hour(self.start_hour);
+    }
+
+    fn is_running(&self) -> bool {
+        self.running.load(Ordering::SeqCst)
+    }
+
+    fn set_running(&self, running: bool) {
+        self.running.store(running, Ordering::SeqCst);
+    }
+
+    fn clone_box(&self) -> Box<dyn Task> {
+        Box::new(Self {
+            db: self.db.clone(),
+            start_hour: self.start_hour,
+            next_run: self.next_run,
+            running: self.running.clone(),
+        })
+    }
+
+    fn name(&self) -> &'static str {
+        "GenerateSiteMapTask"
+    }
+
+    fn allow_concurrent(&self) -> bool {
+        false // Do not allow concurrent executions
+    }
 }
 
 pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
@@ -88,7 +114,7 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
         url_writer.end()?;
     }
 
-    tokio::fs::write("target/site/sitemap.xml", output).await?;
+    tokio::fs::write("../../../target/site/sitemap.xml", output).await?;
     Ok(())
 }
 

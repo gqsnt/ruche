@@ -1,9 +1,12 @@
 use crate::backend::ssr::{AppError, AppResult, PlatformRouteDb};
-use crate::backend::updates::update_matches_task::bulk_summoners::bulk_insert_summoners;
-use crate::backend::updates::update_matches_task::TempSummoner;
+use crate::backend::task_director::Task;
+use crate::backend::tasks::calculate_next_run_to_fixed_start_hour;
+use crate::backend::tasks::update_matches::bulk_summoners::bulk_insert_summoners;
+use crate::backend::tasks::update_matches::TempSummoner;
 use crate::ssr::RiotApiState;
 use crate::{consts, DB_CHUNK_SIZE};
-use chrono::{Duration, Local, Timelike, Utc};
+use axum::async_trait;
+use chrono::Utc;
 use futures::stream::FuturesUnordered;
 use futures::{stream, StreamExt};
 use itertools::Itertools;
@@ -12,53 +15,75 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::PgPool;
 use std::collections::HashMap;
-use tokio::time::{sleep_until, Instant};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use tokio::time::Instant;
 
-pub async fn schedule_update_pro_player_task(db: PgPool, api: RiotApiState) {
-    let start_hour = 2;
-    tokio::spawn(async move {
-        if let Err(e) = update_pro_player_task(&db, api.clone()).await {
-            log!("Failed to update pro player data: {:?}", e);
-        }
-        loop {
-            // Calculate the time until the next 2 a.m.
-            let now = Local::now();
-            let target_time = if now.hour() >= start_hour {
-                // If it's past 2 a.m. today, schedule for 2 a.m. the next day
-                (now + Duration::days(1))
-                    .with_hour(start_hour)
-                    .unwrap_or_default()
-                    .with_minute(0)
-                    .unwrap_or_default()
-                    .with_second(0)
-                    .unwrap_or_default()
-            } else {
-                // Otherwise, schedule for 2 a.m. today
-                now.with_hour(start_hour)
-                    .unwrap_or_default()
-                    .with_minute(0)
-                    .unwrap_or_default()
-                    .with_second(0)
-                    .unwrap_or_default()
-            };
-
-            let duration_until_target = target_time - now;
-            let sleep_duration = duration_until_target
-                .to_std()
-                .expect("Failed to calculate sleep duration");
-
-            // Wait until the next 2 a.m.
-            sleep_until(Instant::now() + sleep_duration).await;
-
-            // Execute the task
-            if let Err(e) = update_pro_player_task(&db, api.clone()).await {
-                log!("Failed to update pro player data: {:?}", e);
-            }
-        }
-    });
+pub struct UpdateProPlayerTask {
+    db: PgPool,
+    api: RiotApiState,
+    start_hour: u32,
+    next_run: Instant,
+    running: Arc<AtomicBool>,
 }
 
-pub async fn update_pro_player_task(db: &PgPool, api: RiotApiState) -> AppResult<()> {
+impl UpdateProPlayerTask {
+    pub fn new(db: PgPool, api: RiotApiState, start_hour: u32) -> Self {
+        let next_run = calculate_next_run_to_fixed_start_hour(start_hour);
+        Self {
+            db,
+            api,
+            start_hour,
+            next_run,
+            running: Arc::new(AtomicBool::new(false)),
+        }
+    }
+}
+
+#[async_trait]
+impl Task for UpdateProPlayerTask {
+    async fn execute(&self) {
+        if let Err(e) = update_pro_player(&self.db, self.api.clone()).await {
+            log!("Failed to update pro player data: {:?}", e);
+        }
+    }
+
+    fn next_execution(&self) -> Instant {
+        self.next_run
+    }
+
+    fn update_schedule(&mut self) {
+        self.next_run = calculate_next_run_to_fixed_start_hour(self.start_hour);
+    }
+
+    fn is_running(&self) -> bool {
+        self.running.load(Ordering::SeqCst)
+    }
+
+    fn set_running(&self, running: bool) {
+        self.running.store(running, Ordering::SeqCst);
+    }
+
+    fn clone_box(&self) -> Box<dyn Task> {
+        Box::new(Self {
+            db: self.db.clone(),
+            api: self.api.clone(),
+            start_hour: self.start_hour,
+            next_run: self.next_run,
+            running: self.running.clone(),
+        })
+    }
+
+    fn name(&self) -> &'static str {
+        "UpdateProPlayerTask"
+    }
+
+    fn allow_concurrent(&self) -> bool {
+        false // Do not allow concurrent executions
+    }
+}
+
+pub async fn update_pro_player(db: &PgPool, api: RiotApiState) -> AppResult<()> {
     let mut start = Instant::now();
     let pro_players = get_all_pro_players().await?;
     log!("Found {} Pro players", pro_players.len());

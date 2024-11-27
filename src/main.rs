@@ -1,6 +1,8 @@
+
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
+    use leptos_broken_gg::backend::tasks::sse_broadcast_match_updated_cleanup::SummonerUpdatedSenderCleanupTask;
     use axum::routing::get;
     use axum::Router;
     use dashmap::DashMap;
@@ -9,13 +11,9 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use leptos_broken_gg::app::*;
     use leptos_broken_gg::backend;
-    use leptos_broken_gg::backend::generate_sitemap::schedule_generate_site_map;
-    use leptos_broken_gg::backend::live_game_cache;
-    use leptos_broken_gg::backend::live_game_cache::schedule_live_game_cache_cleanup_task;
-    use leptos_broken_gg::backend::updates::update_matches_task::schedule_update_matches_task;
-    use leptos_broken_gg::backend::updates::update_pro_player_task::schedule_update_pro_player_task;
     use leptos_broken_gg::ssr::serve;
-    use leptos_broken_gg::ssr::subscribe_sse;
+    use leptos_broken_gg::ssr::sse_broadcast_match_updated;
+    use leptos::logging::log;
     use leptos_broken_gg::ssr::AppState;
     use leptos_broken_gg::ssr::{init_database, init_riot_api};
     use memory_serve::{load_assets, CacheControl, MemoryServe};
@@ -25,11 +23,32 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
     use tower_http::compression::predicate::SizeAbove;
     use tower_http::compression::CompressionLayer;
     use tower_http::compression::Predicate;
+    use leptos_broken_gg::backend::task_director::TaskDirector;
+    use leptos_broken_gg::backend::tasks::generate_sitemap::GenerateSiteMapTask;
+    use leptos_broken_gg::backend::live_game_cache::LiveGameCache;
+    use leptos_broken_gg::backend::tasks::live_game_cache_cleanup::LiveGameCacheCleanupTask;
+    use leptos_broken_gg::backend::tasks::update_matches::UpdateMatchesTask;
+    use leptos_broken_gg::backend::tasks::update_pro_players::UpdateProPlayerTask;
 
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
     let mut leptos_options = conf.leptos_options;
-    let is_prod = dotenv::var("ENV").unwrap_or("DEV".to_string()) == "PROD";
+    let env_type = dotenv::var("ENV").unwrap_or("DEV".to_string());
+    let is_prod = env_type == "PROD";
+
+    let max_matches = dotenv::var("MAX_MATCHES")
+        .unwrap_or_else(|_| "1500".to_string())
+        .parse()?;
+
+    let update_interval_duration = tokio::time::Duration::from_secs(
+        dotenv::var("MATCH_TASK_UPDATE_INTERVAL")
+            .unwrap_or_else(|_| "5".to_string())
+            .parse()?,
+    );
+    log!("Starting BrokenGG as {}", env_type);
+    log!("Update interval duration: {:?}", update_interval_duration);
+    log!("Max matches: {}", max_matches);
+
     if is_prod {
         leptos_options.site_addr = SocketAddr::from(([0, 0, 0, 0], 443));
         rustls::crypto::ring::default_provider()
@@ -41,50 +60,45 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
 
     let site_address = leptos_options.site_addr;
     backend::lol_static::init_static_data().await?;
+
     let db = init_database().await;
     let riot_api = Arc::new(init_riot_api());
-    // live game caching
-    let expiration_duration = std::time::Duration::from_secs(60);
-    let cleanup_interval = std::time::Duration::from_secs(30);
-
-    let live_game_cache = Arc::new(live_game_cache::LiveGameCache::new(expiration_duration));
-    let cache_for_cleanup = Arc::clone(&live_game_cache);
-
-    let max_matches = dotenv::var("MAX_MATCHES")
-        .unwrap_or_else(|_| "1500".to_string())
-        .parse()?;
-
+    let live_game_cache = Arc::new(LiveGameCache::new(std::time::Duration::from_secs(60)));
     let summoner_updated_sender = Arc::new(DashMap::new());
 
-    // because of mass update/inserts and trying to limit usage of riot api request.
-    // we dont want n concurrent thread updating matches and summoners
-    // schedule_update_matches_task update all matches not "updated" evry  MATCH_TASK_UPDATE_INTERVAL using batch of 100 match (0.34s on server if no api limit)
-    let update_interval =
-        dotenv::var("MATCH_TASK_UPDATE_INTERVAL").unwrap_or_else(|_| "5".to_string());
-    let update_interval_duration = tokio::time::Duration::from_secs(update_interval.parse()?);
+    let mut task_director = TaskDirector::default();
+    task_director.add_task(LiveGameCacheCleanupTask::new(
+        Arc::clone(&live_game_cache),
+        tokio::time::Duration::from_secs(30),
+    ));
 
-    // thread to update matches details
-    schedule_update_matches_task(
+    // download and update of match details are done in fast bg task. to not get concurrent mass insert/update
+    task_director.add_task(UpdateMatchesTask::new(
         db.clone(),
-        riot_api.clone(),
+        Arc::clone(&riot_api),
         update_interval_duration,
-        summoner_updated_sender.clone(),
-    )
-    .await;
+        Arc::clone(&summoner_updated_sender),
+    ));
 
-    // thread to cleanup live game cache
-    schedule_live_game_cache_cleanup_task(cache_for_cleanup, cleanup_interval).await;
+    // cleanup sse_broadcast_match_updated subscriptions
+    task_director.add_task(SummonerUpdatedSenderCleanupTask::new(
+        Arc::clone(&summoner_updated_sender),
+        tokio::time::Duration::from_secs(10),
+    ));
+
     if is_prod {
-        // thread to generate site map (on launch and at 3am)
-        schedule_generate_site_map(db.clone()).await;
-        // thead to update pro player (on launch and at 2am)
-        schedule_update_pro_player_task(db.clone(), riot_api.clone()).await;
+        task_director.add_task(UpdateProPlayerTask::new(db.clone(), riot_api.clone(), 2));
+        task_director.add_task(GenerateSiteMapTask::new(db.clone(), 3));
     }
+    tokio::spawn(async move {
+        task_director.run().await;
+    });
+
 
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
-        riot_api: riot_api.clone(),
-        db: db.clone(),
+        riot_api,
+        db,
         live_game_cache,
         max_matches,
         summoner_updated_sender,
@@ -119,7 +133,7 @@ async fn main() -> leptos_broken_gg::backend::ssr::AppResult<()> {
                 move || shell(leptos_options.clone())
             },
         )
-        .route("/subscribe/:summoner_id", get(subscribe_sse))
+        .route("/sse/match_updated/:summoner_id", get(sse_broadcast_match_updated))
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(
             shell,
         ))

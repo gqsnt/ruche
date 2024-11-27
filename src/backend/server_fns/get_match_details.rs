@@ -1,11 +1,14 @@
 #[cfg(feature = "ssr")]
-use crate::backend::updates::update_match_timeline::update_match_timeline;
+use update_match_timeline::update_match_timeline;
 use crate::consts::platform_route::PlatformRoute;
 use crate::utils::RiotMatchId;
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
+
+#[cfg(feature = "ssr")]
+pub mod update_match_timeline;
 
 #[server(input=Rkyv,output=Rkyv)]
 pub async fn get_match_details(
@@ -86,7 +89,6 @@ pub mod ssr {
                lmp.deaths,
                lmp.assists,
                lmp.champ_level,
-               lmp.kda,
                lmp.kill_participation,
                lmp.damage_dealt_to_champions,
                lmp.damage_taken,
@@ -134,7 +136,6 @@ pub mod ssr {
         Ok(lol_match_participant_details
             .into_iter()
             .map(|lmp| {
-                let encounter_count = encounters.get(&lmp.summoner_id).cloned();
                 LolMatchParticipantDetails {
                     id: lmp.id,
                     lol_match_id: lmp.lol_match_id,
@@ -147,7 +148,7 @@ pub mod ssr {
                         .map(|s| ProPlayerSlug::new(s.as_str())),
                     summoner_icon_id: lmp.profile_icon_id as u16,
                     summoner_level: lmp.summoner_level as u16,
-                    encounter_count: encounter_count.unwrap_or_default() as u16,
+                    encounter_count: encounters.get(&lmp.summoner_id).cloned().unwrap_or_default(),
                     champion_id: lmp.champion_id as u16,
                     team_id: lmp.team_id as u16,
                     won: lmp.won,
@@ -155,11 +156,10 @@ pub mod ssr {
                     deaths: lmp.deaths as u16,
                     assists: lmp.assists as u16,
                     champ_level: lmp.champ_level as u16,
-                    kda: lmp.kda.map_or(0.0, |bd| bd.to_f32().unwrap_or(0.0)),
-                    kill_participation: lmp
+                    kill_participation: (lmp
                         .kill_participation
                         .map_or(0.0, |bd| bd.to_f32().unwrap_or(0.0))
-                        * 100.0,
+                        * 100.0).round() as u16,
                     damage_dealt_to_champions: lmp.damage_dealt_to_champions as u32,
                     damage_taken: lmp.damage_taken as u32,
                     gold_earned: lmp.gold_earned as u32,
@@ -241,7 +241,6 @@ pub mod ssr {
         pub deaths: i32,
         pub assists: i32,
         pub champ_level: i32,
-        pub kda: Option<BigDecimal>,
         pub kill_participation: Option<BigDecimal>,
         pub damage_dealt_to_champions: i32,
         pub damage_taken: i32,

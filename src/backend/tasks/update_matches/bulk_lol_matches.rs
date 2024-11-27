@@ -1,5 +1,5 @@
 use crate::backend::ssr::AppResult;
-use crate::backend::updates::update_matches_task::LolMatchNotUpdated;
+use crate::backend::tasks::update_matches::LolMatchNotUpdated;
 use crate::utils::version_to_major_minor;
 use itertools::Itertools;
 use riven::models::match_v5::Match;

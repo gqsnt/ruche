@@ -2,7 +2,7 @@ use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_champions::get_champions;
 use crate::consts::champion::Champion;
 use crate::consts::HasStaticAsset;
-use crate::utils::{format_float_to_2digits, format_with_spaces};
+use crate::utils::{calculate_and_format_kda, format_float_to_2digits, format_with_spaces};
 use crate::views::summoner_page::Summoner;
 use crate::views::BackEndMatchFiltersSearch;
 use itertools::Itertools;
@@ -246,6 +246,7 @@ pub fn SummonerChampionsPage(summoner: ReadSignal<Option<Summoner>>) -> impl Int
                                                     >
                                                         {
                                                             let (index, champion): (usize, ChampionStats) = champion_with_index;
+                                                            let champion_enum = Champion::from(champion.champion_id);
                                                             view! {
                                                                 <tr class="p-1">
                                                                     <td class="text-center bg-gray-800 border border-gray-700">
@@ -255,25 +256,30 @@ pub fn SummonerChampionsPage(summoner: ReadSignal<Option<Summoner>>) -> impl Int
                                                                         <div class="flex items-center">
                                                                             <div class="py-1">
                                                                                 <img
-                                                                                    src=Champion::get_static_asset_url(champion.champion_id)
-                                                                                    alt=Champion::from(champion.champion_id).to_str()
+                                                                                    src=champion_enum.get_static_asset_url()
+                                                                                    alt=champion_enum.to_str()
                                                                                     class="w-[32px] h-[32px] rounded-full"
                                                                                     width="32"
                                                                                     height="32"
                                                                                 />
                                                                             </div>
-                                                                            <div class="ml-2 text-center">
-                                                                                {Champion::from(champion.champion_id).to_str()}
-                                                                            </div>
+                                                                            <div class="ml-2 text-center">{champion_enum.to_str()}</div>
                                                                         </div>
                                                                     </td>
                                                                     <td class="text-xs border border-gray-800">
-                                                                        {champion.total_wins}W {champion.total_lose}L
+                                                                        {champion.total_wins}W
+                                                                        {champion.total_matches - champion.total_wins}L
                                                                         {format_float_to_2digits(champion.win_rate)}%
                                                                     </td>
                                                                     <td class="text-xs border border-gray-800">
                                                                         <div>
-                                                                            <div>{format_float_to_2digits(champion.avg_kda)}:1</div>
+                                                                            <div>
+                                                                                {calculate_and_format_kda(
+                                                                                    champion.avg_kills,
+                                                                                    champion.avg_deaths,
+                                                                                    champion.avg_assists,
+                                                                                )}:1
+                                                                            </div>
                                                                             <div>
                                                                                 {format_float_to_2digits(champion.avg_kills)}/
                                                                                 {format_float_to_2digits(champion.avg_deaths)}/
@@ -396,7 +402,7 @@ impl TableSortType {
             TableSortType::Champion => Champion::from(b.champion_id)
                 .to_str()
                 .cmp(Champion::from(a.champion_id).to_str()),
-            TableSortType::WinRate => a.win_rate.partial_cmp(&b.win_rate).unwrap(),
+            TableSortType::WinRate => (a.win_rate).partial_cmp(&b.win_rate).unwrap(),
             TableSortType::AvgKDA => a.avg_kda.partial_cmp(&b.avg_kda).unwrap(),
             TableSortType::AvgGold => a.avg_gold_earned.partial_cmp(&b.avg_gold_earned).unwrap(),
             TableSortType::AvgCs => a.avg_cs.partial_cmp(&b.avg_cs).unwrap(),
@@ -422,12 +428,11 @@ impl TableSortType {
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct ChampionStats {
-    pub win_rate: f32,
-    pub avg_kda: f32,
-    pub avg_kill_participation: f32,
     pub avg_kills: f32,
     pub avg_deaths: f32,
     pub avg_assists: f32,
+    pub avg_kda: f32,
+    pub win_rate: f32,
     pub avg_gold_earned: u32,
     pub avg_cs: u32,
     pub avg_damage_dealt_to_champions: u32,
@@ -435,9 +440,9 @@ pub struct ChampionStats {
     pub champion_id: u16,
     pub total_matches: u16,
     pub total_wins: u16,
-    pub total_lose: u16,
     pub total_double_kills: u16,
     pub total_triple_kills: u16,
     pub total_quadra_kills: u16,
     pub total_penta_kills: u16,
+    pub avg_kill_participation: u16,
 }

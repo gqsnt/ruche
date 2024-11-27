@@ -2,14 +2,15 @@ use leptos::prelude::ServerFnError;
 
 pub mod server_fns;
 
-#[cfg(feature = "ssr")]
-pub mod updates;
 
 #[cfg(feature = "ssr")]
 pub mod lol_static;
 
 #[cfg(feature = "ssr")]
-pub mod generate_sitemap;
+pub mod tasks;
+
+#[cfg(feature = "ssr")]
+pub mod task_director;
 #[cfg(feature = "ssr")]
 pub mod live_game_cache;
 

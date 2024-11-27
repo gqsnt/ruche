@@ -3,62 +3,118 @@ pub mod bulk_lol_matches;
 pub mod bulk_summoners;
 
 use crate::backend::ssr::{AppError, AppResult, PlatformRouteDb};
-use crate::backend::updates::update_matches_task::bulk_lol_match_participants::bulk_insert_lol_match_participants;
-use crate::backend::updates::update_matches_task::bulk_lol_matches::{
+use crate::backend::task_director::Task;
+use crate::backend::tasks::update_matches::bulk_lol_match_participants::bulk_insert_lol_match_participants;
+use crate::backend::tasks::update_matches::bulk_lol_matches::{
     bulk_trashed_matches, bulk_update_matches,
 };
-use crate::backend::updates::update_matches_task::bulk_summoners::{
+use crate::backend::tasks::update_matches::bulk_summoners::{
     bulk_insert_summoners, bulk_update_summoners,
 };
 use crate::ssr::{RiotApiState, SubscriberMap};
 use crate::{consts, DB_CHUNK_SIZE};
+use axum::async_trait;
 use chrono::NaiveDateTime;
 use futures::stream::{FuturesOrdered, FuturesUnordered, StreamExt};
+use itertools::Itertools;
 use leptos::logging::log;
 use riven::consts::{Champion, PlatformRoute};
 use sqlx::types::chrono::{DateTime, Utc};
-use sqlx::FromRow;
+use sqlx::{FromRow, PgPool};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use itertools::Itertools;
+use tokio::time::{Duration, Instant};
 
-pub async fn schedule_update_matches_task(
-    db: sqlx::PgPool,
+pub struct UpdateMatchesTask {
+    db: PgPool,
     api: RiotApiState,
-    update_interval_duration: tokio::time::Duration,
+    update_interval: Duration,
     update_matches_sender: Arc<SubscriberMap>,
-) {
-    tokio::spawn(async move {
-        let mut interval = tokio::time::interval(update_interval_duration);
-        loop {
-            interval.tick().await;
-            //let start = std::time::Instant::now();
-            //log!("Starting update matches task at {}", Utc::now());
-            while let Ok(matches) = get_not_updated_match(&db, 100).await {
-                let before = std::time::Instant::now();
-                let match_len = matches.len();
-                match update_matches_task(&db, &api, matches).await {
-                    Ok(summoner_ids) => {
-                        for id in summoner_ids {
-                            if let Some(sender) = update_matches_sender.get(&id) {
-                                let _ = sender.send(());
-                            }
-                        }
-                        log!("Updated {} matches in {:?}", match_len, before.elapsed());
-                    }
-                    Err(e) => {
-                        log!("Error updating matches: {:?}", e);
-                    }
-                };
-            }
-            //log!("Finished update matches task after {}s", start.elapsed().as_secs());
+    next_run: Instant,
+    running: Arc<AtomicBool>,
+}
+
+impl UpdateMatchesTask {
+    pub fn new(
+        db: PgPool,
+        api: RiotApiState,
+        update_interval: Duration,
+        update_matches_sender: Arc<SubscriberMap>,
+    ) -> Self {
+        let next_run = Instant::now() + update_interval;
+        Self {
+            db,
+            api,
+            update_interval,
+            update_matches_sender,
+            next_run,
+            running: Arc::new(AtomicBool::new(false)),
         }
-    });
+    }
+}
+
+#[async_trait]
+impl Task for UpdateMatchesTask {
+    async fn execute(&self) {
+        while let Ok(matches) = get_not_updated_match(&self.db, 100).await {
+            let start = Instant::now();
+            let match_len = matches.len();
+            match update_matches_task(&self.db, &self.api, matches).await {
+                Ok(summoner_ids) => {
+                    for id in summoner_ids {
+                        if let Some(sender) = self.update_matches_sender.get(&id) {
+                            let _ = sender.send(());
+                        }
+                    }
+                    log!("Updated {} matches in {:?}", match_len, start.elapsed());
+                }
+                Err(e) => {
+                    log!("Error updating matches: {:?}", e);
+                }
+            };
+        }
+    }
+
+    fn next_execution(&self) -> Instant {
+        self.next_run
+    }
+
+    fn update_schedule(&mut self) {
+        self.next_run = Instant::now() + self.update_interval;
+    }
+
+    fn is_running(&self) -> bool {
+        self.running.load(Ordering::SeqCst)
+    }
+
+    fn set_running(&self, running: bool) {
+        self.running.store(running, Ordering::SeqCst);
+    }
+
+    fn clone_box(&self) -> Box<dyn Task> {
+        Box::new(Self {
+            db: self.db.clone(),
+            api: self.api.clone(),
+            update_interval: self.update_interval,
+            update_matches_sender: self.update_matches_sender.clone(),
+            next_run: self.next_run,
+            running: self.running.clone(),
+        })
+    }
+
+    fn name(&self) -> &'static str {
+        "UpdateMatchesTask"
+    }
+
+    fn allow_concurrent(&self) -> bool {
+        false // Do not allow concurrent executions
+    }
 }
 
 async fn update_matches_task(
-    db: &sqlx::PgPool,
+    db: &PgPool,
     api: &RiotApiState,
     matches_to_update: Vec<LolMatchNotUpdated>,
 ) -> AppResult<HashSet<i32>> {
@@ -77,7 +133,7 @@ async fn update_matches_task(
         .collect()
         .await;
 
-    let (trashed_matches,  match_datas): (Vec<_>, Vec<_>) = match_raw_datas
+    let (trashed_matches, match_datas): (Vec<_>, Vec<_>) = match_raw_datas
         .into_iter()
         .zip(matches_to_update.into_iter())
         .partition(|(match_, _)| {
@@ -89,7 +145,10 @@ async fn update_matches_task(
                 true
             }
         });
-    let match_datas = match_datas.into_iter().map(|(match_, match_not_updated)| (match_.unwrap(), match_not_updated)).collect_vec();
+    let match_datas = match_datas
+        .into_iter()
+        .map(|(match_, match_not_updated)| (match_.unwrap(), match_not_updated))
+        .collect_vec();
 
     // Collect TempSummoner data from match data
     let mut participants_map = HashMap::new();
@@ -415,10 +474,7 @@ pub struct TempParticipant {
     pub item6_id: i32,
 }
 
-pub async fn get_not_updated_match(
-    db: &sqlx::PgPool,
-    limit: i32,
-) -> AppResult<Vec<LolMatchNotUpdated>> {
+pub async fn get_not_updated_match(db: &PgPool, limit: i32) -> AppResult<Vec<LolMatchNotUpdated>> {
     let result = sqlx::query_as::<_, LolMatchNotUpdated>(
         r#"
             SELECT id, match_id, platform, updated FROM lol_matches
@@ -438,7 +494,7 @@ pub async fn get_not_updated_match(
 }
 
 pub async fn fetch_existing_summoners(
-    db: &sqlx::PgPool,
+    db: &PgPool,
     puuids: &[String],
 ) -> AppResult<HashMap<String, (i32, i32)>> {
     Ok(sqlx::query_as::<_, SummonerShortModel>(
@@ -461,7 +517,7 @@ pub async fn fetch_existing_summoners(
     .collect::<HashMap<String, (i32, i32)>>())
 }
 
-pub async fn resolve_summoner_conflicts(db: &sqlx::PgPool, api: &RiotApiState) -> AppResult<()> {
+pub async fn resolve_summoner_conflicts(db: &PgPool, api: &RiotApiState) -> AppResult<()> {
     let conflicts = find_conflicting_summoners(db).await?;
     for (game_name, tag_line, platform, conflict_records) in conflicts {
         println!(
@@ -487,7 +543,7 @@ pub async fn resolve_summoner_conflicts(db: &sqlx::PgPool, api: &RiotApiState) -
 }
 
 pub async fn find_conflicting_summoners(
-    db: &sqlx::PgPool,
+    db: &PgPool,
 ) -> AppResult<Vec<(String, String, String, Vec<SummonerModel>)>> {
     Ok(sqlx::query_as::<_, SummonerModel>(
         "SELECT *
@@ -522,7 +578,7 @@ pub async fn find_conflicting_summoners(
 }
 
 pub async fn update_summoner_account_by_id(
-    db: &sqlx::PgPool,
+    db: &PgPool,
     id: i32,
     account: riven::models::account_v1::Account,
 ) -> AppResult<()> {

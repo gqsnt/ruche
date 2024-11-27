@@ -1,14 +1,13 @@
+use std::time::Duration;
+use dashmap::DashMap;
+use tokio::time::Instant;
 use crate::utils::{Puuid, RiotMatchId};
 use crate::views::summoner_page::summoner_live_page::LiveGame;
-use dashmap::DashMap;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
-use tokio::time::sleep;
 
 pub struct LiveGameCache {
-    game_cache: DashMap<RiotMatchId, (LiveGame, Instant)>,
-    puuid_to_game: DashMap<Puuid, RiotMatchId>,
-    expiration_duration: Duration,
+    pub game_cache: DashMap<RiotMatchId, (LiveGame, Instant)>,
+    pub puuid_to_game: DashMap<Puuid, RiotMatchId>,
+    pub expiration_duration: Duration,
 }
 
 impl LiveGameCache {
@@ -52,48 +51,4 @@ impl LiveGameCache {
             self.puuid_to_game.insert(puuid, game_id);
         }
     }
-}
-
-pub async fn schedule_live_game_cache_cleanup_task(cache: Arc<LiveGameCache>, interval: Duration) {
-    tokio::spawn(async move {
-        loop {
-            sleep(interval).await;
-            let now = Instant::now();
-
-            // Clean up game_cache
-            let expired_game_ids: Vec<RiotMatchId> = cache
-                .game_cache
-                .iter()
-                .filter_map(|entry| {
-                    let (_, timestamp) = entry.value();
-                    if now.duration_since(*timestamp) >= cache.expiration_duration {
-                        Some(*entry.key())
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-            for game_id in expired_game_ids {
-                cache.game_cache.remove(&game_id);
-
-                // Clean up puuid_to_game mappings for this game_id
-                let expired_puuids: Vec<Puuid> = cache
-                    .puuid_to_game
-                    .iter()
-                    .filter_map(|entry| {
-                        if entry.value() == &game_id {
-                            Some(*entry.key())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
-
-                for puuid in expired_puuids {
-                    cache.puuid_to_game.remove(&puuid);
-                }
-            }
-        }
-    });
 }

@@ -8,14 +8,16 @@ use crate::consts::queue::Queue;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
 use crate::utils::{
-    format_duration, format_float_to_2digits, summoner_encounter_url, summoner_url, DurationSince,
-    GameName, ProPlayerSlug, RiotMatchId, TagLine,
+    calculate_and_format_kda, calculate_loss_and_win_rate, format_duration,
+    format_float_to_2digits, summoner_encounter_url, summoner_url, DurationSince, GameName,
+    ProPlayerSlug, RiotMatchId, TagLine,
 };
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
 use crate::views::BackEndMatchFiltersSearch;
 use leptos::either::Either;
+use leptos::logging::log;
 use leptos::prelude::*;
 use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
@@ -88,19 +90,20 @@ pub fn SummonerMatchesPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoV
                                     )
                                 } else {
                                     Ok(
-                                        Either::Right(
+                                        Either::Right({
+                                            let (losses, winrate) = calculate_loss_and_win_rate(
+                                                matches_result.matches_result_info.total_wins,
+                                                matches_result.matches_result_info.total_matches,
+                                            );
                                             view! {
                                                 <div class="my-2 flex my-card w-fit">
                                                     <div class="flex flex-col">
                                                         <div>
                                                             {matches_result.matches_result_info.total_matches}G
                                                             {matches_result.matches_result_info.total_wins}W
-                                                            {matches_result.matches_result_info.total_losses}L
+                                                            {losses as u16}L
                                                         </div>
-                                                        <div>
-                                                            {matches_result.matches_result_info.total_wins * 100
-                                                                / matches_result.matches_result_info.total_matches.max(1)}%
-                                                        </div>
+                                                        <div>{format_float_to_2digits(winrate)}%</div>
                                                     </div>
                                                     <div class="flex flex-col ml-2">
                                                         <div>
@@ -118,9 +121,10 @@ pub fn SummonerMatchesPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoV
                                                             )}
                                                         </div>
                                                         <div>
-                                                            {format!(
-                                                                "{:.2}",
-                                                                matches_result.matches_result_info.avg_kda,
+                                                            {calculate_and_format_kda(
+                                                                matches_result.matches_result_info.avg_kills,
+                                                                matches_result.matches_result_info.avg_deaths,
+                                                                matches_result.matches_result_info.avg_assists,
                                                             )}:1
                                                         </div>
                                                         <div>
@@ -144,8 +148,8 @@ pub fn SummonerMatchesPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoV
                                                 <Show when=move || (total_pages > 1)>
                                                     <Pagination max_page=total_pages />
                                                 </Show>
-                                            },
-                                        ),
+                                            }
+                                        }),
                                     )
                                 }
                             }
@@ -161,6 +165,24 @@ pub fn SummonerMatchesPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoV
 #[component]
 pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
     let (show_details, set_show_details) = signal(false);
+    let champion = Champion::from(match_.champion_id);
+    let summoner_spell1 = SummonerSpell::from(match_.summoner_spell1_id);
+    let summoner_spell2 = SummonerSpell::from(match_.summoner_spell2_id);
+    let primary_perk_selection = Perk::from(match_.perk_primary_selection_id);
+    let sub_perk_style = Perk::from(match_.perk_sub_style_id);
+    if primary_perk_selection == Perk::UNKNOWN {
+        log!("{:?}", match_.perk_primary_selection_id);
+    }
+    if sub_perk_style == Perk::UNKNOWN {
+        log!("{:?}", match_.perk_sub_style_id);
+    }
+    let item0 = Item::try_from(match_.item0_id).ok();
+    let item1 = Item::try_from(match_.item1_id).ok();
+    let item2 = Item::try_from(match_.item2_id).ok();
+    let item3 = Item::try_from(match_.item3_id).ok();
+    let item4 = Item::try_from(match_.item4_id).ok();
+    let item5 = Item::try_from(match_.item5_id).ok();
+    let item6 = Item::try_from(match_.item6_id).ok();
     view! {
         <div class="flex flex-col">
             <div class="min-h-24 w-full flex rounded text-xs">
@@ -201,8 +223,8 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Option<Summoner>>) 
                                 <img
                                     width="48"
                                     height="48"
-                                    alt=Champion::from(match_.champion_id).to_str()
-                                    src=Champion::get_static_asset_url(match_.champion_id)
+                                    alt=champion.to_str()
+                                    src=champion.get_static_asset_url()
                                     class="w-12 h-12 rounded-full"
                                 />
                                 <span
@@ -218,11 +240,8 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Option<Summoner>>) 
                                         <img
                                             width="22"
                                             height="22"
-                                            alt=SummonerSpell::from(match_.summoner_spell1_id)
-                                                .to_string()
-                                            src=SummonerSpell::get_static_asset_url(
-                                                match_.summoner_spell1_id,
-                                            )
+                                            alt=summoner_spell1.to_string()
+                                            src=summoner_spell1.get_static_asset_url()
                                             class="w-[22px] w-[22px]"
                                         />
                                     </div>
@@ -230,11 +249,8 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Option<Summoner>>) 
                                         <img
                                             width="22"
                                             height="22"
-                                            alt=SummonerSpell::from(match_.summoner_spell2_id)
-                                                .to_string()
-                                            src=SummonerSpell::get_static_asset_url(
-                                                match_.summoner_spell2_id,
-                                            )
+                                            alt=summoner_spell2.to_string()
+                                            src=summoner_spell2.get_static_asset_url()
                                             class="w-[22px] w-[22px]"
                                         />
                                     </div>
@@ -245,10 +261,8 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Option<Summoner>>) 
                                             <img
                                                 width="22"
                                                 height="22"
-                                                alt=Perk::from(match_.perk_primary_selection_id).to_string()
-                                                src=Perk::get_static_asset_url(
-                                                    match_.perk_primary_selection_id,
-                                                )
+                                                alt=primary_perk_selection.to_string()
+                                                src=primary_perk_selection.get_static_asset_url()
                                                 class="w-[22px] w-[22px]"
                                             />
                                         </div>
@@ -258,8 +272,8 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Option<Summoner>>) 
                                             <img
                                                 width="22"
                                                 height="22"
-                                                alt=Perk::from(match_.perk_sub_style_id).to_string()
-                                                src=Perk::get_static_asset_url(match_.perk_sub_style_id)
+                                                alt=sub_perk_style.to_string()
+                                                src=sub_perk_style.get_static_asset_url()
                                                 class="w-[22px] w-[22px]"
                                             />
                                         </div>
@@ -274,94 +288,140 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Option<Summoner>>) 
                                     /
                                     <span class="text-white">{match_.assists}</span>
                                 </div>
-                                <div>{format_float_to_2digits(match_.kda)}:1 KDA</div>
+                                <div>
+                                    {calculate_and_format_kda(
+                                        match_.kills,
+                                        match_.deaths,
+                                        match_.assists,
+                                    )}:1 KDA
+                                </div>
                             </div>
                             <div
                                 class:border-red-500=move || !match_.won
                                 class:border-blue-500=move || match_.won
                                 class="flex flex-col h-[58px] pl-2 border-l-2"
                             >
-                                <div class="text-red-300">
-                                    P/Kill {format_float_to_2digits(match_.kill_participation)}%
-                                </div>
+                                <div class="text-red-300">P/Kill {match_.kill_participation}%</div>
                             </div>
                         </div>
                         <div class="flex gap-0.5">
-                            <Show when=move || match_.item0_id != 0>
+                            <Show when=move || item0.is_some()>
                                 <div class="relative rounded">
-                                    <img
-                                        alt=format!("Item {}", match_.item0_id)
-                                        width="22"
-                                        height="22"
-                                        src=Item::get_static_asset_url_u32(match_.item0_id)
-                                        class="w-[22px] w-[22px]"
-                                    />
+                                    {
+                                        let inner = item0.unwrap();
+                                        view! {
+                                            <img
+                                                alt=inner.to_string()
+                                                width="22"
+                                                height="22"
+                                                src=inner.get_static_asset_url()
+                                                class="w-[22px] w-[22px]"
+                                            />
+                                        }
+                                    }
+
                                 </div>
                             </Show>
-                            <Show when=move || match_.item1_id != 0>
+                            <Show when=move || item1.is_some()>
                                 <div class="relative rounded">
-                                    <img
-                                        alt=format!("Item {}", match_.item1_id)
-                                        width="22"
-                                        height="22"
-                                        src=Item::get_static_asset_url_u32(match_.item1_id)
-                                        class="w-[22px] w-[22px]"
-                                    />
+                                    {
+                                        let inner = item1.unwrap();
+                                        view! {
+                                            <img
+                                                alt=inner.to_string()
+                                                width="22"
+                                                height="22"
+                                                src=inner.get_static_asset_url()
+                                                class="w-[22px] w-[22px]"
+                                            />
+                                        }
+                                    }
+
                                 </div>
                             </Show>
-                            <Show when=move || match_.item2_id != 0>
+                            <Show when=move || item2.is_some()>
                                 <div class="relative rounded">
-                                    <img
-                                        alt=format!("Item {}", match_.item2_id)
-                                        width="22"
-                                        height="22"
-                                        src=Item::get_static_asset_url_u32(match_.item2_id)
-                                        class="w-[22px] w-[22px]"
-                                    />
+                                    {
+                                        let inner = item2.unwrap();
+                                        view! {
+                                            <img
+                                                alt=inner.to_string()
+                                                width="22"
+                                                height="22"
+                                                src=inner.get_static_asset_url()
+                                                class="w-[22px] w-[22px]"
+                                            />
+                                        }
+                                    }
+
                                 </div>
                             </Show>
-                            <Show when=move || match_.item3_id != 0>
+                            <Show when=move || item3.is_some()>
                                 <div class="relative rounded">
-                                    <img
-                                        alt=format!("Item {}", match_.item3_id)
-                                        width="22"
-                                        height="22"
-                                        src=Item::get_static_asset_url_u32(match_.item3_id)
-                                        class="w-[22px] w-[22px]"
-                                    />
+                                    {
+                                        let inner = item3.unwrap();
+                                        view! {
+                                            <img
+                                                alt=inner.to_string()
+                                                width="22"
+                                                height="22"
+                                                src=inner.get_static_asset_url()
+                                                class="w-[22px] w-[22px]"
+                                            />
+                                        }
+                                    }
+
                                 </div>
                             </Show>
-                            <Show when=move || match_.item4_id != 0>
+                            <Show when=move || item4.is_some()>
                                 <div class="relative rounded">
-                                    <img
-                                        alt=format!("Item {}", match_.item4_id)
-                                        width="22"
-                                        height="22"
-                                        src=Item::get_static_asset_url_u32(match_.item4_id)
-                                        class="w-[22px] w-[22px]"
-                                    />
+                                    {
+                                        let inner = item4.unwrap();
+                                        view! {
+                                            <img
+                                                alt=inner.to_string()
+                                                width="22"
+                                                height="22"
+                                                src=inner.get_static_asset_url()
+                                                class="w-[22px] w-[22px]"
+                                            />
+                                        }
+                                    }
+
                                 </div>
                             </Show>
-                            <Show when=move || match_.item5_id != 0>
+                            <Show when=move || item5.is_some()>
                                 <div class="relative rounded">
-                                    <img
-                                        alt=format!("Item {}", match_.item5_id)
-                                        width="22"
-                                        height="22"
-                                        src=Item::get_static_asset_url_u32(match_.item5_id)
-                                        class="w-[22px] w-[22px]"
-                                    />
+                                    {
+                                        let inner = item5.unwrap();
+                                        view! {
+                                            <img
+                                                alt=inner.to_string()
+                                                width="22"
+                                                height="22"
+                                                src=inner.get_static_asset_url()
+                                                class="w-[22px] w-[22px]"
+                                            />
+                                        }
+                                    }
+
                                 </div>
                             </Show>
-                            <Show when=move || match_.item6_id != 0>
+                            <Show when=move || item6.is_some()>
                                 <div class="relative rounded">
-                                    <img
-                                        alt=format!("Item {}", match_.item6_id)
-                                        width="22"
-                                        height="22"
-                                        src=Item::get_static_asset_url_u32(match_.item6_id)
-                                        class="w-[22px] w-[22px]"
-                                    />
+                                    {
+                                        let inner = item6.unwrap();
+                                        view! {
+                                            <img
+                                                alt=inner.to_string()
+                                                width="22"
+                                                height="22"
+                                                src=inner.get_static_asset_url()
+                                                class="w-[22px] w-[22px]"
+                                            />
+                                        }
+                                    }
+
                                 </div>
                             </Show>
                         </div>
@@ -375,14 +435,14 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Option<Summoner>>) 
                             .into_iter()
                             .map(|participant| {
                                 let is_pro_player = participant.pro_player_slug.is_some();
-
+                                let champion = Champion::from(participant.champion_id);
                                 view! {
                                     <div class="flex items-center gap-1 w-[130px]">
                                         <img
                                             width="16"
                                             height="16"
-                                            alt=Champion::from(participant.champion_id).to_str()
-                                            src=Champion::get_static_asset_url(participant.champion_id)
+                                            alt=champion.to_str()
+                                            src=champion.get_static_asset_url()
                                             class="w-4 h-4 rounded"
                                         />
                                         <Show when=move || (participant.encounter_count > 1)>
@@ -493,11 +553,9 @@ pub struct MatchesResultInfo {
     pub avg_kills: f32,
     pub avg_deaths: f32,
     pub avg_assists: f32,
-    pub avg_kda: f32,
-    pub avg_kill_participation: f32,
+    pub avg_kill_participation: u16,
     pub total_matches: u16,
     pub total_wins: u16,
-    pub total_losses: u16,
 }
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerMatch {
@@ -506,8 +564,6 @@ pub struct SummonerMatch {
     pub match_id: i32,
     pub champ_level: i32,
     pub match_duration: Option<i32>,
-    pub kda: f32,
-    pub kill_participation: f32,
     pub item0_id: u32,
     pub item1_id: u32,
     pub item2_id: u32,
@@ -515,6 +571,7 @@ pub struct SummonerMatch {
     pub item4_id: u32,
     pub item5_id: u32,
     pub item6_id: u32,
+    pub kill_participation: u16,
     pub champion_id: u16,
     pub kills: u16,
     pub deaths: u16,
@@ -534,11 +591,11 @@ pub struct SummonerMatch {
 pub struct SummonerMatchParticipant {
     pub lol_match_id: i32,
     pub summoner_id: i32,
-    pub game_name: GameName,
-    pub pro_player_slug: Option<ProPlayerSlug>,
     pub champion_id: u16,
     pub team_id: u16,
     pub encounter_count: u16,
+    pub game_name: GameName,
+    pub pro_player_slug: Option<ProPlayerSlug>,
     pub tag_line: TagLine,
     pub platform: PlatformRoute,
 }

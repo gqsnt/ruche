@@ -49,6 +49,39 @@ pub fn format_duration(seconds: Option<i32>) -> String {
     format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
 }
 
+pub fn calculate_loss_and_win_rate<T: Into<f32>>(wins: T, total: T) -> (f32, f32) {
+    let wins = wins.into();
+    let total = total.into();
+
+    if total == 0.0 {
+        return (0.0, 0.0);
+    }
+    let loses= total - wins;
+    let win_rate = (wins / total) * 100.0;
+    (loses, win_rate)
+}
+
+
+pub fn calculate_and_format_kda<T: Into<f32>>(kills: T, deaths: T, assists: T) -> String {
+    let kda = calculate_kda(kills, deaths, assists);
+    format!("{:.2}", kda)
+}
+
+pub fn calculate_kda<T: Into<f32>>(kills: T, deaths: T, assists: T) -> f32 {
+    let kills = kills.into();
+    let deaths = deaths.into();
+    let assists = assists.into();
+
+    if deaths == 0.0 {
+        if kills == 0.0 {
+            return assists;
+        }
+        return kills + assists;
+    }
+    (kills + assists) / deaths
+}
+
+
 pub fn version_to_major_minor(version: &str) -> String {
     let mut split = version.split(".");
     if split.clone().count() < 2 {

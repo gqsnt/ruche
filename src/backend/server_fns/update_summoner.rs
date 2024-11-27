@@ -1,11 +1,14 @@
+
 #[cfg(feature = "ssr")]
-use crate::backend::server_fns::get_summoner::ssr::find_summoner_by_exact_game_name_tag_line;
+use std::string::ToString;
+#[cfg(feature = "ssr")]
+use crate::backend::server_fns::get_encounter::ssr::{find_summoner_by_id, find_summoner_puuid_by_id};
 #[cfg(feature = "ssr")]
 use crate::backend::server_fns::search_summoner::ssr::insert_or_update_account_and_summoner;
 use crate::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use crate::utils::summoner_url;
-use crate::utils::{GameName, Puuid, TagLine};
+use crate::utils::{GameName, TagLine};
 use crate::views::summoner_page::Summoner;
 #[cfg(feature = "ssr")]
 use leptos::logging::log;
@@ -15,18 +18,23 @@ use leptos::server_fn::codec::Rkyv;
 
 #[server( input=Rkyv, output=Rkyv)]
 pub async fn update_summoner(
-    platform_route: PlatformRoute,
-    puuid: Puuid,
-    game_name: GameName,
+    summoner_id: i32,
+    game_name:GameName,
     tag_line: TagLine,
+    platform_route: PlatformRoute,
 ) -> Result<Option<Summoner>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let riot_api = state.riot_api.clone();
     let max_matches = state.max_matches;
+    let db = state.db.clone();
+    let puuid = find_summoner_puuid_by_id(&db, summoner_id).await?;
 
     match riot_api
         .account_v1()
-        .get_by_puuid(platform_route.to_riven().to_regional(), puuid.to_str())
+        .get_by_puuid(
+            platform_route.to_riven().to_regional(),
+            puuid.as_str(),
+        )
         .await
     {
         Ok(account) => {
@@ -36,16 +44,16 @@ pub async fn update_summoner(
                 .await
             {
                 Ok(summoner) => {
-                    let db = state.db.clone();
+                    let inner_db = db.clone();
                     let puuid = summoner.puuid.clone();
                     let acc_game_name = account.game_name.clone().unwrap_or_default();
-                    let acc_tag_line_clone = account.tag_line.clone().unwrap_or_default();
+                    let acc_tag_line = account.tag_line.clone().unwrap_or_default();
                     insert_or_update_account_and_summoner(&db, platform_route, account, summoner)
                         .await?;
 
                     tokio::spawn(async move {
                         match ssr::update_summoner_default_matches(
-                            db.clone(),
+                            inner_db,
                             riot_api,
                             puuid,
                             platform_route.to_riven(),
@@ -60,26 +68,18 @@ pub async fn update_summoner(
                         };
                     });
                     let has_changed = game_name.to_string() != acc_game_name
-                        || tag_line.to_string() != acc_tag_line_clone;
+                        || tag_line.to_string() != acc_tag_line;
                     if has_changed {
                         leptos_axum::redirect(
-                            summoner_url(
-                                platform_route.to_string(),
-                                acc_game_name,
-                                acc_tag_line_clone,
-                            )
-                            .as_str(),
+                            summoner_url(platform_route.to_string(), acc_game_name, acc_tag_line)
+                                .as_str(),
                         );
                         Ok(None)
                     } else {
-                        find_summoner_by_exact_game_name_tag_line(
-                            &state.db,
-                            platform_route,
-                            game_name.to_string(),
-                            tag_line.to_string(),
-                        )
-                        .await
-                        .map_err(|e| e.into())
+                        find_summoner_by_id(&db, summoner_id)
+                            .await
+                            .map(Some)
+                            .map_err(Into::into)
                     }
                 }
                 _ => Err(ServerFnError::new("Summoner not found")),

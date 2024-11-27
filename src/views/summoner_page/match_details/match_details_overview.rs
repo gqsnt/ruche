@@ -3,9 +3,7 @@ use crate::consts::item::Item;
 use crate::consts::perk::Perk;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
-use crate::utils::{
-    format_float_to_2digits, format_with_spaces, summoner_encounter_url, summoner_url,
-};
+use crate::utils::{format_with_spaces, summoner_encounter_url, summoner_url};
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use crate::views::summoner_page::Summoner;
 use leptos::prelude::*;
@@ -90,13 +88,20 @@ pub fn MatchDetailsOverviewTable(
                 {participants
                     .into_iter()
                     .map(|participant| {
-                        let item0_id = participant.item0_id;
-                        let item1_id = participant.item1_id;
-                        let item2_id = participant.item2_id;
-                        let item3_id = participant.item3_id;
-                        let item4_id = participant.item4_id;
-                        let item5_id = participant.item5_id;
-                        let item6_id = participant.item6_id;
+                        let champion = Champion::from(participant.champion_id);
+                        let summoner_spell1 = SummonerSpell::from(participant.summoner_spell1_id);
+                        let summoner_spell2 = SummonerSpell::from(participant.summoner_spell2_id);
+                        let primary_perk_selection = Perk::from(
+                            participant.perk_primary_selection_id,
+                        );
+                        let sub_perk_style = Perk::from(participant.perk_sub_style_id);
+                        let item0 = Item::try_from(participant.item0_id).ok();
+                        let item1 = Item::try_from(participant.item1_id).ok();
+                        let item2 = Item::try_from(participant.item2_id).ok();
+                        let item3 = Item::try_from(participant.item3_id).ok();
+                        let item4 = Item::try_from(participant.item4_id).ok();
+                        let item5 = Item::try_from(participant.item5_id).ok();
+                        let item6 = Item::try_from(participant.item6_id).ok();
                         let is_pro_player = participant.summoner_pro_player_slug.is_some();
 
                         view! {
@@ -123,8 +128,8 @@ pub fn MatchDetailsOverviewTable(
                                         <img
                                             width="32"
                                             height="32"
-                                            alt=Champion::from(participant.champion_id).to_str()
-                                            src=Champion::get_static_asset_url(participant.champion_id)
+                                            alt=champion.to_str()
+                                            src=champion.get_static_asset_url()
                                             class="w-8 h-8 rounded-full block"
                                         />
                                         <span class="absolute left-[-3px] bottom-[-3px] w-[15px] h-[15px] bg-gray-600 rounded-full text-[10px] text-center">
@@ -137,11 +142,8 @@ pub fn MatchDetailsOverviewTable(
                                         <img
                                             width="16"
                                             height="16"
-                                            alt=SummonerSpell::from(participant.summoner_spell1_id)
-                                                .to_string()
-                                            src=SummonerSpell::get_static_asset_url(
-                                                participant.summoner_spell1_id,
-                                            )
+                                            alt=summoner_spell1.to_string()
+                                            src=summoner_spell1.get_static_asset_url()
                                             class="w-4 h-4 rounded"
                                         />
                                     </div>
@@ -149,11 +151,8 @@ pub fn MatchDetailsOverviewTable(
                                         <img
                                             width="16"
                                             height="16"
-                                            alt=SummonerSpell::from(participant.summoner_spell2_id)
-                                                .to_string()
-                                            src=SummonerSpell::get_static_asset_url(
-                                                participant.summoner_spell2_id,
-                                            )
+                                            alt=summoner_spell2.to_string()
+                                            src=summoner_spell2.get_static_asset_url()
                                             class="w-4 h-4 rounded"
                                         />
                                     </div>
@@ -161,13 +160,10 @@ pub fn MatchDetailsOverviewTable(
                                 <td class="py-1">
                                     <div class="relative">
                                         <img
-                                            alt=Perk::from(participant.perk_primary_selection_id)
-                                                .to_string()
                                             width="16"
                                             height="16"
-                                            src=Perk::get_static_asset_url(
-                                                participant.perk_primary_selection_id,
-                                            )
+                                            alt=primary_perk_selection.to_string()
+                                            src=primary_perk_selection.get_static_asset_url()
                                             class="w-4 h-4 rounded"
                                         />
                                     </div>
@@ -175,10 +171,8 @@ pub fn MatchDetailsOverviewTable(
                                         <img
                                             width="16"
                                             height="16"
-                                            alt=Perk::from(participant.perk_sub_style_id).to_string()
-                                            src=Perk::get_static_asset_url(
-                                                participant.perk_sub_style_id,
-                                            )
+                                            alt=sub_perk_style.to_string()
+                                            src=sub_perk_style.get_static_asset_url()
                                             class="w-4 h-4 rounded"
                                         />
                                     </div>
@@ -232,7 +226,7 @@ pub fn MatchDetailsOverviewTable(
                                         {participant.kills}/{participant.deaths}/
                                         {participant.assists}
                                         <div class="ml-1 relative">
-                                            {format_float_to_2digits(participant.kill_participation)}%
+                                            {participant.kill_participation}%
                                         </div>
                                     </div>
                                 </td>
@@ -258,81 +252,123 @@ pub fn MatchDetailsOverviewTable(
                                 </td>
                                 <td class="py-1">
                                     <div class="flex gap-0.5">
-                                        <Show when=move || item0_id != 0>
+                                        <Show when=move || item0.is_some()>
                                             <div class="relative rounded">
-                                                <img
-                                                    alt=format!("Item {}", item0_id)
-                                                    width="22"
-                                                    height="22"
-                                                    src=Item::get_static_asset_url_u32(item0_id)
-                                                    class="w-[22px] w-[22px]"
-                                                />
+                                                {
+                                                    let inner = item0.unwrap();
+                                                    view! {
+                                                        <img
+                                                            alt=inner.to_string()
+                                                            width="22"
+                                                            height="22"
+                                                            src=inner.get_static_asset_url()
+                                                            class="w-[22px] w-[22px]"
+                                                        />
+                                                    }
+                                                }
+
                                             </div>
                                         </Show>
-                                        <Show when=move || item1_id != 0>
+                                        <Show when=move || item1.is_some()>
                                             <div class="relative rounded">
-                                                <img
-                                                    alt=format!("Item {}", item1_id)
-                                                    width="22"
-                                                    height="22"
-                                                    src=Item::get_static_asset_url_u32(item1_id)
-                                                    class="w-[22px] w-[22px]"
-                                                />
+                                                {
+                                                    let inner = item1.unwrap();
+                                                    view! {
+                                                        <img
+                                                            alt=inner.to_string()
+                                                            width="22"
+                                                            height="22"
+                                                            src=inner.get_static_asset_url()
+                                                            class="w-[22px] w-[22px]"
+                                                        />
+                                                    }
+                                                }
+
                                             </div>
                                         </Show>
-                                        <Show when=move || item2_id != 0>
+                                        <Show when=move || item2.is_some()>
                                             <div class="relative rounded">
-                                                <img
-                                                    alt=format!("Item {}", item2_id)
-                                                    width="22"
-                                                    height="22"
-                                                    src=Item::get_static_asset_url_u32(item2_id)
-                                                    class="w-[22px] w-[22px]"
-                                                />
+                                                {
+                                                    let inner = item2.unwrap();
+                                                    view! {
+                                                        <img
+                                                            alt=inner.to_string()
+                                                            width="22"
+                                                            height="22"
+                                                            src=inner.get_static_asset_url()
+                                                            class="w-[22px] w-[22px]"
+                                                        />
+                                                    }
+                                                }
+
                                             </div>
                                         </Show>
-                                        <Show when=move || item3_id != 0>
+                                        <Show when=move || item3.is_some()>
                                             <div class="relative rounded">
-                                                <img
-                                                    alt=format!("Item {}", item3_id)
-                                                    width="22"
-                                                    height="22"
-                                                    src=Item::get_static_asset_url_u32(item3_id)
-                                                    class="w-[22px] w-[22px]"
-                                                />
+                                                {
+                                                    let inner = item3.unwrap();
+                                                    view! {
+                                                        <img
+                                                            alt=inner.to_string()
+                                                            width="22"
+                                                            height="22"
+                                                            src=inner.get_static_asset_url()
+                                                            class="w-[22px] w-[22px]"
+                                                        />
+                                                    }
+                                                }
+
                                             </div>
                                         </Show>
-                                        <Show when=move || item4_id != 0>
+                                        <Show when=move || item4.is_some()>
                                             <div class="relative rounded">
-                                                <img
-                                                    alt=format!("Item {}", item4_id)
-                                                    width="22"
-                                                    height="22"
-                                                    src=Item::get_static_asset_url_u32(item4_id)
-                                                    class="w-[22px] w-[22px]"
-                                                />
+                                                {
+                                                    let inner = item4.unwrap();
+                                                    view! {
+                                                        <img
+                                                            alt=inner.to_string()
+                                                            width="22"
+                                                            height="22"
+                                                            src=inner.get_static_asset_url()
+                                                            class="w-[22px] w-[22px]"
+                                                        />
+                                                    }
+                                                }
+
                                             </div>
                                         </Show>
-                                        <Show when=move || item5_id != 0>
+                                        <Show when=move || item5.is_some()>
                                             <div class="relative rounded">
-                                                <img
-                                                    alt=format!("Item {}", item5_id)
-                                                    width="22"
-                                                    height="22"
-                                                    src=Item::get_static_asset_url_u32(item5_id)
-                                                    class="w-[22px] w-[22px]"
-                                                />
+                                                {
+                                                    let inner = item5.unwrap();
+                                                    view! {
+                                                        <img
+                                                            alt=inner.to_string()
+                                                            width="22"
+                                                            height="22"
+                                                            src=inner.get_static_asset_url()
+                                                            class="w-[22px] w-[22px]"
+                                                        />
+                                                    }
+                                                }
+
                                             </div>
                                         </Show>
-                                        <Show when=move || item6_id != 0>
+                                        <Show when=move || item6.is_some()>
                                             <div class="relative rounded">
-                                                <img
-                                                    alt=format!("Item {}", item6_id)
-                                                    width="22"
-                                                    height="22"
-                                                    src=Item::get_static_asset_url_u32(item6_id)
-                                                    class="w-[22px] w-[22px]"
-                                                />
+                                                {
+                                                    let inner = item6.unwrap();
+                                                    view! {
+                                                        <img
+                                                            alt=inner.to_string()
+                                                            width="22"
+                                                            height="22"
+                                                            src=inner.get_static_asset_url()
+                                                            class="w-[22px] w-[22px]"
+                                                        />
+                                                    }
+                                                }
+
                                             </div>
                                         </Show>
                                     </div>

@@ -8,8 +8,8 @@ use crate::consts::queue::Queue;
 use crate::consts::summoner_spell::SummonerSpell;
 use crate::consts::HasStaticAsset;
 use crate::utils::{
-    format_duration, format_float_to_2digits, summoner_url, DurationSince, RiotMatchId,
-    SummonerSlug,
+    calculate_and_format_kda, calculate_loss_and_win_rate, format_duration,
+    format_float_to_2digits, summoner_url, DurationSince, RiotMatchId, SummonerSlug,
 };
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
@@ -240,6 +240,18 @@ pub fn SummonerEncounterParticipantComponent(
     encounter_participant: SummonerEncounterParticipant,
     is_self: bool,
 ) -> impl IntoView {
+    let champion = Champion::from(encounter_participant.champion_id);
+    let summoner_spell1 = SummonerSpell::from(encounter_participant.summoner_spell1_id);
+    let summoner_spell2 = SummonerSpell::from(encounter_participant.summoner_spell2_id);
+    let primary_perk_selection = Perk::from(encounter_participant.perk_primary_selection_id);
+    let sub_perk_style = Perk::from(encounter_participant.perk_sub_style_id);
+    let item0 = Item::try_from(encounter_participant.item0_id).ok();
+    let item1 = Item::try_from(encounter_participant.item1_id).ok();
+    let item2 = Item::try_from(encounter_participant.item2_id).ok();
+    let item3 = Item::try_from(encounter_participant.item3_id).ok();
+    let item4 = Item::try_from(encounter_participant.item4_id).ok();
+    let item5 = Item::try_from(encounter_participant.item5_id).ok();
+    let item6 = Item::try_from(encounter_participant.item6_id).ok();
     view! {
         <div
             class="flex flex-col h-full gap-0.5 justify-start w-full px-2 "
@@ -256,8 +268,8 @@ pub fn SummonerEncounterParticipantComponent(
                     <img
                         width="48"
                         height="48"
-                        alt=Champion::from(encounter_participant.champion_id).to_str()
-                        src=Champion::get_static_asset_url(encounter_participant.champion_id)
+                        alt=champion.to_str()
+                        src=champion.get_static_asset_url()
                         class="w-12 h-12 rounded-full"
                     />
                     <span
@@ -273,11 +285,8 @@ pub fn SummonerEncounterParticipantComponent(
                             <img
                                 width="22"
                                 height="22"
-                                alt=SummonerSpell::from(encounter_participant.summoner_spell1_id)
-                                    .to_string()
-                                src=SummonerSpell::get_static_asset_url(
-                                    encounter_participant.summoner_spell1_id,
-                                )
+                                alt=summoner_spell1.to_string()
+                                src=summoner_spell1.get_static_asset_url()
                                 class="w-[22px] w-[22px]"
                             />
                         </div>
@@ -285,11 +294,8 @@ pub fn SummonerEncounterParticipantComponent(
                             <img
                                 width="22"
                                 height="22"
-                                alt=SummonerSpell::from(encounter_participant.summoner_spell2_id)
-                                    .to_string()
-                                src=SummonerSpell::get_static_asset_url(
-                                    encounter_participant.summoner_spell2_id,
-                                )
+                                alt=summoner_spell2.to_string()
+                                src=summoner_spell2.get_static_asset_url()
                                 class="w-[22px] w-[22px]"
                             />
                         </div>
@@ -300,11 +306,8 @@ pub fn SummonerEncounterParticipantComponent(
                                 <img
                                     width="22"
                                     height="22"
-                                    alt=Perk::from(encounter_participant.perk_primary_selection_id)
-                                        .to_string()
-                                    src=Perk::get_static_asset_url(
-                                        encounter_participant.perk_primary_selection_id,
-                                    )
+                                    alt=primary_perk_selection.to_string()
+                                    src=primary_perk_selection.get_static_asset_url()
                                     class="w-[22px] w-[22px]"
                                 />
                             </div>
@@ -314,11 +317,8 @@ pub fn SummonerEncounterParticipantComponent(
                                 <img
                                     width="22"
                                     height="22"
-                                    alt=Perk::from(encounter_participant.perk_sub_style_id)
-                                        .to_string()
-                                    src=Perk::get_static_asset_url(
-                                        encounter_participant.perk_sub_style_id,
-                                    )
+                                    alt=sub_perk_style.to_string()
+                                    src=sub_perk_style.get_static_asset_url()
                                     class="w-[22px] w-[22px]"
                                 />
                             </div>
@@ -333,7 +333,13 @@ pub fn SummonerEncounterParticipantComponent(
                         /
                         <span class="text-white">{encounter_participant.assists}</span>
                     </div>
-                    <div>{format_float_to_2digits(encounter_participant.kda)}:1 KDA</div>
+                    <div>
+                        {calculate_and_format_kda(
+                            encounter_participant.kills,
+                            encounter_participant.deaths,
+                            encounter_participant.assists,
+                        )}:1 KDA
+                    </div>
                 </div>
                 <div
                     class="flex flex-col h-[58px]  "
@@ -345,86 +351,128 @@ pub fn SummonerEncounterParticipantComponent(
                     class=("border-blue-500", move || encounter_participant.won)
                 >
                     <div class="text-red-300 text-sm">
-                        P/Kill {format_float_to_2digits(encounter_participant.kill_participation)}%
+                        P/Kill {encounter_participant.kill_participation}%
                     </div>
                 </div>
             </div>
             <div class="flex gap-0.5 " class=("flex-row-reverse", move || !is_self)>
-                <Show when=move || encounter_participant.item0_id != 0>
+                <Show when=move || item0.is_some()>
                     <div class="relative rounded">
-                        <img
-                            alt=format!("Item {}", encounter_participant.item0_id)
-                            width="22"
-                            height="22"
-                            src=Item::get_static_asset_url_u32(encounter_participant.item0_id)
-                            class="w-[22px] w-[22px]"
-                        />
+                        {
+                            let inner = item0.unwrap();
+                            view! {
+                                <img
+                                    alt=inner.to_string()
+                                    width="22"
+                                    height="22"
+                                    src=inner.get_static_asset_url()
+                                    class="w-[22px] w-[22px]"
+                                />
+                            }
+                        }
+
                     </div>
                 </Show>
-                <Show when=move || encounter_participant.item1_id != 0>
+                <Show when=move || item1.is_some()>
                     <div class="relative rounded">
-                        <img
-                            alt=format!("Item {}", encounter_participant.item1_id)
-                            width="22"
-                            height="22"
-                            src=Item::get_static_asset_url_u32(encounter_participant.item1_id)
-                            class="w-[22px] w-[22px]"
-                        />
+                        {
+                            let inner = item1.unwrap();
+                            view! {
+                                <img
+                                    alt=inner.to_string()
+                                    width="22"
+                                    height="22"
+                                    src=inner.get_static_asset_url()
+                                    class="w-[22px] w-[22px]"
+                                />
+                            }
+                        }
+
                     </div>
                 </Show>
-                <Show when=move || encounter_participant.item2_id != 0>
+                <Show when=move || item2.is_some()>
                     <div class="relative rounded">
-                        <img
-                            alt=format!("Item {}", encounter_participant.item2_id)
-                            width="22"
-                            height="22"
-                            src=Item::get_static_asset_url_u32(encounter_participant.item2_id)
-                            class="w-[22px] w-[22px]"
-                        />
+                        {
+                            let inner = item2.unwrap();
+                            view! {
+                                <img
+                                    alt=inner.to_string()
+                                    width="22"
+                                    height="22"
+                                    src=inner.get_static_asset_url()
+                                    class="w-[22px] w-[22px]"
+                                />
+                            }
+                        }
+
                     </div>
                 </Show>
-                <Show when=move || encounter_participant.item3_id != 0>
+                <Show when=move || item3.is_some()>
                     <div class="relative rounded">
-                        <img
-                            alt=format!("Item {}", encounter_participant.item3_id)
-                            width="22"
-                            height="22"
-                            src=Item::get_static_asset_url_u32(encounter_participant.item3_id)
-                            class="w-[22px] w-[22px]"
-                        />
+                        {
+                            let inner = item3.unwrap();
+                            view! {
+                                <img
+                                    alt=inner.to_string()
+                                    width="22"
+                                    height="22"
+                                    src=inner.get_static_asset_url()
+                                    class="w-[22px] w-[22px]"
+                                />
+                            }
+                        }
+
                     </div>
                 </Show>
-                <Show when=move || encounter_participant.item4_id != 0>
+                <Show when=move || item4.is_some()>
                     <div class="relative rounded">
-                        <img
-                            alt=format!("Item {}", encounter_participant.item4_id)
-                            width="22"
-                            height="22"
-                            src=Item::get_static_asset_url_u32(encounter_participant.item4_id)
-                            class="w-[22px] w-[22px]"
-                        />
+                        {
+                            let inner = item4.unwrap();
+                            view! {
+                                <img
+                                    alt=inner.to_string()
+                                    width="22"
+                                    height="22"
+                                    src=inner.get_static_asset_url()
+                                    class="w-[22px] w-[22px]"
+                                />
+                            }
+                        }
+
                     </div>
                 </Show>
-                <Show when=move || encounter_participant.item5_id != 0>
+                <Show when=move || item5.is_some()>
                     <div class="relative rounded">
-                        <img
-                            alt=format!("Item {}", encounter_participant.item5_id)
-                            width="22"
-                            height="22"
-                            src=Item::get_static_asset_url_u32(encounter_participant.item5_id)
-                            class="w-[22px] w-[22px]"
-                        />
+                        {
+                            let inner = item5.unwrap();
+                            view! {
+                                <img
+                                    alt=inner.to_string()
+                                    width="22"
+                                    height="22"
+                                    src=inner.get_static_asset_url()
+                                    class="w-[22px] w-[22px]"
+                                />
+                            }
+                        }
+
                     </div>
                 </Show>
-                <Show when=move || encounter_participant.item6_id != 0>
+                <Show when=move || item6.is_some()>
                     <div class="relative rounded">
-                        <img
-                            alt=format!("Item {}", encounter_participant.item6_id)
-                            width="22"
-                            height="22"
-                            src=Item::get_static_asset_url_u32(encounter_participant.item6_id)
-                            class="w-[22px] w-[22px]"
-                        />
+                        {
+                            let inner = item6.unwrap();
+                            view! {
+                                <img
+                                    alt=inner.to_string()
+                                    width="22"
+                                    height="22"
+                                    src=inner.get_static_asset_url()
+                                    class="w-[22px] w-[22px]"
+                                />
+                            }
+                        }
+
                     </div>
                 </Show>
             </div>
@@ -439,11 +487,14 @@ pub fn SummonerEncounterStat(
     is_self: bool,
 ) -> impl IntoView {
     let has_slug = summoner.pro_slug.is_some();
+    let profile_icon = ProfileIcon(summoner.profile_icon_id);
+    let (losses, winrate) = calculate_loss_and_win_rate(stats.total_wins, stats.total_matches);
+
     view! {
         <div class="flex w-1/2 " class=("flex-row-reverse", move || !is_self)>
             <img
-                alt="Profile Icon"
-                src=ProfileIcon::get_static_asset_url(summoner.profile_icon_id)
+                alt=profile_icon.to_string()
+                src=profile_icon.get_static_asset_url()
                 class="w-16 h-16"
             />
             <div
@@ -481,13 +532,8 @@ pub fn SummonerEncounterStat(
                 class=("mr-2", move || !is_self)
             >
                 <div>
-                    {stats.total_wins}W {stats.total_loses}L {stats.total_wins + stats.total_loses}G
-                    {format!(
-                        "{}",
-                        ((stats.total_wins as f32
-                            / (stats.total_wins + stats.total_loses).max(1) as f32) * 100.0)
-                            .round(),
-                    )}%
+                    {stats.total_wins}W {losses as u16}L {stats.total_matches}G
+                    {format_float_to_2digits(winrate.round())}%
                 </div>
                 <div class="flex flex-col">
                     <div>
@@ -496,8 +542,11 @@ pub fn SummonerEncounterStat(
                         {format_float_to_2digits(stats.avg_assists)}
                     </div>
                     <div>
-                        {format_float_to_2digits(stats.avg_kda)}:1 P/kill
-                        {format_float_to_2digits(stats.avg_kill_participation)}%
+                        {calculate_and_format_kda(
+                            stats.avg_kills,
+                            stats.avg_deaths,
+                            stats.avg_assists,
+                        )}:1 P/kill {stats.avg_kill_participation}%
                     </div>
                 </div>
 
@@ -521,17 +570,14 @@ pub struct SummonerEncounterStats {
     pub avg_kills: f32,
     pub avg_deaths: f32,
     pub avg_assists: f32,
-    pub avg_kda: f32,
-    pub avg_kill_participation: f32,
+    pub avg_kill_participation: u16,
     pub total_wins: u16,
-    pub total_loses: u16,
+    pub total_matches: u16,
 }
 
 #[derive(Clone, Serialize, Deserialize, Archive)]
 pub struct SummonerEncounterParticipant {
     pub summoner_id: i32,
-    pub kda: f32,
-    pub kill_participation: f32,
     pub item0_id: u32,
     pub item1_id: u32,
     pub item2_id: u32,
@@ -539,6 +585,7 @@ pub struct SummonerEncounterParticipant {
     pub item4_id: u32,
     pub item5_id: u32,
     pub item6_id: u32,
+    pub kill_participation: u16,
     pub champion_id: u16,
     pub champ_level: u16,
     pub kills: u16,

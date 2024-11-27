@@ -1,4 +1,7 @@
+#[cfg(feature = "ssr")]
+use crate::backend::server_fns::get_encounter::ssr::find_summoner_puuid_by_id;
 use crate::consts::platform_route::PlatformRoute;
+#[cfg(feature = "ssr")]
 use crate::utils::Puuid;
 use crate::views::summoner_page::summoner_live_page::LiveGame;
 use leptos::prelude::*;
@@ -9,11 +12,12 @@ use leptos::server_fn::codec::Rkyv;
 pub async fn get_live_game(
     summoner_id: i32,
     platform_route: PlatformRoute,
-    puuid: Puuid,
 ) -> Result<Option<LiveGame>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let live_cache = state.live_game_cache.clone();
     let db = state.db.clone();
+    let puuid = Puuid::new(find_summoner_puuid_by_id(&db, summoner_id).await?.as_str());
+
     if let Some(live_data) = live_cache.get_game_data(&puuid) {
         Ok(Some(
             ssr::add_encounters(&db, live_data, summoner_id).await?,
@@ -45,8 +49,8 @@ pub async fn get_live_game(
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::ssr::{AppResult, PlatformRouteDb};
-    use crate::backend::updates::update_matches_task::bulk_summoners::bulk_insert_summoners;
-    use crate::backend::updates::update_matches_task::TempSummoner;
+    use crate::backend::tasks::update_matches::bulk_summoners::bulk_insert_summoners;
+    use crate::backend::tasks::update_matches::TempSummoner;
 
     use crate::backend::server_fns::get_matches::ssr::get_summoner_encounters;
     use crate::consts::map::Map;
@@ -156,10 +160,6 @@ pub mod ssr {
                             .map(|champion_stats| LiveGameParticipantChampionStats {
                                 total_champion_played: champion_stats.total_match as u16,
                                 total_champion_wins: champion_stats.total_win as u16,
-                                total_champion_losses: champion_stats.total_match as u16
-                                    - champion_stats.total_win as u16,
-                                champion_win_rate: champion_stats.total_win as f32
-                                    / champion_stats.total_match as f32,
                                 avg_kills: champion_stats.avg_kills.to_f32().unwrap_or_default(),
                                 avg_deaths: champion_stats.avg_deaths.to_f32().unwrap_or_default(),
                                 avg_assists: champion_stats
@@ -178,8 +178,6 @@ pub mod ssr {
                         Some(LiveGameParticipantRankedStats {
                             total_ranked: total_ranked as u16,
                             total_ranked_wins: total_wins as u16,
-                            total_ranked_losses: total_ranked as u16 - total_wins as u16,
-                            ranked_win_rate: total_wins as f32 / total_ranked as f32,
                         })
                     };
                     let (perk_primary_selection_id, perk_sub_style_id) =

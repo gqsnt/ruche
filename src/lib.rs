@@ -45,11 +45,11 @@ pub mod ssr {
         pub summoner_updated_sender: Arc<SubscriberMap>,
     }
 
-    pub fn init_riot_api() -> riven::RiotApi {
+    pub fn init_riot_api() -> RiotApi {
         let api_key = dotenv::var("RIOT_API_KEY").expect("RIOT_API_KEY must be set");
-        riven::RiotApi::new(api_key)
+        RiotApi::new(api_key)
     }
-    pub async fn init_database() -> sqlx::PgPool {
+    pub async fn init_database() -> PgPool {
         let max_connections = dotenv::var("MAX_PG_CONNECTIONS")
             .unwrap_or("10".to_string())
             .parse::<u32>()
@@ -80,7 +80,7 @@ pub mod ssr {
         pool
     }
 
-    pub async fn subscribe_sse(
+    pub async fn sse_broadcast_match_updated(
         Path(summoner_id): Path<i32>,
         State(state): State<AppState>,
     ) -> Sse<impl tokio_stream::Stream<Item = Result<Event, std::convert::Infallible>>> {
@@ -166,7 +166,7 @@ pub mod ssr {
         fn make_https(host: String, uri: Uri) -> Result<Uri> {
             let mut parts = uri.into_parts();
 
-            parts.scheme = Some(axum::http::uri::Scheme::HTTPS);
+            parts.scheme = Some(http::uri::Scheme::HTTPS);
 
             if parts.path_and_query.is_none() {
                 parts.path_and_query = Some("/".parse()?);

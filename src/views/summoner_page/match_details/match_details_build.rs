@@ -80,16 +80,17 @@ pub fn MatchDetailsBuild(
                                                 .map(|item_event| {
                                                     let is_sold_item = item_event.event_type
                                                         == ItemEventType::Sold;
+                                                    let item_enum = Item::try_from(item_event.item_id).unwrap();
                                                     view! {
                                                         <div
                                                             class=("rounded", is_sold_item)
                                                             class="relative border-gray-950 border-4"
                                                         >
                                                             <img
-                                                                alt=format!("Item {}", item_event.item_id)
+                                                                alt=item_enum.to_string()
                                                                 height="30"
                                                                 width="30"
-                                                                src=Item::get_static_asset_url_u32(item_event.item_id)
+                                                                src=item_enum.get_static_asset_url()
                                                                 class=("opacity-75", is_sold_item)
                                                                 class="h-[30px] w-[30px]"
                                                             />
@@ -151,117 +152,122 @@ pub fn MatchDetailsBuild(
                     }}
                 </div>
             </div>
-            <div class="my-2 my-card w-fit">
-                <div class="">Runes</div>
-                <div class="flex justify-center mt-2 space-x-2 text-xs">
-                    <div class="flex flex-col space-y-1.5 ">
-                        <img
-                            width="28"
-                            height="28"
-                            alt=Perk::from(selected_participant().perk_primary_style_id).to_string()
-                            src=Perk::get_static_asset_url(
-                                selected_participant().perk_primary_style_id,
-                            )
-                            class="w-[28px] h-[28px] rounded"
-                        />
-                        <img
-                            width="28"
-                            height="28"
-                            alt=Perk::from(selected_participant().perk_primary_selection_id)
-                                .to_string()
-                            src=Perk::get_static_asset_url(
-                                selected_participant().perk_primary_selection_id,
-                            )
-                            class="w-[28px] h-[28px] rounded"
-                        />
-                        <img
-                            width="28"
-                            height="28"
-                            alt=Perk::from(selected_participant().perk_primary_selection1_id)
-                                .to_string()
-                            src=Perk::get_static_asset_url(
-                                selected_participant().perk_primary_selection1_id,
-                            )
-                            class="w-[28px] h-[28px] rounded"
-                        />
-                        <img
-                            width="28"
-                            height="28"
-                            alt=Perk::from(selected_participant().perk_primary_selection2_id)
-                                .to_string()
-                            src=Perk::get_static_asset_url(
-                                selected_participant().perk_primary_selection2_id,
-                            )
-                            class="w-[28px] h-[28px] rounded"
-                        />
-                        <img
-                            width="28"
-                            height="28"
-                            alt=Perk::from(selected_participant().perk_primary_selection3_id)
-                                .to_string()
-                            src=Perk::get_static_asset_url(
-                                selected_participant().perk_primary_selection3_id,
-                            )
-                            class="w-[28px] h-[28px] rounded"
-                        />
-                    </div>
-                    <div class="border-l-2 flex flex-col space-y-1 border-gray-900 h-fit pl-1.5">
+            {move || {
+                let perk_primary_style = Perk::from(selected_participant().perk_primary_style_id);
+                let perk_primary_selection = Perk::from(
+                    selected_participant().perk_primary_selection_id,
+                );
+                let perk_primary_selection1 = Perk::from(
+                    selected_participant().perk_primary_selection1_id,
+                );
+                let perk_primary_selection2 = Perk::from(
+                    selected_participant().perk_primary_selection2_id,
+                );
+                let perk_primary_selection3 = Perk::from(
+                    selected_participant().perk_primary_selection3_id,
+                );
+                let perk_sub_style = Perk::from(selected_participant().perk_sub_style_id);
+                let perk_sub_selection1 = Perk::from(selected_participant().perk_sub_selection1_id);
+                let perk_sub_selection2 = Perk::from(selected_participant().perk_sub_selection2_id);
+                let perk_offense = Perk::from(selected_participant().perk_offense_id);
+                let perk_flex = Perk::from(selected_participant().perk_flex_id);
+                let perk_defense = Perk::from(selected_participant().perk_defense_id);
 
-                        <img
-                            width="28"
-                            height="28"
-                            alt=Perk::from(selected_participant().perk_sub_style_id).to_string()
-                            src=Perk::get_static_asset_url(selected_participant().perk_sub_style_id)
-                            class="w-[28px] h-[28px] rounded"
-                        />
-                        <img
-                            width="28"
-                            height="28"
-                            alt=Perk::from(selected_participant().perk_sub_selection1_id)
-                                .to_string()
-                            src=Perk::get_static_asset_url(
-                                selected_participant().perk_sub_selection1_id,
-                            )
-                            class="w-[28px] h-[28px] rounded"
-                        />
-                        <img
-                            width="28"
-                            height="28"
-                            alt=Perk::from(selected_participant().perk_sub_selection2_id)
-                                .to_string()
-                            src=Perk::get_static_asset_url(
-                                selected_participant().perk_sub_selection2_id,
-                            )
-                            class="w-[28px] h-[28px] rounded"
-                        />
-                    </div>
+                view! {
+                    <div class="my-2 my-card w-fit">
+                        <div class="">Runes</div>
+                        <div class="flex justify-center mt-2 space-x-2 text-xs">
+                            <div class="flex flex-col space-y-1.5 ">
+                                <img
+                                    width="28"
+                                    height="28"
+                                    alt=perk_primary_style.to_string()
+                                    src=perk_primary_style.get_static_asset_url()
+                                    class="w-[28px] h-[28px] rounded"
+                                />
+                                <img
+                                    width="28"
+                                    height="28"
+                                    alt=perk_primary_selection.to_string()
+                                    src=perk_primary_selection.get_static_asset_url()
+                                    class="w-[28px] h-[28px] rounded"
+                                />
+                                <img
+                                    width="28"
+                                    height="28"
+                                    alt=perk_primary_selection1.to_string()
+                                    src=perk_primary_selection1.get_static_asset_url()
+                                    class="w-[28px] h-[28px] rounded"
+                                />
+                                <img
+                                    width="28"
+                                    height="28"
+                                    alt=perk_primary_selection2.to_string()
+                                    src=perk_primary_selection2.get_static_asset_url()
+                                    class="w-[28px] h-[28px] rounded"
+                                />
+                                <img
+                                    width="28"
+                                    height="28"
+                                    alt=perk_primary_selection3.to_string()
+                                    src=perk_primary_selection3.get_static_asset_url()
+                                    class="w-[28px] h-[28px] rounded"
+                                />
+                            </div>
+                            <div class="border-l-2 flex flex-col space-y-1 border-gray-900 h-fit pl-1.5">
 
-                    <div class="border-l-2 flex flex-col space-y-1 border-gray-900 h-fit pl-1.5">
-                        <img
-                            width="28"
-                            height="28"
-                            alt=Perk::from(selected_participant().perk_offense_id).to_string()
-                            src=Perk::get_static_asset_url(selected_participant().perk_offense_id)
-                            class="w-[28px] h-[28px] rounded"
-                        />
-                        <img
-                            width="28"
-                            height="28"
-                            alt=Perk::from(selected_participant().perk_flex_id).to_string()
-                            src=Perk::get_static_asset_url(selected_participant().perk_flex_id)
-                            class="w-[28px] h-[28px] rounded"
-                        />
+                                <img
+                                    width="28"
+                                    height="28"
+                                    alt=perk_sub_style.to_string()
+                                    src=perk_sub_style.get_static_asset_url()
+                                    class="w-[28px] h-[28px] rounded"
+                                />
+                                <img
+                                    width="28"
+                                    height="28"
+                                    alt=perk_sub_selection1.to_string()
+                                    src=perk_sub_selection1.get_static_asset_url()
+                                    class="w-[28px] h-[28px] rounded"
+                                />
+                                <img
+                                    width="28"
+                                    height="28"
+                                    alt=perk_sub_selection2.to_string()
+                                    src=perk_sub_selection2.get_static_asset_url()
+                                    class="w-[28px] h-[28px] rounded"
+                                />
+                            </div>
 
-                        <img
-                            width="28"
-                            height="28"
-                            alt=Perk::from(selected_participant().perk_defense_id).to_string()
-                            src=Perk::get_static_asset_url(selected_participant().perk_defense_id)
-                            class="w-[28px] h-[28px] rounded"
-                        />
+                            <div class="border-l-2 flex flex-col space-y-1 border-gray-900 h-fit pl-1.5">
+                                <img
+                                    width="28"
+                                    height="28"
+                                    alt=perk_offense.to_string()
+                                    src=perk_offense.get_static_asset_url()
+                                    class="w-[28px] h-[28px] rounded"
+                                />
+                                <img
+                                    width="28"
+                                    height="28"
+                                    alt=perk_flex.to_string()
+                                    src=perk_flex.get_static_asset_url()
+                                    class="w-[28px] h-[28px] rounded"
+                                />
+
+                                <img
+                                    width="28"
+                                    height="28"
+                                    alt=perk_defense.to_string()
+                                    src=perk_defense.get_static_asset_url()
+                                    class="w-[28px] h-[28px] rounded"
+                                />
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
+                }
+            }}
+
         </div>
     }
 }

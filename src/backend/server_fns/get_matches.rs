@@ -152,12 +152,9 @@ pub mod ssr {
         let total_pages = (total_matches as f32 / per_page as f32).ceil() as u16;
 
         let matches_result_info = {
-            let total_wins = matches_statistics.total_wins.unwrap_or_default() as u16;
-            let total_losses = total_matches - total_wins;
             MatchesResultInfo {
                 total_matches,
-                total_wins,
-                total_losses,
+                total_wins: matches_statistics.total_wins.unwrap_or_default() as u16,
                 avg_kills: matches_statistics
                     .avg_kills
                     .unwrap_or_default()
@@ -173,17 +170,13 @@ pub mod ssr {
                     .unwrap_or_default()
                     .to_f32()
                     .unwrap_or_default(),
-                avg_kda: matches_statistics
-                    .avg_kda
-                    .unwrap_or_default()
-                    .to_f32()
-                    .unwrap_or_default(),
-                avg_kill_participation: matches_statistics
+                avg_kill_participation: (matches_statistics
                     .avg_kill_participation
                     .unwrap_or_default()
                     .to_f32()
                     .unwrap_or_default()
-                    * 100.0,
+                    * 100.0)
+                    .round() as u16,
             }
         };
 
@@ -198,11 +191,6 @@ pub mod ssr {
                 let match_ended_since = row
                     .lol_match_match_end
                     .map_or_else(|| DurationSince::new("Unknown"), format_duration_since);
-
-                // Safely handle floating point operations
-                let kda = (row.kda.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round() / 100.0;
-                let kill_participation =
-                    (row.kill_participation.to_f32().unwrap_or(0.0).max(0.0) * 100.0).round();
                 SummonerMatch {
                     summoner_id: row.summoner_id,
                     match_id: row.lol_match_id,
@@ -214,11 +202,12 @@ pub mod ssr {
                     champion_id: row.champion_id as u16,
                     champ_level: row.champ_level,
                     won: row.won,
-                    kda,
                     kills: row.kills as u16,
                     deaths: row.deaths as u16,
                     assists: row.assists as u16,
-                    kill_participation,
+                    kill_participation: (row.kill_participation.to_f32().unwrap_or(0.0).max(0.0)
+                        * 100.0)
+                        .round() as u16,
                     summoner_spell1_id: row.summoner_spell1_id.unwrap_or_default() as u16,
                     summoner_spell2_id: row.summoner_spell2_id.unwrap_or_default() as u16,
                     perk_primary_selection_id: row.perk_primary_selection_id.unwrap_or_default()
@@ -266,8 +255,7 @@ pub mod ssr {
                 .map(|row| {
                     let (game_name, tag_line, platform, pro_player_slug) =
                         summoners.get(&row.summoner_id).unwrap();
-                    let encounter_count =
-                        (*encounter_counts.get(&row.summoner_id).unwrap_or(&0)) as u16;
+                    let encounter_count = *encounter_counts.get(&row.summoner_id).unwrap_or(&0);
                     SummonerMatchParticipant {
                         team_id: row.team_id as u16,
                         lol_match_id: row.lol_match_id,
