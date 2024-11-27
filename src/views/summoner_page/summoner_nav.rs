@@ -11,7 +11,7 @@ use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 
 #[component]
-pub fn SummonerNav(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
+pub fn SummonerNav(summoner: Summoner) -> impl IntoView {
     let (tab, set_tab) = query_signal_with_options::<String>(
         "tab",
         NavigateOptions {

@@ -18,7 +18,7 @@ use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 
 #[component]
-pub fn SummonerLivePage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
+pub fn SummonerLivePage(summoner: Summoner) -> impl IntoView {
     let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
@@ -29,8 +29,8 @@ pub fn SummonerLivePage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView
             (
                 summoner_update_version.get().unwrap_or_default(),
                 refresh_signal.get(),
-                summoner().unwrap().id,
-                summoner().unwrap().platform.to_string(),
+                summoner.id,
+                summoner.platform.to_string(),
             )
         },
         |(_, _, id, platform_type)| async move {
@@ -40,13 +40,13 @@ pub fn SummonerLivePage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView
 
     meta_store.title().set(format!(
         "{}#{} | Live Game | Broken.gg",
-        summoner().unwrap().game_name.to_str(),
-        summoner().unwrap().tag_line.to_str()
+        summoner.game_name.to_str(),
+        summoner.tag_line.to_str()
     ));
-    meta_store.description().set(format!("Watch {}#{}'s live game now on Broken.gg. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner().unwrap().game_name.to_str(), summoner().unwrap().tag_line.to_str()));
+    meta_store.description().set(format!("Watch {}#{}'s live game now on Broken.gg. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner.game_name.to_str(), summoner.tag_line.to_str()));
     meta_store
         .url()
-        .set(format!("{}?tab=live", summoner().unwrap().to_route_path()));
+        .set(format!("{}?tab=live", summoner.to_route_path()));
     view! {
         <div class="w-[768px]">
             <div class="flex justify-start mb-2">
@@ -116,7 +116,7 @@ pub fn SummonerLivePage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView
 pub fn MatchLiveTable(
     team_id: i32,
     participants: Vec<LiveGameParticipant>,
-    summoner: ReadSignal<Option<Summoner>>,
+    summoner: Summoner,
 ) -> impl IntoView {
     let is_blue_team = || team_id == 100;
     view! {
@@ -225,9 +225,9 @@ pub fn MatchLiveTable(
                                         <Show when=move || (participant.encounter_count > 0)>
                                             <a
                                                 href=summoner_encounter_url(
-                                                    summoner().unwrap().platform.to_string(),
-                                                    summoner().unwrap().game_name.to_string(),
-                                                    summoner().unwrap().tag_line.to_string(),
+                                                    summoner.platform.to_string(),
+                                                    summoner.game_name.to_string(),
+                                                    summoner.tag_line.to_string(),
                                                     participant.platform.to_string(),
                                                     participant.game_name.to_string(),
                                                     participant.tag_line.to_string(),

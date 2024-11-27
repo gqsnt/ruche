@@ -20,7 +20,7 @@ pub fn MatchDetails(
     match_id: i32,
     riot_match_id: RiotMatchId,
     platform: PlatformRoute,
-    summoner: ReadSignal<Option<Summoner>>,
+    summoner: Summoner,
 ) -> impl IntoView {
     let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let match_details = Resource::new_rkyv(
@@ -30,7 +30,7 @@ pub fn MatchDetails(
                 match_id,
                 riot_match_id,
                 platform,
-                summoner().unwrap().id,
+                summoner.id,
             )
         },
         |(_, match_id, riot_match_id, platform, summoner_id)| async move {
@@ -49,13 +49,13 @@ pub fn MatchDetails(
                     <Show when=move || match_detail_tab() == "team">
                         <MatchDetailsTeam
                             _match_details=match_details_signal
-                            _summoner_id=summoner().unwrap().id
+                            _summoner_id=summoner.id
                         />
                     </Show>
                     <Show when=move || match_detail_tab() == "build">
                         <MatchDetailsBuild
                             match_details=match_details_signal
-                            summoner_id=summoner().unwrap().id
+                            summoner_id=summoner.id
                         />
                     </Show>
                 }

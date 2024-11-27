@@ -5,10 +5,10 @@ pub struct FixedSizeString<const N: usize>([u8; N]);
 
 impl<const N: usize> FixedSizeString<N> {
     pub fn new(value: &str) -> Self {
-        let mut result = [0u8; N]; // Initialize the fixed-size array with zeros.
-        let bytes = value.as_bytes(); // Get the string as a slice of bytes.
-        let len = bytes.len().min(N); // Determine how much of the string fits into the array.
-        result[..len].copy_from_slice(&bytes[..len]); // Copy the bytes into the fixed-size array.
+        let mut result = [0u8; N];
+        let bytes = value.as_bytes();
+        let len = bytes.len().min(N);
+        result[..len].copy_from_slice(&bytes[..len]);
         FixedSizeString(result)
     }
 
@@ -92,7 +92,10 @@ pub fn version_to_major_minor(version: &str) -> String {
     format!("{}.{}", major, minor)
 }
 
+
 pub fn format_with_spaces(number: u32) -> String {
+    // convert 4978521 -> 4 978 521
+
     let mut num_str = number.to_string();
     let mut result = String::new();
 

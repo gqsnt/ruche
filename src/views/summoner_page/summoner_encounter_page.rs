@@ -23,7 +23,7 @@ use leptos_router::hooks::{query_signal_with_options, use_query_map};
 use leptos_router::NavigateOptions;
 
 #[component]
-pub fn SummonerEncounterPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
+pub fn SummonerEncounterPage(summoner: Summoner) -> impl IntoView {
     let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let queries = use_query_map();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
@@ -45,7 +45,7 @@ pub fn SummonerEncounterPage(summoner: ReadSignal<Option<Summoner>>) -> impl Int
         move || {
             (
                 summoner_update_version.get().unwrap_or_default(),
-                summoner().unwrap().id,
+                summoner.id,
                 match_filters_updated.get(),
                 page_number(),
                 encounter_slug(),
@@ -122,12 +122,12 @@ pub fn SummonerEncounterPage(summoner: ReadSignal<Option<Summoner>>) -> impl Int
                                             <div class="flex w-full">
                                                 <div class="flex w-full my-card justify-between">
                                                     <SummonerEncounterStat
-                                                        summoner=encounter_result.summoner.clone()
+                                                        summoner=encounter_result.summoner
                                                         stats=encounter_result.summoner_stats.clone()
                                                         is_self=true
                                                     />
                                                     <SummonerEncounterStat
-                                                        summoner=encounter_result.encounter.clone()
+                                                        summoner=encounter_result.encounter
                                                         stats=encounter_result.encounter_stats.clone()
                                                         is_self=false
                                                     />
@@ -163,7 +163,7 @@ pub fn SummonerEncounterPage(summoner: ReadSignal<Option<Summoner>>) -> impl Int
 #[component]
 pub fn SummonerEncounterMatchComponent(
     match_: SummonerEncounterMatch,
-    summoner: ReadSignal<Option<Summoner>>,
+    summoner: Summoner,
 ) -> impl IntoView {
     let (show_details, set_show_details) = signal(false);
     view! {

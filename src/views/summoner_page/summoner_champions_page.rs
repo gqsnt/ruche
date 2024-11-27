@@ -12,7 +12,7 @@ use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 
 #[component]
-pub fn SummonerChampionsPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
+pub fn SummonerChampionsPage(summoner: Summoner) -> impl IntoView {
     let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
@@ -26,7 +26,7 @@ pub fn SummonerChampionsPage(summoner: ReadSignal<Option<Summoner>>) -> impl Int
             (
                 summoner_update_version.get().unwrap_or_default(),
                 match_filters_updated.get(),
-                summoner().unwrap().id,
+                summoner.id,
             )
         },
         |(_, filters, summoner_id)| async move {
@@ -46,14 +46,13 @@ pub fn SummonerChampionsPage(summoner: ReadSignal<Option<Summoner>>) -> impl Int
 
     meta_store.title().set(format!(
         "{}#{} | Champions | Broken.gg",
-        summoner().unwrap().game_name.to_str(),
-        summoner().unwrap().tag_line.to_str()
+        summoner.game_name.to_str(),
+        summoner.tag_line.to_str()
     ));
-    meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner().unwrap().game_name.to_str(), summoner().unwrap().tag_line.to_str()));
-    meta_store.url().set(format!(
-        "{}?tab=champions",
-        summoner().unwrap().to_route_path()
-    ));
+    meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner.game_name.to_str(), summoner.tag_line.to_str()));
+    meta_store
+        .url()
+        .set(format!("{}?tab=champions", summoner.to_route_path()));
     view! {
         <div>
             <Suspense fallback=move || {

@@ -25,7 +25,7 @@ use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 
 #[component]
-pub fn SummonerMatchesPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
+pub fn SummonerMatchesPage(summoner: Summoner) -> impl IntoView {
     let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
@@ -52,7 +52,7 @@ pub fn SummonerMatchesPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoV
             (
                 summoner_update_version.get().unwrap_or_default(),
                 match_filters_updated.get(),
-                summoner().unwrap().id,
+                summoner.id,
                 page_number(),
             )
         },
@@ -63,11 +63,11 @@ pub fn SummonerMatchesPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoV
 
     meta_store.title().set(format!(
         "{}#{} | Matches | Broken.gg",
-        summoner().unwrap().game_name.to_str(),
-        summoner().unwrap().tag_line.to_str()
+        summoner.game_name.to_str(),
+        summoner.tag_line.to_str()
     ));
-    meta_store.description().set(format!("Explore {}#{}'s match history on Broken.gg. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner().unwrap().game_name.to_str(), summoner().unwrap().tag_line.to_str()));
-    meta_store.url().set(summoner().unwrap().to_route_path());
+    meta_store.description().set(format!("Explore {}#{}'s match history on Broken.gg. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner.game_name.to_str(), summoner.tag_line.to_str()));
+    meta_store.url().set(summoner.to_route_path());
     view! {
         <div class="w-[768px] inline-block align-top justify-center">
             <div class="">
@@ -163,7 +163,7 @@ pub fn SummonerMatchesPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoV
 }
 
 #[component]
-pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
+pub fn MatchCard(match_: SummonerMatch, summoner: Summoner) -> impl IntoView {
     let (show_details, set_show_details) = signal(false);
     let champion = Champion::from(match_.champion_id);
     let summoner_spell1 = SummonerSpell::from(match_.summoner_spell1_id);
@@ -448,9 +448,9 @@ pub fn MatchCard(match_: SummonerMatch, summoner: ReadSignal<Option<Summoner>>) 
                                         <Show when=move || (participant.encounter_count > 1)>
                                             <a
                                                 href=summoner_encounter_url(
-                                                    summoner().unwrap().platform.to_string(),
-                                                    summoner().unwrap().game_name.to_string(),
-                                                    summoner().unwrap().tag_line.to_string(),
+                                                    summoner.platform.to_string(),
+                                                    summoner.game_name.to_string(),
+                                                    summoner.tag_line.to_string(),
                                                     participant.platform.to_string(),
                                                     participant.game_name.to_string(),
                                                     participant.tag_line.to_string(),

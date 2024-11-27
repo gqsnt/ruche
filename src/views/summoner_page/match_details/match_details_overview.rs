@@ -11,14 +11,14 @@ use leptos::{component, view, IntoView};
 
 #[component]
 pub fn MatchDetailsOverview(
-    summoner: ReadSignal<Option<Summoner>>,
+    summoner: Summoner,
     match_details: ReadSignal<Vec<LolMatchParticipantDetails>>,
 ) -> impl IntoView {
     let details = match_details();
     let (summoner_team, summoner_team_won) = {
         let detail = details
             .iter()
-            .find(|participant| participant.summoner_id == summoner().unwrap().id)
+            .find(|participant| participant.summoner_id == summoner.id)
             .expect("Summoner id not found");
         (detail.team_id, detail.won)
     };
@@ -55,7 +55,7 @@ pub fn MatchDetailsOverview(
 pub fn MatchDetailsOverviewTable(
     won: bool,
     team_id: u16,
-    summoner: ReadSignal<Option<Summoner>>,
+    summoner: Summoner,
     participants: Vec<LolMatchParticipantDetails>,
 ) -> impl IntoView {
     view! {
@@ -106,22 +106,10 @@ pub fn MatchDetailsOverviewTable(
 
                         view! {
                             <tr
-                                class=(
-                                    "bg-red-900",
-                                    !won && participant.summoner_id != summoner().unwrap().id,
-                                )
-                                class=(
-                                    "bg-blue-900",
-                                    won && participant.summoner_id != summoner().unwrap().id,
-                                )
-                                class=(
-                                    "bg-red-800",
-                                    !won && participant.summoner_id == summoner().unwrap().id,
-                                )
-                                class=(
-                                    "bg-blue-800",
-                                    won && participant.summoner_id == summoner().unwrap().id,
-                                )
+                                class=("bg-red-900", !won && participant.summoner_id != summoner.id)
+                                class=("bg-blue-900", won && participant.summoner_id != summoner.id)
+                                class=("bg-red-800", !won && participant.summoner_id == summoner.id)
+                                class=("bg-blue-800", won && participant.summoner_id == summoner.id)
                             >
                                 <td class="pl-2.5 py-1">
                                     <div class="relative w-8">
@@ -182,9 +170,9 @@ pub fn MatchDetailsOverviewTable(
                                         <Show when=move || (participant.encounter_count > 1)>
                                             <a
                                                 href=summoner_encounter_url(
-                                                    summoner().unwrap().platform.to_string(),
-                                                    summoner().unwrap().tag_line.to_string(),
-                                                    summoner().unwrap().game_name.to_string(),
+                                                    summoner.platform.to_string(),
+                                                    summoner.tag_line.to_string(),
+                                                    summoner.game_name.to_string(),
                                                     participant.platform.to_string(),
                                                     participant.game_name.to_string(),
                                                     participant.tag_line.to_string(),

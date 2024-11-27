@@ -18,7 +18,7 @@ use leptos_router::hooks::query_signal_with_options;
 use leptos_router::NavigateOptions;
 
 #[component]
-pub fn SummonerEncountersPage(summoner: ReadSignal<Option<Summoner>>) -> impl IntoView {
+pub fn SummonerEncountersPage(summoner: Summoner) -> impl IntoView {
     let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
@@ -57,12 +57,12 @@ pub fn SummonerEncountersPage(summoner: ReadSignal<Option<Summoner>>) -> impl In
                 summoner_update_version.get().unwrap_or_default(),
                 search_summoner.get(),
                 match_filters_updated.get(),
-                summoner().unwrap().id,
+                summoner.id,
                 page_number(),
             )
         },
         |(_, search_summoner, filters, summoner_id, page_number)| async move {
-            //println!("{:?} {:?} {:?}", filters, summoner().unwrap(), page_number);
+            //println!("{:?} {:?} {:?}", filters, summoner.unwrap(), page_number);
             get_encounters(
                 summoner_id,
                 page_number.unwrap_or(1),
@@ -75,14 +75,13 @@ pub fn SummonerEncountersPage(summoner: ReadSignal<Option<Summoner>>) -> impl In
 
     meta_store.title().set(format!(
         "{}#{} | Encounters | Broken.gg",
-        summoner().unwrap().game_name.to_str(),
-        summoner().unwrap().tag_line.to_str()
+        summoner.game_name.to_str(),
+        summoner.tag_line.to_str()
     ));
-    meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner().unwrap().game_name.to_str(), summoner().unwrap().tag_line.to_str()));
-    meta_store.url().set(format!(
-        "{}?tab=encounters",
-        summoner().unwrap().to_route_path()
-    ));
+    meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner.game_name.to_str(), summoner.tag_line.to_str()));
+    meta_store
+        .url()
+        .set(format!("{}?tab=encounters", summoner.to_route_path()));
     view! {
         <div>
             <div class="my-card flex space-x-2 my-2 w-fit">
@@ -201,9 +200,9 @@ pub fn SummonerEncountersPage(summoner: ReadSignal<Option<Summoner>>) -> impl In
                                                                             <a
                                                                                 class="my-button font-bold"
                                                                                 href=summoner_encounter_url(
-                                                                                    summoner().unwrap().platform.to_string(),
-                                                                                    summoner().unwrap().game_name.to_string(),
-                                                                                    summoner().unwrap().tag_line.to_string(),
+                                                                                    summoner.platform.to_string(),
+                                                                                    summoner.game_name.to_string(),
+                                                                                    summoner.tag_line.to_string(),
                                                                                     encounter_platform.clone(),
                                                                                     encounter_game_name.clone(),
                                                                                     encounter_tag_line.clone(),
