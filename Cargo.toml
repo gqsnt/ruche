@@ -1,92 +1,20 @@
 cargo-features = ["profile-rustflags"]
-[package]
-name = "leptos-broken-gg"
-version = "0.1.0"
-edition = "2021"
-
-[lib]
-crate-type = ["cdylib", "rlib"]
-
-[dependencies]
-axum = { version = "0.7", optional = true, features = ["macros", "http2"]}
-tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
-tokio-stream = { version = "0.1", optional = true, features = ["sync"] }
-tower = { version = "0.4", optional = true, features = ["util"] }
-tower-http = { version = "0.5", features = ["fs", "compression-full"], optional = true }
-sqlx = { version = "0.8", optional = true, features = ["postgres", "runtime-tokio-rustls", "chrono", "bigdecimal", "uuid"] }
-bigdecimal = { version = "0.4", optional = true }
-riven = { git = "https://github.com/gqsnt/RivenBrokengg", optional = true }
-reqwest = { version = "0.12", optional = true, features = ["json", "rustls-tls"] }
-dotenv = { version = "0.15", optional = true }
-futures = { version = "0.3" }
-chrono = { version = "0.4", optional = true }
-tracing = { version = "0.1", optional = true }
-image = { version = "0.25", optional = true }
-ravif = { version = "0.11.11", optional = true }
-rgb = { version = "0.8.50", optional = true }
-memory-serve = { version = "0.6.0", optional = true }
-dashmap = {version = "6.1.0", optional = true}
-sitemap = {version = "0.4.1", optional = true}
-thiserror = {version = "2", optional = true}
-serde={version = "1", features = ["derive"], optional = true}
-async-stream = { version = "0.3.6", optional = true }
-
-serde_json = {version = "1", optional = true}
-axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
-rustls = { version = "0.23.16" , features = ["ring"], optional = true}
-
-leptos = { git="https://github.com/gqsnt/leptos_codee_2_1", rev = "7bceaf77bbe6e083820f8fa5b32db8092cf18fe1" ,features = ["nightly", "rkyv"] }
-leptos_server = { git="https://github.com/gqsnt/leptos_codee_2_1", rev = "7bceaf77bbe6e083820f8fa5b32db8092cf18fe1" ,features = ["rkyv"] }
-leptos_axum = { git="https://github.com/gqsnt/leptos_codee_2_1", rev = "7bceaf77bbe6e083820f8fa5b32db8092cf18fe1", optional = true}
-leptos_meta ={ git="https://github.com/gqsnt/leptos_codee_2_1", rev = "7bceaf77bbe6e083820f8fa5b32db8092cf18fe1"}
-leptos_router = { git="https://github.com/gqsnt/leptos_codee_2_1", rev = "7bceaf77bbe6e083820f8fa5b32db8092cf18fe1" ,features = ["nightly"] }
-reactive_stores ={git="https://github.com/gqsnt/leptos_codee_2_1", rev = "7bceaf77bbe6e083820f8fa5b32db8092cf18fe1"}
-reactive_stores_macro = {git="https://github.com/gqsnt/leptos_codee_2_1", rev = "7bceaf77bbe6e083820f8fa5b32db8092cf18fe1"}
-
-wasm-bindgen = "=0.2.95"
-itertools = "0.13.0"
-urlencoding = "2"
-http = "1"
-console_error_panic_hook = "0.1"
-rkyv = "0.8.8"
-send_wrapper = "0.6.0"
-gloo-net = "0.6.0"
+[workspace]
+members = ["common","static-asset-generation", "broken-gg"]
+resolver = "2"
 
 
+[workspace.dependencies]
+rkyv = "0.8"
+riven = {git = "https://github.com/gqsnt/RivenBrokengg"}
+serde = {version = "1", features = ["derive"]}
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread"] }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+thiserror = "2"
+futures = "0.3.31"
+clap= { version = "4", features = ["derive"] }
 
-
-[features]
-hydrate = ["leptos/hydrate"]
-ssr = [
-    "dep:axum",
-    "dep:tokio",
-    "dep:tokio-stream",
-    "dep:tower",
-    "dep:tower-http",
-    "dep:leptos_axum",
-    "leptos/ssr",
-    "leptos_meta/ssr",
-    "leptos_router/ssr",
-    "dep:tracing",
-    "dep:sqlx",
-    "dep:riven",
-    "dep:reqwest",
-    "dep:dotenv",
-    "dep:chrono",
-    "dep:bigdecimal",
-    "dep:ravif",
-    "dep:rgb",
-    "dep:image",
-    "dep:memory-serve",
-    "dep:dashmap",
-    "dep:sitemap",
-    "dep:thiserror",
-    "dep:axum-server",
-    "dep:rustls",
-    "dep:serde_json",
-    "dep:serde",
-    "dep:async-stream",
-]
 
 [profile.release]
 panic = "abort"
@@ -95,11 +23,6 @@ codegen-units = 1
 rustflags=["-Ctarget-cpu=native"]
 
 
-#[profile.dev]
-#rustflags = ["-Awarnings"]
-
-
-# Defines a size-optimized profile for the WASM bundle in release mode
 [profile.wasm-release]
 inherits = "release"
 opt-level = 'z'
@@ -107,70 +30,3 @@ lto = true
 codegen-units = 1
 panic = "abort"
 rustflags=["-Zfmt-debug=none", "-Zlocation-detail=none"]
-
-
-
-
-[package.metadata.leptos]
-# The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle. Defaults to the crate name
-output-name = "leptos-broken-gg"
-
-# The site root folder is where cargo-leptos generate all output. WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
-site-root = "target/site"
-
-# The site-root relative folder where all compiled output (JS, WASM and CSS) is written
-# Defaults to pkg
-site-pkg-dir = "pkg"
-
-# [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <site-root>/<site-pkg>/app.css
-tailwind-input-file = "style/tailwind.css"
-tailwind-config-file = "tailwind.config.js"
-# Assets source dir. All files found here will be copied and synchronized to site-root.
-# The assets-dir cannot have a sub directory with the same name/path as site-pkg-dir.
-#
-# Optional. Env: LEPTOS_ASSETS_DIR.
-assets-dir = "public"
-
-# The IP and port (ex: 127.0.0.1:3000) where the server serves the content. Use it in your server setup.
-#site-addr = "0.0.0.0:80"
-site-addr = "127.0.0.1:3000"
-
-# The port to use for automatic reload monitoring
-reload-port = 3001
-
-# [Optional] Command to use when running end2end tests. It will run in the end2end dir.
-#   [Windows] for non-WSL use "npx.cmd playwright test"
-#   This binary name can be checked in Powershell with Get-Command npx
-end2end-cmd = "npx playwright test"
-end2end-dir = "end2end"
-
-#  The browserlist query used for optimizing the CSS.
-browserquery = "defaults"
-
-# The environment Leptos will run in, usually either "DEV" or "PROD"
-env = "DEV"
-
-# The features to use when compiling the bin target
-#
-# Optional. Can be over-ridden with the command line parameter --bin-features
-bin-features = ["ssr"]
-
-# If the --no-default-features flag should be used when compiling the bin target
-#
-# Optional. Defaults to false.
-bin-default-features = false
-
-# The features to use when compiling the lib target
-#
-# Optional. Can be over-ridden with the command line parameter --lib-features
-lib-features = ["hydrate"]
-
-# If the --no-default-features flag should be used when compiling the lib target
-#
-# Optional. Defaults to false.
-lib-default-features = false
-
-# The profile to use for the lib target when compiling for release
-#
-# Optional. Defaults to "release".
-lib-profile-release = "wasm-release"

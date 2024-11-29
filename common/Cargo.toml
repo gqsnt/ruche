@@ -1,0 +1,13 @@
+[package]
+name = "common"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rkyv = {workspace = true}
+riven={workspace = true, optional = true}
+serde={workspace = true, optional = true}
+
+
+[features]
+ssr=["dep:riven", "dep:serde"]
