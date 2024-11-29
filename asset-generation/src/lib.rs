@@ -102,7 +102,7 @@ pub fn get_css_path() -> PathBuf {
 }
 
 pub fn get_temp_path() -> PathBuf {
-    Path::new("static-asset-generation").join("tmp")
+    Path::new("..").join("tmp")
 }
 
 #[derive(Debug, Clone)]

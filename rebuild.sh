@@ -1,6 +1,7 @@
 #!/bin/bash
 git pull;
 export LEPTOS_WASM_OPT_VERSION=version_119;
+cargo run --release --bin asset-generation
 cargo leptos build --release;
 systemctl stop broken_gg.service;
 rm -rf /etc/broken-gg-release; ## RM -RF USED !!! Remove the old release

@@ -176,6 +176,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
 
 [[package]]
+name = "asset-generation"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "common",
+ "futures",
+ "image",
+ "ravif",
+ "reqwest 0.12.9",
+ "rgb",
+ "riven",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.3",
+ "tokio",
+]
+
+[[package]]
 name = "async-compression"
 version = "0.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4270,24 +4288,6 @@ name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
-
-[[package]]
-name = "static-asset-generation"
-version = "0.1.0"
-dependencies = [
- "clap",
- "common",
- "futures",
- "image",
- "ravif",
- "reqwest 0.12.9",
- "rgb",
- "riven",
- "serde",
- "serde_json",
- "thiserror 2.0.3",
- "tokio",
-]
 
 [[package]]
 name = "stringprep"
