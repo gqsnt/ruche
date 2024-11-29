@@ -196,7 +196,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                     </div>
                                 </td>
                                 <td class="py-1">
-                                     <div class="w-4 h-4 sprite-wrapper">
+                                    <div class="w-4 h-4 sprite-wrapper">
                                         <ImgBg
                                             alt=perk_primary_selection.to_string()
                                             class=format!(

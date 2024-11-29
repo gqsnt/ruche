@@ -13,7 +13,7 @@ use leptos::prelude::*;
 use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_params_map;
-use crate::views::ImgSrc;
+use crate::views::{ImgSrc};
 
 pub mod match_details;
 pub mod summoner_champions_page;
@@ -53,7 +53,7 @@ pub fn SummonerPage() -> impl IntoView {
         },
     );
 
-    let summoner_view = Suspend::new(async move {
+    let summoner_view = move || Suspend::new(async move {
         match summoner_resource.await {
             Ok(summoner) => Either::Left({
                 let (level_signal, set_level) = signal(summoner.summoner_level);
@@ -129,7 +129,7 @@ pub fn SummonerPage() -> impl IntoView {
                                             }
                                         }} <div class="flex flex-col items-start">
                                             <div>
-                                                {summoner.game_name.clone()}# {summoner.tag_line.clone()}
+                                                {summoner.game_name.clone()}#{summoner.tag_line.clone()}
                                             </div>
                                             <div>
                                                 <span>lvl. {move || level_signal()}</span>
