@@ -26,10 +26,11 @@ pub struct UpdateProPlayerTask {
     start_hour: u32,
     next_run: Instant,
     running: Arc<AtomicBool>,
+    on_startup: bool,
 }
 
 impl UpdateProPlayerTask {
-    pub fn new(db: PgPool, api: RiotApiState, start_hour: u32) -> Self {
+    pub fn new(db: PgPool, api: RiotApiState, start_hour: u32, on_startup:bool) -> Self {
         let next_run = calculate_next_run_to_fixed_start_hour(start_hour);
         Self {
             db,
@@ -37,6 +38,7 @@ impl UpdateProPlayerTask {
             start_hour,
             next_run,
             running: Arc::new(AtomicBool::new(false)),
+            on_startup,
         }
     }
 }
@@ -54,7 +56,12 @@ impl Task for UpdateProPlayerTask {
     }
 
     fn update_schedule(&mut self) {
-        self.next_run = calculate_next_run_to_fixed_start_hour(self.start_hour);
+        if self.on_startup {
+            self.next_run = Instant::now();
+            self.on_startup = false;
+        } else {
+            self.next_run = calculate_next_run_to_fixed_start_hour(self.start_hour);
+        }
     }
 
     fn is_running(&self) -> bool {
@@ -72,6 +79,7 @@ impl Task for UpdateProPlayerTask {
             start_hour: self.start_hour,
             next_run: self.next_run,
             running: self.running.clone(),
+            on_startup: self.on_startup,
         })
     }
 

@@ -43,6 +43,10 @@ async fn main() -> broken_gg::backend::ssr::AppResult<()> {
             .unwrap_or_else(|_| "5".to_string())
             .parse()?,
     );
+
+    let lol_pro_task_on_startup=dotenv::var("LOL_PRO_TASK_ON_STARTUP").unwrap_or("false".to_string()).as_str() == "true";
+    let site_map_task_on_startup=dotenv::var("SITE_MAP_TASK_ON_STARTUP").unwrap_or("false".to_string()) == "true";
+
     log!("Starting BrokenGG as {}", env_type);
     log!("Update interval duration: {:?}", update_interval_duration);
     log!("Max matches: {}", max_matches);
@@ -84,8 +88,8 @@ async fn main() -> broken_gg::backend::ssr::AppResult<()> {
     ));
 
     if is_prod {
-        task_director.add_task(UpdateProPlayerTask::new(db.clone(), riot_api.clone(), 2));
-        task_director.add_task(GenerateSiteMapTask::new(db.clone(), 3));
+        task_director.add_task(UpdateProPlayerTask::new(db.clone(), riot_api.clone(), 2,lol_pro_task_on_startup));
+        task_director.add_task(GenerateSiteMapTask::new(db.clone(), 3, site_map_task_on_startup));
     }
     tokio::spawn(async move {
         task_director.run().await;

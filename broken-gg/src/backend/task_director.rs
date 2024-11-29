@@ -86,7 +86,6 @@ impl TaskDirector {
                 let now = Instant::now();
                 if scheduled_task.next_run <= now {
                     if !scheduled_task.task.is_running() || scheduled_task.task.allow_concurrent() {
-                        // Mark the task as running
                         scheduled_task.task.set_running(true);
 
                         // Clone the task for the async block
@@ -94,7 +93,6 @@ impl TaskDirector {
                         tokio::spawn(async move {
                             // Use a guard to reset running state in case of panic
                             let _guard = RunningGuard::new(task_clone.clone());
-                            // Execute the task
                             task_clone.execute().await;
                         });
                     }
