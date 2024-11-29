@@ -1,16 +1,35 @@
 #!/bin/bash
-git pull;
-export LEPTOS_WASM_OPT_VERSION=version_119;
+
+# Variables for paths
+BUILD_PATH="/etc/broken-gg"
+RELEASE_PATH="/etc/broken-gg-release"
+SERVICE_NAME="broken_gg.service"
+
+# Pull latest code
+git pull
+
+# Set environment variable for Leptos optimization
+export LEPTOS_WASM_OPT_VERSION=version_119
+
+# Build assets and application
 cargo run --release --bin asset-generation
-cargo leptos build --release;
-systemctl stop broken_gg.service;
-rm -rf /etc/broken-gg-release; ## RM -RF USED !!! Remove the old release
-mkdir -p /etc/broken-gg-release/target/release;
-mkdir -p /etc/broken-gg-release/target/site;
-mkdir -p /etc/broken-gg-release/signed_certs;
-cp -nf /etc/broken-gg/target/release/broken-gg /etc/broken-gg-release/target/release/broken-gg;
-cp -nfR /etc/broken-gg/target/site/* /etc/broken-gg-release/target/site/;
-cp -nf /etc/broken-gg/.env /etc/broken-gg-release/.env;
-cp -nf /etc/broken-gg/signed_certs/* /etc/broken-gg-release/signed_certs/;
-systemctl start broken_gg.service;
-journalctl --follow -u roken_gg.service;
+cargo leptos build --release
+
+# Stop the service
+systemctl stop "$SERVICE_NAME"
+
+# Remove old release and recreate necessary directories
+rm -rf "$RELEASE_PATH"
+mkdir -p "$RELEASE_PATH/target/release"
+mkdir -p "$RELEASE_PATH/target/site"
+mkdir -p "$RELEASE_PATH/signed_certs"
+
+# Copy files to the release path
+cp -nf "$BUILD_PATH/target/release/broken-gg" "$RELEASE_PATH/target/release/broken-gg"
+cp -nfR "$BUILD_PATH/target/site/"* "$RELEASE_PATH/target/site/"
+cp -nf "$BUILD_PATH/.env" "$RELEASE_PATH/.env"
+cp -nf "$BUILD_PATH/signed_certs/"* "$RELEASE_PATH/signed_certs/"
+
+# Start the service and follow logs
+systemctl start "$SERVICE_NAME"
+journalctl --follow -u "$SERVICE_NAME"
