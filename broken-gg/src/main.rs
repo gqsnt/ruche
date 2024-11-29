@@ -44,12 +44,14 @@ async fn main() -> broken_gg::backend::ssr::AppResult<()> {
             .parse()?,
     );
 
-    let lol_pro_task_on_startup=dotenv::var("LOL_PRO_TASK_ON_STARTUP").unwrap_or("false".to_string()).as_str() == "true";
-    let site_map_task_on_startup=dotenv::var("SITE_MAP_TASK_ON_STARTUP").unwrap_or("false".to_string()) == "true";
+    let lol_pro_task_on_startup=dotenv::var("LOL_PRO_TASK_ON_STARTUP").unwrap_or("false".to_string()).eq("true");
+    let site_map_task_on_startup=dotenv::var("SITE_MAP_TASK_ON_STARTUP").unwrap_or("false".to_string()).eq("true");
 
     log!("Starting BrokenGG as {}", env_type);
     log!("Update interval duration: {:?}", update_interval_duration);
     log!("Max matches: {}", max_matches);
+    log!("LOL Pro Task on Startup: {}", lol_pro_task_on_startup);
+    log!("Site Map Task on Startup: {}", site_map_task_on_startup);
 
     if is_prod {
         leptos_options.site_addr = SocketAddr::from(([0, 0, 0, 0], 443));
