@@ -433,7 +433,7 @@ pub fn SummonerEncounterStat(
                         summoner.platform.as_ref(),
                         summoner.game_name.as_ref(),
                         summoner.tag_line.as_ref(),
-                    )>{summoner.game_name.to_string()}# {summoner.tag_line.to_string()}</a>
+                    )>{summoner.game_name.to_string()}#{summoner.tag_line.to_string()}</a>
                 </div>
                 <div>
                     <span>lvl. {summoner.summoner_level}</span>

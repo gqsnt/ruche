@@ -1,0 +1,12 @@
+[Unit]
+Description=Broken.gg
+After=multi-user.target
+
+[Service]
+Type=simple
+WorkingDirectory=/etc/broken-gg-release
+ExecStart=/etc/broken-gg-release/target/release/broken-gg
+
+
+[Install]
+WantedBy=multi-user.target

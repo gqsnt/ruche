@@ -176,36 +176,44 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                     </div>
                                 </td>
                                 <td class="py-1">
-                                    <ImgBg
-                                        alt=summoner_spell1.to_string()
-                                        class=format!(
-                                            "w-4 h-4 rounded {}",
-                                            summoner_spell1.get_class_name(),
-                                        )
-                                    />
-                                    <ImgBg
-                                        alt=summoner_spell2.to_string()
-                                        class=format!(
-                                            "w-4 h-4 rounded {}",
-                                            summoner_spell2.get_class_name(),
-                                        )
-                                    />
+                                    <div class="w-4 h-4 sprite-wrapper">
+                                        <ImgBg
+                                            alt=summoner_spell1.to_string()
+                                            class=format!(
+                                                "sprite-inner scale-72 rounded {}",
+                                                summoner_spell1.get_class_name(),
+                                            )
+                                        />
+                                    </div>
+                                    <div class="w-4 h-4 sprite-wrapper">
+                                        <ImgBg
+                                            alt=summoner_spell2.to_string()
+                                            class=format!(
+                                                "sprite-inner scale-72 rounded {}",
+                                                summoner_spell2.get_class_name(),
+                                            )
+                                        />
+                                    </div>
                                 </td>
                                 <td class="py-1">
-                                    <ImgBg
-                                        alt=perk_primary_selection.to_string()
-                                        class=format!(
-                                            "w-4 h-4 rounded {}",
-                                            perk_primary_selection.get_class_name(),
-                                        )
-                                    />
-                                    <ImgBg
-                                        alt=perk_sub_style.to_string()
-                                        class=format!(
-                                            "w-4 h-4 rounded {}",
-                                            perk_sub_style.get_class_name(),
-                                        )
-                                    />
+                                     <div class="w-4 h-4 sprite-wrapper">
+                                        <ImgBg
+                                            alt=perk_primary_selection.to_string()
+                                            class=format!(
+                                                "sprite-inner scale-57 rounded {}",
+                                                perk_primary_selection.get_class_name(),
+                                            )
+                                        />
+                                    </div>
+                                    <div class="w-4 h-4 sprite-wrapper">
+                                        <ImgBg
+                                            alt=perk_sub_style.to_string()
+                                            class=format!(
+                                                "sprite-inner scale-57 rounded {}",
+                                                perk_sub_style.get_class_name(),
+                                            )
+                                        />
+                                    </div>
 
                                 </td>
                                 <td class="pl-[5px] py-1 text-ellipsis overflow-hidden text-left">
@@ -245,9 +253,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                                 participant.tag_line.as_str(),
                                             )
                                         >
-                                            {participant.game_name.clone()}
-                                            #
-                                            {participant.tag_line.clone()}
+                                            {participant.game_name.clone()}#{participant.tag_line.clone()}
                                         </a>
                                     </div>
                                     <span class="text-[11px]">
