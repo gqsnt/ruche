@@ -1,6 +1,5 @@
-cargo-features = ["profile-rustflags"]
 [package]
-name = "leptos-broken-gg"
+name = "broken-gg"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,26 +8,23 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 axum = { version = "0.7", optional = true, features = ["macros", "http2"]}
-tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
+tokio = { workspace = true, optional = true }
 tokio-stream = { version = "0.1", optional = true, features = ["sync"] }
 tower = { version = "0.4", optional = true, features = ["util"] }
 tower-http = { version = "0.5", features = ["fs", "compression-full"], optional = true }
 sqlx = { version = "0.8", optional = true, features = ["postgres", "runtime-tokio-rustls", "chrono", "bigdecimal", "uuid"] }
 bigdecimal = { version = "0.4", optional = true }
-riven = { git = "https://github.com/gqsnt/RivenBrokengg", optional = true }
-reqwest = { version = "0.12", optional = true, features = ["json", "rustls-tls"] }
+riven = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true, features = ["json", "rustls-tls"] }
 dotenv = { version = "0.15", optional = true }
-futures = { version = "0.3" }
+futures = { workspace = true }
 chrono = { version = "0.4", optional = true }
 tracing = { version = "0.1", optional = true }
-image = { version = "0.25", optional = true }
-ravif = { version = "0.11.11", optional = true }
-rgb = { version = "0.8.50", optional = true }
 memory-serve = { version = "0.6.0", optional = true }
 dashmap = {version = "6.1.0", optional = true}
 sitemap = {version = "0.4.1", optional = true}
-thiserror = {version = "2", optional = true}
-serde={version = "1", features = ["derive"], optional = true}
+thiserror = {workspace = true, optional = true}
+serde={workspace = true, features = ["derive"], optional = true}
 async-stream = { version = "0.3.6", optional = true }
 
 serde_json = {version = "1", optional = true}
@@ -42,15 +38,15 @@ leptos_meta ={ git="https://github.com/gqsnt/leptos_codee_2_1", rev = "7bceaf77b
 leptos_router = { git="https://github.com/gqsnt/leptos_codee_2_1", rev = "7bceaf77bbe6e083820f8fa5b32db8092cf18fe1" ,features = ["nightly"] }
 reactive_stores ={git="https://github.com/gqsnt/leptos_codee_2_1", rev = "7bceaf77bbe6e083820f8fa5b32db8092cf18fe1"}
 reactive_stores_macro = {git="https://github.com/gqsnt/leptos_codee_2_1", rev = "7bceaf77bbe6e083820f8fa5b32db8092cf18fe1"}
-
+rkyv = {workspace = true}
 wasm-bindgen = "=0.2.95"
 itertools = "0.13.0"
 urlencoding = "2"
 http = "1"
 console_error_panic_hook = "0.1"
-rkyv = "0.8.8"
 send_wrapper = "0.6.0"
 gloo-net = "0.6.0"
+common={path="../common"}
 
 
 
@@ -74,9 +70,6 @@ ssr = [
     "dep:dotenv",
     "dep:chrono",
     "dep:bigdecimal",
-    "dep:ravif",
-    "dep:rgb",
-    "dep:image",
     "dep:memory-serve",
     "dep:dashmap",
     "dep:sitemap",
@@ -86,13 +79,8 @@ ssr = [
     "dep:serde_json",
     "dep:serde",
     "dep:async-stream",
+    "common/ssr"
 ]
-
-[profile.release]
-panic = "abort"
-lto = true
-codegen-units = 1
-rustflags=["-Ctarget-cpu=native"]
 
 
 #[profile.dev]
@@ -100,39 +88,33 @@ rustflags=["-Ctarget-cpu=native"]
 
 
 # Defines a size-optimized profile for the WASM bundle in release mode
-[profile.wasm-release]
-inherits = "release"
-opt-level = 'z'
-lto = true
-codegen-units = 1
-panic = "abort"
-rustflags=["-Zfmt-debug=none", "-Zlocation-detail=none"]
+
 
 
 
 
 [package.metadata.leptos]
 # The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle. Defaults to the crate name
-output-name = "leptos-broken-gg"
+output-name = "broken-gg"
 
-# The site root folder is where cargo-leptos generate all output. WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
+# The broken-gg root folder is where cargo-leptos generate all output. WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
 site-root = "target/site"
 
-# The site-root relative folder where all compiled output (JS, WASM and CSS) is written
+# The broken-gg-root relative folder where all compiled output (JS, WASM and CSS) is written
 # Defaults to pkg
 site-pkg-dir = "pkg"
 
-# [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <site-root>/<site-pkg>/app.css
+# [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <broken-gg-root>/<broken-gg-pkg>/app.css
 tailwind-input-file = "style/tailwind.css"
 tailwind-config-file = "tailwind.config.js"
-# Assets source dir. All files found here will be copied and synchronized to site-root.
-# The assets-dir cannot have a sub directory with the same name/path as site-pkg-dir.
+# Assets source dir. All files found here will be copied and synchronized to broken-gg-root.
+# The assets-dir cannot have a sub directory with the same name/path as broken-gg-pkg-dir.
 #
 # Optional. Env: LEPTOS_ASSETS_DIR.
 assets-dir = "public"
 
 # The IP and port (ex: 127.0.0.1:3000) where the server serves the content. Use it in your server setup.
-#site-addr = "0.0.0.0:80"
+#broken-gg-addr = "0.0.0.0:80"
 site-addr = "127.0.0.1:3000"
 
 # The port to use for automatic reload monitoring
@@ -160,17 +142,17 @@ bin-features = ["ssr"]
 # Optional. Defaults to false.
 bin-default-features = false
 
-# The features to use when compiling the lib target
+# The features to use when compiling the common target
 #
-# Optional. Can be over-ridden with the command line parameter --lib-features
+# Optional. Can be over-ridden with the command line parameter --common-features
 lib-features = ["hydrate"]
 
-# If the --no-default-features flag should be used when compiling the lib target
+# If the --no-default-features flag should be used when compiling the common target
 #
 # Optional. Defaults to false.
 lib-default-features = false
 
-# The profile to use for the lib target when compiling for release
+# The profile to use for the common target when compiling for release
 #
 # Optional. Defaults to "release".
 lib-profile-release = "wasm-release"

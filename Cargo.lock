@@ -533,6 +533,50 @@ dependencies = [
 ]
 
 [[package]]
+name = "broken-gg"
+version = "0.1.0"
+dependencies = [
+ "async-stream",
+ "axum",
+ "axum-server",
+ "bigdecimal",
+ "chrono",
+ "common",
+ "console_error_panic_hook",
+ "dashmap",
+ "dotenv",
+ "futures",
+ "gloo-net",
+ "http 1.1.0",
+ "itertools 0.13.0",
+ "leptos",
+ "leptos_axum",
+ "leptos_meta",
+ "leptos_router",
+ "leptos_server",
+ "memory-serve",
+ "reactive_stores",
+ "reactive_stores_macro",
+ "reqwest 0.12.9",
+ "riven",
+ "rkyv",
+ "rustls",
+ "send_wrapper",
+ "serde",
+ "serde_json",
+ "sitemap",
+ "sqlx",
+ "thiserror 2.0.3",
+ "tokio",
+ "tokio-stream",
+ "tower 0.4.13",
+ "tower-http 0.5.2",
+ "tracing",
+ "urlencoding",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "brotli"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2090,52 +2134,6 @@ dependencies = [
  "typed-builder-macro",
  "wasm-bindgen",
  "web-sys",
-]
-
-[[package]]
-name = "leptos-broken-gg"
-version = "0.1.0"
-dependencies = [
- "async-stream",
- "axum",
- "axum-server",
- "bigdecimal",
- "chrono",
- "console_error_panic_hook",
- "dashmap",
- "dotenv",
- "futures",
- "gloo-net",
- "http 1.1.0",
- "image",
- "itertools 0.13.0",
- "leptos",
- "leptos_axum",
- "leptos_meta",
- "leptos_router",
- "leptos_server",
- "memory-serve",
- "ravif",
- "reactive_stores",
- "reactive_stores_macro",
- "reqwest 0.12.9",
- "rgb",
- "riven",
- "rkyv",
- "rustls",
- "send_wrapper",
- "serde",
- "serde_json",
- "sitemap",
- "sqlx",
- "thiserror 2.0.3",
- "tokio",
- "tokio-stream",
- "tower 0.4.13",
- "tower-http 0.5.2",
- "tracing",
- "urlencoding",
- "wasm-bindgen",
 ]
 
 [[package]]

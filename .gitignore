@@ -9,6 +9,7 @@
 # node e2e test tools and outputs
 broken-gg/node_modules/
 broken-gg/package-lock.json
+broken-gg/end2end/package-lock.json
 broken-gg/test-results/
 broken-gg/end2end/playwright-report/
 broken-gg/playwright/.cache/
