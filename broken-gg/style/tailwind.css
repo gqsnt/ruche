@@ -2,6 +2,9 @@
 @import "./summoner_spells.css";
 @import "./perks.css";
 @import "./items.css";
+
+@config  "./tailwind.config.js";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
