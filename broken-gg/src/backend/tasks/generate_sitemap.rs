@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use crate::backend::ssr::{AppResult, PlatformRouteDb};
 use crate::backend::task_director::Task;
 use crate::backend::tasks::calculate_next_run_to_fixed_start_hour;
@@ -20,7 +21,6 @@ pub struct GenerateSiteMapTask {
     start_hour: u32,
     next_run: Instant,
     running: Arc<AtomicBool>,
-    on_startup: bool,
 }
 
 impl GenerateSiteMapTask {
@@ -35,7 +35,6 @@ impl GenerateSiteMapTask {
             start_hour,
             next_run,
             running: Arc::new(AtomicBool::new(false)),
-            on_startup,
         }
     }
 }
@@ -55,12 +54,7 @@ impl Task for GenerateSiteMapTask {
     }
 
     fn update_schedule(&mut self) {
-        if self.on_startup {
-            self.next_run = Instant::now();
-            self.on_startup = false;
-        } else {
-            self.next_run = calculate_next_run_to_fixed_start_hour(self.start_hour);
-        }
+        self.next_run = calculate_next_run_to_fixed_start_hour(self.start_hour);
     }
 
     fn is_running(&self) -> bool {
@@ -77,7 +71,6 @@ impl Task for GenerateSiteMapTask {
             start_hour: self.start_hour,
             next_run: self.next_run,
             running: self.running.clone(),
-            on_startup: self.on_startup,
         })
     }
 
@@ -127,7 +120,8 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
         url_writer.end()?;
     }
 
-    tokio::fs::write("../../../target/broken-gg/sitemap.xml", output).await?;
+    let dest_path = PathBuf::from("target").join("site").join("sitemap.xml");
+    tokio::fs::write(dest_path, output).await?;
     Ok(())
 }
 
