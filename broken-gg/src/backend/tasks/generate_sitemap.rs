@@ -25,7 +25,11 @@ pub struct GenerateSiteMapTask {
 
 impl GenerateSiteMapTask {
     pub fn new(db: PgPool, start_hour: u32, on_startup:bool) -> Self {
-        let next_run = calculate_next_run_to_fixed_start_hour(start_hour);
+        let next_run = if on_startup{
+            Instant::now()
+        }else{
+            calculate_next_run_to_fixed_start_hour(start_hour)
+        };
         Self {
             db,
             start_hour,

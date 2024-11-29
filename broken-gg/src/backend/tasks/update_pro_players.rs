@@ -31,7 +31,11 @@ pub struct UpdateProPlayerTask {
 
 impl UpdateProPlayerTask {
     pub fn new(db: PgPool, api: RiotApiState, start_hour: u32, on_startup:bool) -> Self {
-        let next_run = calculate_next_run_to_fixed_start_hour(start_hour);
+        let next_run = if on_startup{
+            Instant::now()
+        }else{
+            calculate_next_run_to_fixed_start_hour(start_hour)
+        };
         Self {
             db,
             api,
