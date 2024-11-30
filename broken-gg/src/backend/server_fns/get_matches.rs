@@ -200,7 +200,7 @@ pub mod ssr {
                     match_duration: row.lol_match_match_duration,
                     queue: Queue::from_u16(row.lol_match_queue_id.unwrap_or_default() as u16),
                     champion_id: row.champion_id as u16,
-                    champ_level: row.champ_level,
+                    champ_level: row.champ_level as u16,
                     won: row.won,
                     kills: row.kills as u16,
                     deaths: row.deaths as u16,

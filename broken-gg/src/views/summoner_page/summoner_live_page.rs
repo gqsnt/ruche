@@ -253,7 +253,9 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                                 participant.tag_line.as_str(),
                                             )
                                         >
-                                            {participant.game_name.clone()}#{participant.tag_line.clone()}
+                                            {participant.game_name.clone()}
+                                            #
+                                            {participant.tag_line.clone()}
                                         </a>
                                     </div>
                                     <span class="text-[11px]">

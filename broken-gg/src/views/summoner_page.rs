@@ -114,57 +114,31 @@ pub fn SummonerPage() -> impl IntoView {
                     {
                         view! {
                             <div class="flex justify-center">
-                                <div class="flex justify-between w-[768px] mb-2">
-                                    <div class="flex  mt-2 space-x-2">
-                                        {move || {
-                                            let profile_icon = ProfileIcon(profile_icon_signal());
-                                            view! {
-                                                <ImgSrc
-                                                    alt=profile_icon.to_string()
-                                                    src=profile_icon.get_static_asset_url()
-                                                    width=64
-                                                    height=64
-                                                    class="w-16 h-16".to_string()
-                                                />
+                                <div class="flex w-[768px] my-2 space-x-2">
+                                    <SummonerInfo
+                                        game_name=summoner.game_name.clone()
+                                        tag_line=summoner.tag_line.clone()
+                                        pro_slug=summoner.pro_slug
+                                        platform=summoner.platform
+                                        level_signal=level_signal
+                                        profile_icon_signal=profile_icon_signal
+                                    />
+                                    <div class="h-fit">
+                                        <button
+                                            class="my-button "
+                                            on:click=move |e| {
+                                                e.prevent_default();
+                                                update_summoner_action
+                                                    .dispatch(UpdateSummoner {
+                                                        summoner_id: summoner.id,
+                                                        game_name: summoner.game_name.clone(),
+                                                        tag_line: summoner.tag_line.clone(),
+                                                        platform_route: summoner.platform,
+                                                    });
                                             }
-                                        }} <div class="flex flex-col items-start">
-                                            <div>
-                                                {summoner.game_name.clone()}#{summoner.tag_line.clone()}
-                                            </div>
-                                            <div>
-                                                <span>lvl. {move || level_signal()}</span>
-                                                <Show when=move || { summoner.pro_slug.is_some() }>
-
-                                                    <a
-                                                        target="_blank"
-                                                        href=format!(
-                                                            "https://lolpros.gg/player/{}",
-                                                            summoner.pro_slug.unwrap().as_ref(),
-                                                        )
-                                                        class=" bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
-                                                    >
-                                                        PRO
-                                                    </a>
-                                                </Show>
-
-                                            </div>
-                                        </div> <div>
-                                            <button
-                                                class="my-button"
-                                                on:click=move |e| {
-                                                    e.prevent_default();
-                                                    update_summoner_action
-                                                        .dispatch(UpdateSummoner {
-                                                            summoner_id: summoner.id,
-                                                            game_name: summoner.game_name.clone(),
-                                                            tag_line: summoner.tag_line.clone(),
-                                                            platform_route: summoner.platform,
-                                                        });
-                                                }
-                                            >
-                                                Update
-                                            </button>
-                                        </div>
+                                        >
+                                            Update
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -183,6 +157,60 @@ pub fn SummonerPage() -> impl IntoView {
             view! { <div class="text-center">Loading Summoner</div> }
         }>{summoner_view}</Transition>
     }
+}
+
+#[component]
+pub fn SummonerInfo(
+   game_name:String,
+   tag_line:String,
+   platform:PlatformRoute,
+   pro_slug:Option<ProPlayerSlug>,
+   #[prop(into)]
+    level_signal: ReadSignal<u16>,
+   #[prop(into)]
+    profile_icon_signal: ReadSignal<u16>,
+   #[prop(default=true)]
+   is_self:bool,
+) -> impl IntoView{
+   view! {
+       <div class="flex item-center w-[210px]" class=("flex-row-reverse", move || !is_self)>
+           {move || {
+               view! {
+                   <ImgSrc
+                       alt=ProfileIcon(profile_icon_signal()).to_string()
+                       src=ProfileIcon(profile_icon_signal()).get_static_asset_url()
+                       width=64
+                       height=64
+                       class="w-16 h-16".to_string()
+                   />
+               }
+           }}
+           <div
+               class="flex flex-col items-start "
+               class=("ml-2", move || is_self)
+               class=("mr-2", move || !is_self)
+           >
+               <a href=summoner_url(
+                   platform.as_ref(),
+                   game_name.as_ref(),
+                   tag_line.as_ref(),
+               )>{game_name.clone()}#{tag_line.clone()}</a>
+               <div class="flex ">
+                   <span>lvl. {move || level_signal()}</span>
+                   <Show when=move || { pro_slug.is_some() }>
+                       <a
+                           target="_blank"
+                           href=format!("https://lolpros.gg/player/{}", pro_slug.unwrap().as_ref())
+                           class=" bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
+                       >
+                           PRO
+                       </a>
+                   </Show>
+
+               </div>
+           </div>
+       </div>
+   }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Archive)]

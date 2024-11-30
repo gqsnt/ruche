@@ -5,135 +5,133 @@ use leptos_router::NavigateOptions;
 
 #[component]
 pub fn Pagination(max_page: u16) -> impl IntoView {
-    // Use query_signal_with_options to get the current page from query parameters
-    let (page, set_page) = query_signal_with_options::<u16>(
-        "page",
-        NavigateOptions {
-            scroll: false,
-            replace: true,
-            ..Default::default()
-        },
-    );
+    let navigate_options = NavigateOptions {
+        scroll: false,
+        replace: true,
+        ..Default::default()
+    };
+    let (page, set_page) = query_signal_with_options::<u16>("page", navigate_options);
 
-    // Set default page to 1 if not present
     let current_page = move || page().unwrap_or(1).clamp(1, max_page);
 
-    // Handlers for Previous and Next buttons
     let go_to_prev_page = move || {
         if current_page() > 1 {
             set_page(Some(current_page() - 1));
         }
     };
-
     let go_to_next_page = move || {
         if current_page() < max_page {
             set_page(Some(current_page() + 1));
         }
     };
 
-    // Function to generate page numbers to display
-    let page_numbers = move || {
-        let mut pages = vec![];
-        let current = current_page();
-
-        if max_page <= 7 {
-            // Show all pages if the total number is small
-            pages.extend(1..=max_page);
-        } else {
-            // Always show the first page
-            pages.push(1);
-
-            if current > 4 {
-                // Add ellipsis if current page is beyond the fourth page
-                pages.push(0); // 0 represents '...'
-            }
-
-            // Determine the range of page numbers to display around the current page
-            let start = if current > 4 { current - 1 } else { 2 };
-            let end = if current < max_page - 3 {
-                current + 1
-            } else {
-                max_page - 1
-            };
-
-            pages.extend(start..=end);
-
-            if current < max_page - 3 {
-                // Add ellipsis if current page is before the last few pages
-                pages.push(0); // 0 represents '...'
-            }
-
-            // Always show the last page
-            pages.push(max_page);
-        }
-        pages
-    };
 
     view! {
-        <nav class="flex items-center justify-center space-x-2 mt-4">
-            // Previous Button
-            <button
-                class=move || {
-                    if current_page() <= 1 {
-                        "bg-gray-300 text-gray-500 px-4 py-2 rounded cursor-not-allowed"
-                    } else {
-                        "active-tab"
-                    }
-                }
-                disabled=move || (current_page() <= 1)
-                on:click=move |_| go_to_prev_page()
-            >
-                {"Previous"}
-            </button>
-
-            {page_numbers()
-                .into_iter()
-                .map(|p| {
-                    if p == 0 {
-                        Either::Left(
-                            // Render ellipsis
-                            view! { <div class="ellipsis">{"..."}</div> },
-                        )
-                    } else {
-                        let is_current = p == current_page();
-                        let set_p = set_page;
-                        Either::Right(
-                            // Render page number
-                            view! {
-                                <button
-                                    class=move || {
-                                        if is_current {
-                                            "bg-blue-500 text-white px-3 py-1 rounded"
-                                        } else {
-                                            "bg-white text-blue-700 px-3 py-1 rounded hover:bg-blue-100"
-                                        }
-                                    }
-                                    on:click=move |_| set_p(Some(p))
-                                    disabled=move || is_current
-                                >
-                                    {p}
-                                </button>
-                            },
-                        )
-                    }
-                })
-                .collect::<Vec<_>>()}
-
-            // Next Button
-            <button
-                class=move || {
-                    if current_page() >= max_page {
-                        "bg-gray-300 text-gray-500 px-4 py-2 rounded cursor-not-allowed"
-                    } else {
-                        "active-tab"
-                    }
-                }
-                on:click=move |_| go_to_next_page()
-                disabled=move || (current_page() >= max_page)
-            >
-
-                {"Next"}
-            </button>
+        <nav class="flex items-center justify-center mt-4" aria-label="Page navigation">
+            <ul class="flex space-x-1">
+                // Previous Button
+                <li>
+                    <button
+                        class=move || {
+                            if current_page() <= 1 { "disabled-tab" } else { "active-tab" }
+                        }
+                        disabled=move || current_page() <= 1
+                        on:click=move |_| go_to_prev_page()
+                        aria-label="Previous"
+                    >
+                        {"Previous"}
+                    </button>
+                </li>
+                // Page Numbers
+                {get_display_pages(current_page(), max_page)
+                    .into_iter()
+                    .map(|p| match p {
+                        Some(page_num) => {
+                            let is_current = page_num == current_page();
+                            Either::Left(
+                                view! {
+                                    <li>
+                                        <button
+                                            class=move || {
+                                                if is_current { "active-tab" } else { "default-tab" }
+                                            }
+                                            on:click=move |_| set_page(Some(page_num))
+                                            aria-current=move || {
+                                                if is_current { Some("page") } else { None }
+                                            }
+                                        >
+                                            {page_num}
+                                        </button>
+                                    </li>
+                                },
+                            )
+                        }
+                        None => {
+                            Either::Right(
+                                view! {
+                                    <li>
+                                        <span class="ellipsis">{"..."}</span>
+                                    </li>
+                                },
+                            )
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+                // Next Button
+                <li>
+                    <button
+                        class=move || {
+                            if current_page() >= max_page { "disabled-tab" } else { "active-tab" }
+                        }
+                        disabled=move || (current_page() >= max_page)
+                        on:click=move |_| go_to_next_page()
+                        aria-label="Next"
+                    >
+                        {"Next"}
+                    </button>
+                </li>
+            </ul>
         </nav>
     }
+}
+
+fn get_display_pages(current_page: u16, total_pages: u16) -> Vec<Option<u16>> {
+    let mut pages = Vec::new();
+
+    if total_pages <= 7 {
+        // Show all pages
+        for i in 1..=total_pages {
+            pages.push(Some(i));
+        }
+    } else {
+        pages.push(Some(1));
+
+        if current_page > 4 {
+            pages.push(None); // Ellipsis
+        }
+
+        let start = if current_page > 4 {
+            current_page - 2
+        } else {
+            2
+        };
+
+        let end = if current_page < total_pages - 3 {
+            current_page + 2
+        } else {
+            total_pages - 1
+        };
+
+        for i in start..=end {
+            pages.push(Some(i));
+        }
+
+        if current_page < total_pages - 3 {
+            pages.push(None); // Ellipsis
+        }
+
+        pages.push(Some(total_pages));
+    }
+
+    pages
 }

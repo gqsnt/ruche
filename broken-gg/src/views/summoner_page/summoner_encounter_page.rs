@@ -3,17 +3,16 @@ use common::consts::champion::Champion;
 use common::consts::item::Item;
 use common::consts::perk::Perk;
 use common::consts::platform_route::PlatformRoute;
-use common::consts::profile_icon::ProfileIcon;
 use common::consts::queue::Queue;
 use common::consts::summoner_spell::SummonerSpell;
-use common::consts::{HasStaticBgAsset, HasStaticSrcAsset};
+use common::consts::{HasStaticBgAsset};
 use crate::utils::{
-    calculate_and_format_kda, calculate_loss_and_win_rate, format_duration,
-    format_float_to_2digits, summoner_url, DurationSince, RiotMatchId,
+    calculate_and_format_kda, calculate_loss_and_win_rate,
+    format_float_to_2digits, DurationSince, RiotMatchId,
 };
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
-use crate::views::summoner_page::Summoner;
+use crate::views::summoner_page::{Summoner, SummonerInfo};
 use crate::views::{BackEndMatchFiltersSearch, ImgBg, ImgOptBg};
 use leptos::either::Either;
 use leptos::prelude::*;
@@ -21,6 +20,7 @@ use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, IntoView};
 use leptos_router::hooks::{query_signal_with_options, use_query_map};
 use leptos_router::NavigateOptions;
+use crate::views::summoner_page::summoner_matches_page::{MatchInfoCard, MatchSummonerCard};
 
 #[component]
 pub fn SummonerEncounterPage() -> impl IntoView {
@@ -77,7 +77,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
     });
 
     view! {
-        <div class="flex my-card space-x-2 my-2">
+        <div class="flex my-card justify-center space-x-2 my-2">
             <button
 
                 class="w-[22rem] "
@@ -163,30 +163,89 @@ pub fn SummonerEncounterPage() -> impl IntoView {
 
 #[component]
 pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl IntoView {
+
     let (show_details, set_show_details) = signal(false);
+    let self_items= [
+        match_.participant.item0_id,
+        match_.participant.item1_id,
+        match_.participant.item2_id,
+        match_.participant.item3_id,
+        match_.participant.item4_id,
+        match_.participant.item5_id,
+        match_.participant.item6_id,
+    ].iter()
+    .filter_map(|i| Item::try_from(*i).ok())
+    .collect::<Vec<_>>();
+    let encounter_items= [
+        match_.encounter.item0_id,
+        match_.encounter.item1_id,
+        match_.encounter.item2_id,
+        match_.encounter.item3_id,
+        match_.encounter.item4_id,
+        match_.encounter.item5_id,
+        match_.encounter.item6_id,
+    ].iter()
+    .filter_map(|i| Item::try_from(*i).ok())
+    .collect::<Vec<_>>();
+    let (champion, encounter_champion) = (
+        Champion::from(match_.participant.champion_id),
+        Champion::from(match_.encounter.champion_id),
+    );
+    let (summoner_spell1, summoner_spell2) = (
+        SummonerSpell::from(match_.participant.summoner_spell1_id),
+        SummonerSpell::from(match_.participant.summoner_spell2_id),
+    );
+    let (encounter_summoner_spell1, encounter_summoner_spell2) = (
+        SummonerSpell::from(match_.encounter.summoner_spell1_id),
+        SummonerSpell::from(match_.encounter.summoner_spell2_id),
+    );
+    let (primary_perk_selection, encounter_primary_perk_selection) = (
+        Perk::from(match_.participant.perk_primary_selection_id),
+        Perk::from(match_.encounter.perk_primary_selection_id),
+    );
+    let (sub_perk_style, encounter_sub_perk_style) = (
+        Perk::from(match_.participant.perk_sub_style_id),
+        Perk::from(match_.encounter.perk_sub_style_id),
+    );
+
     view! {
         <div class="flex flex-col">
             <div class="flex  my-card w-[768px]">
-                <div class="flex flex-col  gap-2">
-                    <div class="flex flex-col items-start w-[108px]">
-                        <div class="uppercase font-bold text-ellipsis max-w-[90%] overflow-hidden whitespace-nowrap">
-                            {match_.queue.to_str()}
-                        </div>
-                        <div>{match_.match_ended_since.to_string()}</div>
-                    </div>
-                    <hr class="w-1/2" />
-                    <div class="flex flex-col items-start w-[108px]">
-                        <div>{format_duration(match_.match_duration)}</div>
-                    </div>
-                </div>
+                <MatchInfoCard
+                    queue=match_.queue
+                    match_ended_since=match_.match_ended_since
+                    match_duration=match_.match_duration
+                />
                 <div class="flex w-full">
-                    <SummonerEncounterParticipantComponent
-                        encounter_participant=match_.participant
-                        is_self=true
+                    <MatchSummonerCard
+                        items=self_items
+                        kills=match_.participant.kills
+                        deaths=match_.participant.deaths
+                        assists=match_.participant.assists
+                        kill_participation=match_.participant.kill_participation
+                        won=match_.participant.won
+                        champ_level=match_.participant.champ_level
+                        champion=champion
+                        summoner_spell1=summoner_spell1
+                        summoner_spell2=summoner_spell2
+                        primary_perk_selection=primary_perk_selection
+                        sub_perk_style=sub_perk_style
+                        encounter_is_self=true
                     />
-                    <SummonerEncounterParticipantComponent
-                        encounter_participant=match_.encounter
-                        is_self=false
+                    <MatchSummonerCard
+                        items=encounter_items
+                        kills=match_.encounter.kills
+                        deaths=match_.encounter.deaths
+                        assists=match_.encounter.assists
+                        kill_participation=match_.encounter.kill_participation
+                        won=match_.encounter.won
+                        champ_level=match_.encounter.champ_level
+                        champion=encounter_champion
+                        summoner_spell1=encounter_summoner_spell1
+                        summoner_spell2=encounter_summoner_spell2
+                        primary_perk_selection=encounter_primary_perk_selection
+                        sub_perk_style=encounter_sub_perk_style
+                        encounter_is_self=false
                     />
                 </div>
                 <div class="w-[40px] flex relative flex-col">
@@ -242,13 +301,17 @@ pub fn SummonerEncounterParticipantComponent(
     let summoner_spell2 = SummonerSpell::from(encounter_participant.summoner_spell2_id);
     let primary_perk_selection = Perk::from(encounter_participant.perk_primary_selection_id);
     let sub_perk_style = Perk::from(encounter_participant.perk_sub_style_id);
-    let item0 = Item::try_from(encounter_participant.item0_id).ok();
-    let item1 = Item::try_from(encounter_participant.item1_id).ok();
-    let item2 = Item::try_from(encounter_participant.item2_id).ok();
-    let item3 = Item::try_from(encounter_participant.item3_id).ok();
-    let item4 = Item::try_from(encounter_participant.item4_id).ok();
-    let item5 = Item::try_from(encounter_participant.item5_id).ok();
-    let item6 = Item::try_from(encounter_participant.item6_id).ok();
+    let items = [
+        encounter_participant.item0_id,
+        encounter_participant.item1_id,
+        encounter_participant.item2_id,
+        encounter_participant.item3_id,
+        encounter_participant.item4_id,
+        encounter_participant.item5_id,
+        encounter_participant.item6_id,
+    ].iter()
+    .filter_map(|i| Item::try_from(*i).ok())
+    .collect::<Vec<_>>();
     view! {
         <div
             class="flex flex-col h-full gap-0.5 justify-start w-full px-2 "
@@ -344,63 +407,17 @@ pub fn SummonerEncounterParticipantComponent(
                 </div>
             </div>
             <div class="flex gap-0.5 " class=("flex-row-reverse", move || !is_self)>
-                <ImgOptBg
-                    when=move || item0.is_some()
-                    alt=item0.map(|i| i.to_string()).unwrap_or_default()
-                    class=format!(
-                        "w-[22px] h-[22px] rounded {}",
-                        item0.map(|i| i.get_class_name()).unwrap_or_default(),
-                    )
-                />
-                <ImgOptBg
-                    when=move || item1.is_some()
-                    alt=item1.map(|i| i.to_string()).unwrap_or_default()
-                    class=format!(
-                        "w-[22px] h-[22px] rounded {}",
-                        item1.map(|i| i.get_class_name()).unwrap_or_default(),
-                    )
-                />
-                <ImgOptBg
-                    when=move || item2.is_some()
-                    alt=item2.map(|i| i.to_string()).unwrap_or_default()
-                    class=format!(
-                        "w-[22px] h-[22px] rounded {}",
-                        item2.map(|i| i.get_class_name()).unwrap_or_default(),
-                    )
-                />
-                <ImgOptBg
-                    when=move || item3.is_some()
-                    alt=item3.map(|i| i.to_string()).unwrap_or_default()
-                    class=format!(
-                        "w-[22px] h-[22px] rounded {}",
-                        item3.map(|i| i.get_class_name()).unwrap_or_default(),
-                    )
-                />
-                <ImgOptBg
-                    when=move || item4.is_some()
-                    alt=item4.map(|i| i.to_string()).unwrap_or_default()
-                    class=format!(
-                        "w-[22px] h-[22px] rounded {}",
-                        item4.map(|i| i.get_class_name()).unwrap_or_default(),
-                    )
-                />
-                <ImgOptBg
-                    when=move || item5.is_some()
-                    alt=item5.map(|i| i.to_string()).unwrap_or_default()
-                    class=format!(
-                        "w-[22px] h-[22px] rounded {}",
-                        item5.map(|i| i.get_class_name()).unwrap_or_default(),
-                    )
-                />
-                <ImgOptBg
-                    when=move || item6.is_some()
-                    alt=item6.map(|i| i.to_string()).unwrap_or_default()
-                    class=format!(
-                        "w-[22px] h-[22px] rounded {}",
-                        item6.map(|i| i.get_class_name()).unwrap_or_default(),
-                    )
-                />
-
+                {items
+                    .iter()
+                    .map(|i| {
+                        view! {
+                            <ImgBg
+                                alt=i.to_string()
+                                class=format!("rounded {}", i.get_class_name())
+                            />
+                        }
+                    })
+                    .collect::<Vec<_>>()}
             </div>
         </div>
     }
@@ -412,50 +429,26 @@ pub fn SummonerEncounterStat(
     stats: SummonerEncounterStats,
     is_self: bool,
 ) -> impl IntoView {
-    let has_slug = summoner.pro_slug.is_some();
-    let profile_icon = ProfileIcon(summoner.profile_icon_id);
     let (losses, winrate) = calculate_loss_and_win_rate(stats.total_wins, stats.total_matches);
-
+    let (summoner_level, _) = signal(summoner.summoner_level);
+    let (profile_icon_id, _) = signal(summoner.profile_icon_id);
     view! {
         <div class="flex w-1/2 " class=("flex-row-reverse", move || !is_self)>
-            <img
-                alt=profile_icon.to_string()
-                src=profile_icon.get_static_asset_url()
-                class="w-16 h-16"
+            <SummonerInfo
+                game_name=summoner.game_name
+                tag_line=summoner.tag_line
+                platform=summoner.platform
+                pro_slug=summoner.pro_slug
+                level_signal=summoner_level
+                profile_icon_signal=profile_icon_id
+                is_self=is_self
             />
             <div
-                class="flex flex-col items-start "
+                class="flex flex-col text-sm w-[40%] "
                 class=("ml-2", move || is_self)
                 class=("mr-2", move || !is_self)
-            >
-                <div>
-                    <a href=summoner_url(
-                        summoner.platform.as_ref(),
-                        summoner.game_name.as_ref(),
-                        summoner.tag_line.as_ref(),
-                    )>{summoner.game_name.to_string()}#{summoner.tag_line.to_string()}</a>
-                </div>
-                <div>
-                    <span>lvl. {summoner.summoner_level}</span>
-                    <Show when=move || has_slug>
-
-                        <a
-                            target="_blank"
-                            href=format!(
-                                "https://lolpros.gg/player/{}",
-                                summoner.pro_slug.unwrap().as_ref(),
-                            )
-                            class=" bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
-                        >
-                            PRO
-                        </a>
-                    </Show>
-                </div>
-            </div>
-            <div
-                class="flex flex-col text-sm "
-                class=("ml-2", move || is_self)
-                class=("mr-2", move || !is_self)
+                class=("text-left", move || !is_self)
+                class=("text-right", move || is_self)
             >
                 <div>
                     {stats.total_wins}W {losses as u16}L {stats.total_matches}G

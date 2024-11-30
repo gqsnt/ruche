@@ -178,13 +178,18 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
     if sub_perk_style == Perk::UNKNOWN {
         log!("{:?}", match_.perk_sub_style_id);
     }
-    let item0 = Item::try_from(match_.item0_id).ok();
-    let item1 = Item::try_from(match_.item1_id).ok();
-    let item2 = Item::try_from(match_.item2_id).ok();
-    let item3 = Item::try_from(match_.item3_id).ok();
-    let item4 = Item::try_from(match_.item4_id).ok();
-    let item5 = Item::try_from(match_.item5_id).ok();
-    let item6 = Item::try_from(match_.item6_id).ok();
+    let items = vec![
+        match_.item0_id,
+        match_.item1_id,
+        match_.item2_id,
+        match_.item3_id,
+        match_.item4_id,
+        match_.item5_id,
+        match_.item6_id,
+    ].iter()
+        .filter_map(|id| Item::try_from(*id).ok())
+        .collect::<Vec<_>>();
+
     view! {
         <div class="flex flex-col">
             <div class="min-h-24 w-full flex rounded text-xs">
@@ -198,169 +203,27 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                     class:bg-blue-900=move || match_.won
                     class="flex gap-2 py-0 px-3 w-full items-center"
                 >
-                    <div class="flex flex-col w-[108px] gap-2">
-                        <div class="flex flex-col items-start">
-                            <div
-                                class:text-red-300=move || !match_.won
-                                class:text-blue-300=move || match_.won
-                                class="uppercase font-bold text-ellipsis max-w-[90%] overflow-hidden whitespace-nowrap"
-                            >
-                                {match_.queue.to_str()}
-                            </div>
-                            <div>{match_.match_ended_since.to_string()}</div>
-                        </div>
-                        <hr
-                            class:border-red-500=move || !match_.won
-                            class:border-blue-500=move || match_.won
-                            class="w-1/2"
-                        />
-                        <div class="flex flex-col items-start">
-                            <div>{if match_.won { "Victory" } else { "Defeat" }}</div>
-                            <div>{format_duration(match_.match_duration)}</div>
-                        </div>
-                    </div>
-                    <div class="flex flex-col h-full w-[308px]  gap-0.5 justify-start">
-                        <div class="flex items-center gap-2.5">
-                            <div class="relative flex">
-                                <ImgBg
-                                    alt=champion.to_str().to_string()
-                                    class=format!(
-                                        "w-12 h-12 rounded-full {}",
-                                        champion.get_class_name(),
-                                    )
-                                />
-                                <span
-                                    class="absolute right-0 bottom-0 flex w-[20px] h-[20px] justify-center items-center bg-gray-800 text-white rounded-full"
-                                    style="font-size:11px"
-                                >
-                                    {match_.champ_level}
-                                </span>
-                            </div>
-                            <div class="gap-0.5 flex">
-                                <div class="flex flex-col gap-0.5 items-center">
+                    <MatchInfoCard
+                        won=match_.won
+                        queue=match_.queue
+                        match_ended_since=match_.match_ended_since
+                        match_duration=match_.match_duration
+                    />
+                    <MatchSummonerCard
+                        champion=champion
+                        champ_level=match_.champ_level
+                        summoner_spell1=summoner_spell1
+                        summoner_spell2=summoner_spell2
+                        primary_perk_selection=primary_perk_selection
+                        sub_perk_style=sub_perk_style
+                        kills=match_.kills
+                        deaths=match_.deaths
+                        assists=match_.assists
+                        won=match_.won
+                        kill_participation=match_.kill_participation
+                        items=items
+                    />
 
-                                    <ImgBg
-                                        alt=summoner_spell1.to_string()
-                                        class=format!(
-                                            "rounded {}",
-                                            summoner_spell1.get_class_name(),
-                                        )
-                                    />
-                                    <ImgBg
-                                        alt=summoner_spell2.to_string()
-                                        class=format!(
-                                            "rounded {}",
-                                            summoner_spell2.get_class_name(),
-                                        )
-                                    />
-                                </div>
-                                <div class="flex flex-col gap-0.5 items-center">
-                                    <div class="w-[22px] h-[22px] sprite-wrapper">
-                                        <ImgOptBg
-                                            when=move || match_.perk_primary_selection_id != 0
-                                            alt=primary_perk_selection.to_string()
-                                            class=format!(
-                                                "scale-78 sprite-inner rounded-full {}",
-                                                primary_perk_selection.get_class_name(),
-                                            )
-                                        />
-                                    </div>
-                                    <div class="w-[22px] h-[22px] sprite-wrapper">
-                                        <ImgOptBg
-                                            when=move || match_.perk_sub_style_id != 0
-                                            alt=sub_perk_style.to_string()
-                                            class=format!(
-                                                "scale-78 sprite-inner rounded-full {}",
-                                                sub_perk_style.get_class_name(),
-                                            )
-                                        />
-                                    </div>
-
-                                </div>
-                            </div>
-                            <div class="flex flex-col w-[85px] items-start gap-1">
-                                <div class="text-base">
-                                    <span class="text-white">{match_.kills}</span>
-                                    /
-                                    <span class="text-red-300">{match_.deaths}</span>
-                                    /
-                                    <span class="text-white">{match_.assists}</span>
-                                </div>
-                                <div>
-                                    {calculate_and_format_kda(
-                                        match_.kills,
-                                        match_.deaths,
-                                        match_.assists,
-                                    )}:1 KDA
-                                </div>
-                            </div>
-                            <div
-                                class:border-red-500=move || !match_.won
-                                class:border-blue-500=move || match_.won
-                                class="flex flex-col h-[58px] pl-2 border-l-2"
-                            >
-                                <div class="text-red-300">P/Kill {match_.kill_participation}%</div>
-                            </div>
-                        </div>
-                        <div class="flex gap-0.5">
-                            <ImgOptBg
-                                when=move || item0.is_some()
-                                alt=item0.map(|i| i.to_string()).unwrap_or_default()
-                                class=format!(
-                                    "w-[22px] w-[22px] rounded {}",
-                                    item0.map(|i| i.get_class_name()).unwrap_or_default(),
-                                )
-                            />
-                            <ImgOptBg
-                                when=move || item1.is_some()
-                                alt=item1.map(|i| i.to_string()).unwrap_or_default()
-                                class=format!(
-                                    "w-[22px] w-[22px] rounded {}",
-                                    item1.map(|i| i.get_class_name()).unwrap_or_default(),
-                                )
-                            />
-                            <ImgOptBg
-                                when=move || item2.is_some()
-                                alt=item2.map(|i| i.to_string()).unwrap_or_default()
-                                class=format!(
-                                    "w-[22px] w-[22px] rounded {}",
-                                    item2.map(|i| i.get_class_name()).unwrap_or_default(),
-                                )
-                            />
-                            <ImgOptBg
-                                when=move || item3.is_some()
-                                alt=item3.map(|i| i.to_string()).unwrap_or_default()
-                                class=format!(
-                                    "w-[22px] w-[22px] rounded {}",
-                                    item3.map(|i| i.get_class_name()).unwrap_or_default(),
-                                )
-                            />
-                            <ImgOptBg
-                                when=move || item4.is_some()
-                                alt=item4.map(|i| i.to_string()).unwrap_or_default()
-                                class=format!(
-                                    "w-[22px] w-[22px] rounded {}",
-                                    item4.map(|i| i.get_class_name()).unwrap_or_default(),
-                                )
-                            />
-                            <ImgOptBg
-                                when=move || item5.is_some()
-                                alt=item5.map(|i| i.to_string()).unwrap_or_default()
-                                class=format!(
-                                    "w-[22px] w-[22px] rounded {}",
-                                    item5.map(|i| i.get_class_name()).unwrap_or_default(),
-                                )
-                            />
-                            <ImgOptBg
-                                when=move || item6.is_some()
-                                alt=item6.map(|i| i.to_string()).unwrap_or_default()
-                                class=format!(
-                                    "w-[22px] w-[22px] rounded {}",
-                                    item6.map(|i| i.get_class_name()).unwrap_or_default(),
-                                )
-                            />
-                        </div>
-                    </div>
                     <div
                         class="flex gap-x-2 gap-y-0.5 w-[266px] max-h-[89px]"
                         style="flex-flow:column wrap"
@@ -485,6 +348,163 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
     }
 }
 
+
+#[component]
+pub fn MatchSummonerCard(
+    champion:Champion,
+    champ_level:u16,
+    summoner_spell1:SummonerSpell,
+    summoner_spell2:SummonerSpell,
+    primary_perk_selection:Perk,
+    sub_perk_style:Perk,
+    kills:u16,
+    deaths:u16,
+    assists:u16,
+    won:bool,
+    kill_participation:u16,
+    items:Vec<Item>,
+    #[prop(optional)]
+    encounter_is_self:Option<bool>
+) -> impl IntoView{
+    let has_encounter = move|| encounter_is_self.is_some();
+    let is_self = move|| has_encounter() && encounter_is_self.unwrap();
+    let is_encounter = move|| has_encounter() && !encounter_is_self.unwrap();
+    view! {
+        <div
+            class="flex flex-col h-full w-[305px] gap-0.5 justify-center "
+            class=("px-2", has_encounter)
+            class=("bg-red-900", move || !won)
+            class=("bg-blue-900", move || won)
+            class=("rounded-r-lg", is_encounter)
+            class=("border-l-2", is_encounter)
+            class=("border-gray-800", is_encounter)
+            class=("rounded-l-lg", is_self)
+        >
+            <div class="flex items-center gap-2.5" class=("flex-row-reverse", is_encounter)>
+                <div class="relative flex">
+                    <ImgBg
+                        alt=champion.to_str().to_string()
+                        class=format!("rounded-full {}", champion.get_class_name())
+                    />
+                    <span
+                        class="absolute right-0 bottom-0 flex w-[20px] h-[20px] justify-center items-center bg-gray-800 text-white rounded-full"
+                        style="font-size:11px"
+                    >
+                        {champ_level}
+                    </span>
+                </div>
+                <div class="gap-0.5 flex">
+                    <div class="flex flex-col gap-0.5 items-center">
+
+                        <ImgBg
+                            alt=summoner_spell1.to_string()
+                            class=format!("rounded {}", summoner_spell1.get_class_name())
+                        />
+                        <ImgBg
+                            alt=summoner_spell2.to_string()
+                            class=format!("rounded {}", summoner_spell2.get_class_name())
+                        />
+                    </div>
+                    <div class="flex flex-col gap-0.5 items-center">
+                        <div class="w-[22px] h-[22px] sprite-wrapper">
+                            <ImgOptBg
+                                when=move || primary_perk_selection != Perk::UNKNOWN
+                                alt=primary_perk_selection.to_string()
+                                class=format!(
+                                    "scale-78 sprite-inner rounded-full {}",
+                                    primary_perk_selection.get_class_name(),
+                                )
+                            />
+                        </div>
+                        <div class="w-[22px] h-[22px] sprite-wrapper">
+                            <ImgOptBg
+                                when=move || sub_perk_style != Perk::UNKNOWN
+                                alt=sub_perk_style.to_string()
+                                class=format!(
+                                    "scale-78 sprite-inner rounded-full {}",
+                                    sub_perk_style.get_class_name(),
+                                )
+                            />
+                        </div>
+
+                    </div>
+                </div>
+                <div class="flex flex-col w-[85px] items-start gap-1">
+                    <div class="text-base">
+                        <span class="text-white">{kills}</span>
+                        /
+                        <span class="text-red-300">{deaths}</span>
+                        /
+                        <span class="text-white">{assists}</span>
+                    </div>
+                    <div>{calculate_and_format_kda(kills, deaths, assists)}:1 KDA</div>
+                </div>
+                <div
+                    class="flex flex-col h-[58px] "
+                    class=("border-l-2", move || !is_encounter())
+                    class=("pl-2", move || !is_encounter())
+                    class=("border-r-2", is_encounter)
+                    class=("pr-2", is_encounter)
+                    class=("border-red-500", move || !won)
+                    class=("border-blue-500", move || won)
+                >
+                    <div class="text-red-300">P/Kill {kill_participation}%</div>
+                </div>
+            </div>
+            <div class="flex gap-0.5" class=("flex-row-reverse", is_encounter)>
+                {items
+                    .iter()
+                    .map(|item| {
+                        view! {
+                            <ImgBg
+                                alt=item.to_string()
+                                class=format!("rounded {}", item.get_class_name())
+                            />
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </div>
+        </div>
+    }
+}
+
+#[component]
+pub fn MatchInfoCard(
+    #[prop(optional)]
+    won:Option<bool>,
+    queue:Queue,
+    match_ended_since:DurationSince,
+    match_duration:Option<i32>,
+
+) -> impl IntoView{
+    view! {
+        <div class="flex flex-col w-[108px] gap-2">
+            <div class="flex flex-col items-start w-[108px]">
+                <div
+                    class:text-red-300=move || won.is_some() && !won.unwrap()
+                    class:text-blue-300=move || won.is_some() && won.unwrap()
+                    class=" uppercase font-bold text-ellipsis max-w-[90%] overflow-hidden whitespace-nowrap"
+                >
+                    {queue.to_str()}
+                </div>
+                <div>{match_ended_since.to_string()}</div>
+            </div>
+            <hr
+                class:border-red-500=move || won.is_some() && !won.unwrap()
+                class:border-blue-500=move || won.is_some() && won.unwrap()
+                class="w-1/2"
+            />
+            <div class="flex flex-col items-start w-[108px]">
+                <Show when=move || won.is_some()>
+                    <div>{if won.unwrap() { "Victory" } else { "Defeat" }}</div>
+                </Show>
+                <div>{format_duration(match_duration)}</div>
+            </div>
+        </div>
+    }
+}
+
+
 #[derive(Clone, Deserialize, Serialize, Default, Archive)]
 pub struct GetSummonerMatchesResult {
     pub total_pages: u16,
@@ -506,7 +526,6 @@ pub struct SummonerMatch {
     pub participants: Vec<SummonerMatchParticipant>,
     pub summoner_id: i32,
     pub match_id: i32,
-    pub champ_level: i32,
     pub match_duration: Option<i32>,
     pub item0_id: u32,
     pub item1_id: u32,
@@ -515,6 +534,7 @@ pub struct SummonerMatch {
     pub item4_id: u32,
     pub item5_id: u32,
     pub item6_id: u32,
+    pub champ_level: u16,
     pub kill_participation: u16,
     pub champion_id: u16,
     pub kills: u16,

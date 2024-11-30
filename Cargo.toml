@@ -29,4 +29,5 @@ opt-level = 'z'
 lto = true
 codegen-units = 1
 panic = "abort"
+debug = 2
 rustflags=["-Zfmt-debug=none", "-Zlocation-detail=none"]

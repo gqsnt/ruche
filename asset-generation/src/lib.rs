@@ -371,7 +371,7 @@ async fn download_and_save_images(images_to_download: &Vec<ImageToDownload>) -> 
     if images_to_download.is_empty() {
         return Ok(());
     }
-    let client = reqwest::Client::new();
+    let client = Arc::new(reqwest::Client::new());
 
     futures::stream::iter(images_to_download)
         .for_each_concurrent(10, |image| {

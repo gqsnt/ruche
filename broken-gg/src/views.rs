@@ -31,10 +31,10 @@ pub fn ImgSrc(
     let alt_ = alt.unwrap_or_default();
     view! {
         <img height=height width=width class=class_ src=src_ alt=alt_ />
-{match children {
-                Some(c) => Either::Left(c()),
-                None => Either::Right(()),
-            }}
+        {match children {
+            Some(c) => Either::Left(c()),
+            None => Either::Right(()),
+        }}
     }
 }
 
@@ -61,9 +61,9 @@ pub fn ImgOptSrc<W:Fn() -> bool + Send + Sync + 'static>(
 
         </Show>
         {match children {
-                Some(c) => Either::Left(c()),
-                None => Either::Right(()),
-            }}
+            Some(c) => Either::Left(c()),
+            None => Either::Right(()),
+        }}
     }
 }
 
@@ -82,11 +82,11 @@ pub fn ImgBg(
     let class_ = class.unwrap_or_default();
     let alt_ = alt.unwrap_or_default();
     view! {
-         <div class=class_ aria-label=alt_ />
-{match children {
-                Some(c) => Either::Left(c()),
-                None => Either::Right(()),
-            }}
+        <div class=class_ aria-label=alt_ />
+        {match children {
+            Some(c) => Either::Left(c()),
+            None => Either::Right(()),
+        }}
     }
 }
 
@@ -105,13 +105,13 @@ pub fn ImgOptBg< W:Fn() -> bool + Send + Sync + 'static>(
     let alt_ = alt.unwrap_or_default();
     view! {
         <Show when>
-             <div class=class_.clone() aria-label=alt_.clone() />
+            <div class=class_.clone() aria-label=alt_.clone() />
 
         </Show>
         {match children {
-                Some(c) => Either::Left(c()),
-                None => Either::Right(()),
-            }}
+            Some(c) => Either::Left(c()),
+            None => Either::Right(()),
+        }}
     }
 }
 

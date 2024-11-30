@@ -8,7 +8,7 @@ use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use crate::views::summoner_page::Summoner;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use crate::views::{ImgBg, ImgOptBg};
+use crate::views::{ImgBg};
 
 #[component]
 pub fn MatchDetailsOverview(
@@ -95,13 +95,18 @@ pub fn MatchDetailsOverviewTable(
                             participant.perk_primary_selection_id,
                         );
                         let sub_perk_style = Perk::from(participant.perk_sub_style_id);
-                        let item0 = Item::try_from(participant.item0_id).ok();
-                        let item1 = Item::try_from(participant.item1_id).ok();
-                        let item2 = Item::try_from(participant.item2_id).ok();
-                        let item3 = Item::try_from(participant.item3_id).ok();
-                        let item4 = Item::try_from(participant.item4_id).ok();
-                        let item5 = Item::try_from(participant.item5_id).ok();
-                        let item6 = Item::try_from(participant.item6_id).ok();
+                        let items = [
+                            participant.item0_id,
+                            participant.item1_id,
+                            participant.item2_id,
+                            participant.item3_id,
+                            participant.item4_id,
+                            participant.item5_id,
+                            participant.item6_id,
+                        ]
+                            .iter()
+                            .filter_map(|i| Item::try_from(*i).ok())
+                            .collect::<Vec<_>>();
                         let is_pro_player = participant.summoner_pro_player_slug.is_some();
                         let summoner_game_name_clone = summoner.game_name.clone();
                         let summoner_tag_line_clone = summoner.tag_line.clone();
@@ -247,62 +252,17 @@ pub fn MatchDetailsOverviewTable(
                                 </td>
                                 <td class="py-1">
                                     <div class="flex gap-0.5">
-                                        <ImgOptBg
-                                            when=move || item0.is_some()
-                                            alt=item0.map(|i| i.to_string()).unwrap_or_default()
-                                            class=format!(
-                                                "w-[22px] w-[22px] rounded {}",
-                                                item0.map(|i| i.get_class_name()).unwrap_or_default(),
-                                            )
-                                        />
-                                        <ImgOptBg
-                                            when=move || item1.is_some()
-                                            alt=item1.map(|i| i.to_string()).unwrap_or_default()
-                                            class=format!(
-                                                "w-[22px] w-[22px] rounded {}",
-                                                item1.map(|i| i.get_class_name()).unwrap_or_default(),
-                                            )
-                                        />
-                                        <ImgOptBg
-                                            when=move || item2.is_some()
-                                            alt=item2.map(|i| i.to_string()).unwrap_or_default()
-                                            class=format!(
-                                                "w-[22px] w-[22px] rounded {}",
-                                                item2.map(|i| i.get_class_name()).unwrap_or_default(),
-                                            )
-                                        />
-                                        <ImgOptBg
-                                            when=move || item3.is_some()
-                                            alt=item3.map(|i| i.to_string()).unwrap_or_default()
-                                            class=format!(
-                                                "w-[22px] w-[22px] rounded {}",
-                                                item3.map(|i| i.get_class_name()).unwrap_or_default(),
-                                            )
-                                        />
-                                        <ImgOptBg
-                                            when=move || item4.is_some()
-                                            alt=item4.map(|i| i.to_string()).unwrap_or_default()
-                                            class=format!(
-                                                "w-[22px] w-[22px] rounded {}",
-                                                item4.map(|i| i.get_class_name()).unwrap_or_default(),
-                                            )
-                                        />
-                                        <ImgOptBg
-                                            when=move || item5.is_some()
-                                            alt=item5.map(|i| i.to_string()).unwrap_or_default()
-                                            class=format!(
-                                                "w-[22px] w-[22px] rounded {}",
-                                                item5.map(|i| i.get_class_name()).unwrap_or_default(),
-                                            )
-                                        />
-                                        <ImgOptBg
-                                            when=move || item6.is_some()
-                                            alt=item6.map(|i| i.to_string()).unwrap_or_default()
-                                            class=format!(
-                                                "w-[22px] w-[22px] rounded {}",
-                                                item6.map(|i| i.get_class_name()).unwrap_or_default(),
-                                            )
-                                        />
+                                        {items
+                                            .iter()
+                                            .map(|item| {
+                                                view! {
+                                                    <ImgBg
+                                                        alt=item.to_string()
+                                                        class=format!("rounded {}", item.get_class_name())
+                                                    />
+                                                }
+                                            })
+                                            .collect::<Vec<_>>()}
                                     </div>
                                 </td>
                             </tr>
