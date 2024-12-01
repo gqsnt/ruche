@@ -51,10 +51,6 @@ pub fn App() -> impl IntoView {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
         <Stylesheet id="leptos" href="/pkg/broken-gg.css" />
-        <Link rel="preload" as_="image" href="/assets/champions.avif" />
-        <Link rel="preload" as_="image" href="/assets/items.avif" />
-        <Link rel="preload" as_="image" href="/assets/summoner_spells.avif" />
-        <Link rel="preload" as_="image" href="/assets/perks.avif" />
         // sets the document title
         <Title text=move || meta_store.title().get() />
         <Meta name="color-scheme" content="dark light" />

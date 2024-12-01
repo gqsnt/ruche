@@ -74,7 +74,7 @@ pub fn MatchDetailsBuild(
                             .enumerate()
                             .map(|(idx, (minute, item_event))| {
                                 view! {
-                                    <div class="flex flex-col items-center relative mb-6">
+                                    <div class="flex flex-col items-center relative mb-8">
                                         <div class="flex items-center border-gray-950 border-4 rounded text-xs">
                                             {item_event
                                                 .iter()
@@ -83,35 +83,37 @@ pub fn MatchDetailsBuild(
                                                         == ItemEventType::Sold;
                                                     let item_enum = Item::try_from(item_event.item_id).unwrap();
                                                     view! {
-                                                        <ImgBg
-                                                            alt=item_enum.to_string()
-                                                            class=format!(
-                                                                "relative border-gray-950 border-4 {} {} h-[30px] w-[30px]",
-                                                                item_enum.get_class_name(),
-                                                                if is_sold_item { "rounded opacity-75" } else { "" },
-                                                            )
-                                                        >
-                                                            <Show when=move || is_sold_item>
-                                                                <div class="absolute -bottom-[0.1rem] right-2 text-red-500 font-extrabold text-2xl">
-                                                                    X
-                                                                </div>
-                                                            </Show>
-                                                        </ImgBg>
+                                                        <div class="border-4 border-gray-950 w-[29.5px] h-[29.5px]">
+                                                            <ImgBg
+                                                                alt=item_enum.to_string()
+                                                                class=format!(
+                                                                    "relative {} {} ",
+                                                                    item_enum.get_class_name(),
+                                                                    if is_sold_item { "rounded opacity-75" } else { "" },
+                                                                )
+                                                            >
+                                                                <Show when=move || is_sold_item>
+                                                                    <div class="z-10 absolute bottom-1 right-[0.725rem] text-red-500 font-extrabold text-xl">
+                                                                        X
+                                                                    </div>
+                                                                </Show>
+                                                            </ImgBg>
+                                                        </div>
                                                     }
                                                 })
                                                 .collect::<Vec<_>>()}
 
                                         </div>
-                                        <div class="text-center mt-1 absolute -bottom-3">
+                                        <div class="text-center mt-1 absolute -bottom-5">
                                             {*minute}min
                                         </div>
                                     </div>
                                     <Show when=move || idx != total - 1>
                                         <div
-                                            class="flex mb-10 items-center "
+                                            class="flex mb-8 items-center "
                                             v-if="idx > first_frame_with_events"
                                         >
-                                            <div class="flex items-center h-[2.4rem]  border-8 border-gray-900 bg-gray-900">
+                                            <div class="flex items-center h-7 border-4 border-gray-900 bg-gray-900">
                                                 >
                                             </div>
                                         </div>

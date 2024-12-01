@@ -253,9 +253,11 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                                 participant.tag_line.as_str(),
                                             )
                                         >
-                                            {participant.game_name.clone()}
-                                            #
-                                            {participant.tag_line.clone()}
+                                            {format!(
+                                                "{}#{}",
+                                                participant.game_name.as_str(),
+                                                participant.tag_line.as_str(),
+                                            )}
                                         </a>
                                     </div>
                                     <span class="text-[11px]">

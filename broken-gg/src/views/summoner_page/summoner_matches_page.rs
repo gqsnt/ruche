@@ -178,7 +178,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
     if sub_perk_style == Perk::UNKNOWN {
         log!("{:?}", match_.perk_sub_style_id);
     }
-    let items = vec![
+    let items = [
         match_.item0_id,
         match_.item1_id,
         match_.item2_id,

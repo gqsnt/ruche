@@ -12,41 +12,18 @@ use leptos_router::NavigateOptions;
 
 #[component]
 pub fn SummonerNav() -> impl IntoView {
-    let (tab, set_tab) = query_signal_with_options::<String>(
-        "tab",
-        NavigateOptions {
-            scroll: false,
-            replace: true,
-            ..Default::default()
-        },
-    );
+    let options = NavigateOptions {
+        scroll: false,
+        replace: true,
+        ..Default::default()
+    };
+    let (tab, set_tab) = query_signal_with_options::<String>("tab",options.clone());
 
-    let (_, set_page_number) = query_signal_with_options::<u16>(
-        "page",
-        NavigateOptions {
-            scroll: false,
-            replace: true,
-            ..Default::default()
-        },
-    );
+    let (_, set_page_number) = query_signal_with_options::<u16>("page",options.clone());
 
-    let (_, set_encounter_slug) = query_signal_with_options::<String>(
-        "encounter_slug",
-        NavigateOptions {
-            scroll: false,
-            replace: true,
-            ..Default::default()
-        },
-    );
+    let (_, set_encounter_slug) = query_signal_with_options::<String>("encounter_slug",options.clone());
 
-    let (_, set_encounter_platform) = query_signal_with_options::<String>(
-        "encounter_platform",
-        NavigateOptions {
-            scroll: false,
-            replace: true,
-            ..Default::default()
-        },
-    );
+    let (_, set_encounter_platform) = query_signal_with_options::<String>("encounter_platform",options.clone());
 
     let switch_tab = move |tab: Tabs| {
         set_page_number(None);
