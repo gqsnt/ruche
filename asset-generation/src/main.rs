@@ -7,6 +7,7 @@ use asset_generation::{convert_not_found_images_and_rebuild_sprite, download_ima
 #[tokio::main]
 async fn main() {
     let args=  Args::parse();
+    let start = std::time::Instant::now();
     let (items_modified, profile_icons_modified, perks_modified, champion_modified, summoner_spells_modified) = download_images().await.unwrap();
 
     convert_not_found_images_and_rebuild_sprite(
@@ -42,5 +43,6 @@ async fn main() {
             .await
             .map_err(|e| format!("Failed to write file: {}", e)).unwrap();
     }
+    println!("Time taken: {:?}", start.elapsed());
 
 }

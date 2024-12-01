@@ -46,7 +46,7 @@ pub fn SummonerPage() -> impl IntoView {
     };
 
     // Update the summoner signal when resource changes
-    let summoner_resource = leptos_server::Resource::new_rkyv(
+    let summoner_resource = leptos::server::Resource::new_rkyv(
         move || (platform_type(), summoner_slug()),
         |(platform, summoner_slug)| async move {
             get_summoner(PlatformRoute::from(platform.as_str()), summoner_slug).await

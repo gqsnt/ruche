@@ -31,13 +31,12 @@ serde_json = {version = "1", optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
 rustls = { version = "0.23.16" , features = ["ring"], optional = true}
 
-leptos = { git="https://github.com/gqsnt/leptos_codee_2_1"  ,rev="46735d9b080ea5eac0109dfe62a21ab6996e3427",features = ["nightly", "rkyv"] }
-leptos_server = { git="https://github.com/gqsnt/leptos_codee_2_1" ,rev="46735d9b080ea5eac0109dfe62a21ab6996e3427" ,features = ["rkyv"] }
-leptos_axum = { git="https://github.com/gqsnt/leptos_codee_2_1" ,rev="46735d9b080ea5eac0109dfe62a21ab6996e3427", optional = true}
-leptos_meta ={ git="https://github.com/gqsnt/leptos_codee_2_1" ,rev="46735d9b080ea5eac0109dfe62a21ab6996e3427"}
-leptos_router = { git="https://github.com/gqsnt/leptos_codee_2_1" ,rev="46735d9b080ea5eac0109dfe62a21ab6996e3427" ,features = ["nightly"] }
-reactive_stores ={git="https://github.com/gqsnt/leptos_codee_2_1" ,rev="46735d9b080ea5eac0109dfe62a21ab6996e3427"}
-reactive_stores_macro = {git="https://github.com/gqsnt/leptos_codee_2_1" ,rev="46735d9b080ea5eac0109dfe62a21ab6996e3427"}
+leptos = { git="https://github.com/gqsnt/leptos_codee_rkyv_8"  ,rev="2a40374a0e8394cf79fcefbb801a88f2117771f1",features = ["nightly", "rkyv"] }
+leptos_axum = { git="https://github.com/gqsnt/leptos_codee_rkyv_8" ,rev="2a40374a0e8394cf79fcefbb801a88f2117771f1", optional = true}
+leptos_meta ={ git="https://github.com/gqsnt/leptos_codee_rkyv_8" ,rev="2a40374a0e8394cf79fcefbb801a88f2117771f1"}
+leptos_router = { git="https://github.com/gqsnt/leptos_codee_rkyv_8" ,rev="2a40374a0e8394cf79fcefbb801a88f2117771f1" ,features = ["nightly"] }
+reactive_stores ={git="https://github.com/gqsnt/leptos_codee_rkyv_8" ,rev="2a40374a0e8394cf79fcefbb801a88f2117771f1"}
+reactive_stores_macro = {git="https://github.com/gqsnt/leptos_codee_rkyv_8" ,rev="2a40374a0e8394cf79fcefbb801a88f2117771f1"}
 rkyv = {workspace = true}
 wasm-bindgen = "=0.2.97"
 itertools = "0.13.0"

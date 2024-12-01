@@ -41,7 +41,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
         },
     );
 
-    let encounter_resource = leptos_server::Resource::new_rkyv(
+    let encounter_resource = leptos::server::Resource::new_rkyv(
         move || {
             (
                 summoner_update_version.get().unwrap_or_default(),
