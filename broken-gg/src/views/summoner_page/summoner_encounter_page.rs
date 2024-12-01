@@ -324,9 +324,12 @@ pub fn SummonerEncounterStat(
                 </div>
                 <div class="flex flex-col">
                     <div>
-                        {format_float_to_2digits(stats.avg_kills)}/
-                        {format_float_to_2digits(stats.avg_deaths)}/
-                        {format_float_to_2digits(stats.avg_assists)}
+                        {format!(
+                            "{}/{}/{}",
+                            format_float_to_2digits(stats.avg_kills),
+                            format_float_to_2digits(stats.avg_deaths),
+                            format_float_to_2digits(stats.avg_assists),
+                        )}
                     </div>
                     <div>
                         {calculate_and_format_kda(

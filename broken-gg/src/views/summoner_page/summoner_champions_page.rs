@@ -281,9 +281,12 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                                 )}:1
                                                                             </div>
                                                                             <div>
-                                                                                {format_float_to_2digits(champion.avg_kills)}/
-                                                                                {format_float_to_2digits(champion.avg_deaths)}/
-                                                                                {format_float_to_2digits(champion.avg_assists)}
+                                                                                {format!(
+                                                                                    "{}/{}/{}",
+                                                                                    format_float_to_2digits(champion.avg_kills),
+                                                                                    format_float_to_2digits(champion.avg_deaths),
+                                                                                    format_float_to_2digits(champion.avg_assists),
+                                                                                )}
                                                                             </div>
                                                                         </div>
                                                                     </td>

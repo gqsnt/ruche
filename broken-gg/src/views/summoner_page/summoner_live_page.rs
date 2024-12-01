@@ -333,9 +333,12 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                                         )}:1
                                                     </div>
                                                     <div>
-                                                        {format_float_to_2digits(champion_stats.avg_kills)}/
-                                                        {format_float_to_2digits(champion_stats.avg_deaths)}/
-                                                        {format_float_to_2digits(champion_stats.avg_assists)}
+                                                        {format!(
+                                                            "{}/{}/{}",
+                                                            format_float_to_2digits(champion_stats.avg_kills),
+                                                            format_float_to_2digits(champion_stats.avg_deaths),
+                                                            format_float_to_2digits(champion_stats.avg_assists),
+                                                        )}
                                                     </div>
                                                 },
                                             )

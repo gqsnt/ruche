@@ -223,8 +223,12 @@ pub fn MatchDetailsOverviewTable(
                                 </td>
                                 <td class="py-1 text-center">
                                     <div class="flex  justify-center">
-                                        {participant.kills}/{participant.deaths}/
-                                        {participant.assists}
+                                        {format!(
+                                            "{}/{}/{}",
+                                            participant.kills,
+                                            participant.deaths,
+                                            participant.assists,
+                                        )}
                                         <div class="ml-1 relative">
                                             {participant.kill_participation}%
                                         </div>
