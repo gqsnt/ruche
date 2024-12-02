@@ -1,6 +1,6 @@
 #[cfg(feature = "ssr")]
 #[tokio::main]
-async fn main() -> broken_gg::backend::ssr::AppResult<()> {
+async fn main() -> ruche::backend::ssr::AppResult<()> {
     use axum::routing::get;
     use axum::Router;
     use dashmap::DashMap;
@@ -8,18 +8,18 @@ async fn main() -> broken_gg::backend::ssr::AppResult<()> {
     use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
-    use broken_gg::app::*;
-    use broken_gg::backend::live_game_cache::LiveGameCache;
-    use broken_gg::backend::task_director::TaskDirector;
-    use broken_gg::backend::tasks::generate_sitemap::GenerateSiteMapTask;
-    use broken_gg::backend::tasks::live_game_cache_cleanup::LiveGameCacheCleanupTask;
-    use broken_gg::backend::tasks::sse_broadcast_match_updated_cleanup::SummonerUpdatedSenderCleanupTask;
-    use broken_gg::backend::tasks::update_matches::UpdateMatchesTask;
-    use broken_gg::backend::tasks::update_pro_players::UpdateProPlayerTask;
-    use broken_gg::ssr::serve;
-    use broken_gg::ssr::sse_broadcast_match_updated;
-    use broken_gg::ssr::AppState;
-    use broken_gg::ssr::{init_database, init_riot_api};
+    use ruche::app::*;
+    use ruche::backend::live_game_cache::LiveGameCache;
+    use ruche::backend::task_director::TaskDirector;
+    use ruche::backend::tasks::generate_sitemap::GenerateSiteMapTask;
+    use ruche::backend::tasks::live_game_cache_cleanup::LiveGameCacheCleanupTask;
+    use ruche::backend::tasks::sse_broadcast_match_updated_cleanup::SummonerUpdatedSenderCleanupTask;
+    use ruche::backend::tasks::update_matches::UpdateMatchesTask;
+    use ruche::backend::tasks::update_pro_players::UpdateProPlayerTask;
+    use ruche::ssr::serve;
+    use ruche::ssr::sse_broadcast_match_updated;
+    use ruche::ssr::AppState;
+    use ruche::ssr::{init_database, init_riot_api};
     use memory_serve::{load_assets, CacheControl, MemoryServe};
     use std::net::SocketAddr;
     use std::sync::Arc;
@@ -47,7 +47,7 @@ async fn main() -> broken_gg::backend::ssr::AppResult<()> {
     let lol_pro_task_on_startup=dotenv::var("LOL_PRO_TASK_ON_STARTUP").unwrap_or("false".to_string()).eq("true");
     let site_map_task_on_startup=dotenv::var("SITE_MAP_TASK_ON_STARTUP").unwrap_or("false".to_string()).eq("true");
 
-    log!("Starting BrokenGG as {}", env_type);
+    log!("Starting Ruche as {}", env_type);
     log!("Update interval duration: {:?}", update_interval_duration);
     log!("Max matches: {}", max_matches);
     log!("LOL Pro Task on Startup: {}", lol_pro_task_on_startup);

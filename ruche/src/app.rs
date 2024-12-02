@@ -12,7 +12,7 @@ use leptos_router::{
     ParamSegment, StaticSegment,
 };
 
-pub const SITE_URL: &str = "https://next-level.xyz";
+pub const SITE_URL: &str = "https://ruche.lol";
 
 #[derive(Clone, reactive_stores_macro::Store, Serialize, Deserialize, Archive, Default)]
 pub struct MetaStore {
@@ -50,12 +50,12 @@ pub fn App() -> impl IntoView {
     view! {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
-        <Stylesheet id="leptos" href="/pkg/broken-gg.css" />
+        <Stylesheet id="leptos" href="/pkg/ruche.css" />
         // sets the document title
         <Title text=move || meta_store.title().get() />
         <Meta name="color-scheme" content="dark light" />
         <Meta name="og:type" content="website" />
-        <Meta name="og:site_name" content="Broken.gg" />
+        <Meta name="og:site_name" content="Ruche" />
         <Meta name="robots" content="index,follow" />
 
         <Meta name="description" content=move || meta_store.description().get() />

@@ -1,5 +1,5 @@
 [package]
-name = "broken-gg"
+name = "ruche"
 version = "0.1.0"
 edition = "2021"
 
@@ -94,26 +94,26 @@ ssr = [
 
 [package.metadata.leptos]
 # The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle. Defaults to the crate name
-output-name = "broken-gg"
+output-name = "ruche"
 
-# The broken-gg root folder is where cargo-leptos generate all output. WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
+# The Ruche root folder is where cargo-leptos generate all output. WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
 site-root = "target/site"
 
-# The broken-gg-root relative folder where all compiled output (JS, WASM and CSS) is written
+# The ruche-root relative folder where all compiled output (JS, WASM and CSS) is written
 # Defaults to pkg
 site-pkg-dir = "pkg"
 
-# [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <broken-gg-root>/<broken-gg-pkg>/app.css
+# [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <ruche-root>/<ruche-pkg>/app.css
 tailwind-input-file = "style/tailwind.css"
 tailwind-config-file = "tailwind.config.js"
-# Assets source dir. All files found here will be copied and synchronized to broken-gg-root.
-# The assets-dir cannot have a sub directory with the same name/path as broken-gg-pkg-dir.
+# Assets source dir. All files found here will be copied and synchronized to ruche-root.
+# The assets-dir cannot have a sub directory with the same name/path as ruche-pkg-dir.
 #
 # Optional. Env: LEPTOS_ASSETS_DIR.
 assets-dir = "public"
 
 # The IP and port (ex: 127.0.0.1:3000) where the server serves the content. Use it in your server setup.
-#broken-gg-addr = "0.0.0.0:80"
+#ruche-addr = "0.0.0.0:80"
 site-addr = "127.0.0.1:3000"
 
 # The port to use for automatic reload monitoring

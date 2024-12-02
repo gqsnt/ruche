@@ -43,7 +43,7 @@ impl GenerateSiteMapTask {
 impl Task for GenerateSiteMapTask {
     async fn execute(&self) {
         if let Err(e) = generate_site_map(&self.db).await {
-            log!("Failed to generate broken-gg map: {:?}", e);
+            log!("Failed to generate ruche-lol map: {:?}", e);
         } else {
             log!("Site map generated successfully");
         }
@@ -87,7 +87,7 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
     let mut output = Vec::<u8>::new();
     {
         let writer = SiteMapWriter::new(&mut output);
-        let base_url = "https://next-level.xyz";
+        let base_url = "https://ruche.lol";
         let mut url_writer = writer.start_urlset()?;
         url_writer.url(UrlEntry::builder().loc(base_url).build()?)?;
         for platform in PLATFORM_ROUTE_OPTIONS {

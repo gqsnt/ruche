@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: {
-    files: ["*.html", "./broken-gg/src/**/*.rs"],
+    files: ["*.html", "./ruche/src/**/*.rs"],
   },
   safelist: [
     'text-blue-400',

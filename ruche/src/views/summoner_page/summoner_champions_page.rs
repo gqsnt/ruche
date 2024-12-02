@@ -45,11 +45,11 @@ pub fn SummonerChampionsPage() -> impl IntoView {
     };
 
     meta_store.title().set(format!(
-        "{}#{} | Champions | Broken.gg",
+        "{}#{} | Champions | Ruche",
         summoner.game_name.as_str(),
         summoner.tag_line.as_str()
     ));
-    meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
+    meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
     meta_store
         .url()
         .set(format!("{}?tab=champions", summoner.to_route_path()));

@@ -57,11 +57,11 @@ pub fn SummonerMatchesPage() -> impl IntoView {
     );
 
     meta_store.title().set(format!(
-        "{}#{} | Matches | Broken.gg",
+        "{}#{} | Matches | Ruche",
         summoner.game_name.as_str(),
         summoner.tag_line.as_str()
     ));
-    meta_store.description().set(format!("Explore {}#{}'s match history on Broken.gg. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
+    meta_store.description().set(format!("Explore {}#{}'s match history on Ruche. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
     meta_store.url().set(summoner.to_route_path());
     view! {
         <div class="w-[768px] inline-block align-top justify-center">

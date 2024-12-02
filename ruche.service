@@ -1,0 +1,12 @@
+[Unit]
+Description=Ruche
+After=multi-user.target
+
+[Service]
+Type=simple
+WorkingDirectory=/etc/ruche
+ExecStart=/etc/ruche-release/target/release/ruche
+
+
+[Install]
+WantedBy=multi-user.target

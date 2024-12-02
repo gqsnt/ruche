@@ -1,6 +1,6 @@
 cargo-features = ["profile-rustflags"]
 [workspace]
-members = ["common", "asset-generation", "broken-gg"]
+members = ["common", "asset-generation", "ruche"]
 resolver = "2"
 
 

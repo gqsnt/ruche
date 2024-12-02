@@ -23,7 +23,7 @@ cargo leptos new --git leptos-rs/start-axum
 to generate a new project template.
 
 ```bash
-cd leptos-broken-gg
+cd ruche
 ```
 
 to go to your newly created project.  

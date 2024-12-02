@@ -21,10 +21,10 @@ async fn main() {
     .unwrap();
     let dest_path = get_assets_path().join("logo.avif");
     if args.logo || !dest_path.exists(){
-        let logo_path = get_temp_path().join("logo.webp");
+        let logo_path = get_temp_path().join("logo.png");
 
         let image_data=  tokio::fs::read(&logo_path).await.unwrap();
-        let image = image::load_from_memory_with_format(&image_data, ImageFormat::WebP)
+        let image = image::load_from_memory_with_format(&image_data, ImageFormat::Png)
             .map_err(|e| format!("Failed to load image at {}: {}", logo_path.display(), e)).unwrap();
 
         tokio::fs::write(

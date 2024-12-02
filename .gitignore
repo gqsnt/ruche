@@ -7,13 +7,13 @@
 **/*.rs.bk
 
 # node e2e test tools and outputs
-broken-gg/node_modules/
-broken-gg/package-lock.json
-broken-gg/end2end/package-lock.json
-broken-gg/end2end/node_modules/
-broken-gg/test-results/
-broken-gg/end2end/playwright-report/
-broken-gg/playwright/.cache/
+ruche/node_modules/
+ruche/package-lock.json
+ruche/end2end/package-lock.json
+ruche/end2end/node_modules/
+ruche/test-results/
+ruche/end2end/playwright-report/
+ruche/playwright/.cache/
 
 
 .env

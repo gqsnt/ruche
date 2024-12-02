@@ -94,11 +94,11 @@ impl From<reqwest::Error> for AppError {
 }
 
 pub fn get_assets_path() -> PathBuf {
-    Path::new("broken-gg").join("public").join("assets")
+    Path::new("../../ruche").join("public").join("assets")
 }
 
 pub fn get_css_path() -> PathBuf {
-    Path::new("broken-gg").join("style")
+    Path::new("../../ruche").join("style")
 }
 
 pub fn get_temp_path() -> PathBuf {

@@ -60,11 +60,11 @@ pub fn SummonerEncountersPage() -> impl IntoView {
     );
 
     meta_store.title().set(format!(
-        "{}#{} | Encounters | Broken.gg",
+        "{}#{} | Encounters | Ruche",
         summoner.game_name.as_str(),
         summoner.tag_line.as_str()
     ));
-    meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Broken.gg, powered by Rust for optimal performance.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
+    meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
     meta_store
         .url()
         .set(format!("{}?tab=encounters", summoner.to_route_path()));
