@@ -1,4 +1,4 @@
-use tower_http::CompressionLevel;
+
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
@@ -29,7 +29,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use tower_http::compression::predicate::SizeAbove;
     use tower_http::compression::CompressionLayer;
     use tower_http::compression::Predicate;
-
+    use tower_http::CompressionLevel;
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
     let mut leptos_options = conf.leptos_options;

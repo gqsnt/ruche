@@ -18,16 +18,15 @@ pub fn PlatformTypePage() -> impl IntoView {
         .set("https://ruche.lol/assets/favicon.ico".to_string());
     meta_store.url().set(location.pathname.get());
     let req_include_summoner = move || location.pathname.get().contains("summoners");
-
     view! {
         <div class="my-0 mx-auto max-w-5xl text-center">
             <a href="/" class="p-6 text-4xl my-4">
                 "Welcome to Ruche"
             </a>
-            <Show when=move || !req_include_summoner()>
-                <img src="/assets/logo.avif" class="w-[420px] h-[420px] mx-auto" />
-            </Show>
-            <SummonerSearchPage />
+        {move || (
+            !req_include_summoner()).then(||view!{<img src="/assets/logo.avif" class="w-[420px] h-[420px] mx-auto" />}
+        )}
+            <SummonerSearchPage is_summoner_page=Signal::derive(req_include_summoner)/>
             <Outlet />
         </div>
     }

@@ -7,7 +7,7 @@ use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_params_map, use_query_map};
 
 #[component]
-pub fn SummonerSearchPage() -> impl IntoView {
+pub fn SummonerSearchPage(is_summoner_page:Signal<bool>) -> impl IntoView {
     let query = use_query_map();
     let params = use_params_map();
     let search_summoner = ServerAction::<SearchSummoner>::new();
@@ -36,9 +36,14 @@ pub fn SummonerSearchPage() -> impl IntoView {
     };
 
     view! {
-        <div class="w-full flex justify-center">
+        <div class="w-full flex my-2 " class=("justify-center",move ||  !is_summoner_page())>
+            {move ||
+                is_summoner_page().then(||{
+                view!{<img src="/assets/favicon.ico"  height="38"  class="mr-2 h-[38px] w-[38px]"  alt="logo"/>}
+            })
+            }
             <form on:submit=on_submit>
-                <div class="my-2 flex space-x-2 items-center max-w-[768px]">
+                <div class="flex space-x-2 items-center max-w-[768px]">
                     <input
                         class="my-input"
                         type="text"
