@@ -1,3 +1,5 @@
+use tower_http::CompressionLevel;
+
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> ruche::backend::ssr::AppResult<()> {
@@ -148,10 +150,16 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
                 .deflate(true)
                 .gzip(true)
                 .zstd(true)
+                .quality(CompressionLevel::Fastest)
                 .compress_when(
-                    SizeAbove::new(32)
+                    SizeAbove::new(1500)
                         .and(NotForContentType::GRPC)
-                        .and(NotForContentType::SSE),
+                        .and(NotForContentType::IMAGES)
+                        .and(NotForContentType::SSE)
+                        .and(NotForContentType::const_new("text/javascript"))
+                        .and(NotForContentType::const_new("application/wasm"))
+                        .and(NotForContentType::const_new("text/css"))
+
                 ),
         )
         .with_state(app_state);
