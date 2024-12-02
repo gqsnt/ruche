@@ -1,16 +1,12 @@
+use crate::views::get_default_navigation_option;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos_router::hooks::query_signal_with_options;
-use leptos_router::NavigateOptions;
 
 #[component]
 pub fn Pagination(max_page: u16) -> impl IntoView {
-    let navigate_options = NavigateOptions {
-        scroll: false,
-        replace: true,
-        ..Default::default()
-    };
-    let (page, set_page) = query_signal_with_options::<u16>("page", navigate_options);
+    let (page, set_page) =
+        query_signal_with_options::<u16>("page", get_default_navigation_option());
 
     let current_page = move || page().unwrap_or(1).clamp(1, max_page);
 
@@ -24,7 +20,6 @@ pub fn Pagination(max_page: u16) -> impl IntoView {
             set_page(Some(current_page() + 1));
         }
     };
-
 
     view! {
         <nav class="flex items-center justify-center mt-4" aria-label="Page navigation">

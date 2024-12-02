@@ -2,16 +2,32 @@ use leptos::{component, view, IntoView, Params};
 use leptos_router::params::Params;
 use leptos::prelude::{Children, ClassAttribute};
 use leptos::prelude::AriaAttributes;
+use leptos::prelude::ElementChild;
+
 
 use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
 use leptos::either::Either;
-use leptos::prelude::Show;
+use leptos_router::NavigateOptions;
+use common::consts::champion::Champion;
+use common::consts::HasStaticBgAsset;
+use common::consts::item::Item;
+use common::consts::perk::Perk;
+use common::consts::summoner_spell::SummonerSpell;
 
 pub mod components;
 pub mod platform_type_page;
 pub mod summoner_page;
 
+
+
+pub fn get_default_navigation_option()->NavigateOptions {
+    NavigateOptions {
+        scroll: false,
+        replace: true,
+        ..Default::default()
+    }
+}
 
 #[component]
 pub fn ImgSrc(
@@ -38,34 +54,6 @@ pub fn ImgSrc(
     }
 }
 
-#[component]
-pub fn ImgOptSrc<W:Fn() -> bool + Send + Sync + 'static>(
-    when : W,
-    #[prop(optional)]
-    src:Option<String>,
-    #[prop(optional)]
-    alt:Option<String>,
-    height:u16,
-    width:u16,
-    #[prop(optional)]
-    class:Option<String>,
-      #[prop(optional)]
-    children:Option<Children>
-) -> impl IntoView {
-    let class_ = class.unwrap_or_default();
-    let src_ = src.unwrap_or_default();
-    let alt_ = alt.unwrap_or_default();
-    view! {
-        <Show when>
-            <img height=height width=width class=class_.clone() src=src_.clone() alt=alt_.clone() />
-
-        </Show>
-        {match children {
-            Some(c) => Either::Left(c()),
-            None => Either::Right(()),
-        }}
-    }
-}
 
 
 
@@ -74,15 +62,20 @@ pub fn ImgOptSrc<W:Fn() -> bool + Send + Sync + 'static>(
 pub fn ImgBg(
     #[prop(optional)]
     alt:Option<String>,
-    #[prop(optional)]
     class:Option<String>,
-    #[prop(optional)]
+    parent_class:Option<String>,
     children:Option<Children>
 ) -> impl IntoView {
     let class_ = class.unwrap_or_default();
     let alt_ = alt.unwrap_or_default();
+    let default_view = view!{<div class=class_ aria-label=alt_ />};
     view! {
-        <div class=class_ aria-label=alt_ />
+        {
+            match parent_class{
+                None => Either::Right(default_view),
+                Some(parent_class) => Either::Left(view!{<div class=parent_class>{default_view}</div>})
+            }
+        }
         {match children {
             Some(c) => Either::Left(c()),
             None => Either::Right(()),
@@ -92,28 +85,91 @@ pub fn ImgBg(
 
 
 #[component]
-pub fn ImgOptBg< W:Fn() -> bool + Send + Sync + 'static>(
-    when : W,
-    #[prop(optional)]
-    alt:Option<String>,
+pub fn ImgPerk(
+    perk:Perk,
     #[prop(optional)]
     class:Option<String>,
     #[prop(optional)]
-    children:Option<Children>
-) -> impl IntoView {
-    let class_ = class.unwrap_or_default();
-    let alt_ = alt.unwrap_or_default();
-    view! {
-        <Show when>
-            <div class=class_.clone() aria-label=alt_.clone() />
+    parent_class:Option<String>,
 
-        </Show>
-        {match children {
-            Some(c) => Either::Left(c()),
-            None => Either::Right(()),
-        }}
-    }
+    #[prop(optional)]
+    children:Option<Children>
+)->impl IntoView{
+    Some(perk).filter(|p|*p != Perk::UNKNOWN).map(|perk|{
+        view!{
+            <ImgBg
+                class=class.map(|class| format!("{} {}" ,class, perk.get_class_name()))
+                parent_class=parent_class
+                alt=perk.to_string()
+            children
+            />
+        }
+    })
 }
+
+
+
+#[component]
+pub fn ImgSummonerSpell(
+    summoner_spell:SummonerSpell,
+    #[prop(optional)]
+    class:Option<String>,
+    #[prop(optional)]
+    parent_class:Option<String>,
+    #[prop(optional)]
+    children:Option<Children>
+)->impl IntoView{
+    view!{
+            <ImgBg
+                class=class.map(|class| format!("{} {}" ,class, summoner_spell.get_class_name()))
+                parent_class=parent_class
+                alt=summoner_spell.to_string()
+        children
+            />
+        }
+}
+#[component]
+pub fn ImgItem(
+    item:Item,
+    #[prop(optional)]
+    class:Option<String>,
+    #[prop(optional)]
+    parent_class:Option<String>,
+    #[prop(optional)]
+    children:Option<Children>
+)->impl IntoView{
+    view!{
+            <ImgBg
+                class=class.map(|class| format!("{} {}" ,class, item.get_class_name()))
+                parent_class=parent_class
+                alt=item.to_string()
+                children
+            />
+        }
+}
+
+#[component]
+pub fn ImgChampion(
+    champion:Champion,
+    #[prop(optional)]
+    class:Option<String>,
+    #[prop(optional)]
+    parent_class:Option<String>,
+    #[prop(optional)]
+    children:Option<Children>
+
+)->impl IntoView{
+    view!{
+            <ImgBg
+                class=class.map(|class| format!("{} {}" ,class, champion.get_class_name()))
+                parent_class=parent_class
+                alt=champion.to_str().to_string()
+                children
+            />
+        }
+}
+
+
 
 
 

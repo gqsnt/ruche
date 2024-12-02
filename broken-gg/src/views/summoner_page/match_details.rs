@@ -1,10 +1,10 @@
 use crate::backend::server_fns::get_match_details::get_match_details;
-use common::consts::platform_route::PlatformRoute;
 use crate::utils::{ProPlayerSlug, RiotMatchId};
 use crate::views::summoner_page::match_details::match_details_build::MatchDetailsBuild;
 use crate::views::summoner_page::match_details::match_details_overview::MatchDetailsOverview;
 use crate::views::summoner_page::match_details::match_details_team::MatchDetailsTeam;
 use crate::views::summoner_page::Summoner;
+use common::consts::platform_route::PlatformRoute;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};

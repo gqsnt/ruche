@@ -1,14 +1,13 @@
+use crate::utils::{format_with_spaces, summoner_encounter_url, summoner_url};
+use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
+use crate::views::summoner_page::Summoner;
+use crate::views::{ImgChampion, ImgItem, ImgPerk, ImgSummonerSpell};
 use common::consts::champion::Champion;
 use common::consts::item::Item;
 use common::consts::perk::Perk;
 use common::consts::summoner_spell::SummonerSpell;
-use common::consts::{HasStaticBgAsset};
-use crate::utils::{format_with_spaces, summoner_encounter_url, summoner_url};
-use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
-use crate::views::summoner_page::Summoner;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use crate::views::{ImgBg};
 
 #[component]
 pub fn MatchDetailsOverview(
@@ -107,11 +106,6 @@ pub fn MatchDetailsOverviewTable(
                             .iter()
                             .filter_map(|i| Item::try_from(*i).ok())
                             .collect::<Vec<_>>();
-                        let is_pro_player = participant.summoner_pro_player_slug.is_some();
-                        let summoner_game_name_clone = summoner.game_name.clone();
-                        let summoner_tag_line_clone = summoner.tag_line.clone();
-                        let participant_game_name_clone = participant.game_name.clone();
-                        let participant_tag_line_clone = participant.tag_line.clone();
 
                         view! {
                             <tr
@@ -121,91 +115,76 @@ pub fn MatchDetailsOverviewTable(
                                 class=("bg-blue-800", won && participant.summoner_id == summoner.id)
                             >
                                 <td class="pl-2.5 py-1">
-                                    <div class="sprite-wrapper w-8 h-8">
-                                        <ImgBg
-                                            alt=champion.to_str().to_string()
-                                            class=format!(
-                                                "sprite-inner rounded-full block scale-66 {}",
-                                                champion.get_class_name(),
-                                            )
-                                        >
-                                            <span class="absolute left-[-3px] bottom-[-3px] w-[15px] h-[15px] bg-gray-600 rounded-full text-[10px] text-center">
-                                                {participant.champ_level}
-                                            </span>
-                                        </ImgBg>
-                                    </div>
+                                    <ImgChampion
+                                        champion
+                                        parent_class="w-8 h-8 sprite-wrapper".to_string()
+                                        class="rounded-full scale-66 block sprite-inner".to_string()
+                                    >
+                                        <span class="absolute left-[-3px] bottom-[-3px] w-[15px] h-[15px] bg-gray-600 rounded-full text-[10px] text-center">
+                                            {participant.champ_level}
+                                        </span>
+                                    </ImgChampion>
 
                                 </td>
                                 <td class="py-1">
-                                    <div class="w-4 h-4 sprite-wrapper">
-                                        <ImgBg
-                                            alt=summoner_spell1.to_string()
-                                            class=format!(
-                                                "sprite-inner scale-72 rounded {}",
-                                                summoner_spell1.get_class_name(),
-                                            )
-                                        />
-                                    </div>
-                                    <div class="w-4 h-4 sprite-wrapper">
-                                        <ImgBg
-                                            alt=summoner_spell2.to_string()
-                                            class=format!(
-                                                "sprite-inner scale-72 rounded {}",
-                                                summoner_spell2.get_class_name(),
-                                            )
-                                        />
-                                    </div>
+                                    <ImgSummonerSpell
+                                        summoner_spell=summoner_spell1
+                                        class="scale-72 rounded sprite-wrapper".to_string()
+                                        parent_class="w-4 h-4 sprite-inner".to_string()
+                                    />
+                                    <ImgSummonerSpell
+                                        summoner_spell=summoner_spell2
+                                        class="scale-72 rounded sprite-wrapper".to_string()
+                                        parent_class="w-4 h-4 sprite-inner".to_string()
+                                    />
 
                                 </td>
                                 <td class="py-1">
-                                    <div class="w-4 h-4 sprite-wrapper">
-                                        <ImgBg
-                                            alt=primary_perk_selection.to_string()
-                                            class=format!(
-                                                "sprite-inner scale-57 rounded {}",
-                                                primary_perk_selection.get_class_name(),
-                                            )
-                                        />
-                                    </div>
-                                    <div class="w-4 h-4 sprite-wrapper">
-                                        <ImgBg
-                                            alt=sub_perk_style.to_string()
-                                            class=format!(
-                                                "sprite-inner scale-57 rounded {}",
-                                                sub_perk_style.get_class_name(),
-                                            )
-                                        />
-                                    </div>
+                                    <ImgPerk
+                                        perk=primary_perk_selection
+                                        class="scale-57 rounded".to_string()
+                                        parent_class="w-4 h-4".to_string()
+                                    />
+                                    <ImgPerk
+                                        perk=sub_perk_style
+                                        class="scale-57 rounded".to_string()
+                                        parent_class="w-4 h-4".to_string()
+                                    />
+
                                 </td>
                                 <td class="pl-[5px] py-1 text-ellipsis overflow-hidden text-left">
                                     <div class="flex items-center gap-1">
-                                        <Show when=move || (participant.encounter_count > 1)>
-                                            <a
-                                                href=summoner_encounter_url(
-                                                    summoner.platform.as_ref(),
-                                                    summoner_game_name_clone.as_str(),
-                                                    summoner_tag_line_clone.as_str(),
-                                                    participant.platform.as_ref(),
-                                                    participant_game_name_clone.as_str(),
-                                                    participant_tag_line_clone.as_str(),
-                                                )
-                                                class="text-xs bg-green-800 rounded px-0.5 text-center"
-                                            >
-                                                {participant.encounter_count}
-                                            </a>
-                                        </Show>
-                                        <Show when=move || is_pro_player>
-                                            <a
-                                                target="_blank"
-                                                href=format!(
-                                                    "https://lolpros.gg/player/{}",
-                                                    participant.summoner_pro_player_slug.unwrap().as_ref(),
-                                                )
-                                                class="text-xs bg-purple-800 rounded px-0.5 text-center"
-                                            >
-                                                pro
-                                            </a>
-                                        </Show>
+                                        {(participant.encounter_count > 1)
+                                            .then(|| {
+                                                view! {
+                                                    <a
+                                                        href=summoner_encounter_url(
+                                                            summoner.platform.as_ref(),
+                                                            summoner.game_name.as_str(),
+                                                            summoner.tag_line.as_str(),
+                                                            participant.platform.as_ref(),
+                                                            participant.game_name.as_str(),
+                                                            participant.tag_line.as_str(),
+                                                        )
+                                                        class="text-xs bg-green-800 rounded px-0.5 text-center"
+                                                    >
+                                                        {participant.encounter_count}
+                                                    </a>
+                                                }
+                                            })}
+                                        {summoner
+                                            .pro_slug
+                                            .map(|pps| {
+                                                view! {
+                                                    <a
+                                                        target="_blank"
+                                                        href=format!("https://lolpros.gg/player/{}", pps.as_ref())
+                                                        class="text-xs bg-purple-800 rounded px-0.5 text-center"
+                                                    >
+                                                        pro
+                                                    </a>
+                                                }
+                                            })}
                                         <a
                                             target="_blank"
                                             href=summoner_url(
@@ -259,12 +238,7 @@ pub fn MatchDetailsOverviewTable(
                                         {items
                                             .iter()
                                             .map(|item| {
-                                                view! {
-                                                    <ImgBg
-                                                        alt=item.to_string()
-                                                        class=format!("rounded {}", item.get_class_name())
-                                                    />
-                                                }
+                                                view! { <ImgItem item=*item class="rounded".to_string() /> }
                                             })
                                             .collect::<Vec<_>>()}
                                     </div>

@@ -1,20 +1,19 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_encounters::get_encounters;
-use common::consts::platform_route::PlatformRoute;
-use common::consts::profile_icon::ProfileIcon;
-use common::consts::HasStaticSrcAsset;
 use crate::utils::{
     calculate_loss_and_win_rate, format_float_to_2digits, summoner_encounter_url, summoner_url,
 };
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
-use crate::views::BackEndMatchFiltersSearch;
+use crate::views::{get_default_navigation_option, BackEndMatchFiltersSearch, ImgSrc};
+use common::consts::platform_route::PlatformRoute;
+use common::consts::profile_icon::ProfileIcon;
+use common::consts::HasStaticSrcAsset;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
-use leptos_router::NavigateOptions;
 
 #[component]
 pub fn SummonerEncountersPage() -> impl IntoView {
@@ -23,23 +22,10 @@ pub fn SummonerEncountersPage() -> impl IntoView {
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
 
-    let (page_number, set_page_number) = query_signal_with_options::<u16>(
-        "page",
-        NavigateOptions {
-            scroll: false,
-            replace: true,
-            ..Default::default()
-        },
-    );
-
-    let (search_summoner, set_search_summoner) = query_signal_with_options::<String>(
-        "q",
-        NavigateOptions {
-            scroll: false,
-            replace: true,
-            ..Default::default()
-        },
-    );
+    let (page_number, set_page_number) =
+        query_signal_with_options::<u16>("page", get_default_navigation_option());
+    let (search_summoner, set_search_summoner) =
+        query_signal_with_options::<String>("q", get_default_navigation_option());
     let (search_summoner_signal, set_search_summoner_signal) =
         signal(search_summoner.get().unwrap_or_default());
 
@@ -159,20 +145,18 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                         encounter.with_win_count,
                                                                         encounter.with_match_count,
                                                                     );
-                                                                    let s_gn_clone = summoner_clone.game_name.clone();
-                                                                    let s_tl_clone = summoner_clone.tag_line.clone();
 
                                                                     view! {
                                                                         <tr>
                                                                             <td class="text-left w-[200px]">
                                                                                 <div class="flex items-center py-0.5">
                                                                                     <div>
-                                                                                        <img
+                                                                                        <ImgSrc
                                                                                             alt=profile_icon.to_string()
                                                                                             src=profile_icon.get_static_asset_url()
-                                                                                            class="w-8 h-8 rounded"
-                                                                                            height="32"
-                                                                                            width="32"
+                                                                                            class="w-8 h-8 rounded".to_string()
+                                                                                            height=32
+                                                                                            width=32
                                                                                         />
                                                                                     </div>
                                                                                     <div class="ml-2">
@@ -190,23 +174,31 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                                 </div>
                                                                             </td>
                                                                             <td class="px-2">
-                                                                                {encounter.with_win_count}W {with_losses as u16}L
-                                                                                <span class="mx-1">{encounter.with_match_count}G</span>
-                                                                                {format_float_to_2digits(with_winrate)}%
+                                                                                {format!(
+                                                                                    "{}W {}L {}G {}%",
+                                                                                    encounter.with_win_count,
+                                                                                    with_losses as u16,
+                                                                                    encounter.with_match_count,
+                                                                                    format_float_to_2digits(with_winrate),
+                                                                                )}
                                                                             </td>
                                                                             <td class="px-2">
-                                                                                {encounter.vs_win_count}W {vs_losses as u16}L
-                                                                                <span class="mx-1">{vs_match_count}G</span>
-                                                                                {format_float_to_2digits(vs_winrate)}%
+                                                                                {format!(
+                                                                                    "{}W {}L {}G {}%",
+                                                                                    encounter.vs_win_count,
+                                                                                    vs_losses as u16,
+                                                                                    vs_match_count,
+                                                                                    format_float_to_2digits(vs_winrate),
+                                                                                )}
                                                                             </td>
                                                                             <td class="px-2 ">{encounter.match_count}</td>
                                                                             <td class="px-2">
                                                                                 <a
                                                                                     class="my-button font-bold"
                                                                                     href=summoner_encounter_url(
-                                                                                        summoner.platform.as_ref(),
-                                                                                        s_gn_clone.as_str(),
-                                                                                        s_tl_clone.as_str(),
+                                                                                        summoner_clone.platform.as_ref(),
+                                                                                        summoner_clone.game_name.as_str(),
+                                                                                        summoner_clone.tag_line.as_str(),
                                                                                         encounter.platform.as_ref(),
                                                                                         encounter.game_name.as_str(),
                                                                                         encounter.tag_line.as_str(),

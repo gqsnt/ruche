@@ -1,29 +1,28 @@
-use itertools::Itertools;
+use crate::views::{get_default_navigation_option, BackEndMatchFiltersSearch};
 use common::consts::champion::CHAMPION_OPTIONS;
 use common::consts::queue::QUEUE_OPTIONS;
-use crate::views::BackEndMatchFiltersSearch;
+use itertools::Itertools;
 use leptos::context::provide_context;
 use leptos::prelude::*;
 use leptos::reactive::wrappers::write::SignalSetter;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
-use leptos_router::NavigateOptions;
 
 #[component]
 pub fn MatchFilters(children: Children) -> impl IntoView {
-    let navigate_options = NavigateOptions {
-        scroll: false,
-        replace: true,
-        ..Default::default()
-    };
+    let (start_date, set_start_date) =
+        query_signal_with_options("filters[start_date]", get_default_navigation_option());
 
-    let (start_date, set_start_date) = query_signal_with_options("filters[start_date]", navigate_options.clone());
+    let (end_date, set_end_date) =
+        query_signal_with_options("filters[end_date]", get_default_navigation_option());
 
-    let (end_date, set_end_date) = query_signal_with_options("filters[end_date]", navigate_options.clone());
+    let (champion_id, set_champion_id) = query_signal_with_options::<String>(
+        "filters[champion_id]",
+        get_default_navigation_option(),
+    );
 
-    let (champion_id, set_champion_id) = query_signal_with_options::<String>("filters[champion_id]", navigate_options.clone());
-
-    let (queue_id, set_queue_id) = query_signal_with_options::<String>("filters[queue_id]" , navigate_options.clone());
+    let (queue_id, set_queue_id) =
+        query_signal_with_options::<String>("filters[queue_id]", get_default_navigation_option());
 
     let filters_signal = RwSignal::new(BackEndMatchFiltersSearch::from_signals(
         queue_id(),
@@ -40,18 +39,36 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
         QueueId,
     }
 
-    let set_optional_value = move |setter: SignalSetter<Option<String>>, value: String, field: FilterField| {
+    let set_optional_value = move |setter: SignalSetter<Option<String>>,
+                                   value: String,
+                                   field: FilterField| {
         let value = if value.is_empty() { None } else { Some(value) };
         setter.set(value.clone());
         let filters = match field {
-            FilterField::StartDate => BackEndMatchFiltersSearch::from_signals(queue_id(), champion_id(), value, end_date()),
-            FilterField::EndDate => BackEndMatchFiltersSearch::from_signals(queue_id(), champion_id(), start_date(), value),
-            FilterField::ChampionId => BackEndMatchFiltersSearch::from_signals(queue_id(), value, start_date(), end_date()),
-            FilterField::QueueId => BackEndMatchFiltersSearch::from_signals(value, champion_id(), start_date(), end_date()),
+            FilterField::StartDate => BackEndMatchFiltersSearch::from_signals(
+                queue_id(),
+                champion_id(),
+                value,
+                end_date(),
+            ),
+            FilterField::EndDate => BackEndMatchFiltersSearch::from_signals(
+                queue_id(),
+                champion_id(),
+                start_date(),
+                value,
+            ),
+            FilterField::ChampionId => {
+                BackEndMatchFiltersSearch::from_signals(queue_id(), value, start_date(), end_date())
+            }
+            FilterField::QueueId => BackEndMatchFiltersSearch::from_signals(
+                value,
+                champion_id(),
+                start_date(),
+                end_date(),
+            ),
         };
         filters_signal.set(filters);
     };
-
 
     view! {
         <div class="flex justify-center">

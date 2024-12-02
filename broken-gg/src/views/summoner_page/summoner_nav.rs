@@ -5,25 +5,24 @@ use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersPag
 use crate::views::summoner_page::summoner_live_page::SummonerLivePage;
 use crate::views::summoner_page::summoner_matches_page::SummonerMatchesPage;
 
+use crate::views::get_default_navigation_option;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
-use leptos_router::NavigateOptions;
 
 #[component]
 pub fn SummonerNav() -> impl IntoView {
-    let options = NavigateOptions {
-        scroll: false,
-        replace: true,
-        ..Default::default()
-    };
-    let (tab, set_tab) = query_signal_with_options::<String>("tab",options.clone());
+    let (tab, set_tab) =
+        query_signal_with_options::<String>("tab", get_default_navigation_option());
 
-    let (_, set_page_number) = query_signal_with_options::<u16>("page",options.clone());
+    let (_, set_page_number) =
+        query_signal_with_options::<u16>("page", get_default_navigation_option());
 
-    let (_, set_encounter_slug) = query_signal_with_options::<String>("encounter_slug",options.clone());
+    let (_, set_encounter_slug) =
+        query_signal_with_options::<String>("encounter_slug", get_default_navigation_option());
 
-    let (_, set_encounter_platform) = query_signal_with_options::<String>("encounter_platform",options.clone());
+    let (_, set_encounter_platform) =
+        query_signal_with_options::<String>("encounter_platform", get_default_navigation_option());
 
     let switch_tab = move |tab: Tabs| {
         set_page_number(None);

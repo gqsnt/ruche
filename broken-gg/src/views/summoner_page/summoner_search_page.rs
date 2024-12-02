@@ -1,9 +1,9 @@
 use crate::backend::server_fns::search_summoner::SearchSummoner;
 use common::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
+use leptos::ev::SubmitEvent;
 use leptos::html::{Input, Select};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos::ev::SubmitEvent;
 use leptos_router::hooks::{use_params_map, use_query_map};
 
 #[component]
@@ -20,22 +20,20 @@ pub fn SummonerSearchPage() -> impl IntoView {
     let tag_line_node = NodeRef::<Input>::new();
     let platform_type_node = NodeRef::<Select>::new();
 
-    let on_submit = move|ev:SubmitEvent|{
+    let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
-        search_summoner
-            .dispatch(SearchSummoner {
-                platform_route: PlatformRoute::from(
-                    platform_type_node
-                        .get()
-                        .expect("platform_type not valid")
-                        .value()
-                        .as_str(),
-                ),
-                game_name: game_name_node.get().expect("game_name not valid").value(),
-                tag_line: tag_line_node.get().expect("tag_line not valid").value(),
-            });
+        search_summoner.dispatch(SearchSummoner {
+            platform_route: PlatformRoute::from(
+                platform_type_node
+                    .get()
+                    .expect("platform_type not valid")
+                    .value()
+                    .as_str(),
+            ),
+            game_name: game_name_node.get().expect("game_name not valid").value(),
+            tag_line: tag_line_node.get().expect("tag_line not valid").value(),
+        });
     };
-
 
     view! {
         <div class="w-full flex justify-center">

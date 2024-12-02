@@ -1,10 +1,9 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_champions::get_champions;
-use common::consts::champion::Champion;
-use common::consts::{HasStaticBgAsset};
 use crate::utils::{calculate_and_format_kda, format_float_to_2digits, format_with_spaces};
 use crate::views::summoner_page::Summoner;
-use crate::views::{BackEndMatchFiltersSearch, ImgBg};
+use crate::views::{BackEndMatchFiltersSearch, ImgChampion};
+use common::consts::champion::Champion;
 use itertools::Itertools;
 use leptos::either::Either;
 use leptos::prelude::*;
@@ -254,15 +253,11 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                     </td>
                                                                     <td class="text-left border border-gray-800">
                                                                         <div class="flex items-center">
-                                                                            <div class="my-1 sprite-wrapper w-8 h-8">
-                                                                                <ImgBg
-                                                                                    alt=champion_enum.to_str().to_string()
-                                                                                    class=format!(
-                                                                                        "rounded-full sprite-inner scale-66 {}",
-                                                                                        champion_enum.get_class_name(),
-                                                                                    )
-                                                                                />
-                                                                            </div>
+                                                                            <ImgChampion
+                                                                                champion=champion_enum
+                                                                                parent_class="my-1 w-8 h-8 sprite-wrapper".to_string()
+                                                                                class="rounded-full scale-66 sprite-inner".to_string()
+                                                                            />
                                                                             <div class="ml-2 text-center">{champion_enum.to_str()}</div>
                                                                         </div>
                                                                     </td>

@@ -2,14 +2,13 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use std::collections::HashMap;
 
-use common::consts::champion::Champion;
-use common::consts::item::Item;
-use common::consts::perk::Perk;
-use common::consts::{HasStaticBgAsset};
-use crate::views::{ImgBg};
 use crate::views::summoner_page::match_details::{
     ItemEventType, LolMatchParticipantDetails, Skill,
 };
+use crate::views::{ImgItem, ImgPerk};
+use common::consts::champion::Champion;
+use common::consts::item::Item;
+use common::consts::perk::Perk;
 
 #[component]
 pub fn MatchDetailsBuild(
@@ -83,22 +82,25 @@ pub fn MatchDetailsBuild(
                                                         == ItemEventType::Sold;
                                                     let item_enum = Item::try_from(item_event.item_id).unwrap();
                                                     view! {
-                                                        <div class="border-4 border-gray-950 w-[29.5px] h-[29.5px]">
-                                                            <ImgBg
-                                                                alt=item_enum.to_string()
-                                                                class=format!(
-                                                                    "relative {} {} ",
-                                                                    item_enum.get_class_name(),
-                                                                    if is_sold_item { "rounded opacity-75" } else { "" },
-                                                                )
-                                                            >
-                                                                <Show when=move || is_sold_item>
-                                                                    <div class="z-10 absolute bottom-1 right-[0.725rem] text-red-500 font-extrabold text-xl">
-                                                                        X
-                                                                    </div>
-                                                                </Show>
-                                                            </ImgBg>
-                                                        </div>
+                                                        <ImgItem
+                                                            item=item_enum
+                                                            class=format!(
+                                                                "relative sprite-wrapper {}",
+                                                                if is_sold_item { "rounded opacity-75" } else { "" },
+                                                            )
+                                                            parent_class="border-4 border-gray-950 w-[29.5px] h-[29.5px] sprite-inner"
+                                                                .to_string()
+                                                        >
+                                                            {is_sold_item
+                                                                .then(|| {
+                                                                    view! {
+                                                                        <div class="z-10 absolute bottom-1 right-[0.725rem] text-red-500 font-extrabold text-xl">
+                                                                            X
+                                                                        </div>
+                                                                    }
+                                                                })}
+
+                                                        </ImgItem>
                                                     }
                                                 })
                                                 .collect::<Vec<_>>()}
@@ -108,16 +110,19 @@ pub fn MatchDetailsBuild(
                                             {*minute}min
                                         </div>
                                     </div>
-                                    <Show when=move || idx != total - 1>
-                                        <div
-                                            class="flex mb-8 items-center "
-                                            v-if="idx > first_frame_with_events"
-                                        >
-                                            <div class="flex items-center h-7 border-4 border-gray-900 bg-gray-900">
+                                    {(idx != total - 1)
+                                        .then(|| {
+                                            view! {
+                                                <div
+                                                    class="flex mb-8 items-center "
+                                                    v-if="idx > first_frame_with_events"
                                                 >
-                                            </div>
-                                        </div>
-                                    </Show>
+                                                    <div class="flex items-center h-7 border-4 border-gray-900 bg-gray-900">
+                                                        >
+                                                    </div>
+                                                </div>
+                                            }
+                                        })}
                                 }
                             })
                             .collect::<Vec<_>>()
@@ -135,11 +140,11 @@ pub fn MatchDetailsBuild(
                             .map(|skill| {
                                 view! {
                                     <div
-                                        class:text-blue-400=move || skill == Skill::Q
-                                        class:text-green-400=move || skill == Skill::W
-                                        class:text-orange-400=move || skill == Skill::E
-                                        class:bg-indigo-500=move || skill == Skill::R
-                                        class:bg-zinc-700=move || skill != Skill::R
+                                        class:text-blue-400=skill == Skill::Q
+                                        class:text-green-400=skill == Skill::W
+                                        class:text-orange-400=skill == Skill::E
+                                        class:bg-indigo-500=skill == Skill::R
+                                        class:bg-zinc-700=skill != Skill::R
                                         class=" font-bold rounded w-4 h-4 text-center"
                                     >
 
@@ -177,88 +182,57 @@ pub fn MatchDetailsBuild(
                         <div class="">Runes</div>
                         <div class="flex justify-center mt-2 space-x-2 text-xs">
                             <div class="flex flex-col space-y-1.5 ">
-                                <ImgBg
-                                    alt=perk_primary_style.to_string()
-                                    class=format!(
-                                        "w-[28px] h-[28px] rounded {}",
-                                        perk_primary_style.get_class_name(),
-                                    )
+                                <ImgPerk
+                                    perk=perk_primary_style
+                                    class="w-[28px] h-[28px] rounded".to_string()
                                 />
-                                <ImgBg
-                                    alt=perk_primary_selection.to_string()
-                                    class=format!(
-                                        "w-[28px] h-[28px] rounded {}",
-                                        perk_primary_selection.get_class_name(),
-                                    )
+                                <ImgPerk
+                                    perk=perk_primary_selection
+                                    class="w-[28px] h-[28px] rounded".to_string()
                                 />
-                                <ImgBg
-                                    alt=perk_primary_selection1.to_string()
-                                    class=format!(
-                                        "w-[28px] h-[28px] rounded {}",
-                                        perk_primary_selection1.get_class_name(),
-                                    )
+                                <ImgPerk
+                                    perk=perk_primary_selection1
+                                    class="w-[28px] h-[28px] rounded".to_string()
                                 />
-                                <ImgBg
-                                    alt=perk_primary_selection2.to_string()
-                                    class=format!(
-                                        "w-[28px] h-[28px] rounded {}",
-                                        perk_primary_selection2.get_class_name(),
-                                    )
+                                <ImgPerk
+                                    perk=perk_primary_selection2
+                                    class="w-[28px] h-[28px] rounded".to_string()
                                 />
-                                <ImgBg
-                                    alt=perk_primary_selection3.to_string()
-                                    class=format!(
-                                        "w-[28px] h-[28px] rounded {}",
-                                        perk_primary_selection3.get_class_name(),
-                                    )
+                                <ImgPerk
+                                    perk=perk_primary_selection3
+                                    class="w-[28px] h-[28px] rounded".to_string()
+                                />
+                            </div>
+                            <div class="border-l-2 flex flex-col space-y-1 border-gray-900 h-fit pl-1.5">
+
+                                <ImgPerk
+                                    perk=perk_sub_style
+                                    class="w-[28px] h-[28px] rounded".to_string()
+                                />
+                                <ImgPerk
+                                    perk=perk_sub_selection1
+                                    class="w-[28px] h-[28px] rounded".to_string()
+                                />
+                                <ImgPerk
+                                    perk=perk_sub_selection2
+                                    class="w-[28px] h-[28px] rounded".to_string()
                                 />
 
                             </div>
-                            <div class="border-l-2 flex flex-col space-y-1 border-gray-900 h-fit pl-1.5">
-                                <ImgBg
-                                    alt=perk_sub_style.to_string()
-                                    class=format!(
-                                        "w-[28px] h-[28px] rounded {}",
-                                        perk_sub_style.get_class_name(),
-                                    )
-                                />
-                                <ImgBg
-                                    alt=perk_sub_selection1.to_string()
-                                    class=format!(
-                                        "w-[28px] h-[28px] rounded {}",
-                                        perk_sub_selection1.get_class_name(),
-                                    )
-                                />
-                                <ImgBg
-                                    alt=perk_sub_selection2.to_string()
-                                    class=format!(
-                                        "w-[28px] h-[28px] rounded {}",
-                                        perk_sub_selection2.get_class_name(),
-                                    )
-                                />
-                            </div>
 
                             <div class="border-l-2 flex flex-col space-y-1 border-gray-900 h-fit pl-1.5">
-                                <ImgBg
-                                    alt=perk_offense.to_string()
-                                    class=format!(
-                                        "w-[28px] h-[28px] rounded {}",
-                                        perk_offense.get_class_name(),
-                                    )
+
+                                <ImgPerk
+                                    perk=perk_offense
+                                    class="w-[28px] h-[28px] rounded".to_string()
                                 />
-                                <ImgBg
-                                    alt=perk_flex.to_string()
-                                    class=format!(
-                                        "w-[28px] h-[28px] rounded {}",
-                                        perk_flex.get_class_name(),
-                                    )
+                                <ImgPerk
+                                    perk=perk_flex
+                                    class="w-[28px] h-[28px] rounded".to_string()
                                 />
-                                <ImgBg
-                                    alt=perk_defense.to_string()
-                                    class=format!(
-                                        "w-[28px] h-[28px] rounded {}",
-                                        perk_defense.get_class_name(),
-                                    )
+                                <ImgPerk
+                                    perk=perk_defense
+                                    class="w-[28px] h-[28px] rounded".to_string()
                                 />
                             </div>
                         </div>

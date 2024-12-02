@@ -1,25 +1,24 @@
 use crate::backend::server_fns::get_encounter::get_encounter;
+use crate::utils::{
+    calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits, DurationSince,
+    RiotMatchId,
+};
+use crate::views::components::pagination::Pagination;
+use crate::views::summoner_page::match_details::MatchDetails;
+use crate::views::summoner_page::summoner_matches_page::{MatchInfoCard, MatchSummonerCard};
+use crate::views::summoner_page::{Summoner, SummonerInfo};
+use crate::views::{get_default_navigation_option, BackEndMatchFiltersSearch};
 use common::consts::champion::Champion;
 use common::consts::item::Item;
 use common::consts::perk::Perk;
 use common::consts::platform_route::PlatformRoute;
 use common::consts::queue::Queue;
 use common::consts::summoner_spell::SummonerSpell;
-use crate::utils::{
-    calculate_and_format_kda, calculate_loss_and_win_rate,
-    format_float_to_2digits, DurationSince, RiotMatchId,
-};
-use crate::views::components::pagination::Pagination;
-use crate::views::summoner_page::match_details::MatchDetails;
-use crate::views::summoner_page::{Summoner, SummonerInfo};
-use crate::views::{BackEndMatchFiltersSearch};
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, IntoView};
 use leptos_router::hooks::{query_signal_with_options, use_query_map};
-use leptos_router::NavigateOptions;
-use crate::views::summoner_page::summoner_matches_page::{MatchInfoCard, MatchSummonerCard};
 
 #[component]
 pub fn SummonerEncounterPage() -> impl IntoView {
@@ -32,14 +31,8 @@ pub fn SummonerEncounterPage() -> impl IntoView {
     let encounter_slug = move || queries.read().get("encounter_slug").unwrap_or_default();
     let encounter_platform = move || queries.read().get("encounter_platform").unwrap_or_default();
 
-    let (page_number, set_page_number) = query_signal_with_options::<u16>(
-        "page",
-        NavigateOptions {
-            scroll: false,
-            replace: true,
-            ..Default::default()
-        },
-    );
+    let (page_number, set_page_number) =
+        query_signal_with_options::<u16>("page", get_default_navigation_option());
 
     let encounter_resource = leptos::server::Resource::new_rkyv(
         move || {
@@ -162,9 +155,8 @@ pub fn SummonerEncounterPage() -> impl IntoView {
 
 #[component]
 pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl IntoView {
-
     let (show_details, set_show_details) = signal(false);
-    let self_items= [
+    let self_items = [
         match_.participant.item0_id,
         match_.participant.item1_id,
         match_.participant.item2_id,
@@ -172,10 +164,11 @@ pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl I
         match_.participant.item4_id,
         match_.participant.item5_id,
         match_.participant.item6_id,
-    ].iter()
+    ]
+    .iter()
     .filter_map(|i| Item::try_from(*i).ok())
     .collect::<Vec<_>>();
-    let encounter_items= [
+    let encounter_items = [
         match_.encounter.item0_id,
         match_.encounter.item1_id,
         match_.encounter.item2_id,
@@ -183,7 +176,8 @@ pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl I
         match_.encounter.item4_id,
         match_.encounter.item5_id,
         match_.encounter.item6_id,
-    ].iter()
+    ]
+    .iter()
     .filter_map(|i| Item::try_from(*i).ok())
     .collect::<Vec<_>>();
     let (champion, encounter_champion) = (
@@ -289,7 +283,6 @@ pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl I
         </div>
     }
 }
-
 
 #[component]
 pub fn SummonerEncounterStat(

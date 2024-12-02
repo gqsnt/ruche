@@ -1,12 +1,5 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_matches::get_matches;
-use common::consts::champion::Champion;
-use common::consts::item::Item;
-use common::consts::perk::Perk;
-use common::consts::platform_route::PlatformRoute;
-use common::consts::queue::Queue;
-use common::consts::summoner_spell::SummonerSpell;
-use common::consts::{HasStaticBgAsset};
 use crate::utils::{
     calculate_and_format_kda, calculate_loss_and_win_rate, format_duration,
     format_float_to_2digits, summoner_encounter_url, summoner_url, DurationSince, ProPlayerSlug,
@@ -15,15 +8,22 @@ use crate::utils::{
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::Summoner;
-use crate::views::{BackEndMatchFiltersSearch, ImgBg, ImgOptBg};
+use crate::views::{
+    get_default_navigation_option, BackEndMatchFiltersSearch, ImgChampion, ImgItem, ImgPerk,
+    ImgSummonerSpell,
+};
+use common::consts::champion::Champion;
+use common::consts::item::Item;
+use common::consts::perk::Perk;
+use common::consts::platform_route::PlatformRoute;
+use common::consts::queue::Queue;
+use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
-use leptos_router::NavigateOptions;
-
 #[component]
 pub fn SummonerMatchesPage() -> impl IntoView {
     let summoner = expect_context::<Summoner>();
@@ -31,14 +31,8 @@ pub fn SummonerMatchesPage() -> impl IntoView {
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
-    let (page_number, set_page_number) = query_signal_with_options::<u16>(
-        "page",
-        NavigateOptions {
-            scroll: false,
-            replace: true,
-            ..Default::default()
-        },
-    );
+    let (page_number, set_page_number) =
+        query_signal_with_options::<u16>("page", get_default_navigation_option());
 
     let (reset_page_number, set_reset_page_number) = signal::<bool>(false);
     Effect::new(move |_| {
@@ -186,21 +180,22 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
         match_.item4_id,
         match_.item5_id,
         match_.item6_id,
-    ].iter()
-        .filter_map(|id| Item::try_from(*id).ok())
-        .collect::<Vec<_>>();
+    ]
+    .iter()
+    .filter_map(|id| Item::try_from(*id).ok())
+    .collect::<Vec<_>>();
 
     view! {
         <div class="flex flex-col">
             <div class="min-h-24 w-full flex rounded text-xs">
                 <div
-                    class:bg-red-400=move || !match_.won
-                    class:bg-blue-400=move || match_.won
+                    class:bg-red-400=!match_.won
+                    class:bg-blue-400=match_.won
                     class="min-w-1.5 w-1.5"
                 ></div>
                 <div
-                    class:bg-red-900=move || !match_.won
-                    class:bg-blue-900=move || match_.won
+                    class:bg-red-900=!match_.won
+                    class:bg-blue-900=match_.won
                     class="flex gap-2 py-0 px-3 w-full items-center"
                 >
                     <MatchInfoCard
@@ -228,58 +223,49 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                         class="flex gap-x-2 gap-y-0.5 w-[266px] max-h-[89px]"
                         style="flex-flow:column wrap"
                     >
-                        <For
-                            each=move || match_.participants.clone()
-                            key=|match_| match_.summoner_id
-                            let:participant
-                        >
-                            {
-                                let participant: SummonerMatchParticipant = participant;
-                                let is_pro_player = participant.pro_player_slug.is_some();
+                        {match_
+                            .participants
+                            .into_iter()
+                            .map(|participant| {
                                 let champion = Champion::from(participant.champion_id);
-                                let p_gn_clone = participant.game_name.clone();
-                                let p_tl_clone = participant.tag_line.clone();
-                                let s_gn_clone = summoner.game_name.clone();
-                                let s_tl_clone = summoner.tag_line.clone();
                                 view! {
                                     <div class="flex items-center gap-1 w-[130px]">
-                                        <div class="sprite-wrapper  w-4 h-4">
-                                            <ImgBg
-                                                alt=champion.to_str().to_string()
-                                                class=format!(
-                                                    "rounded scale-33 sprite-inner {}",
-                                                    champion.get_class_name(),
-                                                )
-                                            />
-                                        </div>
-
-                                        <Show when=move || (participant.encounter_count > 1)>
-                                            <a
-                                                href=summoner_encounter_url(
-                                                    summoner.platform.as_ref(),
-                                                    s_gn_clone.as_str(),
-                                                    s_tl_clone.as_str(),
-                                                    participant.platform.as_ref(),
-                                                    p_gn_clone.as_str(),
-                                                    p_tl_clone.as_str(),
-                                                )
-                                                class="text-xs bg-green-800 rounded px-0.5 text-center"
-                                            >
-                                                {participant.encounter_count}
-                                            </a>
-                                        </Show>
-                                        <Show when=move || is_pro_player>
-                                            <a
-                                                target="_blank"
-                                                href=format!(
-                                                    "https://lolpros.gg/player/{}",
-                                                    participant.pro_player_slug.unwrap().as_ref(),
-                                                )
-                                                class="text-xs bg-purple-800 rounded px-0.5 text-center"
-                                            >
-                                                pro
-                                            </a>
-                                        </Show>
+                                        <ImgChampion
+                                            champion
+                                            parent_class="sprite-wrapper w-4 h-4".to_string()
+                                            class="rounded scale-33 sprite-inner".to_string()
+                                        />
+                                        {(participant.encounter_count > 1)
+                                            .then(|| {
+                                                view! {
+                                                    <a
+                                                        href=summoner_encounter_url(
+                                                            summoner.platform.as_ref(),
+                                                            summoner.game_name.as_str(),
+                                                            summoner.tag_line.as_str(),
+                                                            participant.platform.as_ref(),
+                                                            participant.game_name.as_str(),
+                                                            participant.tag_line.as_str(),
+                                                        )
+                                                        class="text-xs bg-green-800 rounded px-0.5 text-center"
+                                                    >
+                                                        {participant.encounter_count}
+                                                    </a>
+                                                }
+                                            })}
+                                        {participant
+                                            .pro_player_slug
+                                            .map(|pps| {
+                                                view! {
+                                                    <a
+                                                        target="_blank"
+                                                        href=format!("https://lolpros.gg/player/{}", pps.as_ref())
+                                                        class="text-xs bg-purple-800 rounded px-0.5 text-center"
+                                                    >
+                                                        pro
+                                                    </a>
+                                                }
+                                            })}
                                         <a
                                             target="_blank"
                                             href=summoner_url(
@@ -287,34 +273,34 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                                 participant.game_name.as_str(),
                                                 participant.tag_line.as_str(),
                                             )
-                                            class:text-white=move || {
-                                                participant.summoner_id == match_.summoner_id
-                                            }
+                                            class:text-white=participant.summoner_id
+                                                == match_.summoner_id
+
                                             class="text-ellipsis overflow-hidden whitespace-nowrap "
                                         >
                                             {participant.game_name.clone()}
                                         </a>
                                     </div>
                                 }
-                            }
-                        </For>
+                            })
+                            .collect::<Vec<_>>()}
                     </div>
                 </div>
                 <div class="w-[40px] flex relative flex-col">
                     <button
                         aria-label="Show Details"
-                        class:bg-red-600=move || !match_.won
-                        class:bg-blue-600=move || match_.won
+                        class:bg-red-600=!match_.won
+                        class:bg-blue-600=match_.won
                         class="p-2 flex flex-col items-center justify-end h-full"
                         on:click=move |_| set_show_details(!show_details())
                     >
                         <span
                             class="w-[24px] h-[24px]"
-                            class:text-red-300=move || !match_.won
-                            class:text-blue-400=move || match_.won
+                            class:text-red-300=!match_.won
+                            class:text-blue-400=match_.won
                         >
                             <svg
-                                class=move || ("rotate-180", show_details())
+                                class=("rotate-180", move || show_details())
                                 xmlns="http://www.w3.org/2000/svg"
                                 width="24"
                                 height="24"
@@ -348,33 +334,31 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
     }
 }
 
-
 #[component]
 pub fn MatchSummonerCard(
-    champion:Champion,
-    champ_level:u16,
-    summoner_spell1:SummonerSpell,
-    summoner_spell2:SummonerSpell,
-    primary_perk_selection:Perk,
-    sub_perk_style:Perk,
-    kills:u16,
-    deaths:u16,
-    assists:u16,
-    won:bool,
-    kill_participation:u16,
-    items:Vec<Item>,
-    #[prop(optional)]
-    encounter_is_self:Option<bool>
-) -> impl IntoView{
-    let has_encounter = move|| encounter_is_self.is_some();
-    let is_self = move|| has_encounter() && encounter_is_self.unwrap();
-    let is_encounter = move|| has_encounter() && !encounter_is_self.unwrap();
+    champion: Champion,
+    champ_level: u16,
+    summoner_spell1: SummonerSpell,
+    summoner_spell2: SummonerSpell,
+    primary_perk_selection: Perk,
+    sub_perk_style: Perk,
+    kills: u16,
+    deaths: u16,
+    assists: u16,
+    won: bool,
+    kill_participation: u16,
+    items: Vec<Item>,
+    #[prop(optional)] encounter_is_self: Option<bool>,
+) -> impl IntoView {
+    let has_encounter = encounter_is_self.is_some();
+    let is_self = has_encounter && encounter_is_self.unwrap();
+    let is_encounter = has_encounter && !encounter_is_self.unwrap();
     view! {
         <div
             class="flex flex-col h-full w-[305px] gap-0.5 justify-center "
             class=("px-2", has_encounter)
-            class=("bg-red-900", move || !won)
-            class=("bg-blue-900", move || won)
+            class=("bg-red-900", !won)
+            class=("bg-blue-900", won)
             class=("rounded-r-lg", is_encounter)
             class=("border-l-2", is_encounter)
             class=("border-gray-800", is_encounter)
@@ -382,10 +366,7 @@ pub fn MatchSummonerCard(
         >
             <div class="flex items-center gap-2.5" class=("flex-row-reverse", is_encounter)>
                 <div class="relative flex">
-                    <ImgBg
-                        alt=champion.to_str().to_string()
-                        class=format!("rounded-full {}", champion.get_class_name())
-                    />
+                    <ImgChampion champion class="rounded-full".to_string() />
                     <span
                         class="absolute right-0 bottom-0 flex w-[20px] h-[20px] justify-center items-center bg-gray-800 text-white rounded-full"
                         style="font-size:11px"
@@ -395,38 +376,26 @@ pub fn MatchSummonerCard(
                 </div>
                 <div class="gap-0.5 flex">
                     <div class="flex flex-col gap-0.5 items-center">
-
-                        <ImgBg
-                            alt=summoner_spell1.to_string()
-                            class=format!("rounded {}", summoner_spell1.get_class_name())
+                        <ImgSummonerSpell
+                            summoner_spell=summoner_spell1
+                            class="rounded".to_string()
                         />
-                        <ImgBg
-                            alt=summoner_spell2.to_string()
-                            class=format!("rounded {}", summoner_spell2.get_class_name())
+                        <ImgSummonerSpell
+                            summoner_spell=summoner_spell2
+                            class="rounded".to_string()
                         />
                     </div>
                     <div class="flex flex-col gap-0.5 items-center">
-                        <div class="w-[22px] h-[22px] sprite-wrapper">
-                            <ImgOptBg
-                                when=move || primary_perk_selection != Perk::UNKNOWN
-                                alt=primary_perk_selection.to_string()
-                                class=format!(
-                                    "scale-78 sprite-inner rounded-full {}",
-                                    primary_perk_selection.get_class_name(),
-                                )
-                            />
-                        </div>
-                        <div class="w-[22px] h-[22px] sprite-wrapper">
-                            <ImgOptBg
-                                when=move || sub_perk_style != Perk::UNKNOWN
-                                alt=sub_perk_style.to_string()
-                                class=format!(
-                                    "scale-78 sprite-inner rounded-full {}",
-                                    sub_perk_style.get_class_name(),
-                                )
-                            />
-                        </div>
-
+                        <ImgPerk
+                            perk=primary_perk_selection
+                            class="scale-78 sprite-inner rounded-full".to_string()
+                            parent_class="w-[22px] h-[22px] sprite-wrapper".to_string()
+                        />
+                        <ImgPerk
+                            perk=sub_perk_style
+                            class="scale-78 sprite-inner rounded-full".to_string()
+                            parent_class="w-[22px] h-[22px] sprite-wrapper".to_string()
+                        />
                     </div>
                 </div>
                 <div class="flex flex-col w-[85px] items-start gap-1">
@@ -441,26 +410,21 @@ pub fn MatchSummonerCard(
                 </div>
                 <div
                     class="flex flex-col h-[58px] "
-                    class=("border-l-2", move || !is_encounter())
-                    class=("pl-2", move || !is_encounter())
+                    class=("border-l-2", !is_encounter)
+                    class=("pl-2", !is_encounter)
                     class=("border-r-2", is_encounter)
                     class=("pr-2", is_encounter)
-                    class=("border-red-500", move || !won)
-                    class=("border-blue-500", move || won)
+                    class=("border-red-500", !won)
+                    class=("border-blue-500", won)
                 >
                     <div class="text-red-300">P/Kill {kill_participation}%</div>
                 </div>
             </div>
             <div class="flex gap-0.5" class=("flex-row-reverse", is_encounter)>
                 {items
-                    .iter()
+                    .into_iter()
                     .map(|item| {
-                        view! {
-                            <ImgBg
-                                alt=item.to_string()
-                                class=format!("rounded {}", item.get_class_name())
-                            />
-                        }
+                        view! { <ImgItem item class="rounded".to_string() /> }
                     })
                     .collect::<Vec<_>>()}
             </div>
@@ -470,19 +434,17 @@ pub fn MatchSummonerCard(
 
 #[component]
 pub fn MatchInfoCard(
-    #[prop(optional)]
-    won:Option<bool>,
-    queue:Queue,
-    match_ended_since:DurationSince,
-    match_duration:Option<i32>,
-
-) -> impl IntoView{
+    #[prop(optional)] won: Option<bool>,
+    queue: Queue,
+    match_ended_since: DurationSince,
+    match_duration: Option<i32>,
+) -> impl IntoView {
     view! {
         <div class="flex flex-col w-[108px] gap-2">
             <div class="flex flex-col items-start w-[108px]">
                 <div
-                    class:text-red-300=move || won.is_some() && !won.unwrap()
-                    class:text-blue-300=move || won.is_some() && won.unwrap()
+                    class:text-red-300=won.is_some() && !won.unwrap()
+                    class:text-blue-300=won.is_some() && won.unwrap()
                     class=" uppercase font-bold text-ellipsis max-w-[90%] overflow-hidden whitespace-nowrap"
                 >
                     {queue.to_str()}
@@ -490,20 +452,17 @@ pub fn MatchInfoCard(
                 <div>{match_ended_since.to_string()}</div>
             </div>
             <hr
-                class:border-red-500=move || won.is_some() && !won.unwrap()
-                class:border-blue-500=move || won.is_some() && won.unwrap()
+                class:border-red-500=won.is_some() && !won.unwrap()
+                class:border-blue-500=won.is_some() && won.unwrap()
                 class="w-1/2"
             />
             <div class="flex flex-col items-start w-[108px]">
-                <Show when=move || won.is_some()>
-                    <div>{if won.unwrap() { "Victory" } else { "Defeat" }}</div>
-                </Show>
+                {won.map(|won| view! { <div>{if won { "Victory" } else { "Defeat" }}</div> })}
                 <div>{format_duration(match_duration)}</div>
             </div>
         </div>
     }
 }
-
 
 #[derive(Clone, Deserialize, Serialize, Default, Archive)]
 pub struct GetSummonerMatchesResult {
