@@ -19,7 +19,8 @@ cargo leptos build --release
 systemctl stop "$SERVICE_NAME"
 
 # Remove old release and recreate necessary directories
-rm -rf "$RELEASE_PATH"
+mkdir -p "$RELEASE_PATH"
+rm -rf "$RELEASE_PATH/target"
 mkdir -p "$RELEASE_PATH/target/release"
 mkdir -p "$RELEASE_PATH/target/site"
 mkdir -p "$RELEASE_PATH/signed_certs"
