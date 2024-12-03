@@ -123,6 +123,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
                 .cache_control(CacheControl::Custom("public, max-age=31536000"))
                 .into_router(),
         )
+
         .leptos_routes_with_context(
             &app_state,
             routes,
@@ -145,12 +146,10 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         .layer(
             CompressionLayer::new()
                 .br(true)
-                .deflate(true)
-                .gzip(true)
                 .zstd(true)
-                .quality(CompressionLevel::Fastest)
+                .quality(CompressionLevel::Default)
                 .compress_when(
-                    SizeAbove::new(1500)
+                    SizeAbove::new(256)
                         .and(NotForContentType::GRPC)
                         .and(NotForContentType::IMAGES)
                         .and(NotForContentType::SSE)
