@@ -8,6 +8,7 @@ pub const DB_CHUNK_SIZE: usize = 500;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
+    use std::fs;
     use crate::backend::live_game_cache;
     use axum::extract::{Host, Path, State};
     use axum::handler::HandlerWithoutStateExt;
@@ -26,6 +27,8 @@ pub mod ssr {
     use std::path::PathBuf;
     use std::sync::Arc;
     use std::time::Duration;
+    use rustls_acme::AcmeConfig;
+    use rustls_acme::caches::DirCache;
     use tokio::sync::broadcast::Sender;
     use tokio::time;
     use tokio_stream::wrappers::BroadcastStream;
@@ -147,14 +150,31 @@ pub mod ssr {
     }
 
     pub async fn serve_with_tsl(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
-        let config = RustlsConfig::from_pem_file(
-            PathBuf::from("signed_certs").join("cert.pem"),
-            PathBuf::from("signed_certs").join("key.pem"),
-        )
-        .await
-        .expect("failed to load rustls config");
+        let ccache: PathBuf = PathBuf::from("signed_certs");
+        if !ccache.exists() {
+            fs::create_dir_all(&ccache).unwrap();
+        }
+        let dns = dotenv::var("LETS_ENCRYPT_DNS_NAME").expect("LETS_ENCRYPT_DNS_NAME must be set");
+        let email = dotenv::var("LETS_ENCRYPT_EMAIL").expect("LETS_ENCRYPT_EMAIL must be set");
+        let mut state = AcmeConfig::new(vec![dns])
+            .contact([format!("mailto:{email}")])
+            .cache(DirCache::new(ccache))
+            .directory_lets_encrypt(true)
+            .state();
+
+        let acceptor = state.axum_acceptor(state.default_rustls_config());
+
+        tokio::spawn(async move {
+            loop {
+                match state.next().await.unwrap() {
+                    Ok(ok) => log!("event: {ok:?}"),
+                    Err(err) => log!("error: {err}"),
+                }
+            }
+        });
         log!("listening on {}", socket_addr);
-        axum_server::bind_rustls(socket_addr, config)
+        axum_server::bind(socket_addr)
+            .acceptor(acceptor)
             .serve(app.into_make_service())
             .await
             .unwrap();
