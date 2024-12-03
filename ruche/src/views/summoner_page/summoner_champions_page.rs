@@ -68,11 +68,11 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                             <table class="w-full table-fixed bg-gray-700 border-collapse  my-2 border border-gray-600">
                                                 <colgroup>
                                                     <col width="45" />
-                                                    <col width="auto" />
+                                                    <col width="160" />
                                                     <col width="140" />
                                                     <col width="105" />
-                                                    <col width="88" />
                                                     <col width="72" />
+                                                    <col width="66" />
                                                     <col width="66" />
                                                     <col width="66" />
                                                     <col width="48" />

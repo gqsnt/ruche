@@ -36,15 +36,14 @@ pub fn SummonerSearchPage(is_summoner_page:Signal<bool>) -> impl IntoView {
     };
 
     view! {
-        <div class="w-full flex my-2 " class=("justify-center",move ||  !is_summoner_page())>
-            {move ||
-                is_summoner_page().then(||{
+        <div class=" w-full flex my-2 justify-center" >
+            <form on:submit=on_submit   class=("justify-center",move ||  !is_summoner_page()) class="flex space-x-2 items-center w-[768px]">
+        {move ||
+               is_summoner_page().then(||{
                 view!{<img src="/assets/favicon.ico"  height="38"  class="mr-2 h-[38px] w-[38px]"  alt="logo"/>}
             })
             }
-            <form on:submit=on_submit>
-                <div class="flex space-x-2 items-center max-w-[768px]">
-                    <input
+                  <input
                         class="my-input"
                         type="text"
                         node_ref=game_name_node
@@ -84,7 +83,6 @@ pub fn SummonerSearchPage(is_summoner_page:Signal<bool>) -> impl IntoView {
                     <button class="my-button" type="submit">
                         "Search"
                     </button>
-                </div>
             </form>
         </div>
     }
