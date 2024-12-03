@@ -15,7 +15,6 @@ use crate::ssr::{RiotApiState, SubscriberMap};
 use crate::DB_CHUNK_SIZE;
 use axum::async_trait;
 use chrono::NaiveDateTime;
-use common::consts;
 use futures::stream::{FuturesOrdered, FuturesUnordered, StreamExt};
 use itertools::Itertools;
 use leptos::logging::log;
@@ -27,6 +26,7 @@ use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::time::{Duration, Instant};
+use common::consts;
 
 pub struct UpdateMatchesTask {
     db: PgPool,

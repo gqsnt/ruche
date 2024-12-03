@@ -102,12 +102,12 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                                                     </div>
                                                     <div class="flex flex-col ml-2">
                                                         <div>
-                                                            {format!(
-                                                                "{:.2}/{:.2}/{:.2}",
-                                                                matches_result.matches_result_info.avg_kills,
-                                                                matches_result.matches_result_info.avg_deaths,
-                                                                matches_result.matches_result_info.avg_assists,
-                                                            )}
+                                                            {
+                                                                format!("{:.2}/{:.2}/{:.2}",
+                                                                    matches_result.matches_result_info.avg_kills,
+                                                                    matches_result.matches_result_info.avg_deaths,
+                                                                    matches_result.matches_result_info.avg_assists)
+                                                            }
                                                         </div>
                                                         <div>
                                                             {calculate_and_format_kda(

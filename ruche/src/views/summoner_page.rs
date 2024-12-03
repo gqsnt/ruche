@@ -184,11 +184,7 @@ pub fn SummonerInfo(
                     />
                 }
             }}
-            <div
-                class="flex flex-col items-start "
-                class=("ml-2", is_self)
-                class=("mr-2", !is_self)
-            >
+            <div class="flex flex-col items-start " class=("ml-2", is_self) class=("mr-2", !is_self)>
                 <a href=summoner_url(
                     platform.as_ref(),
                     game_name.as_ref(),

@@ -7,7 +7,6 @@ use crate::ssr::RiotApiState;
 use crate::DB_CHUNK_SIZE;
 use axum::async_trait;
 use chrono::Utc;
-use common::consts;
 use futures::stream::FuturesUnordered;
 use futures::{stream, StreamExt};
 use itertools::Itertools;
@@ -19,6 +18,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::time::Instant;
+use common::consts;
 
 pub struct UpdateProPlayerTask {
     db: PgPool,
@@ -29,10 +29,10 @@ pub struct UpdateProPlayerTask {
 }
 
 impl UpdateProPlayerTask {
-    pub fn new(db: PgPool, api: RiotApiState, start_hour: u32, on_startup: bool) -> Self {
-        let next_run = if on_startup {
+    pub fn new(db: PgPool, api: RiotApiState, start_hour: u32, on_startup:bool) -> Self {
+        let next_run = if on_startup{
             Instant::now()
-        } else {
+        }else{
             calculate_next_run_to_fixed_start_hour(start_hour)
         };
         Self {
@@ -59,6 +59,7 @@ impl Task for UpdateProPlayerTask {
 
     fn update_schedule(&mut self) {
         self.next_run = calculate_next_run_to_fixed_start_hour(self.start_hour);
+
     }
 
     fn is_running(&self) -> bool {

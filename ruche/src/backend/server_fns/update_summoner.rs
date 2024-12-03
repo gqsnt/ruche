@@ -4,10 +4,10 @@ use crate::backend::server_fns::get_encounter::ssr::{
 };
 #[cfg(feature = "ssr")]
 use crate::backend::server_fns::search_summoner::ssr::insert_or_update_account_and_summoner;
+use common::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use crate::utils::summoner_url;
 use crate::views::summoner_page::Summoner;
-use common::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use leptos::logging::log;
 use leptos::prelude::*;

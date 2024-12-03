@@ -7,7 +7,7 @@ use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_params_map, use_query_map};
 
 #[component]
-pub fn SummonerSearchPage(is_summoner_page: Signal<bool>) -> impl IntoView {
+pub fn SummonerSearchPage(is_summoner_page:Signal<bool>) -> impl IntoView {
     let query = use_query_map();
     let params = use_params_map();
     let search_summoner = ServerAction::<SearchSummoner>::new();
@@ -36,65 +36,53 @@ pub fn SummonerSearchPage(is_summoner_page: Signal<bool>) -> impl IntoView {
     };
 
     view! {
-        <div class=" w-full flex my-2 justify-center">
-            <form
-                on:submit=on_submit
-                class=("justify-center", move || !is_summoner_page())
-                class="flex space-x-2 items-center w-[768px]"
-            >
-                {move || {
-                    is_summoner_page()
-                        .then(|| {
-                            view! {
-                                <img
-                                    src="/assets/favicon.ico"
-                                    height="38"
-                                    class="mr-2 h-[38px] w-[38px]"
-                                    alt="logo"
-                                />
-                            }
-                        })
-                }}
-                <input
-                    class="my-input"
-                    type="text"
-                    node_ref=game_name_node
-                    placeholder="Game Name"
-                    value=game_name
-                    name="game_name"
-                />
-                <input
-                    class="my-input"
-                    type="text"
-                    node_ref=tag_line_node
-                    placeholder="Tag Line"
-                    value=tag_line
-                    name="tag_line"
-                />
-                <select
-                    class="my-select"
-                    aria-label="Platform Type"
-                    node_ref=platform_type_node
-                    name="platform_type"
-                    prop:value=platform_type
-                >
-                    {PLATFORM_ROUTE_OPTIONS
-                        .iter()
-                        .map(|pt| {
-                            view! {
-                                <option
-                                    value=pt.to_string()
-                                    selected=move || { platform_type().eq(&pt.to_string()) }
-                                >
-                                    {pt.to_string()}
-                                </option>
-                            }
-                        })
-                        .collect::<Vec<_>>()}
-                </select>
-                <button class="my-button" type="submit">
-                    "Search"
-                </button>
+        <div class=" w-full flex my-2 justify-center" >
+            <form on:submit=on_submit   class=("justify-center",move ||  !is_summoner_page()) class="flex space-x-2 items-center w-[768px]">
+        {move ||
+               is_summoner_page().then(||{
+                view!{<img src="/assets/favicon.ico"  height="38"  class="mr-2 h-[38px] w-[38px]"  alt="logo"/>}
+            })
+            }
+                  <input
+                        class="my-input"
+                        type="text"
+                        node_ref=game_name_node
+                        placeholder="Game Name"
+                        value=game_name
+                        name="game_name"
+                    />
+                    <input
+                        class="my-input"
+                        type="text"
+                        node_ref=tag_line_node
+                        placeholder="Tag Line"
+                        value=tag_line
+                        name="tag_line"
+                    />
+                    <select
+                        class="my-select"
+                        aria-label="Platform Type"
+                        node_ref=platform_type_node
+                        name="platform_type"
+                        prop:value=platform_type
+                    >
+                        {PLATFORM_ROUTE_OPTIONS
+                            .iter()
+                            .map(|pt| {
+                                view! {
+                                    <option
+                                        value=pt.to_string()
+                                        selected=move || { platform_type().eq(&pt.to_string()) }
+                                    >
+                                        {pt.to_string()}
+                                    </option>
+                                }
+                            })
+                            .collect::<Vec<_>>()}
+                    </select>
+                    <button class="my-button" type="submit">
+                        "Search"
+                    </button>
             </form>
         </div>
     }

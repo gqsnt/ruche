@@ -1,6 +1,6 @@
+use common::consts::platform_route::PlatformRoute;
 use crate::utils::RiotMatchId;
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
-use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;

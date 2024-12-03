@@ -1,7 +1,7 @@
+use common::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use crate::utils::{parse_summoner_slug, summoner_not_found_url};
 use crate::views::summoner_page::Summoner;
-use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
@@ -42,9 +42,9 @@ pub async fn get_summoner(
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::ssr::{AppResult, PlatformRouteDb};
+    use common::consts::platform_route::PlatformRoute;
     use crate::utils::ProPlayerSlug;
     use crate::views::summoner_page::Summoner;
-    use common::consts::platform_route::PlatformRoute;
 
     pub async fn find_summoner_by_exact_game_name_tag_line(
         db: &sqlx::PgPool,

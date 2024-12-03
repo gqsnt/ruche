@@ -1,6 +1,6 @@
+use common::consts::platform_route::PlatformRoute;
 use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterResult;
 use crate::views::BackEndMatchFiltersSearch;
-use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
@@ -35,6 +35,8 @@ pub mod ssr {
         find_summoner_by_exact_game_name_tag_line, SummonerModel,
     };
     use crate::backend::ssr::{format_duration_since, AppError, AppResult, PlatformRouteDb};
+    use common::consts::platform_route::PlatformRoute;
+    use common::consts::queue::Queue;
     use crate::utils::{parse_summoner_slug, DurationSince, ProPlayerSlug, RiotMatchId};
     use crate::views::summoner_page::summoner_encounter_page::{
         SummonerEncounterMatch, SummonerEncounterParticipant, SummonerEncounterResult,
@@ -44,8 +46,6 @@ pub mod ssr {
     use crate::views::BackEndMatchFiltersSearch;
     use bigdecimal::{BigDecimal, ToPrimitive};
     use chrono::NaiveDateTime;
-    use common::consts::platform_route::PlatformRoute;
-    use common::consts::queue::Queue;
     use itertools::Itertools;
     use sqlx::{PgPool, QueryBuilder};
 
