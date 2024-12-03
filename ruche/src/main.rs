@@ -65,12 +65,10 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     }
 
     let site_address = leptos_options.site_addr;
-
     let db = init_database().await;
     let riot_api = Arc::new(init_riot_api());
     let live_game_cache = Arc::new(LiveGameCache::new(std::time::Duration::from_secs(60)));
     let summoner_updated_sender = Arc::new(DashMap::new());
-
     let mut task_director = TaskDirector::default();
     task_director.add_task(LiveGameCacheCleanupTask::new(
         Arc::clone(&live_game_cache),
@@ -163,7 +161,6 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
                 ),
         )
         .with_state(app_state);
-
     serve(app, is_prod, site_address)
         .await
         .expect("failed to serve");

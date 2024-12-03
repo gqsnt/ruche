@@ -58,23 +58,20 @@ pub mod ssr {
         let db_name = dotenv::var("DB_NAME").expect("no db name specify");
         let socket = dotenv::var("DB_SOCKET").unwrap_or("".to_string());
         let opts = PgConnectOptions::new()
-            .host("127.0.0.1")
-            .port(5432)
             .username(db_username.as_str())
             .password(db_password.as_str())
             .database(db_name.as_str())
             .socket(socket.as_str());
-
         let pool = sqlx::postgres::PgPoolOptions::new()
             .max_connections(max_connections)
             .connect_with(opts)
             .await
             .expect("failed to connect to database");
-
-        sqlx::migrate!()
-            .run(&pool)
-            .await
-            .expect("migrations failed");
+        // todo fix migrations
+        // sqlx::migrate!("./migrations")
+        //     .run(&pool)
+        //     .await
+        //     .expect("migrations failed");
 
         pool
     }
