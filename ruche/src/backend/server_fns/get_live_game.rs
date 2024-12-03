@@ -1,9 +1,9 @@
 #[cfg(feature = "ssr")]
 use crate::backend::server_fns::get_encounter::ssr::find_summoner_puuid_by_id;
-use common::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use crate::utils::Puuid;
 use crate::views::summoner_page::summoner_live_page::LiveGame;
+use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
@@ -53,9 +53,6 @@ pub mod ssr {
     use crate::backend::tasks::update_matches::TempSummoner;
 
     use crate::backend::server_fns::get_matches::ssr::get_summoner_encounters;
-    use common::consts::map::Map;
-    use common::consts::platform_route::PlatformRoute;
-    use common::consts::queue::Queue;
     use crate::ssr::RiotApiState;
     use crate::utils::{ProPlayerSlug, Puuid, RiotMatchId};
     use crate::views::summoner_page::summoner_live_page::{
@@ -63,6 +60,9 @@ pub mod ssr {
         LiveGameParticipantRankedStats,
     };
     use bigdecimal::{BigDecimal, ToPrimitive};
+    use common::consts::map::Map;
+    use common::consts::platform_route::PlatformRoute;
+    use common::consts::queue::Queue;
     use futures::stream::FuturesUnordered;
     use futures::StreamExt;
     use riven::models::spectator_v5::CurrentGameInfo;

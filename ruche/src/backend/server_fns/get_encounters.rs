@@ -28,11 +28,11 @@ pub async fn get_encounters(
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::ssr::{AppResult, PlatformRouteDb};
-    use common::consts::queue::Queue;
     use crate::views::summoner_page::summoner_encounters_page::{
         SummonerEncountersResult, SummonerEncountersSummoner,
     };
     use crate::views::BackEndMatchFiltersSearch;
+    use common::consts::queue::Queue;
     use sqlx::{FromRow, PgPool, QueryBuilder};
     use std::collections::HashMap;
 

@@ -1,15 +1,15 @@
-use std::path::PathBuf;
 use crate::backend::ssr::{AppResult, PlatformRouteDb};
 use crate::backend::task_director::Task;
 use crate::backend::tasks::calculate_next_run_to_fixed_start_hour;
-use common::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
 use crate::utils::summoner_url;
 use axum::async_trait;
 use chrono::NaiveDateTime;
+use common::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
 use leptos::leptos_dom::log;
 use sitemap::structs::UrlEntry;
 use sitemap::writer::SiteMapWriter;
 use sqlx::PgPool;
+use std::path::PathBuf;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -24,10 +24,10 @@ pub struct GenerateSiteMapTask {
 }
 
 impl GenerateSiteMapTask {
-    pub fn new(db: PgPool, start_hour: u32, on_startup:bool) -> Self {
-        let next_run = if on_startup{
+    pub fn new(db: PgPool, start_hour: u32, on_startup: bool) -> Self {
+        let next_run = if on_startup {
             Instant::now()
-        }else{
+        } else {
             calculate_next_run_to_fixed_start_hour(start_hour)
         };
         Self {

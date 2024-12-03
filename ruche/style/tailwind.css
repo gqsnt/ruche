@@ -10,36 +10,41 @@
 
 /* not default size sprite*/
 /*add width and height*/
-.sprite-wrapper{
+.sprite-wrapper {
     position: relative;
 }
+
 /*add scale % of ori to wrapper*/
-.sprite-inner{
+.sprite-inner {
     transform-origin: top left;
 }
 
-.height-inherit{
+.height-inherit {
     height: inherit;
 }
 
 
-.scale-33{
+.scale-33 {
     transform: scale(33.33%);
 }
-.scale-66{
+
+.scale-66 {
     transform: scale(66.66%);
 }
 
-.scale-78{
+.scale-78 {
     transform: scale(78.78%);
 }
-.scale-57{
+
+.scale-57 {
     transform: scale(57.14%);
 }
-.scale-72{
+
+.scale-72 {
     transform: scale(72.72%);
 }
-.scale-136{
+
+.scale-136 {
     transform: scale(136.36%);
 }
 
@@ -59,27 +64,28 @@ html {
     .active-tab {
         @apply text-center block border border-blue-500 rounded py-2 px-4 bg-blue-500 hover:bg-blue-700 text-gray-900;
     }
+
     .disabled-tab {
         @apply block py-2 px-4 text-gray-200 cursor-not-allowed bg-gray-700 rounded border border-gray-700;
     }
 
-    .default-tab{
+    .default-tab {
         @apply text-center block border bg-gray-200 border-white rounded hover:border-gray-200 text-gray-900 hover:bg-gray-300 py-2 px-4;
     }
 
-    .my-select{
+    .my-select {
         @apply bg-gray-200 border border-gray-200 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500;
     }
 
-    .my-input{
+    .my-input {
         @apply shadow bg-gray-200 border rounded  py-2 px-3 text-gray-700 leading-tight focus:outline-none;
     }
 
-    .my-button{
+    .my-button {
         @apply bg-blue-500 hover:bg-blue-700 text-gray-900 font-bold py-2 px-4 rounded focus:outline-none;
     }
 
-    .my-card{
+    .my-card {
         @apply border-gray-950 bg-gray-800 rounded p-2;
     }
 
