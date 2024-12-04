@@ -206,7 +206,7 @@ Ruche is a cutting-edge League of Legends statistics platform designed for unpar
 
 
 ## Installation
-if you encounter problem with wasm , ensure wasm-* version are unique between ruche/Cargo.toml in cargo-leptos bin and in leptos crate
+if you encounter problem with wasm , ensure wasm-* version are unique between ruche/Cargo.toml, cargo-leptos bin and leptos crate
 
 ### Requirements
 - **Rust**: Install Rust using [rustup](https://rustup.rs/).
