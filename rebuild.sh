@@ -23,13 +23,11 @@ mkdir -p "$RELEASE_PATH"
 rm -rf "$RELEASE_PATH/target"
 mkdir -p "$RELEASE_PATH/target/release"
 mkdir -p "$RELEASE_PATH/target/site"
-mkdir -p "$RELEASE_PATH/signed_certs"
 
 # Copy files to the release path
 cp -nf "$BUILD_PATH/target/release/ruche" "$RELEASE_PATH/target/release/ruche"
 cp -nfR "$BUILD_PATH/target/site/"* "$RELEASE_PATH/target/site/"
 cp -nf "$BUILD_PATH/.env" "$RELEASE_PATH/.env"
-cp -nf "$BUILD_PATH/signed_certs/"* "$RELEASE_PATH/signed_certs/"
 
 # Start the service and follow logs
 systemctl start "$SERVICE_NAME"

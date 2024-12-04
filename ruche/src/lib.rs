@@ -67,11 +67,10 @@ pub mod ssr {
             .connect_with(opts)
             .await
             .expect("failed to connect to database");
-        // todo fix migrations
-        // sqlx::migrate!("./migrations")
-        //     .run(&pool)
-        //     .await
-        //     .expect("migrations failed");
+        sqlx::migrate!()
+            .run(&pool)
+            .await
+            .expect("migrations failed");
 
         pool
     }
@@ -144,9 +143,16 @@ pub mod ssr {
     }
 
     pub async fn serve_with_tsl(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
+        let lets_encrypt_dir = dotenv::var("LETS_ENCRYPT_PATH").expect("LETS_ENCRYPT_PATH not set");
+        let lets_encrypt_dir = PathBuf::from(lets_encrypt_dir);
+        let cert = lets_encrypt_dir.join("fullchain.pem");
+        let key = lets_encrypt_dir.join("privkey.pem");
+        if !cert.exists() || !key.exists() {
+            panic!("Certificate or key file not found");
+        }
         let config = RustlsConfig::from_pem_file(
-            PathBuf::from("signed_certs").join("cert.pem"),
-            PathBuf::from("signed_certs").join("key.pem"),
+            cert,
+            key,
         )
         .await
         .expect("failed to load rustls config");
