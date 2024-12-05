@@ -4,6 +4,7 @@
 </picture>
 
 # Ruche: A High-Performance League of Legends Stats Platform
+**Visit us at [ruche.lol](https://ruche.lol)**
 
 Ruche is a cutting-edge League of Legends statistics platform designed for unparalleled speed and scalability. Inspired by industry leaders like OP.GG, Ruche offers comprehensive insights into summoner profiles, match histories, champion statistics, live games, and encounters—all delivered with exceptional performance.
 
@@ -76,17 +77,15 @@ Ruche is a cutting-edge League of Legends statistics platform designed for unpar
     - Live game data is cached for improved performance and reduced API calls.
 
 ### Real-Time Updates
-
 - **Server-Sent Events (SSE)**
-        - Live updates on matches, champions, and encounters when backend data is updated.
-        - **Debounce Mechanism:** Limits updates to once per second to prevent client overload.
-        - **Efficient Subscription Management**: Inactive SSE subscriptions are periodically cleaned up to free resources.
+  - Live updates on matches, champions, and encounters when backend data is updated.
+  - **Debounce Mechanism:** Limits updates to once per second to prevent client overload.
+  - **Efficient Subscription Management**: Inactive SSE subscriptions are periodically cleaned up to free resources.
 
 ### Advanced Filtering and Sorting
-
 - **Global Match Filters**
     - Available across Matches, Champions, Encounters, and Encounter pages.
-    - Filters include **Champion**, **Queue** **Type**, **Start Date**, and **End Date**.
+    - Filters include **Champion**, **Queue Type**, **Start Date**, and **End Date**.
 - **Dynamic Sorting**
     - Easily sort data to identify trends and analyze performance.
 
@@ -122,29 +121,22 @@ Ruche is a cutting-edge League of Legends statistics platform designed for unpar
 
 
 ### Optimization Techniques
-
 - **Asset Optimization**
     - Custom pipeline for asset management.
         - Downloads assets from Riot's API and Community Dragon.
         - Generates AVIF images and CSS sprites in AVIF format.
     - **In-Memory Asset Serving**
-        - JS, CSS, WASM, and images are served from memory using `MemoryServe`.
-    - **Compression**
-        - Utilizes Brotli and Zstd for fast asset delivery.
-
-- **Asset Delivery**
-  - **MemoryServe** serves assets directly from memory to reduce disk I/O.
-  - Assets are compressed with Brotli and Zstd for efficient delivery.
-
+        - JS, CSS, WASM, and images are compressed and served from memory using `MemoryServe`.
+- **Compression**
+    - Utilizes Brotli and Zstd.
 - **Database Efficiency**
     - Bulk inserts and updates minimize database load.
-    - Prepared statements and efficient indexing speed up data retrieval.
+    - Optimized query and efficient index speed up data retrieval.
 
 - **Caching Mechanisms**
     - **Live Game Cache**
         - Thread-safe caching with `DashMap`.
         - Regular cleanup of expired entries to maintain performance.
-
 - **Zero-Copy Serialization**
     - Rkyv enables zero-copy deserialization, reducing data transfer overhead.
 
@@ -161,7 +153,7 @@ Ruche is a cutting-edge League of Legends statistics platform designed for unpar
 ### SEO Optimization
 
 - **Dynamic Meta Tags**
-    - Each summoner page includes optimized titles and descriptions for better search visibility.
+    - Each summoner page includes titles and descriptions for better search visibility.
 - **Clean and Canonical URLs**
     - Improves indexing and prevents duplicate content issues.
 - **Sitemap Generation**
