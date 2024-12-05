@@ -3,7 +3,7 @@ use crate::backend::server_fns::get_summoner::get_summoner;
 use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::utils::{summoner_url, ProPlayerSlug};
 use crate::views::summoner_page::summoner_nav::SummonerNav;
-use crate::views::ImgSrc;
+use crate::views::{ImgSrc, PendingLoading};
 use common::consts::platform_route::PlatformRoute;
 use common::consts::profile_icon::ProfileIcon;
 use common::consts::HasStaticSrcAsset;
@@ -61,16 +61,18 @@ pub fn SummonerPage() -> impl IntoView {
                     let (profile_icon_signal, set_profile_icon) = signal(summoner.profile_icon_id);
                     provide_context(summoner.clone());
                     let update_summoner_action = ServerAction::<UpdateSummoner>::new();
+                    let (pending, set_pending) = signal(false);
                     Effect::new(move |_| {
                         let _ = update_summoner_action.version().get();
-                        if let Some(Ok(Some(summoner_update))) =
+                        set_pending(false);
+                        if let Some(Ok(Some((level, profile_icon_id)))) =
                             update_summoner_action.value().read_only().get()
                         {
-                            if summoner_update.summoner_level != level_signal() {
-                                set_level(summoner_update.summoner_level);
+                            if level != level_signal() {
+                                set_level(level);
                             }
-                            if summoner_update.profile_icon_id != profile_icon_signal() {
-                                set_profile_icon(summoner_update.profile_icon_id);
+                            if profile_icon_id != profile_icon_signal() {
+                                set_profile_icon(profile_icon_id);
                             }
                         }
                     });
@@ -125,10 +127,12 @@ pub fn SummonerPage() -> impl IntoView {
                                             profile_icon_signal=profile_icon_signal
                                         />
                                         <div class="h-fit">
+
                                             <button
-                                                class="my-button "
+                                                class="my-button flex items-center"
                                                 on:click=move |e| {
                                                     e.prevent_default();
+                                                    set_pending(true);
                                                     update_summoner_action
                                                         .dispatch(UpdateSummoner {
                                                             summoner_id: summoner.id,
@@ -138,8 +142,11 @@ pub fn SummonerPage() -> impl IntoView {
                                                         });
                                                 }
                                             >
-                                                Update
+                                                <PendingLoading pending>
+                                                    Update
+                                                </PendingLoading>
                                             </button>
+
                                         </div>
                                     </div>
                                 </div>

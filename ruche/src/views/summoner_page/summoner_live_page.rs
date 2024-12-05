@@ -5,7 +5,7 @@ use crate::utils::{
     summoner_encounter_url, summoner_url, ProPlayerSlug, Puuid, RiotMatchId,
 };
 use crate::views::summoner_page::Summoner;
-use crate::views::{ImgChampion, ImgPerk, ImgSummonerSpell};
+use crate::views::{ImgChampion, ImgPerk, ImgSummonerSpell, PendingLoading};
 use common::consts::champion::Champion;
 use common::consts::map::Map;
 use common::consts::perk::Perk;
@@ -17,6 +17,8 @@ use leptos::prelude::*;
 use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 
+
+
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {
     let summoner = expect_context::<Summoner>();
@@ -24,6 +26,7 @@ pub fn SummonerLivePage() -> impl IntoView {
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
     let (refresh_signal, set_refresh_signal) = signal(0);
+    let (pending, set_pending) = signal(false);
 
     let live_game_resource = Resource::new_rkyv(
         move || {
@@ -32,10 +35,13 @@ pub fn SummonerLivePage() -> impl IntoView {
                 refresh_signal.get(),
                 summoner.id,
                 summoner.platform.to_string(),
+                set_pending,
             )
         },
-        |(_, _, id, platform_type)| async move {
-            get_live_game(id, PlatformRoute::from(platform_type.as_str())).await
+        |(_, _, id, platform_type, set_pending_value)| async move {
+            let r=  get_live_game(id, PlatformRoute::from(platform_type.as_str())).await;
+            set_pending_value(false);
+            r
         },
     );
 
@@ -52,15 +58,20 @@ pub fn SummonerLivePage() -> impl IntoView {
         <div class="w-[768px]">
             <div class="flex justify-start mb-2">
                 <button
-                    class="my-button"
-                    on:click=move |_| { set_refresh_signal(refresh_signal() + 1) }
+                    class="my-button flex items-center"
+                    on:click=move |_| {
+            set_pending(true);
+            set_refresh_signal(refresh_signal() + 1);
+        }
                 >
-                    Refresh
+                    <PendingLoading pending>
+                                                    Refresh
+                                                </PendingLoading>
                 </button>
             </div>
             <Transition fallback=move || {
                 view! { <div class="text-center">Not In Live Game</div> }
-            }>
+            } set_pending>
                 {move || Suspend::new(async move {
                     match live_game_resource.await {
                         Ok(Some(result)) => {

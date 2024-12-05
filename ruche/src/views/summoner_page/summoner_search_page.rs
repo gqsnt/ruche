@@ -5,12 +5,14 @@ use leptos::html::{Input, Select};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_params_map, use_query_map};
+use crate::views::PendingLoading;
 
 #[component]
 pub fn SummonerSearchPage(is_summoner_page:Signal<bool>) -> impl IntoView {
     let query = use_query_map();
     let params = use_params_map();
     let search_summoner = ServerAction::<SearchSummoner>::new();
+    let (pending, set_pending) = signal(false);
 
     let game_name = move || query.read().get("game_name").unwrap_or_default();
     let tag_line = move || query.read().get("tag_line").unwrap_or_default();
@@ -22,6 +24,7 @@ pub fn SummonerSearchPage(is_summoner_page:Signal<bool>) -> impl IntoView {
 
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
+        set_pending(true);
         search_summoner.dispatch(SearchSummoner {
             platform_route: PlatformRoute::from(
                 platform_type_node
@@ -34,6 +37,12 @@ pub fn SummonerSearchPage(is_summoner_page:Signal<bool>) -> impl IntoView {
             tag_line: tag_line_node.get().expect("tag_line not valid").value(),
         });
     };
+
+
+    Effect::new(move |_| {
+        let _= search_summoner.version().get();
+        set_pending(false);
+    });
 
     view! {
         <div class=" w-full flex my-2 justify-center" >
@@ -80,8 +89,10 @@ pub fn SummonerSearchPage(is_summoner_page:Signal<bool>) -> impl IntoView {
                             })
                             .collect::<Vec<_>>()}
                     </select>
-                    <button class="my-button" type="submit">
-                        "Search"
+                    <button class="my-button flex items-center" type="submit">
+                        <PendingLoading pending>
+                                                    Search
+                                                </PendingLoading>
                     </button>
             </form>
         </div>

@@ -1,6 +1,6 @@
-use common::consts::platform_route::PlatformRoute;
 use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterResult;
 use crate::views::BackEndMatchFiltersSearch;
+use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Rkyv;
@@ -35,8 +35,6 @@ pub mod ssr {
         find_summoner_by_exact_game_name_tag_line, SummonerModel,
     };
     use crate::backend::ssr::{format_duration_since, AppError, AppResult, PlatformRouteDb};
-    use common::consts::platform_route::PlatformRoute;
-    use common::consts::queue::Queue;
     use crate::utils::{parse_summoner_slug, DurationSince, ProPlayerSlug, RiotMatchId};
     use crate::views::summoner_page::summoner_encounter_page::{
         SummonerEncounterMatch, SummonerEncounterParticipant, SummonerEncounterResult,
@@ -46,6 +44,8 @@ pub mod ssr {
     use crate::views::BackEndMatchFiltersSearch;
     use bigdecimal::{BigDecimal, ToPrimitive};
     use chrono::NaiveDateTime;
+    use common::consts::platform_route::PlatformRoute;
+    use common::consts::queue::Queue;
     use itertools::Itertools;
     use sqlx::{PgPool, QueryBuilder};
 
@@ -60,15 +60,17 @@ pub mod ssr {
     ) -> AppResult<SummonerEncounterResult> {
         let (encounter_game_name, encounter_tag_line) = parse_summoner_slug(encounter_slug);
 
-        let summoner = find_summoner_by_id(db, summoner_id).await?;
-        let encounter = find_summoner_by_exact_game_name_tag_line(
-            db,
-            encounter_platform,
-            encounter_game_name,
-            encounter_tag_line,
-        )
-        .await?
-        .ok_or(AppError::NotFound)?;
+        let (summoner, encounter) = tokio::join!(
+            find_summoner_by_id(db, summoner_id),
+            find_summoner_by_exact_game_name_tag_line(
+                db,
+                encounter_platform,
+                encounter_game_name,
+                encounter_tag_line
+            )
+        );
+        let summoner = summoner?;
+        let encounter = encounter?.ok_or(AppError::NotFound)?;
         let per_page = 20;
         let offset = (page_number.max(1) - 1) * per_page;
 

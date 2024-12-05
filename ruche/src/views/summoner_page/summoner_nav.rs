@@ -23,11 +23,14 @@ pub fn SummonerNav() -> impl IntoView {
 
     let (_, set_encounter_platform) =
         query_signal_with_options::<String>("encounter_platform", get_default_navigation_option());
+    let (_, set_encounter_search) =
+        query_signal_with_options::<String>("q", get_default_navigation_option());
 
     let switch_tab = move |tab: Tabs| {
         set_page_number(None);
         set_encounter_slug(None);
         set_encounter_platform(None);
+        set_encounter_search(None);
         set_tab(Some(tab.to_string()));
     };
 

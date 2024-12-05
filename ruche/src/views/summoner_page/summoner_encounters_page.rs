@@ -5,7 +5,7 @@ use crate::utils::{
 };
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
-use crate::views::{get_default_navigation_option, BackEndMatchFiltersSearch, ImgSrc};
+use crate::views::{get_default_navigation_option, BackEndMatchFiltersSearch, ImgSrc, PendingLoading};
 use common::consts::platform_route::PlatformRoute;
 use common::consts::profile_icon::ProfileIcon;
 use common::consts::HasStaticSrcAsset;
@@ -29,13 +29,17 @@ pub fn SummonerEncountersPage() -> impl IntoView {
     let (search_summoner_signal, set_search_summoner_signal) =
         signal(search_summoner.get().unwrap_or_default());
 
-    let (reset_page_number, set_reset_page_number) = signal::<bool>(false);
+    let (pending, set_pending) = signal(false);
+
+    let (reset_page_number, set_reset_page_number) = signal(false);
     Effect::new(move |_| {
         if reset_page_number() {
             set_page_number(None);
             set_reset_page_number(false);
         }
     });
+
+
 
     let encounters_resource = Resource::new_rkyv(
         move || {
@@ -45,17 +49,21 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                 match_filters_updated.get(),
                 summoner.id,
                 page_number(),
+                set_pending
             )
         },
-        |(_, search_summoner, filters, summoner_id, page_number)| async move {
+        |(_, search_summoner, filters, summoner_id, page_number, set_pending_value)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner.unwrap(), page_number);
-            get_encounters(
+            let r= get_encounters(
                 summoner_id,
                 page_number.unwrap_or(1),
                 search_summoner,
                 Some(filters),
             )
-            .await
+            .await;
+            set_pending_value(false);
+            r
+
         },
     );
 
@@ -80,12 +88,15 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                     on:input=move |e| { set_search_summoner_signal(event_target_value(&e)) }
                 />
                 <button
-                    class="my-button"
+                    class="my-button flex items-center"
                     on:click=move |_| {
+                        set_pending(true);
                         set_search_summoner(Some(search_summoner_signal.get()));
                     }
                 >
-                    Search
+                    <PendingLoading pending>
+                                                    Search
+                                                </PendingLoading>
                 </button>
                 <button
                     class="my-button bg-red-700 hover:bg-red-800 text-gray-200"
