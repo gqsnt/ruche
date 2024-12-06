@@ -9,10 +9,10 @@ pub const DB_CHUNK_SIZE: usize = 500;
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::live_game_cache;
-    use axum::extract::{Host, Path, State};
+    use axum::extract::{Host, Path, Request, State};
     use axum::handler::HandlerWithoutStateExt;
     use axum::response::sse::{Event, KeepAlive, Sse};
-    use axum::response::Redirect;
+    use axum::response::{IntoResponse, Redirect};
     use axum::Router;
     use axum_server::tls_rustls::RustlsConfig;
     use dashmap::DashMap;
@@ -26,10 +26,13 @@ pub mod ssr {
     use std::path::PathBuf;
     use std::sync::Arc;
     use std::time::Duration;
+    use axum::body::Body;
     use tokio::sync::broadcast::Sender;
     use tokio::time;
     use tokio_stream::wrappers::BroadcastStream;
     use tokio_stream::StreamExt;
+    use tower::ServiceExt;
+    use tower_http::services::ServeFile;
 
     pub type RiotApiState = Arc<RiotApi>;
     pub type SubscriberMap = DashMap<i32, Sender<()>>;
@@ -95,7 +98,6 @@ pub mod ssr {
         let stream = async_stream::stream! {
             // Use an interval timer to enforce the 1-second delay
             let mut interval = time::interval(debounce_interval);
-            // Initially, we don't want to wait
             interval.set_missed_tick_behavior(time::MissedTickBehavior::Delay);
             interval.reset();
 
@@ -206,6 +208,24 @@ pub mod ssr {
             .await
             .unwrap();
         Ok(())
+    }
+
+    pub async fn get_sitemap(
+    ) -> impl IntoResponse {
+       match ServeFile::new(PathBuf::from("ruche").join("public").join("sitemap.xml"))
+           .oneshot(Request::new(Body::empty())).await {
+            Ok(mut resp) =>{
+                resp.headers_mut().insert(
+                    "Content-Type",
+                    "application/xml".parse().unwrap(),
+                );
+                resp.into_response()
+            },
+            Err(e) => {
+                log!("Error serving sitemap: {}", e);
+                Err((StatusCode::INTERNAL_SERVER_ERROR, "Error serving sitemap".to_string()))
+            }
+        }
     }
 }
 

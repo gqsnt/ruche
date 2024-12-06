@@ -1,8 +1,8 @@
 
-
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> ruche::backend::ssr::AppResult<()> {
+    use ruche::ssr::get_sitemap;
     use axum::routing::get;
     use axum::Router;
     use dashmap::DashMap;
@@ -30,6 +30,9 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use tower_http::compression::CompressionLayer;
     use tower_http::compression::Predicate;
     use tower_http::CompressionLevel;
+
+
+
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
     let mut leptos_options = conf.leptos_options;
@@ -140,6 +143,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
             "/sse/match_updated/:summoner_id",
             get(sse_broadcast_match_updated),
         )
+        .route("/sitemap.xml", get(get_sitemap))
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(
             shell,
         ))
