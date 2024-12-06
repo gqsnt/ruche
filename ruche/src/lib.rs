@@ -219,7 +219,7 @@ pub mod ssr {
                     "Content-Type",
                     "application/xml".parse().unwrap(),
                 );
-                resp.into_response()
+                Ok(resp.into_response())
             },
             Err(e) => {
                 log!("Error serving sitemap: {}", e);
