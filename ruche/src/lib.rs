@@ -212,7 +212,7 @@ pub mod ssr {
 
     pub async fn get_sitemap(
     ) -> impl IntoResponse {
-       match ServeFile::new(PathBuf::from("ruche").join("public").join("sitemap.xml"))
+       match ServeFile::new(PathBuf::from("target").join("site").join("sitemap.xml"))
            .oneshot(Request::new(Body::empty())).await {
             Ok(mut resp) =>{
                 resp.headers_mut().insert(
