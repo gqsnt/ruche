@@ -143,7 +143,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
             "/sse/match_updated/:summoner_id",
             get(sse_broadcast_match_updated),
         )
-        .route("/sitemap.xml", get(get_sitemap))
+        .route("/sitemap_index.xml", get(get_sitemap))
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(
             shell,
         ))

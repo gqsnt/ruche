@@ -17,9 +17,8 @@ cargo leptos build --release
 # Stop the service
 systemctl stop "$SERVICE_NAME"
 
-
-
-
+# Copy the new binary
+rm -rf "$BUILD_PATH/target/release/ruche-release"
 cp -nf "$BUILD_PATH/target/release/ruche" "$BUILD_PATH/target/release/ruche-release"
 
 # Start the service and follow logs

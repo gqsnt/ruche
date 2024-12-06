@@ -94,7 +94,7 @@ pub async fn generate_site_map_index(index:usize, urls:&[UrlEntry])->AppResult<(
         }
         url_writer.end()?;
     }
-    let dest_path = PathBuf::from("target").join("site").join(format!("sitemap{}.xml.gz",index));
+    let dest_path = PathBuf::from("target").join("site").join(format!("sitemap_index{}.xml.gz",index));
     let output = flate2::write::GzEncoder::new(output, flate2::Compression::default());
     let output = output.finish()?;
     tokio::fs::write(dest_path, output).await?;
@@ -140,7 +140,7 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
             generate_site_map_index(idx, urls_).await?;
             url_writer.sitemap(
                 SiteMapEntry::builder()
-                    .loc(format!("{}/sitemap{}.xml.gz", base_url, idx))
+                    .loc(format!("{}/sitemap_index{}.xml.gz", base_url, idx))
                     .lastmod(now)
                     .build()?
             )?;
@@ -148,7 +148,7 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
         url_writer.end()?;
 
     }
-    let dest_path = PathBuf::from("target").join("site").join("sitemap.xml");
+    let dest_path = PathBuf::from("target").join("site").join("sitemap_index.xml");
     tokio::fs::write(dest_path, output).await?;
     Ok(())
 }
