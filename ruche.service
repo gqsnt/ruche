@@ -5,7 +5,7 @@ After=multi-user.target
 [Service]
 Type=simple
 WorkingDirectory=/etc/ruche
-ExecStart=/etc/ruche-release/target/release/ruche
+ExecStart=/etc/ruche/target/release/ruche-release
 
 
 [Install]

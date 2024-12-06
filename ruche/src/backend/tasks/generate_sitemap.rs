@@ -5,9 +5,9 @@ use crate::backend::tasks::calculate_next_run_to_fixed_start_hour;
 use common::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
 use crate::utils::summoner_url;
 use axum::async_trait;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, FixedOffset, NaiveDateTime};
 use leptos::leptos_dom::log;
-use sitemap::structs::UrlEntry;
+use sitemap::structs::{SiteMapEntry, UrlEntry};
 use sitemap::writer::SiteMapWriter;
 use sqlx::PgPool;
 use std::sync::{
@@ -83,43 +83,71 @@ impl Task for GenerateSiteMapTask {
     }
 }
 
-pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
-    let mut output = Vec::<u8>::new();
+
+pub async fn generate_site_map_index(index:usize, urls:&[UrlEntry])->AppResult<()>{
+    let mut output =  Vec::<u8>::new();
     {
         let writer = SiteMapWriter::new(&mut output);
-        let base_url = "https://ruche.lol";
         let mut url_writer = writer.start_urlset()?;
-        url_writer.url(UrlEntry::builder().loc(base_url).build()?)?;
-        for platform in PLATFORM_ROUTE_OPTIONS {
-            url_writer.url(
-                UrlEntry::builder()
-                    .loc(format!("{}/platform/{}", base_url, platform))
-                    .build()?,
-            )?;
-        }
-        let total_summoners = get_total_summoners(db).await?;
-        let per_page = 500;
-        let total_pages = total_summoners / per_page;
-        for page in 1..=total_pages {
-            let summoners = get_platforms_summoners_taglines(db, per_page, page).await?;
-            for (game_name, tag_line, platform, updated_at) in summoners {
-                let pt: PlatformRoute = platform.into();
-                let url = format!(
-                    "{}{}",
-                    base_url,
-                    summoner_url(pt.as_ref(), game_name.as_str(), tag_line.as_str())
-                );
-                url_writer.url(
-                    UrlEntry::builder()
-                        .loc(url)
-                        .lastmod(updated_at.and_utc().fixed_offset())
-                        .build()?,
-                )?;
-            }
+        for url in urls{
+            url_writer.url(url.clone())?;
         }
         url_writer.end()?;
     }
+    let dest_path = PathBuf::from("target").join("site").join(format!("sitemap{}.xml.gz",index));
+    let output = flate2::write::GzEncoder::new(output, flate2::Compression::default());
+    let output = output.finish()?;
+    tokio::fs::write(dest_path, output).await?;
+    Ok(())
+}
 
+
+pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
+    let base_url = "https://ruche.lol";
+    let mut urls = vec![
+        get_site_map_url(base_url.to_string(), None),
+    ];
+    for platform in PLATFORM_ROUTE_OPTIONS {
+        get_site_map_url(format!("{}/platform/{}", base_url, platform), None);
+    }
+
+    let total_summoners = get_total_summoners(db).await?;
+    let chunk_size = 500;
+    let total_chunks = total_summoners / chunk_size;
+    for page in 1..=total_chunks {
+        let summoners = get_platforms_summoners_taglines(db, chunk_size, page).await?;
+        for (game_name, tag_line, platform, updated_at) in summoners {
+            let pt: PlatformRoute = platform.into();
+            urls.push(get_site_map_url(
+                format!(
+                    "{}{}",
+                    base_url,
+                    summoner_url(pt.as_ref(), game_name.as_str(), tag_line.as_str())
+                ),
+                Some(updated_at.and_utc().fixed_offset()),
+            ));
+        }
+    }
+
+    let now  = chrono::Utc::now().fixed_offset();
+
+    let mut output = Vec::<u8>::new();
+    {
+        let writer = SiteMapWriter::new(&mut output);
+        let mut url_writer = writer.start_sitemapindex()?;
+
+        for (idx, urls_) in urls.chunks(50000).enumerate(){
+            generate_site_map_index(idx, urls_).await?;
+            url_writer.sitemap(
+                SiteMapEntry::builder()
+                    .loc(format!("{}/sitemap{}.xml.gz", base_url, idx))
+                    .lastmod(now)
+                    .build()?
+            )?;
+        }
+        url_writer.end()?;
+
+    }
     let dest_path = PathBuf::from("target").join("site").join("sitemap.xml");
     tokio::fs::write(dest_path, output).await?;
     Ok(())
@@ -147,4 +175,17 @@ pub async fn get_platforms_summoners_taglines(
         .fetch_all(db)
         .await
         .map_err(|e| e.into())
+}
+
+
+
+pub fn get_site_map_url(
+    loc: String,
+    lastmod: Option<DateTime<FixedOffset>>,
+) -> UrlEntry{
+    let mut builder = UrlEntry::builder().loc(loc);
+    if let Some(lastmod) = lastmod {
+        builder = builder.lastmod(lastmod);
+    }
+    builder.build().unwrap()
 }

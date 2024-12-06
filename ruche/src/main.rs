@@ -91,10 +91,10 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         Arc::clone(&summoner_updated_sender),
         tokio::time::Duration::from_secs(10),
     ));
-
+    task_director.add_task(GenerateSiteMapTask::new(db.clone(), 3, site_map_task_on_startup));
     if is_prod {
         task_director.add_task(UpdateProPlayerTask::new(db.clone(), riot_api.clone(), 2,lol_pro_task_on_startup));
-        task_director.add_task(GenerateSiteMapTask::new(db.clone(), 3, site_map_task_on_startup));
+
     }
     tokio::spawn(async move {
         task_director.run().await;

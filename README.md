@@ -269,7 +269,7 @@ sudo cp /etc/ruche/ruche.service /etc/systemd/system/ruche.service;
 # Enable the service
 sudo systemctl enable ruche;
 
-# git pull, download and rebuild assets if needed, rebuild the project, stop the service, copy release build  to /etc/ruche-release and start the service
+# git pull, download and rebuild assets if needed, rebuild the project, stop the service, make release  copy to ruche-release and start the service
 sh rebuild.sh;
 ```
 
