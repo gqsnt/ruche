@@ -6,9 +6,9 @@ use crate::views::summoner_page::summoner_live_page::LiveGame;
 use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos::server;
-use leptos::server_fn::codec::Rkyv;
+use leptos::server_fn::codec::Bitcode;
 
-#[server(input=Rkyv,output=Rkyv)]
+#[server(input=Bitcode,output=Bitcode)]
 pub async fn get_live_game(
     summoner_id: i32,
     platform_route: PlatformRoute,

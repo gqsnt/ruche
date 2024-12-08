@@ -8,6 +8,7 @@ use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::summoner_matches_page::{MatchInfoCard, MatchSummonerCard};
 use crate::views::summoner_page::{Summoner, SummonerInfo};
 use crate::views::{get_default_navigation_option, BackEndMatchFiltersSearch};
+use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
 use common::consts::item::Item;
 use common::consts::perk::Perk;
@@ -16,7 +17,6 @@ use common::consts::queue::Queue;
 use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
 use leptos::prelude::*;
-use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, IntoView};
 use leptos_router::hooks::{query_signal_with_options, use_query_map};
 
@@ -34,7 +34,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
     let (page_number, set_page_number) =
         query_signal_with_options::<u16>("page", get_default_navigation_option());
 
-    let encounter_resource = leptos::server::Resource::new_rkyv(
+    let encounter_resource = leptos::server::Resource::new_bitcode(
         move || {
             (
                 summoner_update_version.get().unwrap_or_default(),
@@ -337,7 +337,7 @@ pub fn SummonerEncounterStat(
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Archive)]
+#[derive(Clone, Encode, Decode)]
 pub struct SummonerEncounterResult {
     pub total_pages: u16,
     pub matches: Vec<SummonerEncounterMatch>,
@@ -347,7 +347,7 @@ pub struct SummonerEncounterResult {
     pub encounter: Summoner,
 }
 
-#[derive(Clone, Serialize, Deserialize, Archive, Default)]
+#[derive(Clone, Encode, Decode, Default)]
 pub struct SummonerEncounterStats {
     pub avg_kills: f32,
     pub avg_deaths: f32,
@@ -357,7 +357,7 @@ pub struct SummonerEncounterStats {
     pub total_matches: u16,
 }
 
-#[derive(Clone, Serialize, Deserialize, Archive)]
+#[derive(Clone, Encode, Decode)]
 pub struct SummonerEncounterParticipant {
     pub summoner_id: i32,
     pub item0_id: u32,
@@ -380,7 +380,7 @@ pub struct SummonerEncounterParticipant {
     pub won: bool,
 }
 
-#[derive(Clone, Serialize, Deserialize, Archive)]
+#[derive(Clone, Encode, Decode)]
 pub struct SummonerEncounterMatch {
     pub match_id: i32,
     pub match_duration: Option<i32>,

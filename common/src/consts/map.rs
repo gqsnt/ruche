@@ -1,7 +1,7 @@
-use rkyv::{Archive, Deserialize, Serialize};
+use bitcode::{Decode, Encode};
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Archive, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Encode, Decode, Eq, PartialEq, Hash)]
 pub enum Map {
     SummonersRiftOriginalSummerVariant = 1,
     SummonersRiftOriginalAutumnVariant = 2,

@@ -1,7 +1,7 @@
-use rkyv::{Archive, Deserialize, Serialize};
+use bitcode::{Decode, Encode};
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, Archive)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Encode, Decode)]
 pub enum Queue {
     Custom,
     SummonersRift5v5BlindPickDeprecated2,

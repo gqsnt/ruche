@@ -132,7 +132,7 @@ dependencies = [
 [[package]]
 name = "any_spawner"
 version = "0.2.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "futures",
  "thiserror 2.0.4",
@@ -521,6 +521,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc827186963e592360843fb5ba4b973e145841266c1357f7180c43526f2e5b61"
 
 [[package]]
+name = "bitcode"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee1bce7608560cd4bf0296a4262d0dbf13e6bcec5ff2105724c8ab88cc7fc784"
+dependencies = [
+ "arrayvec",
+ "bitcode_derive",
+ "bytemuck",
+ "glam",
+ "serde",
+]
+
+[[package]]
+name = "bitcode_derive"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a539389a13af092cd345a2b47ae7dec12deb306d660b2223d25cd3419b253ebe"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.89",
+]
+
+[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -775,8 +799,9 @@ dependencies = [
 [[package]]
 name = "codee"
 version = "0.2.1"
-source = "git+https://github.com/gqsnt/codee_rkyv_8#99d81075c5758333591ddc3214b94937850f219c"
+source = "git+https://github.com/gqsnt/codee_rkyv_8?rev=7ad6ce92507d72ba9afc667c7054ae83c26c87d8#7ad6ce92507d72ba9afc667c7054ae83c26c87d8"
 dependencies = [
+ "bitcode",
  "rkyv",
  "serde",
  "serde_json",
@@ -805,8 +830,8 @@ checksum = "5b63caa9aa9397e2d9480a9b13673856c78d8ac123288526c37d7839f2a86990"
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "bitcode",
  "riven",
- "rkyv",
  "serde",
 ]
 
@@ -871,7 +896,7 @@ dependencies = [
 [[package]]
 name = "const_str_slice_concat"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 
 [[package]]
 name = "convert_case"
@@ -1076,7 +1101,7 @@ dependencies = [
 [[package]]
 name = "either_of"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "pin-project-lite",
 ]
@@ -1366,6 +1391,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07e28edb80900c19c28f1072f2e8aeca7fa06b23cd4169cefe1af5aa3260783f"
 
 [[package]]
+name = "glam"
+version = "0.29.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc46dd3ec48fdd8e693a98d2b8bafae273a2d54c1de02a2a7e3d57d501f39677"
+
+[[package]]
 name = "glob"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1636,7 +1667,7 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 [[package]]
 name = "hydration_context"
 version = "0.2.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "futures",
  "js-sys",
@@ -2078,7 +2109,7 @@ checksum = "03087c2bad5e1034e8cace5926dec053fb3790248370865f5117a7d0213354c8"
 [[package]]
 name = "leptos"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "any_spawner",
  "base64 0.22.1",
@@ -2114,7 +2145,7 @@ dependencies = [
 [[package]]
 name = "leptos_axum"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "any_spawner",
  "axum",
@@ -2137,7 +2168,7 @@ dependencies = [
 [[package]]
 name = "leptos_config"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "config",
  "regex",
@@ -2149,7 +2180,7 @@ dependencies = [
 [[package]]
 name = "leptos_dom"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "js-sys",
  "or_poisoned",
@@ -2163,7 +2194,7 @@ dependencies = [
 [[package]]
 name = "leptos_hot_reload"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "anyhow",
  "camino",
@@ -2180,7 +2211,7 @@ dependencies = [
 [[package]]
 name = "leptos_integration_utils"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "futures",
  "hydration_context",
@@ -2194,7 +2225,7 @@ dependencies = [
 [[package]]
 name = "leptos_macro"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "attribute-derive",
  "cfg-if",
@@ -2215,7 +2246,7 @@ dependencies = [
 [[package]]
 name = "leptos_meta"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "futures",
  "indexmap",
@@ -2230,7 +2261,7 @@ dependencies = [
 [[package]]
 name = "leptos_router"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "any_spawner",
  "either_of",
@@ -2254,7 +2285,7 @@ dependencies = [
 [[package]]
 name = "leptos_router_macro"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "proc-macro-error2",
  "proc-macro2",
@@ -2264,7 +2295,7 @@ dependencies = [
 [[package]]
 name = "leptos_server"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "any_spawner",
  "base64 0.22.1",
@@ -2573,7 +2604,7 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 [[package]]
 name = "next_tuple"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 
 [[package]]
 name = "nom"
@@ -2723,7 +2754,7 @@ dependencies = [
 [[package]]
 name = "oco_ref"
 version = "0.2.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "serde",
  "thiserror 2.0.4",
@@ -2782,7 +2813,7 @@ dependencies = [
 [[package]]
 name = "or_poisoned"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 
 [[package]]
 name = "overload"
@@ -3276,7 +3307,7 @@ dependencies = [
 [[package]]
 name = "reactive_graph"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "any_spawner",
  "async-lock",
@@ -3296,7 +3327,7 @@ dependencies = [
 [[package]]
 name = "reactive_stores"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "guardian",
  "itertools 0.13.0",
@@ -3310,7 +3341,7 @@ dependencies = [
 [[package]]
 name = "reactive_stores_macro"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "convert_case",
  "proc-macro-error2",
@@ -3576,6 +3607,7 @@ dependencies = [
  "axum",
  "axum-server",
  "bigdecimal",
+ "bitcode",
  "chrono",
  "common",
  "console_error_panic_hook",
@@ -3595,7 +3627,6 @@ dependencies = [
  "reactive_stores_macro",
  "reqwest 0.12.9",
  "riven",
- "rkyv",
  "rustls",
  "send_wrapper",
  "serde",
@@ -3860,9 +3891,10 @@ dependencies = [
 [[package]]
 name = "server_fn"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "axum",
+ "bitcode",
  "bytes",
  "const_format",
  "dashmap",
@@ -3896,7 +3928,7 @@ dependencies = [
 [[package]]
 name = "server_fn_macro"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "const_format",
  "convert_case",
@@ -3909,7 +3941,7 @@ dependencies = [
 [[package]]
 name = "server_fn_macro_default"
 version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "server_fn_macro",
  "syn 2.0.89",
@@ -4448,7 +4480,7 @@ dependencies = [
 [[package]]
 name = "tachys"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "any_spawner",
  "const_str_slice_concat",
@@ -4548,7 +4580,7 @@ dependencies = [
 [[package]]
 name = "throw_error"
 version = "0.2.0"
-source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=2a40374a0e8394cf79fcefbb801a88f2117771f1#2a40374a0e8394cf79fcefbb801a88f2117771f1"
+source = "git+https://github.com/gqsnt/leptos_codee_rkyv_8?rev=178cae690cbd0e2721ef05eb7d94a80ce67c1bad#178cae690cbd0e2721ef05eb7d94a80ce67c1bad"
 dependencies = [
  "pin-project-lite",
 ]

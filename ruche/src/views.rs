@@ -3,6 +3,7 @@ use leptos::prelude::{Children, ClassAttribute, Get, ReadSignal, Show};
 use leptos::{component, view, IntoView, Params};
 use leptos_router::params::Params;
 
+use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
 use common::consts::item::Item;
 use common::consts::perk::Perk;
@@ -10,7 +11,6 @@ use common::consts::summoner_spell::SummonerSpell;
 use common::consts::HasStaticBgAsset;
 use leptos::either::Either;
 use leptos::prelude::CustomAttribute;
-use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos_router::NavigateOptions;
 use std::fmt::{Debug, Formatter};
 
@@ -152,7 +152,7 @@ pub struct MatchFiltersSearch {
     pub end_date: Option<String>,
 }
 
-#[derive(Debug, Archive, Serialize, Deserialize, Default, PartialEq, Clone, Copy)]
+#[derive(Debug, Encode, Decode, Default, PartialEq, Clone, Copy)]
 pub struct BackEndMatchFiltersSearch {
     pub start_date: Option<CompactDate>,
     pub end_date: Option<CompactDate>,
@@ -199,7 +199,7 @@ pub fn parse_date(date: Option<String>) -> Option<CompactDate> {
     })
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Archive, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Encode, Decode)]
 pub struct CompactDate(u16);
 
 impl CompactDate {

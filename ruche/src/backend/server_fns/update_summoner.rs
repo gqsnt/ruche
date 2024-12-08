@@ -9,11 +9,11 @@ use common::consts::platform_route::PlatformRoute;
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos::server;
-use leptos::server_fn::codec::Rkyv;
+use leptos::server_fn::codec::Bitcode;
 #[cfg(feature = "ssr")]
 use std::string::ToString;
 
-#[server( input=Rkyv, output=Rkyv)]
+#[server( input=Bitcode, output=Bitcode)]
 pub async fn update_summoner(
     summoner_id: i32,
     game_name: String,

@@ -1,6 +1,6 @@
-use rkyv::{Archive, Deserialize, Serialize};
+use bitcode::{Decode, Encode};
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize, Archive)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Encode, Decode)]
 pub struct FixedSizeString<const N: usize>([u8; N]);
 
 impl<const N: usize> FixedSizeString<N> {

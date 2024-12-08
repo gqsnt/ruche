@@ -4,6 +4,7 @@ use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::utils::{summoner_url, ProPlayerSlug};
 use crate::views::summoner_page::summoner_nav::SummonerNav;
 use crate::views::{ImgSrc, PendingLoading};
+use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use common::consts::profile_icon::ProfileIcon;
 use common::consts::HasStaticSrcAsset;
@@ -11,7 +12,6 @@ use leptos::context::provide_context;
 use leptos::either::Either;
 use leptos::prelude::Read;
 use leptos::prelude::*;
-use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_params_map;
 
@@ -46,7 +46,7 @@ pub fn SummonerPage() -> impl IntoView {
     };
 
     // Update the summoner signal when resource changes
-    let summoner_resource = leptos::server::Resource::new_rkyv_blocking(
+    let summoner_resource = leptos::server::Resource::new_bitcode_blocking(
         move || (platform_type(), summoner_slug()),
         |(platform, summoner_slug)| async move {
             get_summoner(PlatformRoute::from(platform.as_str()), summoner_slug).await
@@ -219,7 +219,7 @@ pub fn SummonerInfo(
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Archive)]
+#[derive(Clone, PartialEq, Eq, Debug, Decode, Encode)]
 pub struct Summoner {
     pub id: i32,
     pub game_name: String,

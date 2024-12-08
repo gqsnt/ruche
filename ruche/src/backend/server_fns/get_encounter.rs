@@ -3,9 +3,9 @@ use crate::views::BackEndMatchFiltersSearch;
 use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos::server;
-use leptos::server_fn::codec::Rkyv;
+use leptos::server_fn::codec::Bitcode;
 
-#[server(input=Rkyv, output=Rkyv)]
+#[server(input=Bitcode, output=Bitcode)]
 pub async fn get_encounter(
     summoner_id: i32,
     page_number: u16,

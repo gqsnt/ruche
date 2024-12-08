@@ -12,6 +12,7 @@ use crate::views::{
     get_default_navigation_option, BackEndMatchFiltersSearch, ImgChampion, ImgItem, ImgPerk,
     ImgSummonerSpell,
 };
+use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
 use common::consts::item::Item;
 use common::consts::perk::Perk;
@@ -21,7 +22,6 @@ use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
 use leptos::logging::log;
 use leptos::prelude::*;
-use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 #[component]
@@ -42,7 +42,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
         }
     });
 
-    let matches_resource = Resource::new_rkyv(
+    let matches_resource = Resource::new_bitcode(
         move || {
             (
                 summoner_update_version.get().unwrap_or_default(),
@@ -458,14 +458,14 @@ pub fn MatchInfoCard(
     }
 }
 
-#[derive(Clone, Deserialize, Serialize, Default, Archive)]
+#[derive(Clone, Default, Encode, Decode)]
 pub struct GetSummonerMatchesResult {
     pub total_pages: u16,
     pub matches: Vec<SummonerMatch>,
     pub matches_result_info: MatchesResultInfo,
 }
 
-#[derive(Clone, Deserialize, Serialize, Default, Archive)]
+#[derive(Clone, Default, Encode, Decode)]
 pub struct MatchesResultInfo {
     pub avg_kills: f32,
     pub avg_deaths: f32,
@@ -474,7 +474,7 @@ pub struct MatchesResultInfo {
     pub total_matches: u16,
     pub total_wins: u16,
 }
-#[derive(Clone, Serialize, Deserialize, Archive)]
+#[derive(Clone, Encode, Decode)]
 pub struct SummonerMatch {
     pub participants: Vec<SummonerMatchParticipant>,
     pub summoner_id: i32,
@@ -504,7 +504,7 @@ pub struct SummonerMatch {
     pub platform: PlatformRoute,
 }
 
-#[derive(Clone, Serialize, Deserialize, Archive)]
+#[derive(Clone, Encode, Decode)]
 pub struct SummonerMatchParticipant {
     pub lol_match_id: i32,
     pub summoner_id: i32,

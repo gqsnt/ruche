@@ -8,12 +8,12 @@ use crate::views::summoner_page::Summoner;
 use crate::views::{
     get_default_navigation_option, BackEndMatchFiltersSearch, ImgSrc, PendingLoading,
 };
+use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use common::consts::profile_icon::ProfileIcon;
 use common::consts::HasStaticSrcAsset;
 use leptos::either::Either;
 use leptos::prelude::*;
-use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 
@@ -41,7 +41,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
         }
     });
 
-    let encounters_resource = Resource::new_rkyv(
+    let encounters_resource = Resource::new_bitcode(
         move || {
             (
                 summoner_update_version.get().unwrap_or_default(),
@@ -247,13 +247,13 @@ pub fn SummonerEncountersPage() -> impl IntoView {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Default, Archive)]
+#[derive(Clone, Default, Encode, Decode)]
 pub struct SummonerEncountersResult {
     pub total_pages: u16,
     pub encounters: Vec<SummonerEncountersSummoner>,
 }
 
-#[derive(Clone, Serialize, Deserialize, Archive)]
+#[derive(Clone, Encode, Decode)]
 pub struct SummonerEncountersSummoner {
     pub id: i32,
     pub match_count: u16,

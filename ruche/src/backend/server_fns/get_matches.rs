@@ -1,9 +1,9 @@
 use crate::views::summoner_page::summoner_matches_page::GetSummonerMatchesResult;
 use crate::views::BackEndMatchFiltersSearch;
 use leptos::prelude::*;
-use leptos::server_fn::codec::Rkyv;
+use leptos::server_fn::codec::Bitcode;
 
-#[server(input=Rkyv,output=Rkyv)]
+#[server(input=Bitcode,output=Bitcode)]
 pub async fn get_matches(
     summoner_id: i32,
     page_number: u16,

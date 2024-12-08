@@ -3,14 +3,15 @@ use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
 use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos::server;
-use leptos::server_fn::codec::Rkyv;
+use leptos::server_fn::codec::Bitcode;
+
 #[cfg(feature = "ssr")]
 use update_match_timeline::update_match_timeline;
 
 #[cfg(feature = "ssr")]
 pub mod update_match_timeline;
 
-#[server(input=Rkyv,output=Rkyv)]
+#[server(input=Bitcode,output=Bitcode)]
 pub async fn get_match_details(
     match_id: i32,
     summoner_id: Option<i32>,

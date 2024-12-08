@@ -4,10 +4,10 @@ use crate::views::summoner_page::match_details::match_details_build::MatchDetail
 use crate::views::summoner_page::match_details::match_details_overview::MatchDetailsOverview;
 use crate::views::summoner_page::match_details::match_details_team::MatchDetailsTeam;
 use crate::views::summoner_page::Summoner;
+use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use leptos::either::Either;
 use leptos::prelude::*;
-use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 use std::fmt::Formatter;
 
@@ -23,7 +23,7 @@ pub fn MatchDetails(
 ) -> impl IntoView {
     let summoner = expect_context::<Summoner>();
     let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
-    let match_details = Resource::new_rkyv(
+    let match_details = Resource::new_bitcode(
         move || {
             (
                 summoner_update_version.get().unwrap_or_default(),
@@ -104,7 +104,7 @@ pub fn MatchDetails(
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Archive)]
+#[derive(Clone, Decode, Encode)]
 pub struct LolMatchParticipantDetails {
     pub id: i32,
     pub lol_match_id: i32,
@@ -163,7 +163,7 @@ pub struct LolMatchTimeline {
 }
 
 #[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Deserialize, Serialize, Archive)]
+#[derive(Clone, Encode, Decode)]
 pub struct ItemEvent {
     pub item_id: u32,
     pub event_type: ItemEventType,
@@ -171,7 +171,7 @@ pub struct ItemEvent {
 
 #[repr(u8)]
 #[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Deserialize, Serialize, Archive, PartialEq)]
+#[derive(Clone, Encode, Decode, PartialEq)]
 pub enum ItemEventType {
     Purchased,
     Sold,
@@ -179,7 +179,7 @@ pub enum ItemEventType {
 
 #[repr(u8)]
 #[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Deserialize, Serialize, Archive, PartialEq, Copy)]
+#[derive(Clone, Encode, Decode, PartialEq, Copy)]
 pub enum Skill {
     Q = 1,
     W = 2,
