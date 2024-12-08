@@ -2,7 +2,6 @@ use leptos::prelude::ServerFnError;
 
 pub mod server_fns;
 
-
 #[cfg(feature = "ssr")]
 pub mod tasks;
 
@@ -15,9 +14,9 @@ pub type ServerResult<T> = Result<T, ServerFnError>;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use common::consts::platform_route::PlatformRoute;
     use crate::utils::DurationSince;
     use chrono::{NaiveDateTime, Utc};
+    use common::consts::platform_route::PlatformRoute;
     use http::status::StatusCode;
     use leptos::prelude::ServerFnError;
     use std::fmt::Formatter;
@@ -232,7 +231,7 @@ pub mod ssr {
                 PlatformRoute::TW2 => PlatformRouteDb::TW,
                 PlatformRoute::VN2 => PlatformRouteDb::VN,
                 PlatformRoute::PBE1 => PlatformRouteDb::PBE,
-                _=> PlatformRouteDb::EUW,
+                _ => PlatformRouteDb::EUW,
             }
         }
     }

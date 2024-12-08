@@ -20,10 +20,10 @@ pub async fn get_champions(
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::ssr::AppResult;
-    use common::consts::queue::Queue;
     use crate::views::summoner_page::summoner_champions_page::ChampionStats;
     use crate::views::BackEndMatchFiltersSearch;
     use bigdecimal::{BigDecimal, ToPrimitive};
+    use common::consts::queue::Queue;
     use itertools::Itertools;
     use sqlx::{FromRow, PgPool, QueryBuilder};
 

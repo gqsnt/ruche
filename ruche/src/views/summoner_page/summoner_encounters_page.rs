@@ -5,7 +5,9 @@ use crate::utils::{
 };
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::Summoner;
-use crate::views::{get_default_navigation_option, BackEndMatchFiltersSearch, ImgSrc, PendingLoading};
+use crate::views::{
+    get_default_navigation_option, BackEndMatchFiltersSearch, ImgSrc, PendingLoading,
+};
 use common::consts::platform_route::PlatformRoute;
 use common::consts::profile_icon::ProfileIcon;
 use common::consts::HasStaticSrcAsset;
@@ -39,8 +41,6 @@ pub fn SummonerEncountersPage() -> impl IntoView {
         }
     });
 
-
-
     let encounters_resource = Resource::new_rkyv(
         move || {
             (
@@ -49,12 +49,12 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                 match_filters_updated.get(),
                 summoner.id,
                 page_number(),
-                set_pending
+                set_pending,
             )
         },
         |(_, search_summoner, filters, summoner_id, page_number, set_pending_value)| async move {
             //println!("{:?} {:?} {:?}", filters, summoner.unwrap(), page_number);
-            let r= get_encounters(
+            let r = get_encounters(
                 summoner_id,
                 page_number.unwrap_or(1),
                 search_summoner,
@@ -63,7 +63,6 @@ pub fn SummonerEncountersPage() -> impl IntoView {
             .await;
             set_pending_value(false);
             r
-
         },
     );
 
@@ -94,9 +93,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                         set_search_summoner(Some(search_summoner_signal.get()));
                     }
                 >
-                    <PendingLoading pending>
-                                                    Search
-                                                </PendingLoading>
+                    <PendingLoading pending>Search</PendingLoading>
                 </button>
                 <button
                     class="my-button bg-red-700 hover:bg-red-800 text-gray-200"

@@ -1,12 +1,10 @@
 #[cfg(feature = "ssr")]
-use crate::backend::server_fns::get_encounter::ssr::{
-    find_summoner_puuid_by_id,
-};
+use crate::backend::server_fns::get_encounter::ssr::find_summoner_puuid_by_id;
 #[cfg(feature = "ssr")]
 use crate::backend::server_fns::search_summoner::ssr::insert_or_update_account_and_summoner;
-use common::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use crate::utils::summoner_url;
+use common::consts::platform_route::PlatformRoute;
 #[cfg(feature = "ssr")]
 use leptos::logging::log;
 use leptos::prelude::*;
@@ -21,7 +19,7 @@ pub async fn update_summoner(
     game_name: String,
     tag_line: String,
     platform_route: PlatformRoute,
-) -> Result<Option<(u16,u16)>, ServerFnError> {
+) -> Result<Option<(u16, u16)>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let riot_api = state.riot_api.clone();
     let max_matches = state.max_matches;
@@ -29,21 +27,25 @@ pub async fn update_summoner(
     let puuid = find_summoner_puuid_by_id(&db, summoner_id).await?;
     let (account, summoner) = tokio::join!(
         riot_api
-        .account_v1()
-        .get_by_puuid(platform_route.to_riven().to_regional(), puuid.as_str()),
+            .account_v1()
+            .get_by_puuid(platform_route.to_riven().to_regional(), puuid.as_str()),
         riot_api
-                .summoner_v4()
-                .get_by_puuid(platform_route.to_riven(), puuid.as_str())
+            .summoner_v4()
+            .get_by_puuid(platform_route.to_riven(), puuid.as_str())
     );
-    if let (Ok(account), Ok(summoner)) = (account, summoner){
+    if let (Ok(account), Ok(summoner)) = (account, summoner) {
         let inner_db = db.clone();
         let puuid = summoner.puuid.clone();
-        let lvl_profile_icon_id = (summoner.summoner_level as u16, summoner.profile_icon_id as u16);
+        let lvl_profile_icon_id = (
+            summoner.summoner_level as u16,
+            summoner.profile_icon_id as u16,
+        );
         let acc_game_name = account.game_name.clone().unwrap_or_default();
         let acc_tag_line = account.tag_line.clone().unwrap_or_default();
         tokio::spawn(async move {
             insert_or_update_account_and_summoner(&db, platform_route, account, summoner)
-                .await.unwrap();
+                .await
+                .unwrap();
             match ssr::update_summoner_default_matches(
                 inner_db,
                 riot_api,
@@ -51,7 +53,7 @@ pub async fn update_summoner(
                 platform_route.to_riven(),
                 max_matches,
             )
-                .await
+            .await
             {
                 Ok(_) => {}
                 Err(e) => {
@@ -68,13 +70,13 @@ pub async fn update_summoner(
                     acc_game_name.as_str(),
                     acc_tag_line.as_str(),
                 )
-                    .as_str(),
+                .as_str(),
             );
             Ok(None)
         } else {
             Ok(Some(lvl_profile_icon_id))
         }
-    }else{
+    } else {
         Err(ServerFnError::new("Summoner not found"))
     }
 }

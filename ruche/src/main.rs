@@ -1,8 +1,6 @@
-
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> ruche::backend::ssr::AppResult<()> {
-    use ruche::ssr::get_sitemap;
     use axum::routing::get;
     use axum::Router;
     use dashmap::DashMap;
@@ -10,6 +8,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
+    use memory_serve::{load_assets, CacheControl, MemoryServe};
     use ruche::app::*;
     use ruche::backend::live_game_cache::LiveGameCache;
     use ruche::backend::task_director::TaskDirector;
@@ -18,11 +17,11 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use ruche::backend::tasks::sse_broadcast_match_updated_cleanup::SummonerUpdatedSenderCleanupTask;
     use ruche::backend::tasks::update_matches::UpdateMatchesTask;
     use ruche::backend::tasks::update_pro_players::UpdateProPlayerTask;
+    use ruche::ssr::get_sitemap;
     use ruche::ssr::serve;
     use ruche::ssr::sse_broadcast_match_updated;
     use ruche::ssr::AppState;
     use ruche::ssr::{init_database, init_riot_api};
-    use memory_serve::{load_assets, CacheControl, MemoryServe};
     use std::net::SocketAddr;
     use std::sync::Arc;
     use tower_http::compression::predicate::NotForContentType;
@@ -30,8 +29,6 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use tower_http::compression::CompressionLayer;
     use tower_http::compression::Predicate;
     use tower_http::CompressionLevel;
-
-
 
     dotenv().ok();
     let conf = get_configuration(None).unwrap();
@@ -49,8 +46,12 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
             .parse()?,
     );
 
-    let lol_pro_task_on_startup=dotenv::var("LOL_PRO_TASK_ON_STARTUP").unwrap_or("false".to_string()).eq("true");
-    let site_map_task_on_startup=dotenv::var("SITE_MAP_TASK_ON_STARTUP").unwrap_or("false".to_string()).eq("true");
+    let lol_pro_task_on_startup = dotenv::var("LOL_PRO_TASK_ON_STARTUP")
+        .unwrap_or("false".to_string())
+        .eq("true");
+    let site_map_task_on_startup = dotenv::var("SITE_MAP_TASK_ON_STARTUP")
+        .unwrap_or("false".to_string())
+        .eq("true");
 
     log!("Starting Ruche as {}", env_type);
     log!("Update interval duration: {:?}", update_interval_duration);
@@ -91,10 +92,18 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         Arc::clone(&summoner_updated_sender),
         tokio::time::Duration::from_secs(10),
     ));
-    task_director.add_task(GenerateSiteMapTask::new(db.clone(), 3, site_map_task_on_startup));
     if is_prod {
-        task_director.add_task(UpdateProPlayerTask::new(db.clone(), riot_api.clone(), 2,lol_pro_task_on_startup));
-
+        task_director.add_task(GenerateSiteMapTask::new(
+            db.clone(),
+            3,
+            site_map_task_on_startup,
+        ));
+        task_director.add_task(UpdateProPlayerTask::new(
+            db.clone(),
+            riot_api.clone(),
+            2,
+            lol_pro_task_on_startup,
+        ));
     }
     tokio::spawn(async move {
         task_director.run().await;
@@ -126,7 +135,6 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
                 .cache_control(CacheControl::Custom("public, max-age=31536000"))
                 .into_router(),
         )
-
         .leptos_routes_with_context(
             &app_state,
             routes,
@@ -143,7 +151,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
             "/sse/match_updated/:summoner_id",
             get(sse_broadcast_match_updated),
         )
-        .route("/sitemap_index.xml", get(get_sitemap))
+        .route("/sitemap-index.xml", get(get_sitemap))
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(
             shell,
         ))
@@ -159,8 +167,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
                         .and(NotForContentType::SSE)
                         .and(NotForContentType::const_new("text/javascript"))
                         .and(NotForContentType::const_new("application/wasm"))
-                        .and(NotForContentType::const_new("text/css"))
-
+                        .and(NotForContentType::const_new("text/css")),
                 ),
         )
         .with_state(app_state);

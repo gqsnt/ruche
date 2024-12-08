@@ -1,15 +1,15 @@
-use std::path::PathBuf;
 use crate::backend::ssr::{AppResult, PlatformRouteDb};
 use crate::backend::task_director::Task;
 use crate::backend::tasks::calculate_next_run_to_fixed_start_hour;
-use common::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
 use crate::utils::summoner_url;
 use axum::async_trait;
 use chrono::{DateTime, FixedOffset, NaiveDateTime};
+use common::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
 use leptos::leptos_dom::log;
 use sitemap::structs::{SiteMapEntry, UrlEntry};
 use sitemap::writer::SiteMapWriter;
 use sqlx::PgPool;
+use std::path::PathBuf;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -24,10 +24,10 @@ pub struct GenerateSiteMapTask {
 }
 
 impl GenerateSiteMapTask {
-    pub fn new(db: PgPool, start_hour: u32, on_startup:bool) -> Self {
-        let next_run = if on_startup{
+    pub fn new(db: PgPool, start_hour: u32, on_startup: bool) -> Self {
+        let next_run = if on_startup {
             Instant::now()
-        }else{
+        } else {
             calculate_next_run_to_fixed_start_hour(start_hour)
         };
         Self {
@@ -83,30 +83,28 @@ impl Task for GenerateSiteMapTask {
     }
 }
 
-
-pub async fn generate_site_map_index(index:usize, urls:&[UrlEntry])->AppResult<()>{
-    let mut output =  Vec::<u8>::new();
+pub async fn generate_site_map_index(index: usize, urls: &[UrlEntry]) -> AppResult<()> {
+    let mut output = Vec::<u8>::new();
     {
         let writer = SiteMapWriter::new(&mut output);
         let mut url_writer = writer.start_urlset()?;
-        for url in urls{
+        for url in urls {
             url_writer.url(url.clone())?;
         }
         url_writer.end()?;
     }
-    let dest_path = PathBuf::from("target").join("site").join(format!("sitemap_index{}.xml.gz",index));
+    let dest_path = PathBuf::from("target")
+        .join("site")
+        .join(format!("sitemap-index{}.xml.gz", index));
     let output = flate2::write::GzEncoder::new(output, flate2::Compression::default());
     let output = output.finish()?;
     tokio::fs::write(dest_path, output).await?;
     Ok(())
 }
 
-
 pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
     let base_url = "https://ruche.lol";
-    let mut urls = vec![
-        get_site_map_url(base_url.to_string(), None),
-    ];
+    let mut urls = vec![get_site_map_url(base_url.to_string(), None)];
     for platform in PLATFORM_ROUTE_OPTIONS {
         get_site_map_url(format!("{}/platform/{}", base_url, platform), None);
     }
@@ -129,26 +127,27 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
         }
     }
 
-    let now  = chrono::Utc::now().fixed_offset();
+    let now = chrono::Utc::now().fixed_offset();
 
     let mut output = Vec::<u8>::new();
     {
         let writer = SiteMapWriter::new(&mut output);
         let mut url_writer = writer.start_sitemapindex()?;
 
-        for (idx, urls_) in urls.chunks(50000).enumerate(){
+        for (idx, urls_) in urls.chunks(50000).enumerate() {
             generate_site_map_index(idx, urls_).await?;
             url_writer.sitemap(
                 SiteMapEntry::builder()
-                    .loc(format!("{}/sitemap_index{}.xml.gz", base_url, idx))
+                    .loc(format!("{}/sitemap-index{}.xml.gz", base_url, idx))
                     .lastmod(now)
-                    .build()?
+                    .build()?,
             )?;
         }
         url_writer.end()?;
-
     }
-    let dest_path = PathBuf::from("target").join("site").join("sitemap_index.xml");
+    let dest_path = PathBuf::from("target")
+        .join("site")
+        .join("sitemap-index.xml");
     tokio::fs::write(dest_path, output).await?;
     Ok(())
 }
@@ -177,12 +176,7 @@ pub async fn get_platforms_summoners_taglines(
         .map_err(|e| e.into())
 }
 
-
-
-pub fn get_site_map_url(
-    loc: String,
-    lastmod: Option<DateTime<FixedOffset>>,
-) -> UrlEntry{
+pub fn get_site_map_url(loc: String, lastmod: Option<DateTime<FixedOffset>>) -> UrlEntry {
     let mut builder = UrlEntry::builder().loc(loc);
     if let Some(lastmod) = lastmod {
         builder = builder.lastmod(lastmod);

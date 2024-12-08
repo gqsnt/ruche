@@ -17,8 +17,6 @@ use leptos::prelude::*;
 use leptos::server_fn::rkyv::{Archive, Deserialize, Serialize};
 use leptos::{component, view, IntoView};
 
-
-
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {
     let summoner = expect_context::<Summoner>();
@@ -39,7 +37,7 @@ pub fn SummonerLivePage() -> impl IntoView {
             )
         },
         |(_, _, id, platform_type, set_pending_value)| async move {
-            let r=  get_live_game(id, PlatformRoute::from(platform_type.as_str())).await;
+            let r = get_live_game(id, PlatformRoute::from(platform_type.as_str())).await;
             set_pending_value(false);
             r
         },
@@ -60,18 +58,19 @@ pub fn SummonerLivePage() -> impl IntoView {
                 <button
                     class="my-button flex items-center"
                     on:click=move |_| {
-            set_pending(true);
-            set_refresh_signal(refresh_signal() + 1);
-        }
+                        set_pending(true);
+                        set_refresh_signal(refresh_signal() + 1);
+                    }
                 >
-                    <PendingLoading pending>
-                                                    Refresh
-                                                </PendingLoading>
+                    <PendingLoading pending>Refresh</PendingLoading>
                 </button>
             </div>
-            <Transition fallback=move || {
-                view! { <div class="text-center">Not In Live Game</div> }
-            } set_pending>
+            <Transition
+                fallback=move || {
+                    view! { <div class="text-center">Not In Live Game</div> }
+                }
+                set_pending
+            >
                 {move || Suspend::new(async move {
                     match live_game_resource.await {
                         Ok(Some(result)) => {

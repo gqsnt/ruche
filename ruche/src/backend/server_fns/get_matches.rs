@@ -25,17 +25,17 @@ pub async fn get_matches(
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::ssr::{format_duration_since, AppResult, PlatformRouteDb};
-    use common::consts::queue::Queue;
     use crate::views::summoner_page::summoner_matches_page::{
         GetSummonerMatchesResult, MatchesResultInfo, SummonerMatch, SummonerMatchParticipant,
     };
     use crate::views::BackEndMatchFiltersSearch;
     use bigdecimal::{BigDecimal, ToPrimitive};
     use chrono::NaiveDateTime;
+    use common::consts::queue::Queue;
     use itertools::Itertools;
 
-    use common::consts::platform_route::PlatformRoute;
     use crate::utils::{DurationSince, ProPlayerSlug, RiotMatchId};
+    use common::consts::platform_route::PlatformRoute;
     use sqlx::{FromRow, PgPool, QueryBuilder};
     use std::collections::HashMap;
 

@@ -9,6 +9,7 @@ pub const DB_CHUNK_SIZE: usize = 500;
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::live_game_cache;
+    use axum::body::Body;
     use axum::extract::{Host, Path, Request, State};
     use axum::handler::HandlerWithoutStateExt;
     use axum::response::sse::{Event, KeepAlive, Sse};
@@ -26,7 +27,6 @@ pub mod ssr {
     use std::path::PathBuf;
     use std::sync::Arc;
     use std::time::Duration;
-    use axum::body::Body;
     use tokio::sync::broadcast::Sender;
     use tokio::time;
     use tokio_stream::wrappers::BroadcastStream;
@@ -152,12 +152,9 @@ pub mod ssr {
         if !cert.exists() || !key.exists() {
             panic!("Certificate or key file not found");
         }
-        let config = RustlsConfig::from_pem_file(
-            cert,
-            key,
-        )
-        .await
-        .expect("failed to load rustls config");
+        let config = RustlsConfig::from_pem_file(cert, key)
+            .await
+            .expect("failed to load rustls config");
         log!("listening on {}", socket_addr);
         axum_server::bind_rustls(socket_addr, config)
             .serve(app.into_make_service())
@@ -210,20 +207,26 @@ pub mod ssr {
         Ok(())
     }
 
-    pub async fn get_sitemap(
-    ) -> impl IntoResponse {
-       match ServeFile::new(PathBuf::from("target").join("site").join("sitemap_index.xml"))
-           .oneshot(Request::new(Body::empty())).await {
-            Ok(mut resp) =>{
-                resp.headers_mut().insert(
-                    "Content-Type",
-                    "application/xml".parse().unwrap(),
-                );
+    pub async fn get_sitemap() -> impl IntoResponse {
+        match ServeFile::new(
+            PathBuf::from("target")
+                .join("site")
+                .join("sitemap-index.xml"),
+        )
+        .oneshot(Request::new(Body::empty()))
+        .await
+        {
+            Ok(mut resp) => {
+                resp.headers_mut()
+                    .insert("Content-Type", "application/xml".parse().unwrap());
                 Ok(resp.into_response())
-            },
+            }
             Err(e) => {
                 log!("Error serving sitemap: {}", e);
-                Err((StatusCode::INTERNAL_SERVER_ERROR, "Error serving sitemap".to_string()))
+                Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Error serving sitemap".to_string(),
+                ))
             }
         }
     }
