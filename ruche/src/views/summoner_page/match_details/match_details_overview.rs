@@ -117,7 +117,7 @@ pub fn MatchDetailsOverviewTable(
                                 <td class="pl-2.5 py-1">
                                     <ImgChampion
                                         champion
-                                        parent_class="w-8 h-8 sprite-wrapper".to_string()
+                                        parent_class="w-8 h-8 sprite-wrapper relative".to_string()
                                         class="rounded-full scale-66 block sprite-inner".to_string()
                                     >
                                         <span class="absolute left-[-3px] bottom-[-3px] w-[15px] h-[15px] bg-gray-600 rounded-full text-[10px] text-center">

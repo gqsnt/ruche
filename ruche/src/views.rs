@@ -61,26 +61,19 @@ pub fn ImgSrc(
 
 #[component]
 pub fn ImgBg(
-    #[prop(optional)]
-    alt:Option<String>,
     class:Option<String>,
     parent_class:Option<String>,
     children:Option<Children>
 ) -> impl IntoView {
     let class_ = class.unwrap_or_default();
-    let alt_ = alt.unwrap_or_default();
-    let default_view = view!{<div class=class_ aria-label=alt_ />};
+    let children = children.map(|c|c());
     view! {
         {
             match parent_class{
-                None => Either::Right(default_view),
-                Some(parent_class) => Either::Left(view!{<div class=parent_class>{default_view}</div>})
+                None => Either::Right(view!{<div class=class_ /> {children}}),
+                Some(parent_class) => Either::Left(view!{<div class=parent_class><div class=class_ />{children}</div>})
             }
         }
-        {match children {
-            Some(c) => Either::Left(c()),
-            None => Either::Right(()),
-        }}
     }
 }
 
@@ -101,7 +94,6 @@ pub fn ImgPerk(
             <ImgBg
                 class=class.map(|class| format!("{} {}" ,class, perk.get_class_name()))
                 parent_class=parent_class
-                alt=perk.to_string()
             children
             />
         }
@@ -124,7 +116,6 @@ pub fn ImgSummonerSpell(
             <ImgBg
                 class=class.map(|class| format!("{} {}" ,class, summoner_spell.get_class_name()))
                 parent_class=parent_class
-                alt=summoner_spell.to_string()
         children
             />
         }
@@ -143,7 +134,6 @@ pub fn ImgItem(
             <ImgBg
                 class=class.map(|class| format!("{} {}" ,class, item.get_class_name()))
                 parent_class=parent_class
-                alt=item.to_string()
                 children
             />
         }
@@ -164,7 +154,6 @@ pub fn ImgChampion(
             <ImgBg
                 class=class.map(|class| format!("{} {}" ,class, champion.get_class_name()))
                 parent_class=parent_class
-                alt=champion.to_str().to_string()
                 children
             />
         }
