@@ -98,8 +98,8 @@ Ruche is a cutting-edge League of Legends statistics platform designed for unpar
         - Modular components like `MatchFilters`, `Pagination`, `SummonerNav`, and `MatchDetails` for maintainability and reusability.
     - **State Management**
         - Employs context providers and reactive signals for efficient state handling.
-    - **Zero-Copy Serialization**
-        - Uses Rkyv for efficient data transfer between the backend and frontend, minimizing overhead.
+    - **Serialization/Deserialization**
+        - Employs Bitcode, a lightweight serialization library optimized for speed and compression with zstd
 
 ### Backend
 
@@ -137,8 +137,8 @@ Ruche is a cutting-edge League of Legends statistics platform designed for unpar
     - **Live Game Cache**
         - Thread-safe caching with `DashMap`.
         - Regular cleanup of expired entries to maintain performance.
-- **Zero-Copy Serialization**
-    - Rkyv enables zero-copy deserialization, reducing data transfer overhead.
+- **Serialization/Deserialization**
+    - Transitioned from serde to  rkyv to bitcode, favoring Bitcode for its size, performance, compatibility with zstd compression.
 
 ## Security and SEO
 ### Security Measures

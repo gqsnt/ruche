@@ -32,7 +32,7 @@ serde_json = {version = "1", optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
 rustls = { version = "0.23.16" , features = ["ring"], optional = true}
 
-leptos = { git="https://github.com/gqsnt/leptos_codee_rkyv_8"  ,rev="178cae690cbd0e2721ef05eb7d94a80ce67c1bad",features = ["nightly", "bitcode", "rkyv"] }
+leptos = { git="https://github.com/gqsnt/leptos_codee_rkyv_8"  ,rev="178cae690cbd0e2721ef05eb7d94a80ce67c1bad",features = ["nightly", "bitcode"] }
 leptos_axum = { git="https://github.com/gqsnt/leptos_codee_rkyv_8" ,rev="178cae690cbd0e2721ef05eb7d94a80ce67c1bad", optional = true}
 leptos_meta ={ git="https://github.com/gqsnt/leptos_codee_rkyv_8" ,rev="178cae690cbd0e2721ef05eb7d94a80ce67c1bad"}
 leptos_router = { git="https://github.com/gqsnt/leptos_codee_rkyv_8" ,rev="178cae690cbd0e2721ef05eb7d94a80ce67c1bad" ,features = ["nightly"] }
