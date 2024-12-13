@@ -23,7 +23,7 @@ Ruche is a cutting-edge League of Legends statistics platform designed for unpar
         - **Matches**: Dive deep into match histories with advanced filtering and sorting.
         - **Champions**: View aggregated statistics for champions played.
         - **Encounters**: See which summoners you've played with or against most frequently.
-        - **Live**: Access real-time game data if the summoner is currently in a game.
+        - **Live**: Access real-time game data if the summoner is currently in a game. A green indicator appears if the summoner is actively in a match.
         - **Encounter**: Analyze detailed stats for matches with a specific summoner.
 
 ### Match History
@@ -66,20 +66,25 @@ Ruche is a cutting-edge League of Legends statistics platform designed for unpar
 ### Live Games
 - **Real-Time Game Information**
     - View current game mode, map, game length, and participant details if the summoner is in a live game.
+- **'In Live Game' Indicator**
+    - The "Live" tab on the summoner profile page now turns green when the summoner is actively in a match.
+- **Automatic Refresh Interval**
+    - Live game cache is automatically updated at intervals defined by `LIVE_GAME_CACHE_UPDATE_INTERVAL` in your `.env` file.
+- **Refresh Button**
+    - A refresh button on the live game tab lets you bypass the cache and fetch the latest data directly from the Riot API, ensuring real-time accuracy.
 - **Participant Insights**
     - **Champion Picks**: See which champions are being played.
     - **Summoner Spells and Runes**: Detailed information on summoner spells and runes used.
     - **Player Statistics**
         - Encounter counts, ranked stats, and champion-specific stats for each participant.
-- **Refreshable Data**
-    - Manually refresh live game data to get the latest information.
 - **Optimized Caching**
     - Live game data is cached for improved performance and reduced API calls.
 
 ### Real-Time Updates
 - **Server-Sent Events (SSE)**
-  - Live updates on matches, champions, and encounters when backend data is updated.
-  - **Debounce Mechanism:** Limits updates to once per second to prevent client overload.
+  - **Summoner Matches Events**: SSE event when match with related summoner is updated back-end, update matches, champions, and encounters.
+  - **Live Game Status Events**: SSE event update ui and refresh live game page to reflect if a summoner is currently in a game, turning the "Live" navigation tab green.
+  - **Debounce Mechanism:** Limits updates to once per 500ms to prevent client overload.
   - **Efficient Subscription Management**: Inactive SSE subscriptions are periodically cleaned up to free resources.
 
 ### Advanced Filtering and Sorting
