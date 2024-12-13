@@ -16,7 +16,12 @@ pub fn SummonerSearchPage(is_summoner_page: Signal<bool>) -> impl IntoView {
 
     let game_name = move || query.read().get("game_name").unwrap_or_default();
     let tag_line = move || query.read().get("tag_line").unwrap_or_default();
-    let platform_type = move || params.read().get("platform_type").unwrap_or_default();
+    let platform_type = move || {
+        params
+            .read()
+            .get("platform_type")
+            .unwrap_or(PlatformRoute::EUW1.to_string())
+    };
 
     let game_name_node = NodeRef::<Input>::new();
     let tag_line_node = NodeRef::<Input>::new();

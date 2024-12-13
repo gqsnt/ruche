@@ -1,7 +1,7 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_champions::get_champions;
 use crate::utils::{calculate_and_format_kda, format_float_to_2digits, format_with_spaces};
-use crate::views::summoner_page::Summoner;
+use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner};
 use crate::views::{BackEndMatchFiltersSearch, ImgChampion};
 use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
@@ -13,7 +13,7 @@ use leptos::{component, view, IntoView};
 #[component]
 pub fn SummonerChampionsPage() -> impl IntoView {
     let summoner = expect_context::<Summoner>();
-    let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
+    let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
     let (table_sort, set_table_sort) =
@@ -24,7 +24,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
     let champions_resource = Resource::new_bitcode(
         move || {
             (
-                summoner_update_version.get().unwrap_or_default(),
+                sse_match_update_version.get().unwrap_or_default(),
                 match_filters_updated.get(),
                 summoner.id,
             )

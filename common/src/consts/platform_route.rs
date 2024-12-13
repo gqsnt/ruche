@@ -22,7 +22,7 @@ pub const PLATFORM_ROUTE_OPTIONS: [PlatformRoute; 16] = [
 /// Platform routes for League of Legends (LoL), Teamfight Tactics (TFT), and Legends of Runeterra (LoR).
 #[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
-    PartialEq, Eq, Hash, PartialOrd, Ord, Encode, Decode, Clone, Copy, Debug,
+    PartialEq, Eq, Hash, PartialOrd, Ord, Encode, Decode, Clone, Copy, Debug,Default
 )]
 #[repr(u8)]
 #[non_exhaustive]
@@ -40,6 +40,7 @@ pub enum PlatformRoute {
     /// Europe, West.
     ///
     /// `18` (riotapi-schema ID/repr)
+    #[default]
     EUW1 = 18,
 
     /// Japan.

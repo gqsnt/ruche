@@ -6,12 +6,15 @@ use crate::views::summoner_page::summoner_live_page::SummonerLivePage;
 use crate::views::summoner_page::summoner_matches_page::SummonerMatchesPage;
 
 use crate::views::get_default_navigation_option;
+use crate::views::summoner_page::SSEInLiveGame;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 
 #[component]
 pub fn SummonerNav() -> impl IntoView {
+    let sse_in_live_game = expect_context::<ReadSignal<SSEInLiveGame>>();
+
     let (tab, set_tab) =
         query_signal_with_options::<String>("tab", get_default_navigation_option());
 
@@ -34,6 +37,14 @@ pub fn SummonerNav() -> impl IntoView {
         set_tab(Some(tab.to_string()));
     };
 
+    let tab_class = move |is_default: bool, tab_: Tabs| {
+        if is_default || tab() == Some(tab_.to_string()) {
+            "active-tab"
+        } else {
+            "default-tab"
+        }
+    };
+
     view! {
         <div class="flex justify-center">
             <nav class="w-[768px]">
@@ -41,13 +52,7 @@ pub fn SummonerNav() -> impl IntoView {
                     <li class="-mb-px">
                         <button
                             on:click=move |_| switch_tab(Tabs::Matches)
-                            class=move || {
-                                if tab().is_none() || tab() == Some(Tabs::Matches.to_string()) {
-                                    "active-tab"
-                                } else {
-                                    "default-tab"
-                                }
-                            }
+                            class=move || tab_class(tab().is_none(), Tabs::Matches)
                         >
                             Matches
                         </button>
@@ -55,13 +60,7 @@ pub fn SummonerNav() -> impl IntoView {
                     <li class="-mb-px">
                         <button
                             on:click=move |_| switch_tab(Tabs::Champions)
-                            class=move || {
-                                if tab() == Some(Tabs::Champions.to_string()) {
-                                    "active-tab"
-                                } else {
-                                    "default-tab"
-                                }
-                            }
+                            class=move || tab_class(false, Tabs::Champions)
                         >
                             Champions
                         </button>
@@ -69,13 +68,7 @@ pub fn SummonerNav() -> impl IntoView {
                     <li class="-mb-px">
                         <button
                             on:click=move |_| switch_tab(Tabs::Encounters)
-                            class=move || {
-                                if tab() == Some(Tabs::Encounters.to_string()) {
-                                    "active-tab"
-                                } else {
-                                    "default-tab"
-                                }
-                            }
+                            class=move || tab_class(false, Tabs::Encounters)
                         >
                             Encounters
                         </button>
@@ -87,7 +80,11 @@ pub fn SummonerNav() -> impl IntoView {
                                 if tab() == Some(Tabs::Live.to_string()) {
                                     "active-tab"
                                 } else {
-                                    "default-tab"
+                                    if sse_in_live_game().0.is_some() {
+                                        "default-ig-tab"
+                                    } else {
+                                        "default-tab"
+                                    }
                                 }
                             }
                         >

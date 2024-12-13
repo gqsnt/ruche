@@ -2,9 +2,9 @@ use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_live_game::get_live_game;
 use crate::utils::{
     calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits,
-    summoner_encounter_url, summoner_url, ProPlayerSlug, Puuid, RiotMatchId,
+    summoner_encounter_url, summoner_url, ProPlayerSlug, RiotMatchId,
 };
-use crate::views::summoner_page::Summoner;
+use crate::views::summoner_page::{SSEInLiveGame, SSEMatchUpdateVersion, Summoner};
 use crate::views::{ImgChampion, ImgPerk, ImgSummonerSpell, PendingLoading};
 use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
@@ -20,24 +20,30 @@ use leptos::{component, view, IntoView};
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {
     let summoner = expect_context::<Summoner>();
-    let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
+    let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
+    let sse_in_live_game = expect_context::<ReadSignal<SSEInLiveGame>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
     let (refresh_signal, set_refresh_signal) = signal(0);
     let (pending, set_pending) = signal(false);
-
     let live_game_resource = Resource::new_bitcode(
         move || {
             (
-                summoner_update_version.get().unwrap_or_default(),
+                sse_in_live_game.get(),
+                sse_match_update_version.get().unwrap_or_default(),
                 refresh_signal.get(),
                 summoner.id,
                 summoner.platform.to_string(),
                 set_pending,
             )
         },
-        |(_, _, id, platform_type, set_pending_value)| async move {
-            let r = get_live_game(id, PlatformRoute::from(platform_type.as_str())).await;
+        |(_, _, refresh_version, id, platform_type, set_pending_value)| async move {
+            let r = get_live_game(
+                id,
+                PlatformRoute::from(platform_type.as_str()),
+                refresh_version > 0,
+            )
+            .await;
             set_pending_value(false);
             r
         },
@@ -362,7 +368,6 @@ pub struct LiveGameParticipant {
     pub perk_sub_style_id: u16,
     pub summoner_level: u16,
     pub platform: PlatformRoute,
-    pub puuid: Puuid,
     pub game_name: String,
     pub tag_line: String,
     pub pro_player_slug: Option<ProPlayerSlug>,

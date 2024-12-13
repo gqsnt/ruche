@@ -6,7 +6,7 @@ use crate::utils::{
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::summoner_matches_page::{MatchInfoCard, MatchSummonerCard};
-use crate::views::summoner_page::{Summoner, SummonerInfo};
+use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner, SummonerInfo};
 use crate::views::{get_default_navigation_option, BackEndMatchFiltersSearch};
 use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
@@ -23,7 +23,7 @@ use leptos_router::hooks::{query_signal_with_options, use_query_map};
 #[component]
 pub fn SummonerEncounterPage() -> impl IntoView {
     let summoner = expect_context::<Summoner>();
-    let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
+    let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
     let queries = use_query_map();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
     let (is_with, set_is_with) = signal(true);
@@ -37,7 +37,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
     let encounter_resource = leptos::server::Resource::new_bitcode(
         move || {
             (
-                summoner_update_version.get().unwrap_or_default(),
+                sse_match_update_version.get().unwrap_or_default(),
                 summoner.id,
                 match_filters_updated.get(),
                 page_number(),
@@ -112,19 +112,26 @@ pub fn SummonerEncounterPage() -> impl IntoView {
                                 Ok(
                                     Either::Right(
                                         view! {
-                                            <div class="flex w-full">
-                                                <div class="flex w-full my-card justify-between">
-                                                    <SummonerEncounterStat
+                                            <div class="flex flex-col">
+                                                <div class="flex w-full my-card justify-between mb-1">
+                                                    <SummonerEncounterInfo
                                                         summoner=encounter_result.summoner
+                                                        is_self=true
+                                                    />
+                                                    <SummonerEncounterInfo
+                                                        summoner=encounter_result.encounter
+                                                        is_self=false
+                                                    />
+                                                </div>
+                                                <div class="flex w-full my-card justify-between">
+                                                    <SummonerEncounterStats
                                                         stats=encounter_result.summoner_stats.clone()
                                                         is_self=true
                                                     />
-                                                    <SummonerEncounterStat
-                                                        summoner=encounter_result.encounter
+                                                    <SummonerEncounterStats
                                                         stats=encounter_result.encounter_stats.clone()
                                                         is_self=false
                                                     />
-
                                                 </div>
                                             </div>
                                             <div class="flex flex-col space-y-2 mt-2">
@@ -285,12 +292,7 @@ pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl I
 }
 
 #[component]
-pub fn SummonerEncounterStat(
-    summoner: Summoner,
-    stats: SummonerEncounterStats,
-    is_self: bool,
-) -> impl IntoView {
-    let (losses, winrate) = calculate_loss_and_win_rate(stats.total_wins, stats.total_matches);
+pub fn SummonerEncounterInfo(summoner: Summoner, is_self: bool) -> impl IntoView {
     let (summoner_level, _) = signal(summoner.summoner_level);
     let (profile_icon_id, _) = signal(summoner.profile_icon_id);
     view! {
@@ -304,33 +306,37 @@ pub fn SummonerEncounterStat(
                 profile_icon_signal=profile_icon_id
                 is_self=is_self
             />
-            <div
-                class="flex flex-col text-sm w-[40%] "
-                class=("ml-2", move || is_self)
-                class=("mr-2", move || !is_self)
-                class=("text-left", move || !is_self)
-                class=("text-right", move || is_self)
-            >
+        </div>
+    }
+}
+
+#[component]
+pub fn SummonerEncounterStats(stats: SummonerEncounterStats, is_self: bool) -> impl IntoView {
+    let (losses, winrate) = calculate_loss_and_win_rate(stats.total_wins, stats.total_matches);
+    view! {
+        <div
+            class="flex flex-col text-sm w-[40%] "
+            class=("ml-2", move || is_self)
+            class=("mr-2", move || !is_self)
+            class=("text-right", move || !is_self)
+            class=("text-left", move || is_self)
+        >
+            <div>
+                {stats.total_wins}W {losses as u16}L {stats.total_matches}G
+                {format_float_to_2digits(winrate.round())}%
+            </div>
+            <div class="flex flex-col">
                 <div>
-                    {stats.total_wins}W {losses as u16}L {stats.total_matches}G
-                    {format_float_to_2digits(winrate.round())}%
+                    {format!(
+                        "{}/{}/{}",
+                        format_float_to_2digits(stats.avg_kills),
+                        format_float_to_2digits(stats.avg_deaths),
+                        format_float_to_2digits(stats.avg_assists),
+                    )}
                 </div>
-                <div class="flex flex-col">
-                    <div>
-                        {format!(
-                            "{}/{}/{}",
-                            format_float_to_2digits(stats.avg_kills),
-                            format_float_to_2digits(stats.avg_deaths),
-                            format_float_to_2digits(stats.avg_assists),
-                        )}
-                    </div>
-                    <div>
-                        {calculate_and_format_kda(
-                            stats.avg_kills,
-                            stats.avg_deaths,
-                            stats.avg_assists,
-                        )}:1 P/kill {stats.avg_kill_participation}%
-                    </div>
+                <div>
+                    {calculate_and_format_kda(stats.avg_kills, stats.avg_deaths, stats.avg_assists)}
+                    :1 P/kill {stats.avg_kill_participation}%
                 </div>
             </div>
         </div>

@@ -7,7 +7,7 @@ use crate::utils::{
 };
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
-use crate::views::summoner_page::Summoner;
+use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner};
 use crate::views::{
     get_default_navigation_option, BackEndMatchFiltersSearch, ImgChampion, ImgItem, ImgPerk,
     ImgSummonerSpell,
@@ -27,7 +27,7 @@ use leptos_router::hooks::query_signal_with_options;
 #[component]
 pub fn SummonerMatchesPage() -> impl IntoView {
     let summoner = expect_context::<Summoner>();
-    let summoner_update_version = expect_context::<ReadSignal<Option<u16>>>();
+    let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
@@ -45,7 +45,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
     let matches_resource = Resource::new_bitcode(
         move || {
             (
-                summoner_update_version.get().unwrap_or_default(),
+                sse_match_update_version.get().unwrap_or_default(),
                 match_filters_updated.get(),
                 summoner.id,
                 page_number(),

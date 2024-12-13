@@ -12,14 +12,16 @@ use crate::backend::tasks::update_matches::bulk_summoners::{
     bulk_insert_summoners, bulk_update_summoners,
 };
 use crate::ssr::{RiotApiState, SubscriberMap};
+use crate::utils::{ProPlayerSlug, SSEEvent};
 use crate::DB_CHUNK_SIZE;
 use axum::async_trait;
 use chrono::NaiveDateTime;
 use common::consts;
+use common::consts::platform_route::PlatformRoute;
 use futures::stream::{FuturesOrdered, FuturesUnordered, StreamExt};
 use itertools::Itertools;
 use leptos::logging::log;
-use riven::consts::{Champion, PlatformRoute};
+use riven::consts::Champion;
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::{FromRow, PgPool};
 use std::collections::{HashMap, HashSet};
@@ -66,7 +68,7 @@ impl Task for UpdateMatchesTask {
                 Ok(summoner_ids) => {
                     for id in summoner_ids {
                         if let Some(sender) = self.update_matches_sender.get(&id) {
-                            let _ = sender.send(());
+                            let _ = sender.send(SSEEvent::SummonerMatches(0));
                         }
                     }
                     log!("Updated {} matches in {:?}", match_len, start.elapsed());
@@ -257,7 +259,7 @@ async fn update_matches_task(
             summoner_map.extend(
                 inserted_summoners
                     .into_iter()
-                    .map(|(puuid, (id, _, _, _))| (puuid, id))
+                    .map(|(puuid, summoner_full)| (puuid, summoner_full.id))
                     .collect::<HashMap<String, i32>>(),
             );
         }
@@ -429,6 +431,17 @@ pub struct TempSummoner {
     pub profile_icon_id: u16,
     pub updated_at: DateTime<Utc>,
 }
+#[derive(Clone, Debug)]
+pub struct SummonerFull {
+    pub id: i32,
+    pub game_name: String,
+    pub tag_line: String,
+    pub puuid: String,
+    pub platform: PlatformRoute,
+    pub summoner_level: i32,
+    pub profile_icon_id: u16,
+    pub pro_player_slug: Option<ProPlayerSlug>,
+}
 
 #[derive(Clone)]
 pub struct TempParticipant {
@@ -527,7 +540,7 @@ pub async fn resolve_summoner_conflicts(db: &PgPool, api: &RiotApiState) -> AppR
         );
         for record in conflict_records {
             // Obtenir les informations actuelles pour chaque `puuid`
-            let platform_route = PlatformRoute::from_str(&platform).unwrap();
+            let platform_route = PlatformRoute::from(platform.as_str());
             let riven_ptr =
                 riven::consts::PlatformRoute::from_str(&platform_route.to_string()).unwrap();
             if let Ok(account) = api

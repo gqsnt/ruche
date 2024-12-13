@@ -9,6 +9,9 @@ pub const DB_CHUNK_SIZE: usize = 500;
 #[cfg(feature = "ssr")]
 pub mod ssr {
     use crate::backend::live_game_cache;
+    use crate::backend::server_fns::get_encounter::ssr::find_summoner_puuid_by_id;
+    use crate::backend::server_fns::get_live_game::ssr;
+    use crate::utils::{Puuid, SSEEvent};
     use axum::body::Body;
     use axum::extract::{Host, Path, Request, State};
     use axum::handler::HandlerWithoutStateExt;
@@ -16,6 +19,7 @@ pub mod ssr {
     use axum::response::{IntoResponse, Redirect};
     use axum::Router;
     use axum_server::tls_rustls::RustlsConfig;
+    use common::consts::platform_route::PlatformRoute;
     use dashmap::DashMap;
     use http::{StatusCode, Uri};
     use leptos::logging::log;
@@ -35,7 +39,7 @@ pub mod ssr {
     use tower_http::services::ServeFile;
 
     pub type RiotApiState = Arc<RiotApi>;
-    pub type SubscriberMap = DashMap<i32, Sender<()>>;
+    pub type SubscriberMap = DashMap<i32, Sender<SSEEvent>>;
 
     #[derive(Clone, axum::extract::FromRef)]
     pub struct AppState {
@@ -79,21 +83,70 @@ pub mod ssr {
     }
 
     pub async fn sse_broadcast_match_updated(
-        Path(summoner_id): Path<i32>,
+        Path((platform_route, summoner_id)): Path<(String, i32)>,
         State(state): State<AppState>,
     ) -> Sse<impl tokio_stream::Stream<Item = Result<Event, std::convert::Infallible>>> {
-        // check if existing channel
-        let rx = state
-            .summoner_updated_sender
-            .entry(summoner_id)
-            .or_insert_with(|| {
-                let (sender, _) = tokio::sync::broadcast::channel(1);
-                sender
-            })
-            .value()
-            .subscribe();
-        let mut count = 0u16;
-        let debounce_interval = Duration::from_secs(1);
+        let (rx, mut pending_event) = {
+            let mut in_live_game = state
+                .live_game_cache
+                .summoner_id_to_game
+                .get(&summoner_id)
+                .is_some();
+            // check if existing channel exists
+            let entry = state
+                .summoner_updated_sender
+                .entry(summoner_id)
+                .or_insert_with(|| {
+                    let (sender, _) = tokio::sync::broadcast::channel(3);
+                    if state
+                        .live_game_cache
+                        .summoner_id_to_game
+                        .get(&summoner_id)
+                        .is_some()
+                    {
+                        in_live_game = true;
+                    } else {
+                        // fetch first time live game data
+                        let inner_sender = sender.clone();
+                        let db = state.db.clone();
+                        let riot_api = state.riot_api.clone();
+                        let live_game_cache = state.live_game_cache.clone();
+                        let platform_route = PlatformRoute::from(platform_route.as_str());
+                        tokio::spawn(async move {
+                            let puuid = Puuid::new(
+                                find_summoner_puuid_by_id(&db, summoner_id)
+                                    .await
+                                    .unwrap()
+                                    .as_str(),
+                            );
+                            let live_game =
+                                ssr::get_live_game_data(&db, &riot_api, puuid, platform_route)
+                                    .await
+                                    .unwrap();
+                            if let Some((summoner_ids, live_game)) = live_game {
+                                live_game_cache.set_game_data(
+                                    live_game.game_id,
+                                    summoner_ids,
+                                    live_game,
+                                );
+                                inner_sender.send(SSEEvent::LiveGame(Some(1))).unwrap();
+                            } else {
+                                inner_sender.send(SSEEvent::LiveGame(None)).unwrap();
+                            }
+                        });
+                    }
+
+                    sender
+                });
+
+            (
+                entry.value().subscribe(),
+                in_live_game.then(|| SSEEvent::LiveGame(Some(1))),
+            )
+        };
+        let mut summoner_matches_update_count = 0u16;
+        let mut summoner_live_game_version_update_count = 0u16;
+        let debounce_interval = Duration::from_millis(500);
 
         let stream = async_stream::stream! {
             // Use an interval timer to enforce the 1-second delay
@@ -101,24 +154,32 @@ pub mod ssr {
             interval.set_missed_tick_behavior(time::MissedTickBehavior::Delay);
             interval.reset();
 
-            // Create a variable to track pending updates
-            let mut pending_update = false;
 
             // Wrap the receiver in a stream
             let mut rx_stream = BroadcastStream::new(rx);
 
             loop {
                 tokio::select! {
-                    _ = rx_stream.next() => {
-                        pending_update = true;
+                    message = rx_stream.next() =>{
+                        pending_event= match message{
+                            Some(Ok(SSEEvent::SummonerMatches(_))) => {
+                                 summoner_matches_update_count += 1;
+                                Some(SSEEvent::SummonerMatches(summoner_matches_update_count))
+                            }
+                            Some(Ok(SSEEvent::LiveGame(Some(_))) ) => {
+                                summoner_live_game_version_update_count += 1;
+                                Some(SSEEvent::LiveGame(Some(summoner_live_game_version_update_count)))
+                            }
+                            Some(Ok(SSEEvent::LiveGame(None))) => {
+                                Some(SSEEvent::LiveGame(None))
+                            }
+                            _ => None,
+                        };
                     }
                     _ = interval.tick() => {
-                        if pending_update {
-                            // Send the update to the client
-                            count+=1;
-                            yield Ok(Event::default().data(count.to_string()));
-                            pending_update = false;
-                        }
+                          if let Some(event) = pending_event.take() {
+                                yield Ok(Event::default().data(event.to_string()));
+                          }
                     }
                     else => {
                         // Stream has ended

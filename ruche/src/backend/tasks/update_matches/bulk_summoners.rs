@@ -1,6 +1,7 @@
 use crate::backend::ssr::{AppResult, Id, PlatformRouteDb};
-use crate::backend::tasks::update_matches::TempSummoner;
+use crate::backend::tasks::update_matches::{SummonerFull, TempSummoner};
 use chrono::{DateTime, Utc};
+use common::consts::platform_route::PlatformRoute;
 use itertools::Itertools;
 use std::collections::HashMap;
 
@@ -48,7 +49,7 @@ pub async fn bulk_update_summoners(db: &sqlx::PgPool, summoners: &[TempSummoner]
 pub async fn bulk_insert_summoners(
     db: &sqlx::PgPool,
     summoners: &[TempSummoner],
-) -> AppResult<HashMap<String, (i32, String, String, String)>> {
+) -> AppResult<HashMap<String, SummonerFull>> {
     let (game_names, tag_lines, puuids, platforms, summoner_levels, profile_icon_ids, updated_ats) =
         summoners_multiunzip(summoners);
     let sql = r"
@@ -99,15 +100,19 @@ pub async fn bulk_insert_summoners(
             let summoner_index = summoners.get(index).unwrap();
             (
                 summoner_index.puuid.clone(),
-                (
-                    r.id,
-                    summoner_index.platform.clone(),
-                    summoner_index.game_name.clone(),
-                    summoner_index.tag_line.clone(),
-                ),
+                SummonerFull {
+                    id: r.id,
+                    game_name: summoner_index.game_name.clone(),
+                    tag_line: summoner_index.tag_line.clone(),
+                    puuid: summoner_index.puuid.clone(),
+                    platform: PlatformRoute::from(summoner_index.platform.as_str()),
+                    summoner_level: summoner_index.summoner_level,
+                    profile_icon_id: summoner_index.profile_icon_id,
+                    pro_player_slug: None,
+                },
             )
         })
-        .collect::<HashMap<String, (i32, String, String, String)>>())
+        .collect::<HashMap<String, SummonerFull>>())
 }
 
 #[allow(clippy::type_complexity)]

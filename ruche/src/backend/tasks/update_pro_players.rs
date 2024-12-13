@@ -7,7 +7,7 @@ use crate::ssr::RiotApiState;
 use crate::DB_CHUNK_SIZE;
 use axum::async_trait;
 use chrono::Utc;
-use common::consts;
+use common::consts::platform_route::PlatformRoute;
 use futures::stream::FuturesUnordered;
 use futures::{stream, StreamExt};
 use itertools::Itertools;
@@ -137,8 +137,7 @@ pub async fn update_pro_player(db: &PgPool, api: RiotApiState) -> AppResult<()> 
     // dl summoners
     let summoners_futures = not_found_accounts.into_iter().map(|pro_player_account| {
         let api = api.clone();
-        let pt = consts::platform_route::PlatformRoute::from(pro_player_account.platform.as_str())
-            .to_riven();
+        let pt = PlatformRoute::from(pro_player_account.platform).to_riven();
         async move {
             let response = api
                 .account_v1()
@@ -153,7 +152,7 @@ pub async fn update_pro_player(db: &PgPool, api: RiotApiState) -> AppResult<()> 
                     game_name: account.game_name.unwrap_or_default(),
                     tag_line: account.tag_line.unwrap_or_default(),
                     puuid: account.puuid,
-                    platform: pro_player_account.platform.clone(),
+                    platform: pro_player_account.platform.to_string(),
                     summoner_level: 0,
                     profile_icon_id: 0,
                     updated_at: Utc::now(),
@@ -177,14 +176,14 @@ pub async fn update_pro_player(db: &PgPool, api: RiotApiState) -> AppResult<()> 
         let inserted_summoners = bulk_insert_summoners(db, chunk).await?;
         inserted_summoners
             .into_iter()
-            .for_each(|(_, (id, platform, game_name, tag_line))| {
+            .for_each(|(_, summoner_full)| {
                 existing_summoner_ids.insert(
                     ProPlayerAccountShort {
-                        game_name,
-                        tag_line,
-                        platform,
+                        game_name: summoner_full.game_name,
+                        tag_line: summoner_full.tag_line,
+                        platform: summoner_full.platform,
                     },
-                    id,
+                    summoner_full.id,
                 );
             })
     }
@@ -238,7 +237,7 @@ pub async fn fetch_existing_accounts(
         .iter()
         .map(|player_short| {
             (
-                PlatformRouteDb::from_raw_str(player_short.platform.as_str()),
+                PlatformRouteDb::from(player_short.platform),
                 player_short.game_name.clone(),
                 player_short.tag_line.clone(),
             )
@@ -267,7 +266,7 @@ pub async fn fetch_existing_accounts(
                 ProPlayerAccountShort {
                     game_name,
                     tag_line,
-                    platform: platform.to_string(),
+                    platform: PlatformRoute::from(platform),
                 },
                 id,
             )
@@ -311,7 +310,7 @@ pub async fn get_pro_player_info(slug: &str) -> AppResult<ProPlayerShort> {
             .map(|account| ProPlayerAccountShort {
                 game_name: account.gamename,
                 tag_line: account.tagline,
-                platform: account.server,
+                platform: PlatformRoute::from(account.server.as_str()),
             })
             .collect(),
     })
@@ -345,7 +344,7 @@ pub struct ProPlayerShort {
 pub struct ProPlayerAccountShort {
     pub game_name: String,
     pub tag_line: String,
-    pub platform: String,
+    pub platform: PlatformRoute,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

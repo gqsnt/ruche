@@ -1,7 +1,7 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_summoner::get_summoner;
 use crate::backend::server_fns::update_summoner::UpdateSummoner;
-use crate::utils::{summoner_url, ProPlayerSlug};
+use crate::utils::{summoner_url, ProPlayerSlug, SSEEvent};
 use crate::views::summoner_page::summoner_nav::SummonerNav;
 use crate::views::{ImgSrc, PendingLoading};
 use bitcode::{Decode, Encode};
@@ -59,7 +59,14 @@ pub fn SummonerPage() -> impl IntoView {
                 Ok(summoner) => Either::Left({
                     let (level_signal, set_level) = signal(summoner.summoner_level);
                     let (profile_icon_signal, set_profile_icon) = signal(summoner.profile_icon_id);
+                    let (sse_match_update_version, set_sse_match_update_version) =
+                        signal(None::<SSEMatchUpdateVersion>);
+                    let (sse_in_live_game, set_sse_in_live_game) = signal(SSEInLiveGame::default());
+
+                    provide_context(sse_match_update_version);
+                    provide_context(sse_in_live_game);
                     provide_context(summoner.clone());
+
                     let update_summoner_action = ServerAction::<UpdateSummoner>::new();
                     let (pending, set_pending) = signal(false);
                     Effect::new(move |_| {
@@ -76,13 +83,19 @@ pub fn SummonerPage() -> impl IntoView {
                             }
                         }
                     });
+
                     #[cfg(not(feature = "ssr"))]
-                    let summoner_update_version = {
+                    let sse_event_signal = {
                         use futures::StreamExt;
                         use send_wrapper::SendWrapper;
                         let mut source = SendWrapper::new(
                             gloo_net::eventsource::futures::EventSource::new(
-                                format!("/sse/match_updated/{}", summoner.id,).as_str(),
+                                format!(
+                                    "/sse/match_updated/{}/{}",
+                                    summoner.platform.to_string(),
+                                    summoner.id
+                                )
+                                .as_str(),
                             )
                             .expect("couldn't connect to SSE stream"),
                         );
@@ -93,12 +106,14 @@ pub fn SummonerPage() -> impl IntoView {
                                 .filter_map(|value| async move {
                                     value
                                         .map(|(_, message_event)| {
-                                            message_event
-                                                .data()
-                                                .as_string()
-                                                .expect("failed to parse sse string")
-                                                .parse::<u16>()
-                                                .ok()
+                                            SSEEvent::from_string(
+                                                message_event
+                                                    .data()
+                                                    .as_string()
+                                                    .expect("failed to parse sse string")
+                                                    .as_str(),
+                                            )
+                                            .ok()
                                         })
                                         .ok()
                                         .flatten()
@@ -108,48 +123,57 @@ pub fn SummonerPage() -> impl IntoView {
                         s
                     };
                     #[cfg(feature = "ssr")]
-                    let (summoner_update_version, _) = signal(None::<u16>);
-                    provide_context(summoner_update_version);
+                    let (sse_event_signal, _) = signal(None::<SSEEvent>);
+
+                    Effect::new(move |_| {
+                        let event = sse_event_signal.get();
+                        match event {
+                            Some(SSEEvent::SummonerMatches(version)) => {
+                                set_sse_match_update_version(Some(SSEMatchUpdateVersion(version)));
+                            }
+                            Some(SSEEvent::LiveGame(version)) => {
+                                set_sse_in_live_game(SSEInLiveGame(version));
+                            }
+                            _ => {}
+                        }
+                    });
+
                     meta_store
                         .image()
                         .set(ProfileIcon(summoner.profile_icon_id).get_static_asset_url());
                     view! {
-                        {
-                            view! {
-                                <div class="flex justify-center">
-                                    <div class="flex w-[768px] my-2 space-x-2">
-                                        <SummonerInfo
-                                            game_name=summoner.game_name.clone()
-                                            tag_line=summoner.tag_line.clone()
-                                            pro_slug=summoner.pro_slug
-                                            platform=summoner.platform
-                                            level_signal=level_signal
-                                            profile_icon_signal=profile_icon_signal
-                                        />
-                                        <div class="h-fit">
+                        <div class="flex justify-center">
+                            <div class="flex w-[768px] my-2 space-x-2">
+                                <SummonerInfo
+                                    game_name=summoner.game_name.clone()
+                                    tag_line=summoner.tag_line.clone()
+                                    pro_slug=summoner.pro_slug
+                                    platform=summoner.platform
+                                    level_signal=level_signal
+                                    profile_icon_signal=profile_icon_signal
+                                />
+                                <div class="h-fit">
 
-                                            <button
-                                                class="my-button flex items-center"
-                                                on:click=move |e| {
-                                                    e.prevent_default();
-                                                    set_pending(true);
-                                                    update_summoner_action
-                                                        .dispatch(UpdateSummoner {
-                                                            summoner_id: summoner.id,
-                                                            game_name: summoner.game_name.clone(),
-                                                            tag_line: summoner.tag_line.clone(),
-                                                            platform_route: summoner.platform,
-                                                        });
-                                                }
-                                            >
-                                                <PendingLoading pending>Update</PendingLoading>
-                                            </button>
+                                    <button
+                                        class="my-button flex items-center"
+                                        on:click=move |e| {
+                                            e.prevent_default();
+                                            set_pending(true);
+                                            update_summoner_action
+                                                .dispatch(UpdateSummoner {
+                                                    summoner_id: summoner.id,
+                                                    game_name: summoner.game_name.clone(),
+                                                    tag_line: summoner.tag_line.clone(),
+                                                    platform_route: summoner.platform,
+                                                });
+                                        }
+                                    >
+                                        <PendingLoading pending>Update</PendingLoading>
+                                    </button>
 
-                                        </div>
-                                    </div>
                                 </div>
-                            }
-                        }
+                            </div>
+                        </div>
 
                         <SummonerNav />
                     }
@@ -177,7 +201,7 @@ pub fn SummonerInfo(
     #[prop(default = true)] is_self: bool,
 ) -> impl IntoView {
     view! {
-        <div class="flex item-center w-[210px]" class=("flex-row-reverse", !is_self)>
+        <div class="flex item-center max-w-[280px]" class=("flex-row-reverse", !is_self)>
             {move || {
                 view! {
                     <ImgSrc
@@ -239,3 +263,9 @@ impl Summoner {
         )
     }
 }
+
+#[derive(Clone, PartialEq, Eq, Copy, Default)]
+pub struct SSEMatchUpdateVersion(pub u16);
+
+#[derive(Clone, PartialEq, Eq, Copy, Default)]
+pub struct SSEInLiveGame(pub Option<u16>);

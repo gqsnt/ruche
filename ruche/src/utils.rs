@@ -40,6 +40,12 @@ pub type ProPlayerSlug = FixedSizeString<20>;
 pub type RiotMatchId = FixedSizeString<17>;
 pub type DurationSince = FixedSizeString<14>;
 
+impl RiotMatchId {
+    pub fn get_live_version(platform: &str, game_id: i64) -> Self {
+        Self::new(&format!("{}_{}", platform, game_id))
+    }
+}
+
 pub fn format_duration(seconds: Option<i32>) -> String {
     let seconds = seconds.unwrap_or(0);
     let hours = seconds / 3600;
@@ -166,4 +172,39 @@ pub fn round_to_2_decimal_places(value: f64) -> f64 {
 pub fn format_float_to_2digits(value: f32) -> String {
     let value = (value * 100.0).round() / 100.0;
     value.to_string()
+}
+
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum SSEEvent {
+    LiveGame(Option<u16>),
+    SummonerMatches(u16),
+}
+
+impl SSEEvent {
+    // Convert to a compact string representation
+    pub fn to_string(&self) -> String {
+        match self {
+            SSEEvent::LiveGame(value) => {
+                format!("0:{}", value.map(|v| v.to_string()).unwrap_or_default())
+            }
+            SSEEvent::SummonerMatches(value) => format!("1:{}", value),
+        }
+    }
+
+    // Parse from a compact string representation
+    pub fn from_string(s: &str) -> Result<Self, &'static str> {
+        let parts: Vec<&str> = s.split(':').collect();
+        if parts.len() != 2 {
+            return Err("Invalid number of parts");
+        }
+
+        match parts[0] {
+            "0" => Ok(SSEEvent::LiveGame(parts[1].parse::<u16>().ok())),
+            "1" => match parts[1].parse::<u16>() {
+                Ok(value) => Ok(SSEEvent::SummonerMatches(value)),
+                Err(_) => Err("Invalid u16 value"),
+            },
+            _ => Err("Invalid event type"),
+        }
+    }
 }

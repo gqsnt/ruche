@@ -61,7 +61,6 @@ pub mod ssr {
                ss.platform        as platform,
                ss.profile_icon_id as profile_icon_id,
                ss.summoner_level  as summoner_level,
-               ss.puuid           as puuid,
                ss.pro_player_slug as pro_slug
             FROM summoners as ss
             WHERE ss.game_name = $1
@@ -93,7 +92,6 @@ pub mod ssr {
         pub id: i32,
         pub game_name: String,
         pub tag_line: String,
-        pub puuid: String,
         pub platform: PlatformRouteDb,
         pub summoner_level: i32,
         pub profile_icon_id: i32,

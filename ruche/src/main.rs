@@ -13,7 +13,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use ruche::backend::live_game_cache::LiveGameCache;
     use ruche::backend::task_director::TaskDirector;
     use ruche::backend::tasks::generate_sitemap::GenerateSiteMapTask;
-    use ruche::backend::tasks::live_game_cache_cleanup::LiveGameCacheCleanupTask;
+    use ruche::backend::tasks::handle_live_game_cache::HandleLiveGameCacheTask;
     use ruche::backend::tasks::sse_broadcast_match_updated_cleanup::SummonerUpdatedSenderCleanupTask;
     use ruche::backend::tasks::update_matches::UpdateMatchesTask;
     use ruche::backend::tasks::update_pro_players::UpdateProPlayerTask;
@@ -46,6 +46,12 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
             .parse()?,
     );
 
+    let live_game_cache_interval_duration = tokio::time::Duration::from_secs(
+        dotenv::var("LIVE_GAME_CACHE_UPDATE_INTERVAL")
+            .unwrap_or_else(|_| "30".to_string())
+            .parse()?,
+    );
+
     let lol_pro_task_on_startup = dotenv::var("LOL_PRO_TASK_ON_STARTUP")
         .unwrap_or("false".to_string())
         .eq("true");
@@ -74,9 +80,12 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     let live_game_cache = Arc::new(LiveGameCache::new(std::time::Duration::from_secs(60)));
     let summoner_updated_sender = Arc::new(DashMap::new());
     let mut task_director = TaskDirector::default();
-    task_director.add_task(LiveGameCacheCleanupTask::new(
-        Arc::clone(&live_game_cache),
-        tokio::time::Duration::from_secs(30),
+    task_director.add_task(HandleLiveGameCacheTask::new(
+        db.clone(),
+        riot_api.clone(),
+        live_game_cache.clone(),
+        summoner_updated_sender.clone(),
+        live_game_cache_interval_duration,
     ));
 
     // download and update of match details are done in fast bg task. to not get concurrent mass insert/update
@@ -148,7 +157,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
             },
         )
         .route(
-            "/sse/match_updated/:summoner_id",
+            "/sse/match_updated/:platform_route/:summoner_id",
             get(sse_broadcast_match_updated),
         )
         .route("/sitemap-index.xml", get(get_sitemap))

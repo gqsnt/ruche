@@ -309,8 +309,6 @@ sudo systemctl restart postgresql
 
 
 ## Future Roadmap
-- **Enhanced Live Game Features**
-    - Use SSE to indicate if summoner is in live game on summoner page.
 - **Implement Team Tab in Match Details**
   - Provide an in-depth breakdown of team compositions and stats.
 - **Mobile Optimization**
