@@ -554,7 +554,7 @@ pub async fn resolve_summoner_conflicts(db: &PgPool, api: &RiotApiState) -> AppR
                 .get_by_puuid(riven_ptr.to_regional(), &record.puuid)
                 .await
             {
-                let game_name = account.game_name.unwrap_or_default();
+                let game_name = account.game_name.clone().unwrap_or_default();
 
                 if game_name.len() > 16{
                     log!("Summoner name too long: {}", game_name);
