@@ -131,8 +131,8 @@ pub fn summoners_multiunzip(
         .iter()
         .map(|s| {
             (
-                s.game_name.as_str(),
-                s.tag_line.as_str(),
+                s.game_name.trim(),
+                s.tag_line.trim(),
                 s.puuid.as_str(),
                 PlatformRouteDb::from_raw_str(s.platform.as_str()),
                 s.summoner_level,

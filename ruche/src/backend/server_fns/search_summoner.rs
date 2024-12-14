@@ -166,8 +166,8 @@ pub mod ssr {
         sqlx::query(
             "UPDATE summoners SET game_name = $1, tag_line = $2, puuid = $3, summoner_level = $4, profile_icon_id = $5, platform = $6, updated_at = NOW() WHERE id = $8"
         )
-            .bind(account.game_name.clone())
-            .bind(account.tag_line.clone())
+            .bind(account.game_name.unwrap_or_default().trim())
+            .bind(account.tag_line.unwrap_or_default().trim())
             .bind(summoner.puuid.clone())
             .bind(summoner.summoner_level as i32)
             .bind(summoner.profile_icon_id)
@@ -188,8 +188,8 @@ pub mod ssr {
         sqlx::query(
             "INSERT INTO summoners(game_name, tag_line, puuid, platform, summoner_level, profile_icon_id, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW())"
         )
-            .bind(account.game_name.clone())
-            .bind(account.tag_line.clone())
+            .bind(account.game_name.unwrap_or_default().trim())
+            .bind(account.tag_line.unwrap_or_default().trim())
             .bind(summoner.puuid.clone())
             .bind(PlatformRouteDb::from(platform_route))
             .bind(summoner.summoner_level as i32)

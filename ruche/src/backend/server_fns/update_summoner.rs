@@ -61,14 +61,14 @@ pub async fn update_summoner(
                 }
             };
         });
-        let has_changed = game_name.as_str() != acc_game_name.as_str()
-            || tag_line.as_str() != acc_tag_line.as_str();
+        let has_changed = game_name.as_str() != acc_game_name.trim()
+            || tag_line.as_str() != acc_tag_line.trim();
         if has_changed {
             leptos_axum::redirect(
                 summoner_url(
                     platform_route.as_ref(),
-                    acc_game_name.as_str(),
-                    acc_tag_line.as_str(),
+                    acc_game_name.trim(),
+                    acc_tag_line.trim(),
                 )
                 .as_str(),
             );

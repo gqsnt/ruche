@@ -273,10 +273,7 @@ async fn update_matches_task(
             bulk_update_summoners(db, chunk).await?;
         }
     }
-    let summoners_with_problem =resolve_summoner_conflicts(db, api).await?;
-    for puuid in summoners_with_problem {
-        summoner_map.remove(&puuid);
-    }
+    resolve_summoner_conflicts(db, api).await?;
 
     // Prepare participants for bulk insert
     let match_participants: Vec<TempParticipant> = match_datas
@@ -536,9 +533,8 @@ pub async fn fetch_existing_summoners(
     .collect::<HashMap<String, (i32, i32)>>())
 }
 
-pub async fn resolve_summoner_conflicts(db: &PgPool, api: &RiotApiState) -> AppResult<Vec<String>> {
+pub async fn resolve_summoner_conflicts(db: &PgPool, api: &RiotApiState) -> AppResult<()> {
     let conflicts = find_conflicting_summoners(db).await?;
-    let mut summoners_with_problem = Vec::new();
     for (game_name, tag_line, platform, conflict_records) in conflicts {
         println!(
             "Resolving conflict for {}#{} on {} with {:?}",
@@ -554,21 +550,12 @@ pub async fn resolve_summoner_conflicts(db: &PgPool, api: &RiotApiState) -> AppR
                 .get_by_puuid(riven_ptr.to_regional(), &record.puuid)
                 .await
             {
-                let game_name = account.game_name.clone().unwrap_or_default();
-
-                if game_name.len() > 16{
-                    log!("Summoner name too long: {}", game_name);
-                    summoners_with_problem.push(account.puuid);
-                    delete_summoner_account_by_id(db, record.id).await?;
-                }else{
-                    log!("Updating summoner name: {}", game_name);
-                    update_summoner_account_by_id(db, record.id, account).await?;
-                }
+                update_summoner_account_by_id(db, record.id, account).await?;
             }
         }
     }
 
-    Ok(summoners_with_problem)
+    Ok(())
 }
 
 pub async fn find_conflicting_summoners(
@@ -622,8 +609,8 @@ pub async fn update_summoner_account_by_id(
     sqlx::query(
         "UPDATE summoners SET game_name = $1, tag_line = $2 , updated_at = NOW() WHERE id = $3",
     )
-    .bind(account.game_name.unwrap_or_default())
-    .bind(account.tag_line.unwrap_or_default())
+    .bind(account.game_name.unwrap_or_default().trim())
+    .bind(account.tag_line.unwrap_or_default().trim())
     .bind(id)
     .execute(db)
     .await?;
