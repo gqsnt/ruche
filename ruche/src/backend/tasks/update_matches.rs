@@ -554,11 +554,14 @@ pub async fn resolve_summoner_conflicts(db: &PgPool, api: &RiotApiState) -> AppR
                 .get_by_puuid(riven_ptr.to_regional(), &record.puuid)
                 .await
             {
+                let game_name = account.game_name.unwrap_or_default();
 
-                if account.game_name.unwrap().len() > 16{
+                if game_name.len() > 16{
+                    log!("Summoner name too long: {}", game_name);
                     summoners_with_problem.push(account.puuid);
                     delete_summoner_account_by_id(db, record.id).await?;
                 }else{
+                    log!("Updating summoner name: {}", game_name);
                     update_summoner_account_by_id(db, record.id, account).await?;
                 }
             }
