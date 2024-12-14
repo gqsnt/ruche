@@ -194,14 +194,16 @@ async fn update_matches_task(
     let mut summoners_to_dl = Vec::new();
 
     for summoner in participants_map.values() {
+        let game_name = summoner.game_name.trim().clone();
+        let tag_line = summoner.tag_line.trim().clone();
         if let Some((_, existing_timestamp)) = existing_summoners.get(&summoner.puuid) {
             if summoner.updated_at.timestamp() > *existing_timestamp as i64
-                && !summoner.game_name.is_empty()
-                && !summoner.tag_line.is_empty()
+                && !game_name.is_empty()
+                && !tag_line.is_empty()
             {
                 summoners_to_update.push(summoner.clone());
             }
-        } else if summoner.game_name.is_empty() || summoner.tag_line.is_empty() {
+        } else if game_name.is_empty() || tag_line.is_empty() {
             summoners_to_dl.push(summoner.clone());
         } else {
             summoners_to_insert.push(summoner.clone());
