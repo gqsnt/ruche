@@ -273,7 +273,10 @@ async fn update_matches_task(
             bulk_update_summoners(db, chunk).await?;
         }
     }
-    resolve_summoner_conflicts(db, api).await?;
+    let summoners_with_problem =resolve_summoner_conflicts(db, api).await?;
+    for puuid in summoners_with_problem {
+        summoner_map.remove(&puuid);
+    }
 
     // Prepare participants for bulk insert
     let match_participants: Vec<TempParticipant> = match_datas
@@ -533,8 +536,9 @@ pub async fn fetch_existing_summoners(
     .collect::<HashMap<String, (i32, i32)>>())
 }
 
-pub async fn resolve_summoner_conflicts(db: &PgPool, api: &RiotApiState) -> AppResult<()> {
+pub async fn resolve_summoner_conflicts(db: &PgPool, api: &RiotApiState) -> AppResult<Vec<String>> {
     let conflicts = find_conflicting_summoners(db).await?;
+    let mut summoners_with_problem = Vec::new();
     for (game_name, tag_line, platform, conflict_records) in conflicts {
         println!(
             "Resolving conflict for {}#{} on {} with {:?}",
@@ -550,13 +554,18 @@ pub async fn resolve_summoner_conflicts(db: &PgPool, api: &RiotApiState) -> AppR
                 .get_by_puuid(riven_ptr.to_regional(), &record.puuid)
                 .await
             {
-                log!("Account: {:?}", account);
-                update_summoner_account_by_id(db, record.id, account).await?;
+
+                if account.game_name.unwrap().len() > 16{
+                    summoners_with_problem.push(account.puuid);
+                    delete_summoner_account_by_id(db, record.id).await?;
+                }else{
+                    update_summoner_account_by_id(db, record.id, account).await?;
+                }
             }
         }
     }
 
-    Ok(())
+    Ok(summoners_with_problem)
 }
 
 pub async fn find_conflicting_summoners(
@@ -592,6 +601,14 @@ pub async fn find_conflicting_summoners(
     .into_iter()
     .map(|((game_name, tag_line, platform), ids)| (game_name, tag_line, platform, ids))
     .collect())
+}
+
+pub async  fn delete_summoner_account_by_id(db: &PgPool, id: i32) -> AppResult<()> {
+    sqlx::query("DELETE FROM summoners WHERE id = $1")
+        .bind(id)
+        .execute(db)
+        .await?;
+    Ok(())
 }
 
 pub async fn update_summoner_account_by_id(
