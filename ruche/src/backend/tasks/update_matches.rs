@@ -550,6 +550,7 @@ pub async fn resolve_summoner_conflicts(db: &PgPool, api: &RiotApiState) -> AppR
                 .get_by_puuid(riven_ptr.to_regional(), &record.puuid)
                 .await
             {
+                log!("Account: {:?}", account);
                 update_summoner_account_by_id(db, record.id, account).await?;
             }
         }
