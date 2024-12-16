@@ -15,6 +15,7 @@ use sqlx::PgPool;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use leptos::logging::log;
 use tokio::time::{Duration, Instant};
 
 pub struct HandleLiveGameCacheTask {
@@ -121,7 +122,12 @@ impl Task for HandleLiveGameCacheTask {
         // send sse events
         for (summoner_id, event) in sse_events {
             if let Some(sender) = self.summoner_updated_sender.get(&summoner_id) {
-                let _ = sender.value().send(event);
+                match sender.value().send(event) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        log!("Error sending sse event: {:?}", e);
+                    }
+                }
             }
         }
     }
@@ -213,6 +219,7 @@ impl HandleLiveGameCacheTask {
                         }
                     })
                     .collect::<Vec<_>>(),
+
             )
             .await;
             for (summoner_id, live_game) in live_game_results {
