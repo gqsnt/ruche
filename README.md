@@ -138,12 +138,11 @@ Ruche is a cutting-edge League of Legends statistics platform designed for unpar
     - Bulk inserts and updates minimize database load.
     - Optimized query and efficient index speed up data retrieval.
 
-- **Caching Mechanisms**
-    - **Live Game Cache**
-        - Thread-safe caching with `DashMap`.
-        - Regular cleanup of expired entries to maintain performance.
+- **Caching Mechanisms with Thread-safe `DashMap`**
+    - SSE broadcaster
+    - Live Game Cache
 - **Serialization/Deserialization**
-    - Transitioned from serde to  rkyv to bitcode, favoring Bitcode for its size, performance, compatibility with zstd compression.
+    - Transitioned from serde to  rkyv to bitcode, favoring Bitcode for its size, performance and compatibility with zstd compression.
 
 ## Security and SEO
 ### Security Measures
@@ -178,8 +177,9 @@ Ruche is a cutting-edge League of Legends statistics platform designed for unpar
       - **Update Matches**: Fetches latest match details and resolves summoner conflicts.
       - **Update Pro Players**: Keeps professional player data up-to-date.
       - **Sitemap Generation**: Enhances SEO with daily sitemap updates.
-      - **Cache Cleanup (SSE broadcaster & Live Game)**: Maintains cache health for optimal performance.
-
+      - **Clean SSE broadcaster Cache**: Maintains cache health for optimal performance.
+      - **Handle Live Game Cache**: Manages live game data for real-time updates.
+      
 ### Frontend Components
 - **Reusable and Efficient**
     - Components designed for high reusability and minimal re-renders.
