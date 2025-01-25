@@ -113,11 +113,14 @@ pub struct ImageToDownload {
 
 pub async fn download_images() -> AppResult<(bool, bool, bool, bool, bool)> {
     let version = get_current_version().await?;
-    let (item_images, profile_icons_images, perks) = tokio::join!(
+    let (items_images, profile_icons_images, perks) = tokio::join!(
         get_items(version.clone()),
         update_profile_icons_image(version.clone()),
         get_perks(version.clone())
     );
+    let items_images = items_images?;
+    let profile_icons_images = profile_icons_images?;
+    let perks = perks?;
 
     let temp_path = get_temp_path();
     let temp_champion_path = temp_path.join(AssetType::Champion.get_path());
@@ -130,9 +133,7 @@ pub async fn download_images() -> AppResult<(bool, bool, bool, bool, bool)> {
                     url: format!(
                         "https://cdn.communitydragon.org/{}/champion/{}/square",
                         version.clone(),
-                        riven::consts::Champion::from(*id as i16)
-                            .identifier()
-                            .unwrap()
+                        id
                     ),
                     path,
                 });
@@ -161,12 +162,8 @@ pub async fn download_images() -> AppResult<(bool, bool, bool, bool, bool)> {
             None
         })
         .collect::<Vec<_>>();
-    let item_images = item_images?;
-    let profile_icons_images = profile_icons_images?;
-    let perks = perks?;
-
     let bool_result = (
-        !item_images.is_empty(),
+        !items_images.is_empty(),
         !profile_icons_images.is_empty(),
         !perks.is_empty(),
         !champion_images.is_empty(),
@@ -175,7 +172,7 @@ pub async fn download_images() -> AppResult<(bool, bool, bool, bool, bool)> {
 
     download_and_save_images(
         vec![
-            item_images,
+            items_images,
             profile_icons_images,
             perks,
             champion_images,
