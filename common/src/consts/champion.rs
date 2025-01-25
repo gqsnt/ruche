@@ -1,3 +1,4 @@
+
 #[repr(u16)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum Champion {
@@ -83,11 +84,12 @@ pub enum Champion {
     Malzahar = 90,
     Maokai = 57,
     MasterYi = 11,
+    Mel = 800,
     Milio = 902,
     MissFortune = 21,
     Mordekaiser = 82,
     Morgana = 25,
-    NAAFIRI = 950,
+    Naafiri = 950,
     Nami = 267,
     Nasus = 75,
     Nautilus = 111,
@@ -261,7 +263,7 @@ impl Champion {
             Champion::MissFortune => "MissFortune",
             Champion::Mordekaiser => "Mordekaiser",
             Champion::Morgana => "Morgana",
-            Champion::NAAFIRI => "NAAFIRI",
+            Champion::Naafiri => "NAAFIRI",
             Champion::Nami => "Nami",
             Champion::Nasus => "Nasus",
             Champion::Nautilus => "Nautilus",
@@ -346,6 +348,7 @@ impl Champion {
             Champion::Zoe => "Zoe",
             Champion::Zyra => "Zyra",
             Champion::UNKNOWN => "UNKNOWN",
+            Champion::Mel => "Mel",
         }
     }
 }
@@ -438,7 +441,8 @@ impl From<u16> for Champion {
             21 => Champion::MissFortune,
             82 => Champion::Mordekaiser,
             25 => Champion::Morgana,
-            950 => Champion::NAAFIRI,
+            950 => Champion::Naafiri,
+            800 => Champion::Mel,
             267 => Champion::Nami,
             75 => Champion::Nasus,
             111 => Champion::Nautilus,
@@ -619,7 +623,7 @@ pub static CHAMPION_OPTIONS: &[(u16, &str)] = &[
     (Champion::MissFortune as u16, Champion::MissFortune.to_str()),
     (Champion::Mordekaiser as u16, Champion::Mordekaiser.to_str()),
     (Champion::Morgana as u16, Champion::Morgana.to_str()),
-    (Champion::NAAFIRI as u16, Champion::NAAFIRI.to_str()),
+    (Champion::Naafiri as u16, Champion::Naafiri.to_str()),
     (Champion::Nami as u16, Champion::Nami.to_str()),
     (Champion::Nasus as u16, Champion::Nasus.to_str()),
     (Champion::Nautilus as u16, Champion::Nautilus.to_str()),
@@ -703,4 +707,5 @@ pub static CHAMPION_OPTIONS: &[(u16, &str)] = &[
     (Champion::Zilean as u16, Champion::Zilean.to_str()),
     (Champion::Zoe as u16, Champion::Zoe.to_str()),
     (Champion::Zyra as u16, Champion::Zyra.to_str()),
+    (Champion::Mel as u16, Champion::Mel.to_str()),
 ];
