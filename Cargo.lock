@@ -3431,8 +3431,9 @@ dependencies = [
 
 [[package]]
 name = "riven"
-version = "2.56.0"
-source = "git+https://github.com/gqsnt/RivenBrokengg#c5c17ad724586a809bee9a3698078debf57a331b"
+version = "2.61.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "671aa235e80329d3c753a850fdfaba63ba9bd79d7852a2addd1ef5a9418ee0d2"
 dependencies = [
  "futures",
  "gloo-timers",
@@ -3441,8 +3442,8 @@ dependencies = [
  "num_enum",
  "parking_lot",
  "reqwest 0.11.27",
- "scan_fmt",
  "serde",
+ "serde_derive",
  "serde_json",
  "serde_repr",
  "slab",
@@ -3637,12 +3638,6 @@ checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
 ]
-
-[[package]]
-name = "scan_fmt"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b53b0a5db882a8e2fdaae0a43f7b39e7e9082389e978398bdf223a55b581248"
 
 [[package]]
 name = "schannel"

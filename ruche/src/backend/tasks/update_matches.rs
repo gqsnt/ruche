@@ -173,7 +173,7 @@ async fn update_matches_task(
                 .or_insert_with(|| TempSummoner {
                     puuid: participant.puuid.clone(),
                     game_name: participant.riot_id_game_name.clone().unwrap_or_default(),
-                    tag_line: participant.riot_id_tagline.clone(),
+                    tag_line: participant.riot_id_tagline.clone().unwrap_or_default(),
                     platform: match_platform.to_string(),
                     summoner_level: participant.summoner_level,
                     profile_icon_id: participant.profile_icon as u16,
