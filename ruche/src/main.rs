@@ -1,4 +1,4 @@
-use ruche::backend::tasks::daily_sql_clean::DailySqlCleanTask;
+
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
@@ -19,6 +19,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use ruche::backend::tasks::sse_broadcast_match_updated_cleanup::SummonerUpdatedSenderCleanupTask;
     use ruche::backend::tasks::update_matches::UpdateMatchesTask;
     use ruche::backend::tasks::update_pro_players::UpdateProPlayerTask;
+    use ruche::backend::tasks::daily_sql_clean::DailySqlCleanTask;
     use ruche::ssr::get_sitemap;
     use ruche::ssr::serve;
     use ruche::ssr::sse_broadcast_match_updated;
