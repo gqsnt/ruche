@@ -104,16 +104,17 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         tokio::time::Duration::from_secs(10),
     ));
 
-    task_director.add_task(DailySqlCleanTask::new(
-        db.clone(),
-        1,
-        true
-    ));
+
     if is_prod {
         task_director.add_task(GenerateSiteMapTask::new(
             db.clone(),
             3,
             site_map_task_on_startup,
+        ));
+        task_director.add_task(DailySqlCleanTask::new(
+            db.clone(),
+            1,
+            true
         ));
         task_director.add_task(UpdateProPlayerTask::new(
             db.clone(),
