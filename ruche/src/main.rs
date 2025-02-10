@@ -1,3 +1,5 @@
+use ruche::backend::tasks::daily_sql_clean::DailySqlCleanTask;
+
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> ruche::backend::ssr::AppResult<()> {
@@ -101,6 +103,12 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         Arc::clone(&summoner_updated_sender),
         tokio::time::Duration::from_secs(10),
     ));
+
+    task_director.add_task(DailySqlCleanTask::new(
+        db.clone(),
+        1,
+        true
+    ));
     if is_prod {
         task_director.add_task(GenerateSiteMapTask::new(
             db.clone(),
@@ -135,14 +143,14 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
             MemoryServe::new(load_assets!("../target/site/assets"))
                 .enable_brotli(!cfg!(debug_assertions))
                 .cache_control(CacheControl::Custom("public, max-age=31536000"))
-                .into_router(),
+                .into_router::<AppState>()
         )
         .nest(
             "/pkg",
             MemoryServe::new(load_assets!("../target/site/pkg"))
                 .enable_brotli(!cfg!(debug_assertions))
                 .cache_control(CacheControl::Custom("public, max-age=31536000"))
-                .into_router(),
+                .into_router::<AppState>()
         )
         .leptos_routes_with_context(
             &app_state,

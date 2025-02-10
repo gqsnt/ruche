@@ -32,21 +32,22 @@ serde_json = {version = "1", optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
 rustls = { version = "0.23.16" , features = ["ring"], optional = true}
 
-leptos = { git="https://github.com/gqsnt/leptos_codee_rkyv_8"  ,rev="178cae690cbd0e2721ef05eb7d94a80ce67c1bad",features = ["nightly", "bitcode"] }
-leptos_axum = { git="https://github.com/gqsnt/leptos_codee_rkyv_8" ,rev="178cae690cbd0e2721ef05eb7d94a80ce67c1bad", optional = true}
-leptos_meta ={ git="https://github.com/gqsnt/leptos_codee_rkyv_8" ,rev="178cae690cbd0e2721ef05eb7d94a80ce67c1bad"}
-leptos_router = { git="https://github.com/gqsnt/leptos_codee_rkyv_8" ,rev="178cae690cbd0e2721ef05eb7d94a80ce67c1bad" ,features = ["nightly"] }
-reactive_stores ={git="https://github.com/gqsnt/leptos_codee_rkyv_8" ,rev="178cae690cbd0e2721ef05eb7d94a80ce67c1bad"}
-reactive_stores_macro = {git="https://github.com/gqsnt/leptos_codee_rkyv_8" ,rev="178cae690cbd0e2721ef05eb7d94a80ce67c1bad"}
+leptos = { git = "https://github.com/gqsnt/leptos_bitcode", rev = "3a6c7e3d14efa2ac6a6fe7ab10a6819cd804882c",features = ["nightly", "bitcode"] }
+leptos_axum = { git = "https://github.com/gqsnt/leptos_bitcode", rev = "3a6c7e3d14efa2ac6a6fe7ab10a6819cd804882c", optional = true}
+leptos_meta ={ git = "https://github.com/gqsnt/leptos_bitcode", rev = "3a6c7e3d14efa2ac6a6fe7ab10a6819cd804882c"}
+leptos_router = { git = "https://github.com/gqsnt/leptos_bitcode", rev = "3a6c7e3d14efa2ac6a6fe7ab10a6819cd804882c" ,features = ["nightly"] }
+reactive_stores ={git = "https://github.com/gqsnt/leptos_bitcode", rev = "3a6c7e3d14efa2ac6a6fe7ab10a6819cd804882c"}
+reactive_stores_macro = {git = "https://github.com/gqsnt/leptos_bitcode", rev = "3a6c7e3d14efa2ac6a6fe7ab10a6819cd804882c"}
 bitcode = {workspace = true}
-wasm-bindgen = "=0.2.97"
-itertools = "0.13.0"
+wasm-bindgen = "=0.2.100"
+itertools = "0.14.0"
 urlencoding = "2"
 http = "1"
 console_error_panic_hook = "0.1"
 send_wrapper = "0.6.0"
 gloo-net = "0.6.0"
 common={path="../common"}
+log = "0.4.22"
 
 
 
