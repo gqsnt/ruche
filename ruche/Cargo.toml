@@ -32,12 +32,12 @@ serde_json = {version = "1", optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
 rustls = { version = "0.23.16" , features = ["ring"], optional = true}
 
-leptos = { git = "https://github.com/gqsnt/leptos_bitcode", rev = "3a6c7e3d14efa2ac6a6fe7ab10a6819cd804882c",features = ["nightly", "bitcode"] }
-leptos_axum = { git = "https://github.com/gqsnt/leptos_bitcode", rev = "3a6c7e3d14efa2ac6a6fe7ab10a6819cd804882c", optional = true}
-leptos_meta ={ git = "https://github.com/gqsnt/leptos_bitcode", rev = "3a6c7e3d14efa2ac6a6fe7ab10a6819cd804882c"}
-leptos_router = { git = "https://github.com/gqsnt/leptos_bitcode", rev = "3a6c7e3d14efa2ac6a6fe7ab10a6819cd804882c" ,features = ["nightly"] }
-reactive_stores ={git = "https://github.com/gqsnt/leptos_bitcode", rev = "3a6c7e3d14efa2ac6a6fe7ab10a6819cd804882c"}
-reactive_stores_macro = {git = "https://github.com/gqsnt/leptos_bitcode", rev = "3a6c7e3d14efa2ac6a6fe7ab10a6819cd804882c"}
+leptos = { git = "https://github.com/gqsnt/leptos_bitcode_old",features = ["nightly", "bitcode"] }
+leptos_axum = { git = "https://github.com/gqsnt/leptos_bitcode_old", optional = true}
+leptos_meta ={ git = "https://github.com/gqsnt/leptos_bitcode_old"}
+leptos_router = { git = "https://github.com/gqsnt/leptos_bitcode_old" ,features = ["nightly"] }
+reactive_stores ={git = "https://github.com/gqsnt/leptos_bitcode_old"}
+reactive_stores_macro = {git = "https://github.com/gqsnt/leptos_bitcode_old"}
 bitcode = {workspace = true}
 wasm-bindgen = "=0.2.97"
 itertools = "0.14.0"
