@@ -6,7 +6,8 @@ After=multi-user.target
 Type=simple
 WorkingDirectory=/etc/ruche
 ExecStart=/etc/ruche/target/release/ruche-release
-
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
