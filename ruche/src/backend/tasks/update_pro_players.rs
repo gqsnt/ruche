@@ -351,257 +351,29 @@ pub struct ProPlayerAccountShort {
 #[serde(rename_all = "camelCase")]
 pub struct ProPlayer {
     pub slug: String,
-    pub country: String,
-    #[serde(rename = "other_countries")]
-    pub other_countries: Vec<String>,
-    pub position: String,
-    #[serde(rename = "total_games")]
-    pub total_games: i64,
-    pub score: i64,
-    pub team: Option<Team>,
-    pub account: Account,
-    pub leagues: Vec<League>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Team {
-    pub uuid: String,
-    pub name: String,
-    pub slug: String,
-    pub tag: String,
-    pub logo: Logo,
-}
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Logo {
-    #[serde(rename = "public_id")]
-    pub public_id: String,
-    pub version: i64,
-    pub url: String,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Account {
-    pub uuid: String,
-    pub server: String,
-    #[serde(rename = "profile_icon_id")]
-    pub profile_icon_id: String,
-    #[serde(rename = "summoner_name")]
-    pub summoner_name: String,
-    pub tier: String,
-    pub division: i64,
-    #[serde(rename = "league_points")]
-    pub league_points: i64,
-    pub games: i64,
-    pub winrate: f64,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct League {
-    pub uuid: String,
-    pub name: String,
-    pub slug: String,
-    pub shorthand: String,
-    pub servers: Vec<String>,
-    pub logo: Logo,
-}
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProProfile {
     pub uuid: String,
-    pub name: String,
     pub slug: String,
-    pub country: String,
-    #[serde(rename = "other_countries")]
-    pub other_countries: Vec<String>,
     #[serde(rename = "league_player")]
     pub league_player: LeaguePlayer,
-    pub staff: Value,
-    //#[serde(rename = "social_media")]
-    //pub social_media: SocialMedia,
-    pub leagues: Vec<League>,
-    //pub rankings: Rankings,
-    //#[serde(rename = "previous_teams")]
-    //pub previous_teams: Vec<PreviousTeam>,
-    pub teams: Vec<Team>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LeaguePlayer {
-    pub position: String,
-    pub score: i64,
     pub accounts: Vec<ProfileAccount>,
-    pub servers: Vec<String>,
-    #[serde(rename = "in_game")]
-    pub in_game: bool,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProfileAccount {
-    pub uuid: String,
     pub server: String,
-    #[serde(rename = "encrypted_puuid")]
-    pub encrypted_puuid: String,
-    #[serde(rename = "summoner_name")]
-    pub summoner_name: String,
     pub gamename: String,
     pub tagline: String,
-    //#[serde(rename = "summoner_names")]
-    //pub summoner_names: Vec<SummonerName>,
 }
-//
-// #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct SummonerName {
-//     pub name: String,
-//     #[serde(rename = "created_at")]
-//     pub created_at: String,
-// }
-//
-// #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct Rank {
-//     pub score: i64,
-//     pub tier: String,
-//     pub division: i64,
-//     #[serde(rename = "league_points")]
-//     pub league_points: i64,
-//     pub wins: i64,
-//     pub losses: i64,
-//     #[serde(rename = "created_at")]
-//     pub created_at: String,
-// }
-//
-// #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct Peak {
-//     pub score: i64,
-//     pub tier: String,
-//     pub division: i64,
-//     #[serde(rename = "league_points")]
-//     pub league_points: i64,
-//     pub wins: i64,
-//     pub losses: i64,
-//     #[serde(rename = "created_at")]
-//     pub created_at: String,
-// }
-//
-// #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct Season {
-//     pub id: String,
-//     pub end: End,
-//     pub peak: Peak,
-// }
-//
-// #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct End {
-//     pub score: i64,
-//     pub tier: String,
-//     pub division: i64,
-//     #[serde(rename = "league_points")]
-//     pub league_points: i64,
-//     pub wins: i64,
-//     pub losses: i64,
-//     #[serde(rename = "created_at")]
-//     pub created_at: String,
-// }
-//
-//
-// #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct SocialMedia {
-//     pub discord: Value,
-//     pub facebook: Value,
-//     pub instagram: Value,
-//     pub gamesoflegends: Value,
-//     pub leaguepedia: String,
-//     pub twitch: String,
-//     pub twitter: String,
-// }
-//
-// #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct Rankings {
-//     pub global: i64,
-//     pub country: i64,
-//     pub position: i64,
-//     #[serde(rename = "country_position")]
-//     pub country_position: i64,
-// }
-//
-// #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct PreviousTeam {
-//     pub uuid: String,
-//     pub tag: String,
-//     pub name: String,
-//     pub slug: String,
-//     pub logo: Logo,
-//     pub server: String,
-//     #[serde(rename = "join_date")]
-//     pub join_date: String,
-//     #[serde(rename = "leave_date")]
-//     pub leave_date: String,
-//     pub role: String,
-//     pub members: Vec<Member>,
-// }
-//
-// #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct Member {
-//     pub uuid: String,
-//     pub profile: String,
-//     pub name: String,
-//     pub slug: String,
-//     pub current: bool,
-//     pub country: String,
-//     pub role: String,
-//     pub position: String,
-//     #[serde(rename = "join_date")]
-//     pub join_date: String,
-//     #[serde(rename = "join_timestamp")]
-//     pub join_timestamp: i64,
-//     #[serde(rename = "leave_date")]
-//     pub leave_date: Option<String>,
-//     #[serde(rename = "leave_timestamp")]
-//     pub leave_timestamp: Option<i64>,
-// }
-//
-// #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct CurrentMember {
-//     pub uuid: String,
-//     pub profile: String,
-//     pub name: String,
-//     pub slug: String,
-//     pub current: bool,
-//     pub country: String,
-//     pub role: String,
-//     pub position: String,
-//     #[serde(rename = "join_date")]
-//     pub join_date: String,
-//     #[serde(rename = "join_timestamp")]
-//     pub join_timestamp: i64,
-//     #[serde(rename = "leave_date")]
-//     pub leave_date: Value,
-//     #[serde(rename = "leave_timestamp")]
-//     pub leave_timestamp: Value,
-//     #[serde(rename = "profile_icon_id")]
-//     pub profile_icon_id: Option<String>,
-//     #[serde(rename = "summoner_name")]
-//     pub summoner_name: Option<String>,
-//     pub tier: Option<String>,
-//     pub division: Option<i64>,
-//     #[serde(rename = "league_points")]
-//     pub league_points: Option<i64>,
-//     pub score: Option<i64>,
-// }
