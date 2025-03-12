@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-axum = { version = "0.7", optional = true, features = ["macros", "http2"]}
+axum = { version = "0.7.7", optional = true, features = ["macros", "http2"]}
 tokio = { workspace = true, optional = true }
 tokio-stream = { version = "0.1", optional = true, features = ["sync"] }
 tower = { version = "0.4", optional = true, features = ["util"] }
@@ -25,21 +25,20 @@ dashmap = {version = "6.1.0", optional = true}
 sitemap = {version = "0.4.1", optional = true}
 thiserror = {workspace = true, optional = true}
 serde={workspace = true, features = ["derive"], optional = true}
-async-stream = { version = "0.3.6", optional = true }
 flate2 = { version = "1.0.35", optional = true }
 
 serde_json = {version = "1", optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
 rustls = { version = "0.23.16" , features = ["ring"], optional = true}
 
-leptos = { git = "https://github.com/gqsnt/leptos_bitcode_old",features = ["nightly", "bitcode"] }
-leptos_axum = { git = "https://github.com/gqsnt/leptos_bitcode_old", optional = true}
-leptos_meta ={ git = "https://github.com/gqsnt/leptos_bitcode_old"}
-leptos_router = { git = "https://github.com/gqsnt/leptos_bitcode_old" ,features = ["nightly"] }
-reactive_stores ={git = "https://github.com/gqsnt/leptos_bitcode_old"}
-reactive_stores_macro = {git = "https://github.com/gqsnt/leptos_bitcode_old"}
+leptos = { git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6",features = ["nightly", "bitcode"] }
+leptos_axum = { git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6", optional = true}
+leptos_meta ={ git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6"}
+leptos_router = { git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6" ,features = ["nightly"] }
+reactive_stores ={git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6"}
+reactive_stores_macro = {git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6"}
 bitcode = {workspace = true}
-wasm-bindgen = "=0.2.97"
+wasm-bindgen = "=0.2.100"
 itertools = "0.14.0"
 urlencoding = "2"
 http = "1"
@@ -79,7 +78,6 @@ ssr = [
     "dep:rustls",
     "dep:serde_json",
     "dep:serde",
-    "dep:async-stream",
     "dep:flate2",
     "common/ssr"
 ]

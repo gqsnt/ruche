@@ -131,8 +131,8 @@ dependencies = [
 
 [[package]]
 name = "any_spawner"
-version = "0.2.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.2.1"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "futures",
  "thiserror 2.0.4",
@@ -218,28 +218,6 @@ dependencies = [
  "event-listener",
  "event-listener-strategy",
  "pin-project-lite",
-]
-
-[[package]]
-name = "async-stream"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b5a71a6f37880a80d1d7f19efd781e4b5de42c88f0722cc13bcb6cc2cfe8476"
-dependencies = [
- "async-stream-impl",
- "futures-core",
- "pin-project-lite",
-]
-
-[[package]]
-name = "async-stream-impl"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7c24de15d275a1ecfd47a380fb4d5ec9bfe0933f309ed5e705b775596a3574d"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.89",
 ]
 
 [[package]]
@@ -872,7 +850,7 @@ dependencies = [
 [[package]]
 name = "const_str_slice_concat"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 
 [[package]]
 name = "convert_case"
@@ -1066,6 +1044,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 
 [[package]]
+name = "dyn-clone"
+version = "1.0.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c7a8fb8a9fbf66c1f703fe16184d10ca0ee9d23be5b4436400408ba54a95005"
+
+[[package]]
 name = "either"
 version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1076,9 +1060,10 @@ dependencies = [
 
 [[package]]
 name = "either_of"
-version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.1.5"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
+ "paste",
  "pin-project-lite",
 ]
 
@@ -1642,14 +1627,13 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
 name = "hydration_context"
-version = "0.2.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.2.1"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "futures",
  "js-sys",
  "once_cell",
  "or_poisoned",
- "pin-project-lite",
  "serde",
  "throw_error",
  "wasm-bindgen",
@@ -2062,9 +2046,9 @@ checksum = "f5d4a7da358eff58addd2877a45865158f0d78c911d43a5784ceb7bbf52833b0"
 
 [[package]]
 name = "js-sys"
-version = "0.3.74"
+version = "0.3.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a865e038f7f6ed956f788f0d7d60c541fff74c7bd74272c5d4cf15c63743e705"
+checksum = "1cfaf33c695fc6e08064efbc1f72ec937429614f25eef83af942d0e227c3a28f"
 dependencies = [
  "once_cell",
  "wasm-bindgen",
@@ -2093,14 +2077,15 @@ checksum = "03087c2bad5e1034e8cace5926dec053fb3790248370865f5117a7d0213354c8"
 
 [[package]]
 name = "leptos"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "any_spawner",
  "base64 0.22.1",
  "cfg-if",
  "either_of",
  "futures",
+ "getrandom",
  "hydration_context",
  "leptos_config",
  "leptos_dom",
@@ -2129,8 +2114,8 @@ dependencies = [
 
 [[package]]
 name = "leptos_axum"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "any_spawner",
  "axum",
@@ -2152,8 +2137,8 @@ dependencies = [
 
 [[package]]
 name = "leptos_config"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "config",
  "regex",
@@ -2164,8 +2149,8 @@ dependencies = [
 
 [[package]]
 name = "leptos_dom"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "js-sys",
  "or_poisoned",
@@ -2178,8 +2163,8 @@ dependencies = [
 
 [[package]]
 name = "leptos_hot_reload"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "anyhow",
  "camino",
@@ -2195,8 +2180,8 @@ dependencies = [
 
 [[package]]
 name = "leptos_integration_utils"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "futures",
  "hydration_context",
@@ -2209,8 +2194,8 @@ dependencies = [
 
 [[package]]
 name = "leptos_macro"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "attribute-derive",
  "cfg-if",
@@ -2230,8 +2215,8 @@ dependencies = [
 
 [[package]]
 name = "leptos_meta"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "futures",
  "indexmap",
@@ -2245,8 +2230,8 @@ dependencies = [
 
 [[package]]
 name = "leptos_router"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "any_spawner",
  "either_of",
@@ -2269,18 +2254,19 @@ dependencies = [
 
 [[package]]
 name = "leptos_router_macro"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "proc-macro-error2",
  "proc-macro2",
  "quote",
+ "syn 2.0.89",
 ]
 
 [[package]]
 name = "leptos_server"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "any_spawner",
  "base64 0.22.1",
@@ -2569,7 +2555,7 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 [[package]]
 name = "next_tuple"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 
 [[package]]
 name = "nom"
@@ -2719,7 +2705,7 @@ dependencies = [
 [[package]]
 name = "oco_ref"
 version = "0.2.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "serde",
  "thiserror 2.0.4",
@@ -2778,7 +2764,7 @@ dependencies = [
 [[package]]
 name = "or_poisoned"
 version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 
 [[package]]
 name = "overload"
@@ -3242,8 +3228,8 @@ dependencies = [
 
 [[package]]
 name = "reactive_graph"
-version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.1.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "any_spawner",
  "async-lock",
@@ -3262,8 +3248,8 @@ dependencies = [
 
 [[package]]
 name = "reactive_stores"
-version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.1.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "guardian",
  "itertools 0.13.0",
@@ -3276,8 +3262,8 @@ dependencies = [
 
 [[package]]
 name = "reactive_stores_macro"
-version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.1.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "convert_case",
  "proc-macro-error2",
@@ -3501,7 +3487,6 @@ dependencies = [
 name = "ruche"
 version = "0.1.0"
 dependencies = [
- "async-stream",
  "axum",
  "axum-server",
  "bigdecimal",
@@ -3783,8 +3768,8 @@ dependencies = [
 
 [[package]]
 name = "server_fn"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "axum",
  "bitcode",
@@ -3819,8 +3804,8 @@ dependencies = [
 
 [[package]]
 name = "server_fn_macro"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "const_format",
  "convert_case",
@@ -3832,8 +3817,8 @@ dependencies = [
 
 [[package]]
 name = "server_fn_macro_default"
-version = "0.7.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.7.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "server_fn_macro",
  "syn 2.0.89",
@@ -4365,12 +4350,14 @@ dependencies = [
 
 [[package]]
 name = "tachys"
-version = "0.1.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+version = "0.1.7"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "any_spawner",
+ "async-trait",
  "const_str_slice_concat",
  "drain_filter_polyfill",
+ "dyn-clone",
  "either_of",
  "futures",
  "html-escape",
@@ -4466,7 +4453,7 @@ dependencies = [
 [[package]]
 name = "throw_error"
 version = "0.2.0"
-source = "git+https://github.com/gqsnt/leptos_bitcode_old#abac5aeefc72245355fe22f8a1848b1271d46a71"
+source = "git+https://github.com/gqsnt/leptos-bitcode?rev=30b3e1032be95a2ef4da2cd47fac037afc0defb6#30b3e1032be95a2ef4da2cd47fac037afc0defb6"
 dependencies = [
  "pin-project-lite",
 ]
@@ -4965,24 +4952,24 @@ checksum = "b8dad83b4f25e74f184f64c43b150b91efe7647395b42289f38e50566d82855b"
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.97"
+version = "0.2.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d15e63b4482863c109d70a7b8706c1e364eb6ea449b201a76c5b89cedcec2d5c"
+checksum = "1edc8929d7499fc4e8f0be2262a241556cfc54a0bea223790e71446f2aab1ef5"
 dependencies = [
  "cfg-if",
  "once_cell",
+ "rustversion",
  "wasm-bindgen-macro",
 ]
 
 [[package]]
 name = "wasm-bindgen-backend"
-version = "0.2.97"
+version = "0.2.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d36ef12e3aaca16ddd3f67922bc63e48e953f126de60bd33ccc0101ef9998cd"
+checksum = "2f0a0651a5c2bc21487bde11ee802ccaf4c51935d0d3d42a6101f98161700bc6"
 dependencies = [
  "bumpalo",
  "log",
- "once_cell",
  "proc-macro2",
  "quote",
  "syn 2.0.89",
@@ -4991,9 +4978,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-futures"
-version = "0.4.47"
+version = "0.4.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9dfaf8f50e5f293737ee323940c7d8b08a66a95a419223d9f41610ca08b0833d"
+checksum = "555d470ec0bc3bb57890405e5d4322cc9ea83cebb085523ced7be4144dac1e61"
 dependencies = [
  "cfg-if",
  "js-sys",
@@ -5004,9 +4991,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.97"
+version = "0.2.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "705440e08b42d3e4b36de7d66c944be628d579796b8090bfa3471478a2260051"
+checksum = "7fe63fc6d09ed3792bd0897b314f53de8e16568c2b3f7982f468c0bf9bd0b407"
 dependencies = [
  "quote",
  "wasm-bindgen-macro-support",
@@ -5014,9 +5001,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.97"
+version = "0.2.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98c9ae5a76e46f4deecd0f0255cc223cfa18dc9b261213b8aa0c7b36f61b3f1d"
+checksum = "8ae87ea40c9f689fc23f209965b6fb8a99ad69aeeb0231408be24920604395de"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5027,9 +5014,12 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.97"
+version = "0.2.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ee99da9c5ba11bd675621338ef6fa52296b76b83305e9b6e5c77d4c286d6d49"
+checksum = "1a05d73b933a847d6cccdda8f838a22ff101ad9bf93e33684f39c1f5f0eece3d"
+dependencies = [
+ "unicode-ident",
+]
 
 [[package]]
 name = "wasm-streams"
@@ -5046,9 +5036,9 @@ dependencies = [
 
 [[package]]
 name = "web-sys"
-version = "0.3.74"
+version = "0.3.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a98bc3c33f0fe7e59ad7cd041b89034fa82a7c2d4365ca538dda6cdaf513863c"
+checksum = "33b6dd2ef9186f1f2072e409e99cd22a975331a6b3591b12c764e0e55c60d5d2"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
