@@ -8,7 +8,7 @@ SERVICE_NAME="ruche.service"
 git pull
 
 # Set environment variable for Leptos optimization
-export LEPTOS_WASM_OPT_VERSION=version_119
+export LEPTOS_TAILWIND_VERSION=v3.4.14
 
 # Build assets and application
 cargo run --release --bin asset-generation
