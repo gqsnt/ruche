@@ -2,6 +2,7 @@ use crate::backend::ssr::AppResult;
 use crate::backend::tasks::update_matches::LolMatchNotUpdated;
 use crate::utils::version_to_major_minor;
 use itertools::Itertools;
+use leptos::logging::log;
 use riven::models::match_v5::Match;
 use sqlx::PgPool;
 
@@ -50,6 +51,13 @@ pub async fn bulk_update_matches(
     ) = matches
         .iter()
         .map(|(x, _)| {
+            log!(
+                "Match: Queue: {:?}, Map: {:?}, Version: {:?}, Mode: {:?}",
+                x.info.queue_id.0,
+                x.info.map_id.0,
+                x.info.game_version,
+                x.info.game_mode
+            );
             (
                 x.metadata.match_id.as_str(),
                 chrono::DateTime::from_timestamp_millis(x.info.game_start_timestamp)
