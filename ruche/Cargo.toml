@@ -39,7 +39,7 @@ leptos_router = { git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1
 reactive_stores ={git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6"}
 reactive_stores_macro = {git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6"}
 bitcode = {workspace = true}
-wasm-bindgen = "=0.2.100"
+wasm-bindgen = "0.2"
 itertools = "0.14.0"
 urlencoding = "2"
 http = "1"

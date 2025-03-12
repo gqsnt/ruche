@@ -222,8 +222,8 @@ rustup target add wasm32-unknown-unknown;
 # Install wasm optimization tools/ run it if you encounter error with js `failed to grow table`
 cargo install wasm-opt;
 
-# Install cargo leptos with wasm-bindgen=0.2.97
-cargo install --git https://github.com/gqsnt/cargo-leptos cargo-leptos;
+# Install cargo leptos
+cargo install cargo-leptos;
 
 # Clone the repository
 git clone https://github.com/gqsnt/ruche.git;
