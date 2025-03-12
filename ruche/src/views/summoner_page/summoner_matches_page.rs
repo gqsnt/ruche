@@ -161,10 +161,10 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
     let primary_perk_selection = Perk::from(match_.perk_primary_selection_id);
     let sub_perk_style = Perk::from(match_.perk_sub_style_id);
     if primary_perk_selection == Perk::UNKNOWN {
-        log!("{:?}", match_.perk_primary_selection_id);
+        //log!("{:?}", match_.perk_primary_selection_id);
     }
     if sub_perk_style == Perk::UNKNOWN {
-        log!("{:?}", match_.perk_sub_style_id);
+        //log!("{:?}", match_.perk_sub_style_id);
     }
     let items = [
         match_.item0_id,
