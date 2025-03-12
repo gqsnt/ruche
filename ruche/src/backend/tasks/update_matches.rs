@@ -132,15 +132,14 @@ async fn update_matches_task(
     });
 
     let match_raw_datas: Vec<_> = FuturesOrdered::from_iter(match_data_futures)
-        .filter_map(|result| async move { result.ok() })
         .collect()
         .await;
 
-    let (trashed_matches, match_datas): (Vec<_>, Vec<_>) = match_raw_datas
+    let ( trashed_matches, match_datas): (Vec<_>, Vec<_>) = match_raw_datas
         .into_iter()
         .zip(matches_to_update.into_iter())
         .partition(|(match_, _)| {
-            if let Some(match_) = match_ {
+            if let Ok(Some(match_)) = match_ {
                 match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
                     || match_.info.game_version.is_empty()
                     || match_.info.game_id == 0
@@ -148,9 +147,13 @@ async fn update_matches_task(
                 true
             }
         });
+    let trashed_matches = trashed_matches
+        .into_iter()
+        .map(|(match_, match_not_updated)| (match_.unwrap(),match_not_updated))
+        .collect();
     let match_datas = match_datas
         .into_iter()
-        .map(|(match_, match_not_updated)| (match_.unwrap(), match_not_updated))
+        .map(|(match_, match_not_updated)| (match_.unwrap().unwrap(), match_not_updated))
         .collect_vec();
 
     // Collect TempSummoner data from match data

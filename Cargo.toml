@@ -1,4 +1,4 @@
-cargo-features = ["profile-rustflags"]
+#cargo-features = ["profile-rustflags"]
 [workspace]
 members = ["common", "asset-generation", "ruche"]
 resolver = "2"
@@ -20,7 +20,7 @@ clap= { version = "4", features = ["derive"] }
 panic = "abort"
 lto = true
 codegen-units = 1
-rustflags=["-Ctarget-cpu=native"]
+#rustflags=["-Ctarget-cpu=native"]
 
 
 [profile.wasm-release]
@@ -29,4 +29,4 @@ opt-level = 'z'
 lto = true
 codegen-units = 1
 panic = "abort"
-rustflags=["-Zfmt-debug=none", "-Zlocation-detail=none"]
+#rustflags=["-Zfmt-debug=none", "-Zlocation-detail=none"]
