@@ -114,7 +114,7 @@ impl Queue {
             Queue::HowlingAbyss5v5Aram => "ARAM",
             Queue::SummonersRiftArurf => "ARURF",
             Queue::SummonersRiftOneForAll => "One for All",
-            Queue::Arena2v2v2v2Cherry => "2v2v2v2 Cherry",
+            Queue::Arena2v2v2v2Cherry => "Arena",
             Queue::SummonersRiftPickUrf => "Pick URF",
             Queue::SummonersRiftUltimateSpellbook => "Ultimate Spellbook",
             Queue::SummonersRiftNexusSiege => "Nexus Siege",

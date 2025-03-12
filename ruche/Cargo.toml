@@ -26,6 +26,7 @@ sitemap = {version = "0.4.1", optional = true}
 thiserror = {workspace = true, optional = true}
 serde={workspace = true, features = ["derive"], optional = true}
 flate2 = { version = "1.0.35", optional = true }
+async-stream = {version = "0.3.6", optional = true}
 
 serde_json = {version = "1", optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
@@ -66,6 +67,7 @@ ssr = [
     "dep:tracing",
     "dep:sqlx",
     "dep:riven",
+    "dep:async-stream",
     "dep:reqwest",
     "dep:dotenv",
     "dep:chrono",
