@@ -141,6 +141,11 @@ async fn update_matches_task(
         .partition(|(match_, _)| {
             match match_{
                 Ok(Some(match_)) => {
+                    log!("Match: Queue: {:?}, Map: {:?}, Version: {:?}, Mode: {:?}",
+                        match_.info.queue_id.0,
+                        match_.info.map_id.0,
+                        match_.info.game_version,
+                        match_.info.game_mode);
                     match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
                         || match_.info.game_version.is_empty()
                         || match_.info.game_id == 0
