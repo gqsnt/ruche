@@ -141,12 +141,6 @@ async fn update_matches_task(
         .partition(|(match_, _)| {
             match match_{
                 Ok(Some(match_)) => {
-                    log!("Match:Id: {:?} Queue: {:?}, Map: {:?}, Version: {:?}, Mode: {:?}",
-                        match_.info.game_id,
-                        match_.info.queue_id.0,
-                        match_.info.map_id.0,
-                        match_.info.game_version,
-                        match_.info.game_mode);
                     match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
                         || match_.info.game_version.is_empty()
                         || match_.info.game_id == 0
@@ -169,9 +163,6 @@ async fn update_matches_task(
         .into_iter()
         .map(|(match_, match_not_updated)| (match_.unwrap().unwrap(), match_not_updated))
         .collect_vec();
-
-    log!("Trashed: {:?}", trashed_matches.len());
-    log!("Match Data: {:?}", match_datas.len());
 
     // Collect TempSummoner data from match data
     let mut participants_map = HashMap::new();
