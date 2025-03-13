@@ -655,7 +655,7 @@ pub struct SummonerShortModel {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(FromRow)]
+#[derive(FromRow, Debug)]
 pub struct LolMatchNotUpdated {
     pub id: i32,
     pub match_id: String,

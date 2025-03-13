@@ -20,7 +20,6 @@ use common::consts::platform_route::PlatformRoute;
 use common::consts::queue::Queue;
 use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
-use leptos::logging::log;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
