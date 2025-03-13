@@ -161,7 +161,7 @@ async fn update_matches_task(
                 }
             }
         });
-    let trashed_matches = trashed_matches
+    let trashed_matches:Vec<_> = trashed_matches
         .into_iter()
         .map(|(match_, match_not_updated)| (match_.unwrap(),match_not_updated))
         .collect();
