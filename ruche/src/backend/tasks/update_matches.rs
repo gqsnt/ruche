@@ -121,8 +121,6 @@ async fn update_matches_task(
     api: &RiotApiState,
     matches_to_update: Vec<LolMatchNotUpdated>,
 ) -> AppResult<HashSet<i32>> {
-    log!("Updating {} matches", matches_to_update.len());
-    log!("Matches: {:?}", matches_to_update);
     let match_data_futures = matches_to_update.iter().map(|match_| {
         let api = Arc::clone(api);
         let pt = consts::platform_route::PlatformRoute::from(match_.platform).to_riven();
@@ -143,7 +141,8 @@ async fn update_matches_task(
         .partition(|(match_, _)| {
             match match_{
                 Ok(Some(match_)) => {
-                    log!("Match: Queue: {:?}, Map: {:?}, Version: {:?}, Mode: {:?}",
+                    log!("Match:Id: {:?} Queue: {:?}, Map: {:?}, Version: {:?}, Mode: {:?}",
+                        match_.info.game_id,
                         match_.info.queue_id.0,
                         match_.info.map_id.0,
                         match_.info.game_version,
@@ -171,8 +170,8 @@ async fn update_matches_task(
         .map(|(match_, match_not_updated)| (match_.unwrap().unwrap(), match_not_updated))
         .collect_vec();
 
-    log!("Trashed: {:?}", trashed_matches);
-    log!("Match Data: {:?}", match_datas);
+    log!("Trashed: {:?}", trashed_matches.len());
+    log!("Match Data: {:?}", match_datas.len());
 
     // Collect TempSummoner data from match data
     let mut participants_map = HashMap::new();
