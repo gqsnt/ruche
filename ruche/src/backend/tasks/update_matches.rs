@@ -139,12 +139,20 @@ async fn update_matches_task(
         .into_iter()
         .zip(matches_to_update.into_iter())
         .partition(|(match_, _)| {
-            if let Ok(Some(match_)) = match_ {
-                match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
-                    || match_.info.game_version.is_empty()
-                    || match_.info.game_id == 0
-            } else {
-                true
+            match match_{
+                Ok(Some(match_)) => {
+                    match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
+                        || match_.info.game_version.is_empty()
+                        || match_.info.game_id == 0
+                }
+                Ok(None) => {
+                    log!("Match not found");
+                    true
+                },
+                Err(e) => {
+                    log!("Error fetching match: {:?}", e);
+                    true
+                }
             }
         });
     let trashed_matches = trashed_matches
