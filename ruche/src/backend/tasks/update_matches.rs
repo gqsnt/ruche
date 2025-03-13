@@ -169,6 +169,9 @@ async fn update_matches_task(
         .map(|(match_, match_not_updated)| (match_.unwrap().unwrap(), match_not_updated))
         .collect_vec();
 
+    log!("Trashed: {:?}", trashed_matches);
+    log!("Match Data: {:?}", match_datas);
+
     // Collect TempSummoner data from match data
     let mut participants_map = HashMap::new();
     for (match_data, _) in match_datas.iter() {
