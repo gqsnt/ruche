@@ -121,6 +121,8 @@ async fn update_matches_task(
     api: &RiotApiState,
     matches_to_update: Vec<LolMatchNotUpdated>,
 ) -> AppResult<HashSet<i32>> {
+    log!("Updating {} matches", matches_to_update.len());
+    log!("Matches: {:?}", matches_to_update);
     let match_data_futures = matches_to_update.iter().map(|match_| {
         let api = Arc::clone(api);
         let pt = consts::platform_route::PlatformRoute::from(match_.platform).to_riven();
