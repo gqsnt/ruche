@@ -2,7 +2,6 @@ use crate::backend::ssr::AppResult;
 use crate::backend::tasks::update_matches::LolMatchNotUpdated;
 use crate::utils::version_to_major_minor;
 use itertools::Itertools;
-use leptos::logging::log;
 use riven::models::match_v5::Match;
 use riven::RiotApiError;
 use sqlx::PgPool;
