@@ -5,7 +5,7 @@ use crate::backend::tasks::update_matches::bulk_summoners::bulk_insert_summoners
 use crate::backend::tasks::update_matches::TempSummoner;
 use crate::ssr::RiotApiState;
 use crate::DB_CHUNK_SIZE;
-use axum::async_trait;
+use async_trait::async_trait;
 use chrono::Utc;
 use common::consts::platform_route::PlatformRoute;
 use futures::stream::FuturesUnordered;

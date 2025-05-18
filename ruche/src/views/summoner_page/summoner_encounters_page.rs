@@ -8,7 +8,6 @@ use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner};
 use crate::views::{
     get_default_navigation_option, BackEndMatchFiltersSearch, ImgSrc, PendingLoading,
 };
-use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use common::consts::profile_icon::ProfileIcon;
 use common::consts::HasStaticSrcAsset;
@@ -16,6 +15,7 @@ use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
+use serde::{Deserialize, Serialize};
 
 #[component]
 pub fn SummonerEncountersPage() -> impl IntoView {
@@ -41,7 +41,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
         }
     });
 
-    let encounters_resource = Resource::new_bitcode(
+    let encounters_resource = Resource::new_bincode(
         move || {
             (
                 sse_match_update_version.get().unwrap_or_default(),
@@ -247,13 +247,13 @@ pub fn SummonerEncountersPage() -> impl IntoView {
     }
 }
 
-#[derive(Clone, Default, Encode, Decode)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct SummonerEncountersResult {
     pub total_pages: u16,
     pub encounters: Vec<SummonerEncountersSummoner>,
 }
 
-#[derive(Clone, Encode, Decode)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SummonerEncountersSummoner {
     pub id: i32,
     pub match_count: u16,

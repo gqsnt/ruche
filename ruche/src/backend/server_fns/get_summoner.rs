@@ -4,9 +4,9 @@ use crate::views::summoner_page::Summoner;
 use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos::server;
-use leptos::server_fn::codec::Bitcode;
+use leptos::server_fn::codec::Bincode;
 
-#[server( input=Bitcode,output=Bitcode)]
+#[server( input=Bincode,output=Bincode)]
 pub async fn get_summoner(
     platform_route: PlatformRoute,
     summoner_slug: String,

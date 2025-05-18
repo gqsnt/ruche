@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use axum::async_trait;
+use async_trait::async_trait;
 use sqlx::PgPool;
 use tokio::time::Instant;
 use leptos::leptos_dom::log;

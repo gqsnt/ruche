@@ -3,12 +3,12 @@ use crate::backend::server_fns::get_champions::get_champions;
 use crate::utils::{calculate_and_format_kda, format_float_to_2digits, format_with_spaces};
 use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner};
 use crate::views::{BackEndMatchFiltersSearch, ImgChampion};
-use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
 use itertools::Itertools;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use serde::{Deserialize, Serialize};
 
 #[component]
 pub fn SummonerChampionsPage() -> impl IntoView {
@@ -21,7 +21,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
     let current_sort_type = move || table_sort.get().0;
     let current_sort_normal_flow = move || table_sort.get().1;
 
-    let champions_resource = Resource::new_bitcode(
+    let champions_resource = Resource::new_bincode(
         move || {
             (
                 sse_match_update_version.get().unwrap_or_default(),
@@ -424,7 +424,7 @@ impl TableSortType {
     }
 }
 
-#[derive(Clone, Encode, Decode)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ChampionStats {
     pub avg_kills: f32,
     pub avg_deaths: f32,

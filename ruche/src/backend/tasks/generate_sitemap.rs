@@ -2,7 +2,7 @@ use crate::backend::ssr::{AppResult, PlatformRouteDb};
 use crate::backend::task_director::Task;
 use crate::backend::tasks::calculate_next_run_to_fixed_start_hour;
 use crate::utils::summoner_url;
-use axum::async_trait;
+use async_trait::async_trait;
 use chrono::{DateTime, FixedOffset, NaiveDateTime};
 use common::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
 use leptos::leptos_dom::log;

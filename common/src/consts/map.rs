@@ -1,7 +1,7 @@
-use bitcode::{Decode, Encode};
+use serde::{Deserialize, Serialize};
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, Encode, Decode, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum Map {
     SummonersRiftOriginalSummerVariant = 1,
     SummonersRiftOriginalAutumnVariant = 2,
@@ -20,6 +20,7 @@ pub enum Map {
     Convergence = 22,
     Arena = 30,
     Swarm = 33,
+    TheBandlewood=35
 }
 
 impl Map {
@@ -42,6 +43,7 @@ impl Map {
             Map::Convergence => "Convergence",
             Map::Arena => "Arena",
             Map::Swarm => "Swarm",
+            Map::TheBandlewood => "The Bandle wood"
         }
     }
 }
@@ -66,6 +68,7 @@ impl From<u8> for Map {
             22 => Map::Convergence,
             30 => Map::Arena,
             33 => Map::Swarm,
+            35 => Map::TheBandlewood,
             _ => panic!("Invalid map id"),
         }
     }

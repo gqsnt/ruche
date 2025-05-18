@@ -4,7 +4,6 @@ use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::utils::{summoner_url, ProPlayerSlug, SSEEvent};
 use crate::views::summoner_page::summoner_nav::SummonerNav;
 use crate::views::{ImgSrc, PendingLoading};
-use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use common::consts::profile_icon::ProfileIcon;
 use common::consts::HasStaticSrcAsset;
@@ -14,6 +13,7 @@ use leptos::prelude::Read;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_params_map;
+use serde::{Deserialize, Serialize};
 
 pub mod match_details;
 pub mod summoner_champions_page;
@@ -46,7 +46,7 @@ pub fn SummonerPage() -> impl IntoView {
     };
 
     // Update the summoner signal when resource changes
-    let summoner_resource = leptos::server::Resource::new_bitcode_blocking(
+    let summoner_resource = leptos::server::Resource::new_bincode_blocking(
         move || (platform_type(), summoner_slug()),
         |(platform, summoner_slug)| async move {
             get_summoner(PlatformRoute::from(platform.as_str()), summoner_slug).await
@@ -73,7 +73,7 @@ pub fn SummonerPage() -> impl IntoView {
                         let _ = update_summoner_action.version().get();
                         set_pending(false);
                         if let Some(Ok(Some((level, profile_icon_id)))) =
-                            update_summoner_action.value().read_only().get()
+                            update_summoner_action.value().get()
                         {
                             if level != level_signal() {
                                 set_level(level);
@@ -243,7 +243,7 @@ pub fn SummonerInfo(
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Decode, Encode)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Summoner {
     pub id: i32,
     pub game_name: String,

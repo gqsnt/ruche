@@ -4,12 +4,12 @@ use crate::views::summoner_page::match_details::match_details_build::MatchDetail
 use crate::views::summoner_page::match_details::match_details_overview::MatchDetailsOverview;
 use crate::views::summoner_page::match_details::match_details_team::MatchDetailsTeam;
 use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner};
-use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use std::fmt::Formatter;
+use serde::{Deserialize, Serialize};
 
 pub mod match_details_build;
 pub mod match_details_overview;
@@ -23,7 +23,7 @@ pub fn MatchDetails(
 ) -> impl IntoView {
     let summoner = expect_context::<Summoner>();
     let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
-    let match_details = Resource::new_bitcode(
+    let match_details = Resource::new_bincode(
         move || {
             (
                 sse_match_update_version.get().unwrap_or_default(),
@@ -104,7 +104,7 @@ pub fn MatchDetails(
     }
 }
 
-#[derive(Clone, Decode, Encode)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct LolMatchParticipantDetails {
     pub id: i32,
     pub lol_match_id: i32,
@@ -162,24 +162,21 @@ pub struct LolMatchTimeline {
     pub items_event_timeline: Vec<(u16, Vec<ItemEvent>)>,
 }
 
-#[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Encode, Decode)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ItemEvent {
     pub item_id: u32,
     pub event_type: ItemEventType,
 }
 
 #[repr(u8)]
-#[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Encode, Decode, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub enum ItemEventType {
     Purchased,
     Sold,
 }
 
 #[repr(u8)]
-#[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Encode, Decode, PartialEq, Copy)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Copy)]
 pub enum Skill {
     Q = 1,
     W = 2,

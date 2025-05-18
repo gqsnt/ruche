@@ -3,9 +3,9 @@ use crate::utils::{summoner_not_found_url, summoner_url};
 use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos::server;
-use leptos::server_fn::codec::Bitcode;
+use leptos::server_fn::codec::Bincode;
 
-#[server(input = Bitcode)]
+#[server(input = Bincode)]
 pub async fn search_summoner(
     platform_route: PlatformRoute,
     game_name: String,

@@ -1,7 +1,7 @@
-use bitcode::{Decode, Encode};
+use serde::{Deserialize, Serialize};
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Encode, Decode)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash,  Serialize, Deserialize)]
 pub enum Queue {
     Custom,
     SummonersRift5v5BlindPickDeprecated2,
@@ -102,6 +102,7 @@ pub enum Queue {
     SummonersRiftTutorial2,
     SummonersRiftTutorial3,
     ConvergenceTeamfightTacticsSet35Revival,
+    TheBandlewood,
 }
 
 impl Queue {
@@ -121,6 +122,7 @@ impl Queue {
             Queue::SummonersRiftClash => "Clash",
             Queue::SummonersRiftNormalQuickplay => "Normal Quickplay",
             Queue::NexusBlitz => "Nexus Blitz",
+            
             _ => "Unknown",
         }
     }
@@ -226,6 +228,7 @@ impl Queue {
             Queue::SummonersRiftTutorial2 => 2010,
             Queue::SummonersRiftTutorial3 => 2020,
             Queue::ConvergenceTeamfightTacticsSet35Revival => 6000,
+            Queue::TheBandlewood => 2300,
         }
     }
 
@@ -329,6 +332,7 @@ impl Queue {
             2000 => Queue::SummonersRiftTutorial1,
             2010 => Queue::SummonersRiftTutorial2,
             2020 => Queue::SummonersRiftTutorial3,
+            2300 => Queue::TheBandlewood,
             6000 => Queue::ConvergenceTeamfightTacticsSet35Revival,
             _ => Queue::Custom,
         }
@@ -389,6 +393,7 @@ pub static QUEUE_OPTIONS: &[(u8, &str)] = &[
         Queue::SummonersRiftNormalQuickplay.to_str(),
     ),
     (Queue::NexusBlitz as u8, Queue::NexusBlitz.to_str()),
+    (Queue::TheBandlewood as u8, Queue::TheBandlewood.to_str()),
 ];
 
 impl From<u8> for Queue {
@@ -493,6 +498,7 @@ impl From<u8> for Queue {
             96 => Queue::SummonersRiftTutorial2,
             97 => Queue::SummonersRiftTutorial3,
             98 => Queue::ConvergenceTeamfightTacticsSet35Revival,
+            99 => Queue::TheBandlewood,
             _ => Queue::Custom,
         }
     }

@@ -14,7 +14,7 @@ use crate::backend::tasks::update_matches::bulk_summoners::{
 use crate::ssr::{RiotApiState, SubscriberMap};
 use crate::utils::{ProPlayerSlug, SSEEvent};
 use crate::DB_CHUNK_SIZE;
-use axum::async_trait;
+use async_trait::async_trait;
 use chrono::NaiveDateTime;
 use common::consts;
 use common::consts::platform_route::PlatformRoute;
@@ -157,7 +157,7 @@ async fn update_matches_task(
         });
     let trashed_matches:Vec<_> = trashed_matches
         .into_iter()
-        .map(|(match_, match_not_updated)| (match_.unwrap(),match_not_updated))
+        .map(|(match_, match_not_updated)| (match_,match_not_updated))
         .collect();
     let match_datas = match_datas
         .into_iter()

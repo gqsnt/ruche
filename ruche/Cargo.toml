@@ -7,11 +7,11 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-axum = { version = "0.7.7", optional = true, features = ["macros", "http2"]}
+axum = { version = "0.8.3", optional = true, features = ["macros", "http2"]}
 tokio = { workspace = true, optional = true }
 tokio-stream = { version = "0.1", optional = true, features = ["sync"] }
-tower = { version = "0.4", optional = true, features = ["util"] }
-tower-http = { version = "0.5", features = ["fs", "compression-full"], optional = true }
+tower = { version = "0.4.13", optional = true, features = ["util"] }
+tower-http = { version = "0.5.2", features = ["fs", "compression-full"], optional = true }
 sqlx = { version = "0.8", optional = true, features = ["postgres", "runtime-tokio-rustls", "chrono", "bigdecimal", "uuid"] }
 bigdecimal = { version = "0.4", optional = true }
 riven = { workspace = true, optional = true }
@@ -20,11 +20,11 @@ dotenv = { version = "0.15", optional = true }
 futures = { workspace = true }
 chrono = { version = "0.4", optional = true }
 tracing = { version = "0.1", optional = true }
-memory-serve = { version = "0.6.0", optional = true }
+memory-serve = { version = "1.2.1", optional = true }
 dashmap = {version = "6.1.0", optional = true}
 sitemap = {version = "0.4.1", optional = true}
 thiserror = {workspace = true, optional = true}
-serde={workspace = true, features = ["derive"], optional = true}
+serde={workspace = true, features = ["derive"]}
 flate2 = { version = "1.0.35", optional = true }
 async-stream = {version = "0.3.6", optional = true}
 
@@ -32,14 +32,13 @@ serde_json = {version = "1", optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
 rustls = { version = "0.23.16" , features = ["ring"], optional = true}
 
-leptos = { git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6",features = ["nightly", "bitcode"] }
-leptos_axum = { git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6", optional = true}
-leptos_meta ={ git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6"}
-leptos_router = { git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6" ,features = ["nightly"] }
-reactive_stores ={git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6"}
-reactive_stores_macro = {git = "https://github.com/gqsnt/leptos-bitcode", rev = "30b3e1032be95a2ef4da2cd47fac037afc0defb6"}
-bitcode = {workspace = true}
-wasm-bindgen = "0.2"
+leptos = { git="https://github.com/gqsnt/leptos-bitcode", rev="e6daa7f5ea475e17eff0fd1d1e905a8211262868",features = ["nightly", "bincode"] }
+leptos_axum = { git="https://github.com/gqsnt/leptos-bitcode", rev="e6daa7f5ea475e17eff0fd1d1e905a8211262868", optional = true}
+leptos_meta ={ git="https://github.com/gqsnt/leptos-bitcode", rev="e6daa7f5ea475e17eff0fd1d1e905a8211262868"}
+leptos_router = { git="https://github.com/gqsnt/leptos-bitcode", rev="e6daa7f5ea475e17eff0fd1d1e905a8211262868",features = ["nightly"] }
+reactive_stores ={git="https://github.com/gqsnt/leptos-bitcode", rev="e6daa7f5ea475e17eff0fd1d1e905a8211262868"}
+reactive_stores_macro = {git="https://github.com/gqsnt/leptos-bitcode", rev="e6daa7f5ea475e17eff0fd1d1e905a8211262868"}
+wasm-bindgen = "=0.2.100"
 itertools = "0.14.0"
 urlencoding = "2"
 http = "1"
@@ -48,6 +47,8 @@ send_wrapper = "0.6.0"
 gloo-net = "0.6.0"
 common={path="../common"}
 log = "0.4.22"
+async-trait = { version = "0.1.83", optional = true }
+axum-extra = {version = "0.10.1", optional = true}
 
 
 
@@ -55,6 +56,8 @@ log = "0.4.22"
 [features]
 hydrate = ["leptos/hydrate"]
 ssr = [
+    "dep:async-trait",
+    "dep:axum-extra",
     "dep:axum",
     "dep:tokio",
     "dep:tokio-stream",
@@ -79,7 +82,6 @@ ssr = [
     "dep:axum-server",
     "dep:rustls",
     "dep:serde_json",
-    "dep:serde",
     "dep:flate2",
     "common/ssr"
 ]
@@ -107,8 +109,7 @@ site-root = "target/site"
 site-pkg-dir = "pkg"
 
 # [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <ruche-root>/<ruche-pkg>/app.css
-tailwind-input-file = "style/tailwind.css"
-tailwind-config-file = "tailwind.config.js"
+tailwind-input-file = "input.css"
 # Assets source dir. All files found here will be copied and synchronized to ruche-root.
 # The assets-dir cannot have a sub directory with the same name/path as ruche-pkg-dir.
 #

@@ -58,4 +58,5 @@ pub enum GameMode {
     ULTBOOK,
     /// URF games
     URF,
+    BRAWL,
 }

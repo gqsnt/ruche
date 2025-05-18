@@ -1,4 +1,4 @@
-use bitcode::{Decode, Encode};
+use serde::{Deserialize, Serialize};
 
 pub const PLATFORM_ROUTE_OPTIONS: [PlatformRoute; 16] = [
     PlatformRoute::BR1,
@@ -20,9 +20,8 @@ pub const PLATFORM_ROUTE_OPTIONS: [PlatformRoute; 16] = [
 ];
 
 /// Platform routes for League of Legends (LoL), Teamfight Tactics (TFT), and Legends of Runeterra (LoR).
-#[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
-    PartialEq, Eq, Hash, PartialOrd, Ord, Encode, Decode, Clone, Copy, Debug,Default
+    PartialEq, Eq, Hash, PartialOrd, Ord,  Serialize, Deserialize, Clone, Copy, Debug,Default
 )]
 #[repr(u8)]
 #[non_exhaustive]

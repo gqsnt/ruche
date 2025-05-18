@@ -1,4 +1,4 @@
-
+use sqlx::PgPool;
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
@@ -24,7 +24,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use ruche::ssr::serve;
     use ruche::ssr::sse_broadcast_match_updated;
     use ruche::ssr::AppState;
-    use ruche::ssr::{init_database, init_riot_api};
+    use ruche::ssr::{init_riot_api};
     use std::net::SocketAddr;
     use std::sync::Arc;
     use tower_http::compression::predicate::NotForContentType;
@@ -78,13 +78,16 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     }
 
     let site_address = leptos_options.site_addr;
-    let db = init_database().await;
+    let database_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let pool = PgPool::connect(database_url.as_str())
+        .await
+        .expect("Could not connect to database");
     let riot_api = Arc::new(init_riot_api());
     let live_game_cache = Arc::new(LiveGameCache::new(std::time::Duration::from_secs(60)));
     let summoner_updated_sender = Arc::new(DashMap::new());
     let mut task_director = TaskDirector::default();
     task_director.add_task(HandleLiveGameCacheTask::new(
-        db.clone(),
+        pool.clone(),
         riot_api.clone(),
         live_game_cache.clone(),
         summoner_updated_sender.clone(),
@@ -93,7 +96,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
 
     // download and update of match details are done in fast bg task. to not get concurrent mass insert/update
     task_director.add_task(UpdateMatchesTask::new(
-        db.clone(),
+        pool.clone(),
         Arc::clone(&riot_api),
         update_interval_duration,
         Arc::clone(&summoner_updated_sender),
@@ -108,17 +111,17 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
 
     if is_prod {
         task_director.add_task(GenerateSiteMapTask::new(
-            db.clone(),
+            pool.clone(),
             3,
             site_map_task_on_startup,
         ));
         task_director.add_task(DailySqlCleanTask::new(
-            db.clone(),
+            pool.clone(),
             1,
             true
         ));
         task_director.add_task(UpdateProPlayerTask::new(
-            db.clone(),
+            pool.clone(),
             riot_api.clone(),
             2,
             lol_pro_task_on_startup,
@@ -131,7 +134,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
         riot_api,
-        db,
+        db:pool,
         live_game_cache,
         max_matches,
         summoner_updated_sender,
@@ -167,7 +170,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
             },
         )
         .route(
-            "/sse/match_updated/:platform_route/:summoner_id",
+            "/sse/match_updated/{platform_route}/{summoner_id}",
             get(sse_broadcast_match_updated),
         )
         .route("/sitemap-index.xml", get(get_sitemap))

@@ -4,11 +4,12 @@ use crate::utils::version_to_major_minor;
 use itertools::Itertools;
 use leptos::logging::log;
 use riven::models::match_v5::Match;
+use riven::RiotApiError;
 use sqlx::PgPool;
 
 pub async fn bulk_trashed_matches(
     db: &PgPool,
-    matches: Vec<(Option<Match>, LolMatchNotUpdated)>,
+    matches: Vec<(Result<Option<Match>,RiotApiError>, LolMatchNotUpdated)>,
 ) -> AppResult<()> {
     let match_ids = matches
         .iter()
@@ -51,13 +52,13 @@ pub async fn bulk_update_matches(
     ) = matches
         .iter()
         .map(|(x, _)| {
-            log!(
-                "Match: Queue: {:?}, Map: {:?}, Version: {:?}, Mode: {:?}",
-                x.info.queue_id.0,
-                x.info.map_id.0,
-                x.info.game_version,
-                x.info.game_mode
-            );
+            // log!(
+            //     "Match: Queue: {:?}, Map: {:?}, Version: {:?}, Mode: {:?}",
+            //     x.info.queue_id.0,
+            //     x.info.map_id.0,
+            //     x.info.game_version,
+            //     x.info.game_mode
+            // );
             (
                 x.metadata.match_id.as_str(),
                 chrono::DateTime::from_timestamp_millis(x.info.game_start_timestamp)

@@ -1,7 +1,38 @@
-use bitcode::{Decode, Encode};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Encode, Decode)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct FixedSizeString<const N: usize>([u8; N]);
+
+impl <const N:usize>Serialize for FixedSizeString<N> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer
+    {
+        let trimmed = self.trim_end_zeros();
+        let str_value = std::str::from_utf8(trimmed).map_err(serde::ser::Error::custom)?;
+        serializer.serialize_str(str_value)
+    }
+}
+
+impl<'de,const N:usize> Deserialize<'de> for FixedSizeString<N> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>
+    {
+        let str_value = String::deserialize(deserializer)?;
+        let bytes = str_value.as_bytes();
+        if bytes.len() > N {
+            return Err(serde::de::Error::custom(format!(
+                "String length exceeds fixed size of {}",
+                N
+            )));
+        }
+        let mut result = [0u8; N];
+        result[..bytes.len()].copy_from_slice(bytes);
+        Ok(FixedSizeString(result))
+    }
+}
+
 
 impl<const N: usize> FixedSizeString<N> {
     pub fn new(value: &str) -> Self {

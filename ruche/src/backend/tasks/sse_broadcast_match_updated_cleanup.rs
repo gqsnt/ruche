@@ -1,6 +1,6 @@
 use crate::backend::task_director::Task;
 use crate::ssr::SubscriberMap;
-use axum::async_trait;
+use async_trait::async_trait;
 use itertools::Itertools;
 use leptos::logging::log;
 use std::sync::atomic::{AtomicBool, Ordering};

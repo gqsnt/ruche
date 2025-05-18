@@ -1,6 +1,7 @@
-use axum::async_trait;
+
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
+use async_trait::async_trait;
 use tokio::time::{Duration, Instant};
 
 #[async_trait]

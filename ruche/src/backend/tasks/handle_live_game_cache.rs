@@ -6,7 +6,7 @@ use crate::backend::ssr::{AppResult, PlatformRouteDb};
 use crate::backend::task_director::Task;
 use crate::ssr::SubscriberMap;
 use crate::utils::{Puuid, RiotMatchId, SSEEvent};
-use axum::async_trait;
+use async_trait::async_trait;
 use common::consts::platform_route::PlatformRoute;
 use itertools::Itertools;
 use riven::models::spectator_v5::CurrentGameInfo;

@@ -6,7 +6,6 @@ use crate::utils::{
 };
 use crate::views::summoner_page::{SSEInLiveGame, SSEMatchUpdateVersion, Summoner};
 use crate::views::{ImgChampion, ImgPerk, ImgSummonerSpell, PendingLoading};
-use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
 use common::consts::map::Map;
 use common::consts::perk::Perk;
@@ -16,6 +15,7 @@ use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use serde::{Deserialize, Serialize};
 
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {
@@ -26,7 +26,7 @@ pub fn SummonerLivePage() -> impl IntoView {
 
     let (refresh_signal, set_refresh_signal) = signal(0);
     let (pending, set_pending) = signal(false);
-    let live_game_resource = Resource::new_bitcode(
+    let live_game_resource = Resource::new_bincode(
         move || {
             (
                 sse_in_live_game.get(),
@@ -347,7 +347,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
         </table>
     }
 }
-#[derive(Clone, Decode, Encode)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct LiveGame {
     pub game_length: u16,
     pub game_map: Map,
@@ -356,7 +356,7 @@ pub struct LiveGame {
     pub participants: Vec<LiveGameParticipant>,
 }
 
-#[derive(Clone, Decode, Encode)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct LiveGameParticipant {
     pub summoner_id: i32,
     pub champion_id: u16,
@@ -375,13 +375,13 @@ pub struct LiveGameParticipant {
     pub champion_stats: Option<LiveGameParticipantChampionStats>,
 }
 
-#[derive(Clone, Default, Decode, Encode)]
+#[derive(Clone, Default,Serialize, Deserialize)]
 pub struct LiveGameParticipantRankedStats {
     pub total_ranked: u16,
     pub total_ranked_wins: u16,
 }
 
-#[derive(Clone, Default, Decode, Encode)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct LiveGameParticipantChampionStats {
     pub total_champion_played: u16,
     pub total_champion_wins: u16,

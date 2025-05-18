@@ -13,11 +13,11 @@ pub mod ssr {
     use crate::backend::server_fns::get_live_game::ssr;
     use crate::utils::{Puuid, SSEEvent};
     use axum::body::Body;
-    use axum::extract::{Host, Path, Request, State};
+    use axum::extract::{Path, Request, State};
     use axum::handler::HandlerWithoutStateExt;
     use axum::response::sse::{Event, KeepAlive, Sse};
     use axum::response::{IntoResponse, Redirect};
-    use axum::Router;
+    use axum::{BoxError, Router};
     use axum_server::tls_rustls::RustlsConfig;
     use common::consts::platform_route::PlatformRoute;
     use dashmap::DashMap;
@@ -31,6 +31,7 @@ pub mod ssr {
     use std::path::PathBuf;
     use std::sync::Arc;
     use std::time::Duration;
+    use axum_extra::extract::Host;
     use tokio::sync::broadcast::Sender;
     use tokio::time;
     use tokio_stream::wrappers::BroadcastStream;
@@ -225,7 +226,7 @@ pub mod ssr {
     }
 
     async fn redirect_http_to_https() {
-        fn make_https(host: String, uri: Uri) -> Result<Uri> {
+        fn make_https(host: String, uri: Uri) -> Result<Uri, BoxError> {
             let mut parts = uri.into_parts();
 
             parts.scheme = Some(http::uri::Scheme::HTTPS);

@@ -1,6 +1,5 @@
 use crate::views::platform_type_page::PlatformTypePage;
 use crate::views::summoner_page::SummonerPage;
-use bitcode::{Decode, Encode};
 use leptos::config::LeptosOptions;
 use leptos::prelude::GlobalAttributes;
 use leptos::prelude::*;
@@ -11,10 +10,11 @@ use leptos_router::{
     components::{Route, Router, Routes},
     ParamSegment, StaticSegment,
 };
+use serde::{Deserialize, Serialize};
 
 pub const SITE_URL: &str = "https://ruche.lol";
 
-#[derive(Clone, reactive_stores_macro::Store, Encode, Decode, Default)]
+#[derive(Clone, reactive_stores_macro::Store, Serialize, Deserialize, Default)]
 pub struct MetaStore {
     pub title: String,
     pub description: String,
