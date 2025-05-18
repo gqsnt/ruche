@@ -1,5 +1,3 @@
 [build]
 rustflags = ["--cfg", "erase_components"]
 
-[env]
-LEPTOS_TAILWIND_VERSION="v4.1.7"
