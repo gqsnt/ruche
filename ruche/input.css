@@ -4,6 +4,10 @@
 @import "./style/perks.css";
 @import "./style/items.css";
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 
 
 @theme{
