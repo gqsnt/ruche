@@ -207,6 +207,7 @@ if you encounter problem with wasm , ensure wasm-* version are unique between ru
 
 ### Requirements
 - **Rust**: Install Rust using [rustup](https://rustup.rs/).
+- **Node.js**: Install Node.js (version 18 or higher) for asset generation and Tailwind CSS.
 - **Nasm**: Install [Nasm](https://www.nasm.us/) Required for building `nasm-rs` used in `ravif` for AVIF encoding.
 - **PostgreSQL**: Install PostgreSQL , add a ruche database, modify password and allow socket connection.
 - **Riot API Key**: Obtain a Riot API key from the [Riot Developer Portal](https://developer.riotgames.com/).
@@ -232,9 +233,9 @@ cd ruche;
 # Copy and configure the environment file
 cp .env.example .env;
 
-# Install tailwindcss
+# Install tailwindcss cli 
 cd ruche;
-npm i;
+npm install tailwindcss @tailwindcss/cli;
 cd ..;
  
 # Generate assets and css sprites add -- --help to see all options
