@@ -256,7 +256,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                             <ImgChampion
                                                                                 champion=champion_enum
                                                                                 parent_class="my-1 w-8 h-8 sprite-wrapper".to_string()
-                                                                                class="rounded-full scale-66 sprite-inner".to_string()
+                                                                                class="rounded-full self-scale-66 sprite-inner".to_string()
                                                                             />
                                                                             <div class="ml-2 text-center">{champion_enum.to_str()}</div>
                                                                         </div>

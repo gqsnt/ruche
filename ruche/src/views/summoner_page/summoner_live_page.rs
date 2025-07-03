@@ -177,19 +177,19 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                 >
                                     <ImgChampion
                                         champion
-                                        class="scale-66 rounded-full block sprite-inner".to_string()
+                                        class="self-scale-66 rounded-full block sprite-inner".to_string()
                                         parent_class="w-8 h-8 sprite-wrapper".to_string()
                                     />
                                 </td>
                                 <td class="py-1">
                                     <ImgSummonerSpell
                                         summoner_spell=summoner_spell1
-                                        class="scale-57 rounded sprite-inner".to_string()
+                                        class="self-scale-57 rounded sprite-inner".to_string()
                                         parent_class="w-4 h-4 sprite-wrapper".to_string()
                                     />
                                     <ImgSummonerSpell
                                         summoner_spell=summoner_spell2
-                                        class="scale-57 rounded sprite-inner".to_string()
+                                        class="self-scale-57 rounded sprite-inner".to_string()
                                         parent_class="w-4 h-4 sprite-wrapper".to_string()
                                     />
                                 </td>
@@ -197,12 +197,12 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                     <ImgPerk
                                         perk=perk_primary_selection
                                         parent_class="w-4 h-4 sprite-wrapper".to_string()
-                                        class="scale-57 rounded sprite-inner".to_string()
+                                        class="self-scale-57 rounded sprite-inner".to_string()
                                     />
                                     <ImgPerk
                                         perk=perk_sub_style
                                         parent_class="w-4 h-4 sprite-wrapper".to_string()
-                                        class="scale-57 rounded sprite-inner".to_string()
+                                        class="self-scale-57 rounded sprite-inner".to_string()
                                     />
                                 </td>
                                 <td class="pl-[5px] py-1 text-ellipsis overflow-hidden text-left">

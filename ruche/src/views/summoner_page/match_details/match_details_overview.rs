@@ -118,7 +118,7 @@ pub fn MatchDetailsOverviewTable(
                                     <ImgChampion
                                         champion
                                         parent_class="w-8 h-8 sprite-wrapper relative".to_string()
-                                        class="rounded-full scale-66 block sprite-inner".to_string()
+                                        class="rounded-full self-scale-66 block sprite-inner".to_string()
                                     >
                                         <span class="absolute left-[-3px] bottom-[-3px] w-[15px] h-[15px] bg-gray-600 rounded-full text-[10px] text-center">
                                             {participant.champ_level}
@@ -129,12 +129,12 @@ pub fn MatchDetailsOverviewTable(
                                 <td class="py-1">
                                     <ImgSummonerSpell
                                         summoner_spell=summoner_spell1
-                                        class="scale-72 rounded sprite-wrapper".to_string()
+                                        class="self-scale-72 rounded sprite-wrapper".to_string()
                                         parent_class="w-4 h-4 sprite-inner".to_string()
                                     />
                                     <ImgSummonerSpell
                                         summoner_spell=summoner_spell2
-                                        class="scale-72 rounded sprite-wrapper".to_string()
+                                        class="self-scale-72 rounded sprite-wrapper".to_string()
                                         parent_class="w-4 h-4 sprite-inner".to_string()
                                     />
 
@@ -142,12 +142,12 @@ pub fn MatchDetailsOverviewTable(
                                 <td class="py-1">
                                     <ImgPerk
                                         perk=primary_perk_selection
-                                        class="scale-57 rounded".to_string()
+                                        class="self-scale-57 rounded".to_string()
                                         parent_class="w-4 h-4".to_string()
                                     />
                                     <ImgPerk
                                         perk=sub_perk_style
-                                        class="scale-57 rounded".to_string()
+                                        class="self-scale-57 rounded".to_string()
                                         parent_class="w-4 h-4".to_string()
                                     />
 

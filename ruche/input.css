@@ -69,23 +69,23 @@
 }
 
 
-.scale-33{
+.self-scale-33{
     transform: scale(33.33%);
 }
-.scale-66{
+.self-scale-66{
     transform: scale(66.66%);
 }
 
-.scale-78{
+.self-scale-78{
     transform: scale(78.78%);
 }
-.scale-57{
+.self-scale-57{
     transform: scale(57.14%);
 }
-.scale-72{
+.self-scale-72{
     transform: scale(72.72%);
 }
-.scale-136{
+.self-scale-136{
     transform: scale(136.36%);
 }
 

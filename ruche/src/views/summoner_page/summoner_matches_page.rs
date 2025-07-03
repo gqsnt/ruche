@@ -228,7 +228,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         <ImgChampion
                                             champion
                                             parent_class="sprite-wrapper w-4 h-4".to_string()
-                                            class="rounded scale-33 sprite-inner".to_string()
+                                            class="rounded self-scale-33 sprite-inner".to_string()
                                         />
                                         {(participant.encounter_count > 1)
                                             .then(|| {
@@ -383,12 +383,12 @@ pub fn MatchSummonerCard(
                     <div class="flex flex-col gap-0.5 items-center">
                         <ImgPerk
                             perk=primary_perk_selection
-                            class="scale-78 sprite-inner rounded-full".to_string()
+                            class="self-scale-78 sprite-inner rounded-full".to_string()
                             parent_class="w-[22px] h-[22px] sprite-wrapper".to_string()
                         />
                         <ImgPerk
                             perk=sub_perk_style
-                            class="scale-78 sprite-inner rounded-full".to_string()
+                            class="self-scale-78 sprite-inner rounded-full".to_string()
                             parent_class="w-[22px] h-[22px] sprite-wrapper".to_string()
                         />
                     </div>
