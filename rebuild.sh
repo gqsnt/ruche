@@ -9,7 +9,7 @@ git pull
 
 
 # Build assets and application
-cargo run --release --bin asset-generation
+cargo run --release --bin asset-generation --package asset-generation
 cargo leptos build --release
 
 # Stop the service

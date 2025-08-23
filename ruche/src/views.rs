@@ -2,7 +2,6 @@ use leptos::prelude::ElementChild;
 use leptos::prelude::{Children, ClassAttribute, Get, ReadSignal, Show};
 use leptos::{component, view, IntoView, Params};
 use leptos_router::params::Params;
-use leptos::prelude::IntoMaybeErased;
 use common::consts::champion::Champion;
 use common::consts::item::Item;
 use common::consts::perk::Perk;
