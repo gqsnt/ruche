@@ -19,6 +19,8 @@ use leptos::prelude::*;
 use leptos::{component, IntoView};
 use leptos_router::hooks::{query_signal_with_options, use_query_map};
 use serde::{Deserialize, Serialize};
+use crate::views::components::match_filters::MatchFilters;
+
 
 #[component]
 pub fn SummonerEncounterPage() -> impl IntoView {

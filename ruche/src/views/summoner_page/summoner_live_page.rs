@@ -17,6 +17,9 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use serde::{Deserialize, Serialize};
 
+
+
+
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {
     let summoner = expect_context::<Summoner>();

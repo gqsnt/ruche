@@ -1,16 +1,13 @@
 use crate::views::platform_type_page::PlatformTypePage;
-use crate::views::summoner_page::SummonerPage;
 use leptos::config::LeptosOptions;
 use leptos::prelude::GlobalAttributes;
 use leptos::prelude::*;
 
 use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, Title};
 use leptos_router::components::{ParentRoute, Redirect};
-use leptos_router::{
-    components::{Route, Router, Routes},
-    ParamSegment, StaticSegment,
-};
+use leptos_router::{components::{Route, Router, Routes}, Lazy, ParamSegment, StaticSegment};
 use serde::{Deserialize, Serialize};
+use crate::views::summoner_page::SummonerRoute;
 
 pub const SITE_URL: &str = "https://ruche.lol";
 
@@ -84,7 +81,7 @@ pub fn App() -> impl IntoView {
                         <Route path=StaticSegment("") view=move || view! {} />
                         <Route
                             path=(StaticSegment("summoners"), ParamSegment("summoner_slug"))
-                            view=SummonerPage
+                            view={Lazy::<SummonerRoute>::new()}
                         />
                     </ParentRoute>
                 </Routes>

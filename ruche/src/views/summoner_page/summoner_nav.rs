@@ -106,32 +106,63 @@ pub fn SummonerNav() -> impl IntoView {
 
         <div class="my-4 ">
             <Show when=move || tab().is_none() || tab() == Some(Tabs::Matches.to_string())>
-                <MatchFilters>
-                    <SummonerMatchesPage />
-                </MatchFilters>
+                <Suspense fallback=|| view!{ <div class="text-center">Loading Matches...</div> }>
+                    { move || Suspend::new(async move { matches_tab_view().await }) }
+                </Suspense>
             </Show>
             <Show when=move || tab() == Some(Tabs::Champions.to_string())>
-                <MatchFilters>
-                    <SummonerChampionsPage />
-                </MatchFilters>
+                <Suspense fallback=|| view!{ <div class="text-center">Loading Champions...</div> }>
+                    { move || Suspend::new(async move { champions_tab_view().await }) }
+                </Suspense>
             </Show>
             <Show when=move || tab() == Some(Tabs::Encounters.to_string())>
-                <MatchFilters>
-                    <SummonerEncountersPage />
-                </MatchFilters>
+                <Suspense fallback=|| view!{ <div class="text-center">Loading Encounters...</div> }>
+                    { move || Suspend::new(async move { encounters_tab_view().await }) }
+                </Suspense>
             </Show>
             <Show when=move || tab() == Some(Tabs::Live.to_string())>
-                <SummonerLivePage />
+                <Suspense fallback=|| view!{ <div class="text-center">Loading Live Game...</div> }>
+                    { move || Suspend::new(async move { live_tab_view().await }) }
+                </Suspense>
             </Show>
             <Show when=move || tab() == Some(Tabs::Encounter.to_string())>
-                <MatchFilters>
-                    <SummonerEncounterPage />
-                </MatchFilters>
+                <Suspense fallback=|| view!{ <div class="text-center">Loading Encounter...</div> }>
+                    { move || Suspend::new(async move { encounter_tab_view().await }) }
+                </Suspense>
             </Show>
 
         </div>
     }
 }
+
+#[lazy]
+pub async fn champions_tab_view() -> AnyView {
+    view! { <MatchFilters><SummonerChampionsPage/></MatchFilters> }.into_any()
+}
+
+#[lazy]
+pub async fn encounter_tab_view() -> AnyView {
+    view! { <MatchFilters><SummonerEncounterPage/></MatchFilters> }.into_any()
+}
+
+
+#[lazy]
+pub async fn encounters_tab_view() -> AnyView {
+    view! { <MatchFilters><SummonerEncountersPage/></MatchFilters> }.into_any()
+}
+
+#[lazy]
+pub async fn live_tab_view() -> AnyView {
+    view! { <SummonerLivePage/> }.into_any()
+}
+
+#[lazy]
+pub async fn matches_tab_view() -> AnyView {
+    view! { <MatchFilters><SummonerMatchesPage/></MatchFilters> }.into_any()
+}
+
+
+
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum Tabs {
