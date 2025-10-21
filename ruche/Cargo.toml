@@ -30,6 +30,7 @@ async-stream = {version = "0.3.6", optional = true}
 
 serde_json = {workspace = true, optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
+axum-h3 = { version = "0.0.4"}
 rustls = { version = "0.23.16" , features = ["ring"], optional = true}
 
 bitcode = "0.6.7"

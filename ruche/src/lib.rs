@@ -263,6 +263,10 @@ pub mod ssr {
             .await
             .expect("Creating listener");
         log!("listening on {}", socket_addr);
+        let h3_router = axum_h3::H3Router::new(app);
+        h3_router.serve(
+            listener
+        )
         axum::serve(listener, app.into_make_service())
             .await
             .unwrap();
