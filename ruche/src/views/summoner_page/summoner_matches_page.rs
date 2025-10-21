@@ -1,3 +1,4 @@
+use bitcode::{Decode, Encode};
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_matches::get_matches;
 use crate::utils::{
@@ -43,7 +44,7 @@ pub fn SummonerMatchesPage() -> impl IntoView {
         }
     });
 
-    let matches_resource = Resource::new_bincode(
+    let matches_resource = Resource::new_bitcode(
         move || {
             (
                 sse_match_update_version.get().unwrap_or_default(),
@@ -459,14 +460,14 @@ pub fn MatchInfoCard(
     }
 }
 
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Clone, Default, Encode,Decode)]
 pub struct GetSummonerMatchesResult {
     pub total_pages: u16,
     pub matches: Vec<SummonerMatch>,
     pub matches_result_info: MatchesResultInfo,
 }
 
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Clone, Default, Encode,Decode)]
 pub struct MatchesResultInfo {
     pub avg_kills: f32,
     pub avg_deaths: f32,
@@ -475,7 +476,7 @@ pub struct MatchesResultInfo {
     pub total_matches: u16,
     pub total_wins: u16,
 }
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Encode,Decode)]
 pub struct SummonerMatch {
     pub participants: Vec<SummonerMatchParticipant>,
     pub summoner_id: i32,
@@ -505,7 +506,7 @@ pub struct SummonerMatch {
     pub platform: PlatformRoute,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone,  Encode,Decode)]
 pub struct SummonerMatchParticipant {
     pub lol_match_id: i32,
     pub summoner_id: i32,

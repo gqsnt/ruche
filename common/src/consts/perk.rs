@@ -1,7 +1,8 @@
 use std::fmt::Formatter;
+use bitcode::{Decode, Encode};
 
 #[repr(u16)]
-#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy, Encode,Decode)]
 pub enum Perk {
     UNKNOWN = 0,
     StatsHealScaling = 5001,

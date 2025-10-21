@@ -1,6 +1,7 @@
+use bitcode::{Decode, Encode};
 
 #[repr(u16)]
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Encode,Decode)]
 pub enum Champion {
     UNKNOWN = 0,
     Aatrox = 266,

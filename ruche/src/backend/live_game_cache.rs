@@ -58,7 +58,7 @@ impl LiveGameCache {
             self.game_cache.remove(&game_id);
         }
         for summoner_id in summoner_ids.iter() {
-            self.summoner_id_to_game.remove(&summoner_id);
+            self.summoner_id_to_game.remove(summoner_id);
         }
         summoner_ids
     }

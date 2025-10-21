@@ -11,6 +11,7 @@ use leptos::either::Either;
 use leptos::prelude::CustomAttribute;
 use leptos_router::NavigateOptions;
 use std::fmt::{Debug, Formatter};
+use bitcode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 pub mod components;
@@ -151,7 +152,7 @@ pub struct MatchFiltersSearch {
     pub end_date: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default, PartialEq, Clone, Copy)]
+#[derive(Debug, Encode, Decode, Default, PartialEq, Clone, Copy)]
 pub struct BackEndMatchFiltersSearch {
     pub start_date: Option<CompactDate>,
     pub end_date: Option<CompactDate>,
@@ -198,7 +199,7 @@ pub fn parse_date(date: Option<String>) -> Option<CompactDate> {
     })
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy,Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Encode, Decode)]
 pub struct CompactDate(u16);
 
 impl CompactDate {

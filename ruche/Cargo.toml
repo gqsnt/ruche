@@ -7,12 +7,12 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-axum = { version = "0.8.3", optional = true, features = ["macros", "http2"]}
+axum = { version = "0.8.6", optional = true, features = ["macros", "http2"]}
 tokio = { workspace = true, optional = true }
 tokio-stream = { version = "0.1", optional = true, features = ["sync"] }
-tower = { version = "0.4.13", optional = true, features = ["util"] }
-tower-http = { version = "0.5.2", features = ["fs", "compression-full"], optional = true }
-sqlx = { version = "0.8", optional = true, features = ["postgres", "runtime-tokio-rustls", "chrono", "bigdecimal", "uuid"] }
+tower = { version = "0.5.2", optional = true, features = ["util"] }
+tower-http = { version = "0.6.4", features = ["fs", "compression-full"], optional = true }
+sqlx = { version = "0.8.6", optional = true, features = ["postgres", "runtime-tokio-rustls", "chrono", "bigdecimal", "uuid"] }
 bigdecimal = { version = "0.4", optional = true }
 riven = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true, features = ["json", "rustls-tls"] }
@@ -21,34 +21,34 @@ futures = { workspace = true }
 chrono = { version = "0.4", optional = true }
 tracing = { version = "0.1", optional = true }
 memory-serve = { version = "1.2.1", optional = true }
-dashmap = {version = "6.1.0", optional = true}
+dashmap = {git="https://github.com/gqsnt/dashmap", rev="781f9883c210a13b50141b57b821a359b8db926e", optional = true}
 sitemap = {version = "0.4.1", optional = true}
 thiserror = {workspace = true, optional = true}
 serde={workspace = true, features = ["derive"]}
 flate2 = { version = "1.0.35", optional = true }
 async-stream = {version = "0.3.6", optional = true}
 
-serde_json = {version = "1", optional = true}
+serde_json = {workspace = true, optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
 rustls = { version = "0.23.16" , features = ["ring"], optional = true}
 
-leptos = { git="https://github.com/gqsnt/leptos-bitcode", rev="ef8d29418d5259522fad8f49e3d0b859e5f1d464",features = ["nightly", "bincode"] }
-leptos_axum = { git="https://github.com/gqsnt/leptos-bitcode", rev="ef8d29418d5259522fad8f49e3d0b859e5f1d464", optional = true}
-leptos_meta ={ git="https://github.com/gqsnt/leptos-bitcode", rev="ef8d29418d5259522fad8f49e3d0b859e5f1d464"}
-leptos_router = { git="https://github.com/gqsnt/leptos-bitcode", rev="ef8d29418d5259522fad8f49e3d0b859e5f1d464",features = ["nightly"] }
-reactive_stores ={git="https://github.com/gqsnt/leptos-bitcode", rev="ef8d29418d5259522fad8f49e3d0b859e5f1d464"}
-reactive_stores_macro = {git="https://github.com/gqsnt/leptos-bitcode", rev="ef8d29418d5259522fad8f49e3d0b859e5f1d464"}
-wasm-bindgen = "=0.2.100"
+bitcode = "0.6.7"
+leptos = { git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c",features = ["nightly", "bitcode"] }
+leptos_axum = { git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c", optional = true}
+leptos_meta ={ git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c"}
+leptos_router = { git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c",features = ["nightly"] }
+reactive_stores ={git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c"}
+reactive_stores_macro = {git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c"}
+wasm-bindgen = "0.2.104"
 itertools = "0.14.0"
 urlencoding = "2"
-http = "1"
+http = "1.3.1"
 console_error_panic_hook = "0.1"
 send_wrapper = "0.6.0"
 gloo-net = "0.6.0"
 common={path="../common"}
-log = "0.4.22"
-async-trait = { version = "0.1.83", optional = true }
-axum-extra = {version = "0.10.1", optional = true}
+log = "0.4.27"
+axum-extra = {version = "0.10.3", optional = true}
 
 
 
@@ -56,7 +56,6 @@ axum-extra = {version = "0.10.1", optional = true}
 [features]
 hydrate = ["leptos/hydrate"]
 ssr = [
-    "dep:async-trait",
     "dep:axum-extra",
     "dep:axum",
     "dep:tokio",

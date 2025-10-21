@@ -2,8 +2,8 @@ use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersRes
 use crate::views::BackEndMatchFiltersSearch;
 use leptos::prelude::*;
 use leptos::server;
-use leptos::server_fn::codec::Bincode;
-#[server(input=Bincode,output=Bincode)]
+use leptos::server_fn::codec::Bitcode;
+#[server(input=Bitcode,output=Bitcode)]
 pub async fn get_encounters(
     summoner_id: i32,
     page_number: u16,

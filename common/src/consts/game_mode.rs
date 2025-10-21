@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+use bitcode::{Decode, Encode};
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Encode,Decode)]
 #[repr(u8)]
 pub enum GameMode {
     /// Catch-all variant for new, unknown game modes.

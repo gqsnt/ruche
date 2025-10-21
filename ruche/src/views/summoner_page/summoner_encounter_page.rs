@@ -1,3 +1,4 @@
+use bitcode::{Decode, Encode};
 use crate::backend::server_fns::get_encounter::get_encounter;
 use crate::utils::{
     calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits, DurationSince,
@@ -34,7 +35,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
     let (page_number, set_page_number) =
         query_signal_with_options::<u16>("page", get_default_navigation_option());
 
-    let encounter_resource = leptos::server::Resource::new_bincode(
+    let encounter_resource = leptos::server::Resource::new_bitcode(
         move || {
             (
                 sse_match_update_version.get().unwrap_or_default(),
@@ -343,7 +344,7 @@ pub fn SummonerEncounterStats(stats: SummonerEncounterStats, is_self: bool) -> i
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Encode,Decode)]
 pub struct SummonerEncounterResult {
     pub total_pages: u16,
     pub matches: Vec<SummonerEncounterMatch>,
@@ -353,7 +354,7 @@ pub struct SummonerEncounterResult {
     pub encounter: Summoner,
 }
 
-#[derive(Clone,Serialize, Deserialize, Default)]
+#[derive(Clone, Encode,Decode, Default)]
 pub struct SummonerEncounterStats {
     pub avg_kills: f32,
     pub avg_deaths: f32,
@@ -363,7 +364,7 @@ pub struct SummonerEncounterStats {
     pub total_matches: u16,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone,  Encode,Decode)]
 pub struct SummonerEncounterParticipant {
     pub summoner_id: i32,
     pub item0_id: u32,
@@ -386,7 +387,7 @@ pub struct SummonerEncounterParticipant {
     pub won: bool,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Encode,Decode)]
 pub struct SummonerEncounterMatch {
     pub match_id: i32,
     pub match_duration: Option<i32>,

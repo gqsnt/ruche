@@ -3,9 +3,9 @@ use crate::utils::{summoner_not_found_url, summoner_url};
 use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos::server;
-use leptos::server_fn::codec::Bincode;
+use leptos::server_fn::codec::Bitcode;
 
-#[server(input = Bincode)]
+#[server(input = Bitcode)]
 pub async fn search_summoner(
     platform_route: PlatformRoute,
     game_name: String,
@@ -55,7 +55,7 @@ pub async fn search_summoner(
                         .get_by_puuid(riven_pr, account.puuid.as_str())
                         .await
                     {
-                        Ok(summoner_data) => {
+                        Ok(Some(summoner_data)) => {
                             let redirect_url = summoner_url(
                                 platform_route.as_ref(),
                                 account

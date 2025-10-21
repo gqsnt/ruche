@@ -1,3 +1,4 @@
+use bitcode::{Decode, Encode};
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_live_game::get_live_game;
 use crate::utils::{
@@ -26,7 +27,7 @@ pub fn SummonerLivePage() -> impl IntoView {
 
     let (refresh_signal, set_refresh_signal) = signal(0);
     let (pending, set_pending) = signal(false);
-    let live_game_resource = Resource::new_bincode(
+    let live_game_resource = Resource::new_bitcode(
         move || {
             (
                 sse_in_live_game.get(),
@@ -347,7 +348,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
         </table>
     }
 }
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone,  Encode,Decode)]
 pub struct LiveGame {
     pub game_length: u16,
     pub game_map: Map,
@@ -356,7 +357,7 @@ pub struct LiveGame {
     pub participants: Vec<LiveGameParticipant>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Encode,Decode)]
 pub struct LiveGameParticipant {
     pub summoner_id: i32,
     pub champion_id: u16,
@@ -375,13 +376,13 @@ pub struct LiveGameParticipant {
     pub champion_stats: Option<LiveGameParticipantChampionStats>,
 }
 
-#[derive(Clone, Default,Serialize, Deserialize)]
+#[derive(Clone, Default, Encode,Decode)]
 pub struct LiveGameParticipantRankedStats {
     pub total_ranked: u16,
     pub total_ranked_wins: u16,
 }
 
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Clone, Default,  Encode,Decode)]
 pub struct LiveGameParticipantChampionStats {
     pub total_champion_played: u16,
     pub total_champion_wins: u16,

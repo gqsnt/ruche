@@ -1,7 +1,8 @@
+use bitcode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy , Encode,Decode, Eq, PartialEq, Hash)]
 pub enum Map {
     SummonersRiftOriginalSummerVariant = 1,
     SummonersRiftOriginalAutumnVariant = 2,

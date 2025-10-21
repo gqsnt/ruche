@@ -1,3 +1,4 @@
+use bitcode::{Decode, Encode};
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_champions::get_champions;
 use crate::utils::{calculate_and_format_kda, format_float_to_2digits, format_with_spaces};
@@ -21,7 +22,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
     let current_sort_type = move || table_sort.get().0;
     let current_sort_normal_flow = move || table_sort.get().1;
 
-    let champions_resource = Resource::new_bincode(
+    let champions_resource = Resource::new_bitcode(
         move || {
             (
                 sse_match_update_version.get().unwrap_or_default(),
@@ -424,7 +425,7 @@ impl TableSortType {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Encode,Decode)]
 pub struct ChampionStats {
     pub avg_kills: f32,
     pub avg_deaths: f32,
@@ -442,5 +443,5 @@ pub struct ChampionStats {
     pub total_triple_kills: u16,
     pub total_quadra_kills: u16,
     pub total_penta_kills: u16,
-    pub avg_kill_participation: u16,
+    pub avg_kill_participation: u16
 }

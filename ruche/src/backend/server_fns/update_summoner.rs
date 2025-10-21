@@ -9,11 +9,11 @@ use common::consts::platform_route::PlatformRoute;
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos::server;
-use leptos::server_fn::codec::Bincode;
+use leptos::server_fn::codec::Bitcode;
 #[cfg(feature = "ssr")]
 use std::string::ToString;
 
-#[server( input=Bincode, output=Bincode)]
+#[server( input=Bitcode, output=Bitcode)]
 pub async fn update_summoner(
     summoner_id: i32,
     game_name: String,
@@ -33,7 +33,7 @@ pub async fn update_summoner(
             .summoner_v4()
             .get_by_puuid(platform_route.to_riven(), puuid.as_str())
     );
-    if let (Ok(account), Ok(summoner)) = (account, summoner) {
+    if let (Ok(account), Ok(Some(summoner))) = (account, summoner) {
         let inner_db = db.clone();
         let puuid = summoner.puuid.clone();
         let lvl_profile_icon_id = (

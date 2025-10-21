@@ -1,3 +1,4 @@
+use bitcode::{Decode, Encode};
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_summoner::get_summoner;
 use crate::backend::server_fns::update_summoner::UpdateSummoner;
@@ -46,7 +47,7 @@ pub fn SummonerPage() -> impl IntoView {
     };
 
     // Update the summoner signal when resource changes
-    let summoner_resource = leptos::server::Resource::new_bincode_blocking(
+    let summoner_resource = leptos::server::Resource::new_bitcode_blocking(
         move || (platform_type(), summoner_slug()),
         |(platform, summoner_slug)| async move {
             get_summoner(PlatformRoute::from(platform.as_str()), summoner_slug).await
@@ -243,7 +244,7 @@ pub fn SummonerInfo(
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug,  Encode,Decode)]
 pub struct Summoner {
     pub id: i32,
     pub game_name: String,

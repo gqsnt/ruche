@@ -1,6 +1,7 @@
 use std::fmt::Formatter;
+use bitcode::{Decode, Encode};
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Encode,Decode)]
 pub struct Item(pub u32);
 
 

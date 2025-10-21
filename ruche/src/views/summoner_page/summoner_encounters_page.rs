@@ -1,3 +1,4 @@
+use bitcode::{Decode, Encode};
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_encounters::get_encounters;
 use crate::utils::{
@@ -41,7 +42,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
         }
     });
 
-    let encounters_resource = Resource::new_bincode(
+    let encounters_resource = Resource::new_bitcode(
         move || {
             (
                 sse_match_update_version.get().unwrap_or_default(),
@@ -247,13 +248,13 @@ pub fn SummonerEncountersPage() -> impl IntoView {
     }
 }
 
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Clone, Default, Encode,Decode)]
 pub struct SummonerEncountersResult {
     pub total_pages: u16,
     pub encounters: Vec<SummonerEncountersSummoner>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone,  Encode,Decode)]
 pub struct SummonerEncountersSummoner {
     pub id: i32,
     pub match_count: u16,

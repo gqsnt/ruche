@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 riven={workspace = true, optional = true}
 serde={workspace = true}
-
+bitcode = "0.6.7"
 
 [features]
 ssr=["dep:riven"]
