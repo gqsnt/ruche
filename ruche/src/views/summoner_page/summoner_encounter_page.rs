@@ -19,7 +19,7 @@ use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, IntoView};
 use leptos_router::hooks::{query_signal_with_options, use_query_map};
-use serde::{Deserialize, Serialize};
+
 
 #[component]
 pub fn SummonerEncounterPage() -> impl IntoView {

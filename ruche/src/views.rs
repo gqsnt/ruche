@@ -12,7 +12,6 @@ use leptos::prelude::CustomAttribute;
 use leptos_router::NavigateOptions;
 use std::fmt::{Debug, Formatter};
 use bitcode::{Decode, Encode};
-use serde::{Deserialize, Serialize};
 
 pub mod components;
 pub mod platform_type_page;

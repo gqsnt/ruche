@@ -1,5 +1,4 @@
 use bitcode::{Decode, Encode};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Encode, Decode)]
 pub struct FixedSizeString<const N: usize>([u8; N]);

@@ -16,7 +16,6 @@ use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use serde::{Deserialize, Serialize};
 
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {

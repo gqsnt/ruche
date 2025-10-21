@@ -14,7 +14,8 @@ use crate::backend::tasks::update_matches::bulk_summoners::{
 use crate::ssr::{RiotApiState, SubscriberMap};
 use crate::utils::{ProPlayerSlug, SSEEvent};
 use crate::DB_CHUNK_SIZE;
-use async_trait::async_trait;
+use std::future::Future;
+use std::pin::Pin;
 use chrono::NaiveDateTime;
 use common::consts;
 use common::consts::platform_route::PlatformRoute;
@@ -58,26 +59,30 @@ impl UpdateMatchesTask {
     }
 }
 
-#[async_trait]
 impl Task for UpdateMatchesTask {
-    async fn execute(&self) {
-        while let Ok(matches) = get_not_updated_match(&self.db, 100).await {
-            let start = Instant::now();
-            let match_len = matches.len();
-            match update_matches_task(&self.db, &self.api, matches).await {
-                Ok(summoner_ids) => {
-                    for id in summoner_ids {
-                        if let Some(sender) = self.update_matches_sender.get(&id) {
-                            let _ = sender.send(SSEEvent::SummonerMatches(0));
+    fn execute(&self) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>> {
+        let db = self.db.clone();
+        let api = self.api.clone();
+        let update_matches_sender = self.update_matches_sender.clone();
+        Box::pin(async move {
+            while let Ok(matches) = get_not_updated_match(&db, 100).await {
+                let start = Instant::now();
+                let match_len = matches.len();
+                match update_matches_task(&db, &api, matches).await {
+                    Ok(summoner_ids) => {
+                        for id in summoner_ids {
+                            if let Some(sender) = update_matches_sender.get(&id) {
+                                let _ = sender.send(SSEEvent::SummonerMatches(0));
+                            }
                         }
+                        log!("Updated {} matches in {:?}", match_len, start.elapsed());
                     }
-                    log!("Updated {} matches in {:?}", match_len, start.elapsed());
-                }
-                Err(e) => {
-                    log!("Error updating matches: {:?}", e);
-                }
-            };
-        }
+                    Err(e) => {
+                        log!("Error updating matches: {:?}", e);
+                    }
+                };
+            }
+        })
     }
 
     fn next_execution(&self) -> Instant {

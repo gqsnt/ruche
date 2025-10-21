@@ -5,7 +5,8 @@ use crate::backend::tasks::update_matches::bulk_summoners::bulk_insert_summoners
 use crate::backend::tasks::update_matches::TempSummoner;
 use crate::ssr::RiotApiState;
 use crate::DB_CHUNK_SIZE;
-use async_trait::async_trait;
+use std::future::Future;
+use std::pin::Pin;
 use chrono::Utc;
 use common::consts::platform_route::PlatformRoute;
 use futures::stream::FuturesUnordered;
@@ -44,12 +45,15 @@ impl UpdateProPlayerTask {
     }
 }
 
-#[async_trait]
 impl Task for UpdateProPlayerTask {
-    async fn execute(&self) {
-        if let Err(e) = update_pro_player(&self.db, self.api.clone()).await {
-            log!("Failed to update pro player data: {:?}", e);
-        }
+    fn execute(&self) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>> {
+        let db = self.db.clone();
+        let api = self.api.clone();
+        Box::pin(async move {
+            if let Err(e) = update_pro_player(&db, api.clone()).await {
+                log!("Failed to update pro player data: {:?}", e);
+            }
+        })
     }
 
     fn next_execution(&self) -> Instant {

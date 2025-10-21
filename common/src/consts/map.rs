@@ -1,5 +1,4 @@
 use bitcode::{Decode, Encode};
-use serde::{Deserialize, Serialize};
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy , Encode,Decode, Eq, PartialEq, Hash)]

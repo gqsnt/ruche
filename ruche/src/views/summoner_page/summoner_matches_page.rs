@@ -24,7 +24,7 @@ use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
-use serde::{Deserialize, Serialize};
+
 
 #[component]
 pub fn SummonerMatchesPage() -> impl IntoView {

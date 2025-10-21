@@ -1,13 +1,12 @@
-
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
-use async_trait::async_trait;
+use std::future::Future;
+use std::pin::Pin;
 use tokio::time::{Duration, Instant};
 
-#[async_trait]
 pub trait Task: Send + Sync {
-    /// Executes the task asynchronously.
-    async fn execute(&self);
+    /// Executes the task asynchronously. Return a boxed Future so the trait is object-safe.
+    fn execute(&self) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>>;
 
     /// Returns the next time this task should be executed.
     fn next_execution(&self) -> Instant;
@@ -94,7 +93,7 @@ impl TaskDirector {
                         tokio::spawn(async move {
                             // Use a guard to reset running state in case of panic
                             let _guard = RunningGuard::new(task_clone.clone());
-                            task_clone.execute().await;
+                            (task_clone.execute()).await;
                         });
                     }
 

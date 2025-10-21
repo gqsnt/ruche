@@ -14,7 +14,6 @@ use leptos::prelude::Read;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_params_map;
-use serde::{Deserialize, Serialize};
 
 pub mod match_details;
 pub mod summoner_champions_page;

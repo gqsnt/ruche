@@ -2,7 +2,8 @@ use crate::backend::ssr::{AppResult, PlatformRouteDb};
 use crate::backend::task_director::Task;
 use crate::backend::tasks::calculate_next_run_to_fixed_start_hour;
 use crate::utils::summoner_url;
-use async_trait::async_trait;
+use std::future::Future;
+use std::pin::Pin;
 use chrono::{DateTime, FixedOffset, NaiveDateTime};
 use common::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
 use leptos::leptos_dom::log;
@@ -39,14 +40,16 @@ impl GenerateSiteMapTask {
     }
 }
 
-#[async_trait]
 impl Task for GenerateSiteMapTask {
-    async fn execute(&self) {
-        if let Err(e) = generate_site_map(&self.db).await {
-            log!("Failed to generate ruche-lol map: {:?}", e);
-        } else {
-            log!("Site map generated successfully");
-        }
+    fn execute(&self) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>> {
+        let db = self.db.clone();
+        Box::pin(async move {
+            if let Err(e) = generate_site_map(&db).await {
+                log!("Failed to generate ruche-lol map: {:?}", e);
+            } else {
+                log!("Site map generated successfully");
+            }
+        })
     }
 
     fn next_execution(&self) -> Instant {

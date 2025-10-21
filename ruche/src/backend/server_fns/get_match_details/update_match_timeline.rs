@@ -60,14 +60,19 @@ pub async fn update_match_timeline(
                         AppError::CustomError("Missing participant_id in event".into())
                     })?;
                     let participant =
-                        lol_match_timelines
+                        match lol_match_timelines
                             .get_mut(&participant_id)
                             .ok_or_else(|| {
                                 AppError::CustomError(format!(
                                     "Participant with ID {} not found",
                                     participant_id
                                 ))
-                            })?;
+                            }){
+                            Ok(p) => p,
+                            Err(_) => {
+                                continue;
+                            }
+                    };
                     participant
                         .skills_timeline
                         .push(Skill::from(skill_slot as u8));
@@ -105,14 +110,19 @@ pub async fn update_match_timeline(
                         AppError::CustomError("Missing participant_id in event".into())
                     })?;
                     let participant =
-                        lol_match_timelines
+                        match lol_match_timelines
                             .get_mut(&participant_id)
                             .ok_or_else(|| {
                                 AppError::CustomError(format!(
                                     "Participant with ID {} not found",
                                     participant_id
                                 ))
-                            })?;
+                            }){
+                            Ok(p) => p,
+                            Err(_) => {
+                                continue;
+                            }
+                        };
                     if let Some(before_id) = event.before_id {
                         let before_id = before_id as u32;
                         if before_id != 0 {

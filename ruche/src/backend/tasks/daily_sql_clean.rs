@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use async_trait::async_trait;
+use std::future::Future;
+use std::pin::Pin;
 use sqlx::PgPool;
 use tokio::time::Instant;
 use leptos::leptos_dom::log;
@@ -30,24 +31,23 @@ impl DailySqlCleanTask {
     }
 }
 
-
-
-
-#[async_trait]
 impl Task for DailySqlCleanTask {
-    async fn execute(&self) {
-        let table_info = get_table_info(&self.db).await;
-        log!("Daily Clean Task Before:");
-        for row in table_info{
-            log!("{}", row);
-        }
-        let _ = sqlx::query("VACUUM FULL").execute(&self.db).await;
-        let _ = sqlx::query("VACUUM ANALYSE ").execute(&self.db).await;
-        let table_info = get_table_info(&self.db).await;
-        log!("Daily Clean Task After:");
-        for row in table_info{
-            log!("{}", row);
-        }
+    fn execute(&self) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>> {
+        let db = self.db.clone();
+        Box::pin(async move {
+            let table_info = get_table_info(&db).await;
+            log!("Daily Clean Task Before:");
+            for row in table_info{
+                log!("{}", row);
+            }
+            let _ = sqlx::query("VACUUM FULL").execute(&db).await;
+            let _ = sqlx::query("VACUUM ANALYSE ").execute(&db).await;
+            let table_info = get_table_info(&db).await;
+            log!("Daily Clean Task After:");
+            for row in table_info{
+                log!("{}", row);
+            }
+        })
     }
 
     fn next_execution(&self) -> Instant {
