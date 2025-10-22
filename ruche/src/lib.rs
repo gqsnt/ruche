@@ -256,6 +256,14 @@ pub mod ssr {
             srv_h,
             srv,
         );
+        match srv_h {
+            Ok(_) => log!("H3 server exited normally"),
+            Err(e) => log!("H3 server exited with error: {}", e),
+        }
+        match srv {
+            Ok(_) => log!("H2 server exited normally"),
+            Err(e) => log!("H2 server exited with error: {}", e),
+        }
         Ok(())
     }
 
