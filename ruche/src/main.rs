@@ -1,6 +1,4 @@
-
-
-
+use tower::ServiceBuilder;
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
@@ -9,6 +7,8 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use axum::Router;
     use dashmap::DashMap;
     use sqlx::PgPool;
+    use http::HeaderValue;
+    use tower_http::set_header::SetResponseHeaderLayer;
     use dotenv::dotenv;
     use leptos::logging::log;
     use leptos::prelude::*;
@@ -142,7 +142,15 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
 
     let routes = generate_route_list(App);
 
-
+    let sse_middleware = ServiceBuilder::new()
+        .layer(SetResponseHeaderLayer::overriding(
+            http::header::CACHE_CONTROL,
+            HeaderValue::from_static("no-cache"),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            http::header::HeaderName::from_static("priority"),
+            HeaderValue::from_static("u=6, i"),
+        ));
 
     // build our application with a route
     let app = Router::<AppState>::new()
@@ -174,7 +182,8 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         )
         .route(
             "/sse/match_updated/{platform_route}/{summoner_id}",
-            get(sse_broadcast_match_updated),
+            get(sse_broadcast_match_updated)
+                .layer(sse_middleware),
         )
         .route("/sitemap-index.xml", get(get_sitemap))
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(

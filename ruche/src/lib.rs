@@ -1,5 +1,3 @@
-
-
 pub mod app;
 pub mod views;
 
@@ -10,8 +8,6 @@ pub const DB_CHUNK_SIZE: usize = 500;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use std::net::SocketAddr;
-    use std::sync::Arc;
     use crate::backend::live_game_cache;
     use crate::backend::server_fns::get_encounter::ssr::find_summoner_puuid_by_id;
     use crate::backend::server_fns::get_live_game::ssr;
@@ -31,23 +27,25 @@ pub mod ssr {
     use riven::RiotApi;
     use sqlx::postgres::PgConnectOptions;
     use sqlx::PgPool;
+    use std::net::SocketAddr;
+    use std::sync::Arc;
 
     use std::path::PathBuf;
 
-    use std::time::Duration;
     use axum_extra::extract::Host;
+    use http::HeaderValue;
+    use rustls::pki_types::pem::PemObject;
+    use rustls::pki_types::{CertificateDer, PrivateKeyDer};
+    use rustls::ServerConfig;
+    use std::net::{IpAddr, Ipv6Addr};
+    use std::time::Duration;
     use tokio::sync::broadcast::Sender;
     use tokio::time;
     use tokio_stream::wrappers::BroadcastStream;
     use tokio_stream::StreamExt;
     use tower::ServiceExt;
     use tower_http::services::ServeFile;
-    use rustls::pki_types::{CertificateDer, PrivateKeyDer};
-    use rustls::pki_types::pem::PemObject;
-    use rustls::ServerConfig;
-    use std::net::{IpAddr, Ipv6Addr};
     use tower_http::set_header::SetResponseHeaderLayer;
-    use http::HeaderValue;
 
     pub type RiotApiState = Arc<RiotApi>;
     pub type SubscriberMap = DashMap<i32, Sender<SSEEvent>>;
@@ -160,47 +158,56 @@ pub mod ssr {
         let debounce_interval = Duration::from_millis(500);
 
         let stream = async_stream::stream! {
-            // Use an interval timer to enforce the 1-second delay
-            let mut interval = time::interval(debounce_interval);
-            interval.set_missed_tick_behavior(time::MissedTickBehavior::Delay);
-            interval.reset();
+                   // Use an interval timer to enforce the 1-second delay
+                   let mut interval = time::interval(debounce_interval);
+                   interval.set_missed_tick_behavior(time::MissedTickBehavior::Delay);
+                   interval.reset();
 
 
-            // Wrap the receiver in a stream
-            let mut rx_stream = BroadcastStream::new(rx);
+                   // Wrap the receiver in a stream
+                   let mut rx_stream = BroadcastStream::new(rx);
 
-            loop {
-                tokio::select! {
-                    message = rx_stream.next() =>{
-                        pending_event= match message{
-                            Some(Ok(SSEEvent::SummonerMatches(_))) => {
-                                 summoner_matches_update_count += 1;
-                                Some(SSEEvent::SummonerMatches(summoner_matches_update_count))
-                            }
-                            Some(Ok(SSEEvent::LiveGame(Some(_))) ) => {
-                                summoner_live_game_version_update_count += 1;
-                                Some(SSEEvent::LiveGame(Some(summoner_live_game_version_update_count)))
-                            }
-                            Some(Ok(SSEEvent::LiveGame(None))) => {
-                                Some(SSEEvent::LiveGame(None))
-                            }
-                            _ => None,
-                        };
-                    }
-                    _ = interval.tick() => {
-                          if let Some(event) = pending_event.take() {
-                                yield Ok(Event::default().data(event.to_string()));
-                          }
-                    }
-                    else => {
-                        // Stream has ended
-                        break;
-                    }
-                }
-            }
-        };
+                   loop {
+                       tokio::select! {
+                           message = rx_stream.next() =>{
+                               pending_event= match message{
+                                   Some(Ok(SSEEvent::SummonerMatches(_))) => {
+                                        summoner_matches_update_count += 1;
+                                       Some(SSEEvent::SummonerMatches(summoner_matches_update_count))
+                                   }
+                                   Some(Ok(SSEEvent::LiveGame(Some(_))) ) => {
+                                       summoner_live_game_version_update_count += 1;
+                                       Some(SSEEvent::LiveGame(Some(summoner_live_game_version_update_count)))
+                                   }
+                                   Some(Ok(SSEEvent::LiveGame(None))) => {
+                                       Some(SSEEvent::LiveGame(None))
+                                   }
+                                   _ => None,
+                               };
+                           }
+                           _ = interval.tick() => {
+                                 if let Some(event) = pending_event.take() {
+                                       yield Ok(Event::default()
+                                            .id(format!("{}", summoner_live_game_version_update_count))
+                                            .event("message")
+                                            .data(event.to_string())
+                                            .retry(Duration::from_millis(3000)) // backoff 3s
+                                        );
+                                 }
+                           }
+                           else => {
+                               // Stream has ended
+                               break;
+                           }
+                       }
+                   }
+               };
 
-        Sse::new(stream).keep_alive(KeepAlive::default())
+        Sse::new(stream).keep_alive(
+            KeepAlive::new()
+                .interval(Duration::from_secs(15))
+                .text(":\n"), // commentaire SSE de keep-alive
+        )
     }
 
     pub async fn serve(
@@ -226,9 +233,10 @@ pub mod ssr {
         }
 
         let cert_der = CertificateDer::from_pem_file(&cert).expect("failed to load cert");
-        let key_der  = PrivateKeyDer::from_pem_file(&key).expect("failed to load key");
+        let key_der = PrivateKeyDer::from_pem_file(&key).expect("failed to load key");
 
         let h2_tls = make_rustls_server_config_h2(cert_der.clone(), key_der.clone_key());
+
         let h3_tls = make_rustls_server_config_h3(cert_der, key_der.clone_key());
 
         let config = RustlsConfig::from_config(h2_tls.clone());
@@ -240,22 +248,15 @@ pub mod ssr {
         // Spawn the H3 router in the background. Clone the app so we don't move it
         // twice (once into the H3 task, once into the h2 server below).
         let alt_svc_value = format!("h3=\":{}\"; ma=2592000; persist=1", socket_addr.port());
-        let srv_h = axum_h3::H3Router::new(app.clone())
-            .serve(acceptor);
+        let srv_h = axum_h3::H3Router::new(app.clone()).serve(acceptor);
         log!("listening on {}", socket_addr);
         // Advertise HTTP/3 (h3) to browsers using Alt-Svc so that clients can attempt h3 (QUIC) on h3_addr
-        let app = app.layer(
-            SetResponseHeaderLayer::if_not_present(
-                http::header::ALT_SVC,
-                HeaderValue::from_str(&alt_svc_value).unwrap()
-            )
-        );
-        let srv=  axum_server::bind_rustls(socket_addr, config)
-            .serve(app.into_make_service());
-        let (srv_h, srv) = tokio::join!(
-            srv_h,
-            srv,
-        );
+        let app = app.layer(SetResponseHeaderLayer::if_not_present(
+            http::header::ALT_SVC,
+            HeaderValue::from_str(&alt_svc_value).unwrap(),
+        ));
+        let srv = axum_server::bind_rustls(socket_addr, config).serve(app.into_make_service());
+        let (srv_h, srv) = tokio::join!(srv_h, srv,);
         match srv_h {
             Ok(_) => log!("H3 server exited normally"),
             Err(e) => log!("H3 server exited with error: {}", e),
@@ -302,7 +303,7 @@ pub mod ssr {
 
     pub async fn serve_locally(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
         let cert_path = PathBuf::from("certs").join("localhost+2.pem");
-        let key_path  = PathBuf::from("certs").join("localhost+2-key.pem");
+        let key_path = PathBuf::from("certs").join("localhost+2-key.pem");
         let axum_rustls = RustlsConfig::from_pem_file(cert_path.clone(), key_path.clone())
             .await
             .expect("failed to load rustls config for local TLS");
@@ -313,8 +314,6 @@ pub mod ssr {
             .unwrap();
         Ok(())
     }
-
-
 
     pub async fn get_sitemap() -> impl IntoResponse {
         match ServeFile::new(
@@ -340,13 +339,29 @@ pub mod ssr {
         }
     }
 
-    pub fn make_quinn_server_endpoint_dual(in_addr: SocketAddr, tls_config: Arc<ServerConfig>) -> quinn::Endpoint {
-        let server_config = quinn::ServerConfig::with_crypto(Arc::new(
+    pub fn make_quinn_server_endpoint_dual(
+        in_addr: SocketAddr,
+        tls_config: Arc<ServerConfig>,
+    ) -> quinn::Endpoint {
+        let mut tcfg = quinn::TransportConfig::default();
+        // plus de flux simultanés (ajustez selon charge)
+        tcfg.max_concurrent_bidi_streams(quinn::VarInt::from_u32(256));
+        tcfg.max_concurrent_uni_streams(quinn::VarInt::from_u32(256));
+        // éviter les coupures sur connexions « calmes » (SSE)
+        tcfg.max_idle_timeout(Some(
+            std::time::Duration::from_secs(120).try_into().unwrap(),
+        ));
+        tcfg.keep_alive_interval(Some(std::time::Duration::from_secs(15)));
+        // si vous projetez d’utiliser des datagrams (WebTransport plus tard)
+        tcfg.datagram_receive_buffer_size(Some(1 << 20)); // 1 MiB
+
+        let mut scfg = quinn::ServerConfig::with_crypto(Arc::new(
             quinn::crypto::rustls::QuicServerConfig::try_from(tls_config).unwrap(),
         ));
+        scfg.transport_config(Arc::new(tcfg));
         // Bind QUIC on [::]:port (IPv6 unspecified). On Windows this is dual-stack by default.
         let v6_addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), in_addr.port());
-        quinn::Endpoint::server(server_config, v6_addr).expect("failed to bind QUIC endpoint")
+        quinn::Endpoint::server(scfg, v6_addr).expect("failed to bind QUIC endpoint")
     }
 
     pub fn make_rustls_server_config_h3(
@@ -356,11 +371,11 @@ pub mod ssr {
         let mut tls_config = rustls::ServerConfig::builder_with_provider(
             rustls::crypto::ring::default_provider().into(),
         )
-            .with_safe_default_protocol_versions()
-            .unwrap()
-            .with_no_client_auth()
-            .with_single_cert(vec![cert.clone()], key.clone_key())
-            .unwrap();
+        .with_safe_default_protocol_versions()
+        .unwrap()
+        .with_no_client_auth()
+        .with_single_cert(vec![cert.clone()], key.clone_key())
+        .unwrap();
         tls_config.alpn_protocols = vec![b"h3".to_vec()];
         tls_config.max_early_data_size = u32::MAX;
         Arc::new(tls_config)
@@ -370,27 +385,18 @@ pub mod ssr {
         cert: CertificateDer<'static>,
         key: PrivateKeyDer,
     ) -> Arc<rustls::ServerConfig> {
-
         let mut tls_config = rustls::ServerConfig::builder_with_provider(
             rustls::crypto::ring::default_provider().into(),
         )
-            .with_safe_default_protocol_versions()
-            .unwrap()
-            .with_no_client_auth()
-            .with_single_cert(vec![cert.clone()], key.clone_key())
-            .unwrap();
+        .with_safe_default_protocol_versions()
+        .unwrap()
+        .with_no_client_auth()
+        .with_single_cert(vec![cert.clone()], key.clone_key())
+        .unwrap();
         tls_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
         Arc::new(tls_config)
     }
-
-
-
-
-
-
-
 }
-
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
