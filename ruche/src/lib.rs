@@ -1,5 +1,4 @@
-use std::net::SocketAddr;
-use std::sync::Arc;
+
 
 pub mod app;
 pub mod views;
@@ -11,6 +10,8 @@ pub const DB_CHUNK_SIZE: usize = 500;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
+    use std::net::SocketAddr;
+    use std::sync::Arc;
     use crate::backend::live_game_cache;
     use crate::backend::server_fns::get_encounter::ssr::find_summoner_puuid_by_id;
     use crate::backend::server_fns::get_live_game::ssr;
@@ -30,9 +31,9 @@ pub mod ssr {
     use riven::RiotApi;
     use sqlx::postgres::PgConnectOptions;
     use sqlx::PgPool;
-    use std::net::SocketAddr;
+
     use std::path::PathBuf;
-    use std::sync::Arc;
+
     use std::time::Duration;
     use axum_extra::extract::Host;
     use tokio::sync::broadcast::Sender;

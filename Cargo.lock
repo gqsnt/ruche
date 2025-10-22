@@ -3968,7 +3968,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sitemap",
- "socket2 0.5.8",
  "sqlx",
  "thiserror 2.0.17",
  "tokio",
