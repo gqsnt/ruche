@@ -158,6 +158,8 @@ pub mod ssr {
         let debounce_interval = Duration::from_millis(500);
 
         let stream = async_stream::stream! {
+
+                      let mut event_id: u64 = 0;
                    // Use an interval timer to enforce the 1-second delay
                    let mut interval = time::interval(debounce_interval);
                    interval.set_missed_tick_behavior(time::MissedTickBehavior::Delay);
@@ -187,11 +189,12 @@ pub mod ssr {
                            }
                            _ = interval.tick() => {
                                  if let Some(event) = pending_event.take() {
-                                       yield Ok(Event::default()
-                                            .id(format!("{}", summoner_live_game_version_update_count))
-                                            .event("message")
-                                            .data(event.to_string())
-                                            .retry(Duration::from_millis(3000)) // backoff 3s
+                                       event_id = event_id.wrapping_add(1);
+                                        yield Ok(
+                                            Event::default()
+                                                .id(event_id.to_string())
+                                                .data(event.to_string())
+                                                .retry(Duration::from_millis(3000))
                                         );
                                  }
                            }
@@ -203,11 +206,7 @@ pub mod ssr {
                    }
                };
 
-        Sse::new(stream).keep_alive(
-            KeepAlive::new()
-                .interval(Duration::from_secs(15))
-                .text(":\n"), // commentaire SSE de keep-alive
-        )
+        Sse::new(stream).keep_alive(KeepAlive::default())
     }
 
     pub async fn serve(
