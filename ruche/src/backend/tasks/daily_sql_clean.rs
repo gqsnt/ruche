@@ -40,7 +40,7 @@ impl Task for DailySqlCleanTask {
             for row in table_info{
                 log!("{}", row);
             }
-            let _ = sqlx::query("VACUUM FULL").execute(&db).await;
+
             let _ = sqlx::query("VACUUM ANALYSE ").execute(&db).await;
             let table_info = get_table_info(&db).await;
             log!("Daily Clean Task After:");

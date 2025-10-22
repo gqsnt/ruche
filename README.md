@@ -1,323 +1,387 @@
 <picture>
-    <source srcset="https://raw.githubusercontent.com/gqsnt/ruche/refs/heads/main/asset-generation/tmp/logo.png" media="(prefers-color-scheme: dark)">
-    <img src="https://raw.githubusercontent.com/gqsnt/ruche/refs/heads/main/asset-generation/tmp/logo.png" alt="Ruche Logo">
+  <source srcset="https://raw.githubusercontent.com/gqsnt/ruche/refs/heads/main/asset-generation/tmp/logo.png" media="(prefers-color-scheme: dark)">
+  <img src="https://raw.githubusercontent.com/gqsnt/ruche/refs/heads/main/asset-generation/tmp/logo.png" alt="Ruche Logo">
 </picture>
 
-# Ruche: A High-Performance League of Legends Stats Platform
+# Ruche — High-Performance League of Legends Stats
 **Visit us at [ruche.lol](https://ruche.lol)**
 
-Ruche is a cutting-edge League of Legends statistics platform designed for unparalleled speed and scalability. Inspired by industry leaders like OP.GG, Ruche offers comprehensive insights into summoner profiles, match histories, champion statistics, live games, and encounters—all delivered with exceptional performance.
+Ruche is a fast, scalable League of Legends statistics platform inspired by industry leaders (e.g., OP.GG). It provides summoner profiles, match histories, champion stats, live games, and encounter analytics—with a focus on low latency, efficient data fetching, and real-time updates.
+
+---
 
 ## Key Features
+
 ### Summoner Profiles
-
-- **Intuitive Search Functionality**
-    - Search for summoners effortlessly using **Game Name**, **Tag Line**, and **Platform**.
-    - If a summoner isn't found in the database, Ruche automatically fetches their data from Riot's API, adds them to the database, and redirects you to their profile.
-
-- **Detailed Summoner Information**
-    - **Profile Overview**
-        - Displays summoner name, level, profile icon, and professional player status.
-        - **Update Button**: Manually refresh the summoner's data and match history with a single click.
-    - **Navigation Tabs**
-        - **Matches**: Dive deep into match histories with advanced filtering and sorting.
-        - **Champions**: View aggregated statistics for champions played.
-        - **Encounters**: See which summoners you've played with or against most frequently.
-        - **Live**: Access real-time game data if the summoner is currently in a game. A green indicator appears if the summoner is actively in a match.
-        - **Encounter**: Analyze detailed stats for matches with a specific summoner.
+- **Search** by **Game Name**, **Tag Line**, and **Platform**. If a summoner is missing, Ruche fetches from Riot’s API, stores it, and redirects to the profile.
+- **Profile overview** with name, level, icon, and pro status.  
+  Manual **Update** button to refresh data and trigger background match updates.
+- **Tabs**
+  - **Matches**: detailed cards, participants, and inline details.
+  - **Champions**: aggregated per-champion stats with sorting.
+  - **Encounters**: who you play **with**/**against**; search, stats, and history.
+  - **Live**: show current game (if any) with a green tab indicator.
+  - **Encounter**: in-depth head-to-head page for a chosen player.
 
 ### Match History
-
-- **Comprehensive Match Cards**
-    - **Summary Information**
-        - Match outcome, KDA, kill participation, items, and a list of participants.
-    - **Participant Details**
-        - Encounter counts displayed as green tags for summoners you've played with or against.
-        - Professional players highlighted with purple tags linking to their LolPros.gg profiles.
-    - **Expandable Match Details**
-        - **Overview Tab**: General stats and performance metrics.
-        - **Team Tab**: In-depth breakdown of team compositions and stats (not implemented).
-        - **Build Tab**: Timelines of item purchases, sales, skill upgrades, and perks.
-
-- **Advanced Match Filters**
-    - **Real-Time Filtering**
-        - Filter matches by Champion, Queue Type, Start Date, and End Date without page reloads.
-    - **Dynamic Updates**
-        - Instantly update match lists and statistics based on selected filters.
+- **Cards** summarizing result, K/D/A, KP, items, and participants.
+- **Badges**
+  - **Encounter count** (green) for frequent teammates/opponents.
+  - **Pro** (purple) linking to LolPros.gg when detected.
+- **Expandable details**
+  - **Overview**: team & player metrics.
+  - **Team**: reserved for deeper team insights (roadmap).
+  - **Build**: timeline of item buys/sells, skills order, and perks.
 
 ### Champion Statistics
-- **Detailed Performance Metrics**
-    - Total matches played, wins, losses, win rate, average kills, deaths, assists, KDA ratio, gold earned, CS, damage dealt, damage taken, and multi-kill counts.
-- **Advanced Sorting Options**
-    - Sort champions by **Win Rate**, **Average KDA**, **Gold Earned**, **CS**, **Damage Dealt**, **Damage Taken**, and **Multi-Kills** to analyze performance effectively.
+- Totals, win rate, averages (K/D/A, gold, CS, damage dealt/taken), multi-kills.
+- Sort by **Win Rate**, **Avg KDA**, **Gold**, **CS**, **Damage Dealt**, **Damage Taken**, **Multi-kills**.
 
 ### Encounters
-
-- **Encounter List**
-    - Displays summoners you've frequently played with or against.
-    - **Search Functionality**: Find specific summoners within your encounter list.
-- **Encounter Details**
-    - **With and Against Tabs**: Toggle between matches where you've played with or against a specific summoner.
-    - **Statistical Comparison**
-        - Side-by-side stats including total matches, wins, losses, win rates, average KDA, and kill participation.
-    - **Match List with Filters**
-        - View all shared matches with advanced filtering options similar to the match history.
+- **List** the summoners you’ve played with/against most.
+- **Search** within your encounter list.
+- **Details**: With/Against tabs, side-by-side stats, and the full shared match list with filters.
 
 ### Live Games
-- **Real-Time Game Information**
-    - View current game mode, map, game length, and participant details if the summoner is in a live game.
-- **'In Live Game' Indicator**
-    - The "Live" tab on the summoner profile page now turns green when the summoner is actively in a match.
-- **Automatic Refresh Interval**
-    - Live game cache is automatically updated at intervals defined by `LIVE_GAME_CACHE_UPDATE_INTERVAL` in your `.env` file.
-- **Refresh Button**
-    - A refresh button on the live game tab lets you bypass the cache and fetch the latest data directly from the Riot API, ensuring real-time accuracy.
-- **Participant Insights**
-    - **Champion Picks**: See which champions are being played.
-    - **Summoner Spells and Runes**: Detailed information on summoner spells and runes used.
-    - **Player Statistics**
-        - Encounter counts, ranked stats, and champion-specific stats for each participant.
-- **Optimized Caching**
-    - Live game data is cached for improved performance and reduced API calls.
+- Real-time game info: queue, map, elapsed time, participants.
+- **Live indicator**: the “Live” tab turns green if the summoner is in game.
+- **Auto cache refresh** at `LIVE_GAME_CACHE_UPDATE_INTERVAL` (configurable); **Refresh** button bypasses cache.
+- **Per participant**: champion, spells, runes, encounter counts, ranked stats, champion stats.
 
-### Real-Time Updates
-- **Server-Sent Events (SSE)**
-  - **Summoner Matches Events**: SSE event when match with related summoner is updated back-end, update matches, champions, and encounters.
-  - **Live Game Status Events**: SSE event update ui and refresh live game page to reflect if a summoner is currently in a game, turning the "Live" navigation tab green.
-  - **Debounce Mechanism:** Limits updates to once per 500ms to prevent client overload.
-  - **Efficient Subscription Management**: Inactive SSE subscriptions are periodically cleaned up to free resources.
+---
 
-### Advanced Filtering and Sorting
-- **Global Match Filters**
-    - Available across Matches, Champions, Encounters, and Encounter pages.
-    - Filters include **Champion**, **Queue Type**, **Start Date**, and **End Date**.
-- **Dynamic Sorting**
-    - Easily sort data to identify trends and analyze performance.
+## Real-Time Updates (SSE)
+
+- **Endpoint**: `/sse/match_updated/{platform}/{summoner_id}`
+- **Events** (compact payloads):
+  - `1:{n}` → `SummonerMatches(n)`: version increments; UI reloads matches/champions/encounters.
+  - `0:{v}` → `LiveGame(Some(v))`
+  - `0:`    → `LiveGame(None)`
+- **Debounce** ~**500 ms**; inactive subscriptions are cleaned periodically.
+
+---
+
+## Global Filtering & URLs
+
+Shared filters are persisted in the URL:
+
+- **Query keys**
+  - `filters[champion_id]`
+  - `filters[queue_id]`
+  - `filters[start_date]` (`YYYY-MM-DD`)
+  - `filters[end_date]` (`YYYY-MM-DD`)
+- **Routes**
+  - Summoner: `/platform/{PLATFORM}/summoners/{GAME_NAME}-{TAG_LINE}`
+  - Tabs: `?tab=matches|champions|encounters|live|encounter`
+  - Encounter detail:  
+    `?tab=encounter&encounter_slug={GAME}-{TAG}&encounter_platform={PLATFORM}`
+  - Pagination: `?page={u16}`
+
+---
 
 ## Technical Highlights
-### Frontend
 
-- **Leptos Framework**
-    - Utilizes Leptos, a reactive Rust framework with SSR and CSR capabilities.
-    - **Component-Based Architecture**
-        - Modular components like `MatchFilters`, `Pagination`, `SummonerNav`, and `MatchDetails` for maintainability and reusability.
-    - **State Management**
-        - Employs context providers and reactive signals for efficient state handling.
-    - **Serialization/Deserialization**
-        - Employs Bitcode, a lightweight serialization library optimized for speed and compression with zstd
+### Frontend
+- **Leptos** (Rust) with SSR/CSR hybrid, reactive signals, and context providers.
+- **Components**: `SummonerSearchPage`, `SummonerNav`, `MatchFilters`, `Pagination`, `MatchDetails` (Overview/Build/Team), and pages for Matches/Champions/Encounters/Encounter/Live.
+- **Serialization**: **Bitcode** payloads (small and fast) with zstd compression.
+- **UX**: accessible controls, fast navigation, URL-synced state.
 
 ### Backend
+- **Axum + Tokio** (async), **SQLx + PostgreSQL**, **Riven** (Riot API).
+- **Task Director**: a priority scheduler for:
+  - **Update Matches**
+  - **Update Pro Players**
+  - **Sitemap generation**
+  - **SSE broadcaster cleanup**
+  - **Live game cache management**
+  - **DB maintenance**
+- **Live game cache**: in-memory (DashMap) with TTL and on-read elapsed recompute.
+- **Compression**: Brotli + Zstd (no double-compress for SSE/JS/WASM/CSS).
+- **TLS & transports**
+  - **Rustls** for HTTPS (**HTTP/2**)
+  - **HTTP/3 (QUIC)** enabled in production with automatic `Alt-Svc`
+  - HTTP→HTTPS redirection on port 80
 
-- **Rust-Powered Performance**
-    - Built entirely in Rust for maximum efficiency and safety.
-- **Asynchronous Operations**
-    - Leverages Axum and Tokio for non-blocking, high-performance server operations.
-- **Database Interaction**
-    - Async support through SQLx and PostgreSQL for scalable data management.
-- **Riot API Integration**
-    - Utilizes Riven for seamless interaction with Riot's API.
-- **Task Management**
-    - Custom Task Director manages background tasks with precision and efficiency.
-- **Robust Error Handling**
-  - **Comprehensive Error Types (`AppError`)**
-    - Detailed error handling covering database errors, API failures, parsing errors.
-  - **Consistent Error Management**
-    - Uniform error responses and logging for debugging and stability.
+### Common crate (shared types)
+- Strongly-typed LoL enums & helpers in `common`:
+  - `champion::Champion` (+ `CHAMPION_OPTIONS`)
+  - `queue::Queue` (+ `QUEUE_OPTIONS`) and display names
+  - `map::Map`, `game_mode::GameMode`, `perk::Perk`, `summoner_spell::SummonerSpell`
+  - `platform_route::PlatformRoute` (+ conversions)
+  - `item::Item`, `profile_icon::ProfileIcon`
+- **Traits** for asset wiring:
+  - `HasStaticSrcAsset` → builds `/assets/{path}/{id}.avif` URLs (e.g., profile icons).
+  - `HasStaticBgAsset`  → builds CSS class names for sprites (e.g., items/spells/perks/champions).
+- `AssetType` (Item | ProfileIcon | SummonerSpell | Perk | Champion) provides:
+  - Path segments (`items`, `profile_icons`, `summoner_spells`, `perks`, `champions`)
+  - Default CSS class prefixes (`ii`, `pi`, `ss`, `pk`, `cn`)
+  - Default sizes (px): Items **22×22**, Spells **22×22**, Perks **28×28**, Champions **48×48**, Profile Icons **64×64**
+- All the above derive **bitcode** `Encode/Decode` for fast SSR<→CSR transfer.
 
+---
 
-### Optimization Techniques
-- **Asset Optimization**
-    - Custom pipeline for asset management.
-        - Downloads assets from Riot's API and Community Dragon.
-        - Generates AVIF images and CSS sprites in AVIF format.
-    - **In-Memory Asset Serving**
-        - JS, CSS, WASM, and images are compressed and served from memory using `MemoryServe`.
-- **Compression**
-    - Utilizes Brotli and Zstd.
-- **Database Efficiency**
-    - Bulk inserts and updates minimize database load.
-    - Optimized query and efficient index speed up data retrieval.
+## Asset Pipeline (Sprites, AVIF, CSS)
 
-- **Caching Mechanisms with Thread-safe `DashMap`**
-    - SSE broadcaster
-    - Live Game Cache
-- **Serialization/Deserialization**
-    - Transitioned from serde to  rkyv to bitcode, favoring Bitcode for its size, performance and compatibility with zstd compression.
+Ruche ships a **custom asset-generation** binary that downloads static assets (from DDragon/CommunityDragon), converts to **AVIF**, and builds **CSS sprites** for efficient delivery.
 
-## Security and SEO
-### Security Measures
+### Sources
+- **Versions**: `https://ddragon.leagueoflegends.com/api/versions.json` (latest = index 0)
+- **Items**: `.../cdn/{version}/data/en_US/item.json` + `.../img/item/{id}.png`
+- **Spells**: `.../cdn/{version}/data/en_US/summoner.json` + `.../img/spell/{name}.png`
+- **Perks**: CommunityDragon perks JSON + `.../cdn/{version}/data/en_US/runesReforged.json`
+- **Champions (square)**: `https://cdn.communitydragon.org/{version}/champion/{id}/square`
+- **Profile icons**: `.../cdn/{version}/data/en_US/profileicon.json` + `.../img/profileicon/{id}.png`
 
-- **TLS with Rustls**
-    - Secure communication with modern TLS protocols.
-- **Automatic HTTPS Redirection**
-    - Ensures all traffic is encrypted by redirecting HTTP requests to HTTPS.
-- **Environment Configuration**
-    - Sensitive data managed through environment variables to enhance security.
+### Paths
+- **Temp** (PNG): `asset-generation/tmp/{items|summoner_spells|perks|champions|profile_icons}`
+- **Final assets (AVIF)**: `ruche/public/assets/...`
+- **Stylesheets**: `ruche/style/{items|summoner_spells|perks|champions}.css`
+- **Sprite files (AVIF)**: `/assets/{items|summoner_spells|perks|champions}.avif`
+- **Logo**: AVIF written to `/assets/logo.avif` from `asset-generation/tmp/logo.png`
 
-### SEO Optimization
+### What gets sprited vs standalone?
+- **Sprited** (**background-image**): **Items**, **Summoner Spells**, **Perks**, **Champions**
+- **Standalone images** (**<img src>**): **Profile Icons**, **Logo**
 
-- **Dynamic Meta Tags**
-    - Each summoner page includes titles and descriptions for better search visibility.
-- **Clean and Canonical URLs**
-    - Improves indexing and prevents duplicate content issues.
-- **Sitemap Generation**
-    - Automated daily updates to `sitemap.xml` for comprehensive search engine indexing.
+### Image processing
+- **Resize** (Lanczos3) to default sizes (see *Common crate* above)
+- **AVIF encoder**: quality **75**, speed **1** (logo uses quality **100**)
+- Max concurrency for downloads (reqwest): **10**, with **exponential backoff** retries (3 attempts)
 
-## Architecture Highlights
-### Server Functions
-- **Data Retrieval and Updates**
-    - Efficient fetching and updating of summoner data, matches, and live games.
-    - Automatic handling of data inconsistencies and conflicts.
-- **Task Management**
-    - **Custom Task Scheduler**
-        - Manages background tasks efficiently using a priority queue.
-    - **Concurrent Execution Control**
-        - Prevents race conditions and ensures data integrity.
-    - **Background Tasks**
-      - **Update Matches**: Fetches latest match details and resolves summoner conflicts.
-      - **Update Pro Players**: Keeps professional player data up-to-date.
-      - **Sitemap Generation**: Enhances SEO with daily sitemap updates.
-      - **Clean SSE broadcaster Cache**: Maintains cache health for optimal performance.
-      - **Handle Live Game Cache**: Manages live game data for real-time updates.
-      
-### Frontend Components
-- **Reusable and Efficient**
-    - Components designed for high reusability and minimal re-renders.
-- **Reactive Design**
-    - State changes propagate efficiently, providing a seamless user experience.
+### Sprite layout
+- Square grid `ceil(sqrt(n)) × ceil(sqrt(n))`
+- One **.avif** sprite per asset type
+- Generated CSS includes **class per ID** with `background-position`, `width`, `height`
 
+### CSS class naming
+- Prefix = asset type; suffix = numeric **ID**
+  - Items: `.ii-<itemId>`
+  - Spells: `.ss-<spellId>`
+  - Perks: `.pk-<perkId>`
+  - Champions: `.cn-<championId>`
+  - (Profile icons use `<img src="/assets/profile_icons/<id>.avif">`)
 
+#### Usage examples
+```html
+<!-- Items (e.g., Infinity Edge 3031) -->
+<span class="ii-3031" aria-label="Infinity Edge"></span>
 
-### Task Management
-- **Custom Task Scheduler**
-    - Manages background tasks efficiently using a priority queue.
-- **Concurrent Execution Control**
-    - Prevents race conditions and ensures data integrity.
+<!-- Spells (Flash 4) -->
+<span class="ss-4" aria-label="Flash"></span>
 
-### Asset Delivery
-- **MemoryServe**
-    - Serves assets directly from memory to reduce disk I/O.
-- **Support for Compressed Assets**
-    - Assets served with Brotli and Zstd compression.
+<!-- Perks (First Strike 8369) -->
+<i class="pk-8369" aria-label="First Strike"></i>
 
+<!-- Champions (Aatrox 266) -->
+<div class="cn-266" title="Aatrox"></div>
 
+<!-- Profile icon -->
+<img src="/assets/profile_icons/1234.avif" alt="Profile Icon #1234" width="64" height="64">
+````
+
+### CLI (asset-generation)
+
+```bash
+# Generate everything (download missing, convert & build sprites as needed)
+cargo run --bin asset-generation --release
+
+# Force-rebuild specific groups
+cargo run --bin asset-generation --release -- \
+  --items \
+  --summoner-spells \
+  --perks \
+  --champions \
+  --profile-icons \
+  --logo
+
+# See flags
+cargo run --bin asset-generation --release -- --help
+```
+
+> The generator only converts/builds when something **actually changed**. You can force a rebuild per group with flags above.
+
+---
+
+## Security & SEO
+
+* **TLS (Rustls)** with modern ciphers; automatic HTTP→HTTPS redirect.
+* **HTTP/3 (QUIC)** for lower latency; H2/H1.1 fallback.
+* **SEO**
+
+    * Per-page meta (title/description/image)
+    * Clean, canonical URLs
+    * **Sitemap**: generated daily at `/sitemap-index.xml`
+
+---
+
+## Database
+
+* **Migrations** run automatically on startup when using split DB vars (see **Configuration**).
+* **Indexes** (examples): `summoners(puuid)`, `summoners(game_name, lower(tag_line), platform)`,
+  `lol_matches(match_id)`, `lol_matches(match_end, queue_id)`,
+  `lol_match_participants(summoner_id, lol_match_id)`
+* **Maintenance**: regular `VACUUM ANALYZE` (avoid `VACUUM FULL` in routine ops).
+* **Batching**: `DB_CHUNK_SIZE` is a **compile-time constant** (default **500**).
+
+> `DB_CHUNK_SIZE` is **not** configurable via `.env` and remains a const.
+
+---
 
 ## Installation
-if you encounter problem with wasm , ensure wasm-* version are unique between ruche/Cargo.toml, cargo-leptos bin and leptos crate
+
+If you encounter WASM issues, ensure `wasm-*` versions are consistent between the repo `Cargo.toml`, `cargo-leptos`, and the Leptos crate.
 
 ### Requirements
-- **Rust**: Install Rust using [rustup](https://rustup.rs/).
-- **Node.js**: Install Node.js (version 18 or higher) for asset generation and Tailwind CSS.
-- **Nasm**: Install [Nasm](https://www.nasm.us/) Required for building `nasm-rs` used in `ravif` for AVIF encoding.
-- **PostgreSQL**: Install PostgreSQL , add a ruche database, modify password and allow socket connection.
-- **Riot API Key**: Obtain a Riot API key from the [Riot Developer Portal](https://developer.riotgames.com/).
+
+* **Rust** (via [rustup](https://rustup.rs/)), **nightly** toolchain
+* **Node.js 18+** (assets & Tailwind)
+* **NASM** (for `ravif` AVIF encoding)
+* **PostgreSQL**
+* **Riot API Key** from the [Riot Developer Portal](https://developer.riotgames.com/)
 
 ### Setup
+
 ```bash
-# Install Rust nightly
-rustup default nightly;
+# Install Rust nightly and the WASM target
+rustup default nightly
+rustup target add wasm32-unknown-unknown
 
-# Add the WebAssembly target
-rustup target add wasm32-unknown-unknown;
+# Install wasm-opt (recommended if you hit "failed to grow table")
+cargo install wasm-opt
 
-# Install wasm optimization tools/ run it if you encounter error with js `failed to grow table`
-cargo install wasm-opt;
-
-# Install cargo leptos
-cargo install cargo-leptos;
+# Install cargo-leptos
+cargo install cargo-leptos
 
 # Clone the repository
-git clone https://github.com/gqsnt/ruche.git;
-cd ruche;
+git clone https://github.com/gqsnt/ruche.git
+cd ruche
 
-# Copy and configure the environment file
-cp .env.example .env;
+# Copy and configure environment
+cp .env.example .env
 
-# Install tailwindcss cli 
-cd ruche;
-npm install tailwindcss @tailwindcss/cli;
-cd ..;
- 
-# Generate assets and css sprites add -- --help to see all options
-cargo run --bin asset-generation --release;
+# Install tailwindcss CLI
+cd ruche
+npm install tailwindcss @tailwindcss/cli
+cd ..
+
+# Generate assets and CSS sprites (see --help for flags)
+cargo run --bin asset-generation --release
 ```
 
 ### Local Development
+
 ```bash
-# Check that ENV is set to DEV in .env
-# Run leptos
-cargo leptos watch;
+# Ensure ENV=DEV in .env
+# Run Leptos (SSR dev server + hot reload)
+cargo leptos watch
 ```
 
-### Production Build
+---
 
-#### Requirements
-- **Let's Encrypt**: Install [Certbot](https://letsencrypt.org/) for TLS certificates.
+## Production Build & Deployment (HTTP/2 + HTTP/3)
 
-#### Setup
-The repository should be cloned on /etc path so default path is /etc/ruche
+### Requirements
+
+* **Let’s Encrypt** / **Certbot** for TLS certificates.
+
+### Network & Firewall
+
+* Open **TCP:80** (ACME) and **TCP:443** (HTTPS).
+* Open **UDP:443** for **HTTP/3 (QUIC)**.
+* HTTP redirector listens on :80 and forwards to HTTPS.
+
+### Setup
+
+> The repository is expected under `/etc/ruche` for default service paths.
 
 ```bash
-# kill nginx if running
-sudo systemctl stop nginx;
-sudo systemctl disable nginx;
-killall nginx;
+# Stop and disable nginx if present (Ruche serves HTTPS/H3 itself)
+sudo systemctl stop nginx
+sudo systemctl disable nginx
+killall nginx || true
 
-# Open firewall ports  80 and 443
-sudo ufw allow 80;
-sudo ufw allow 443;
+# Firewall
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 443/udp  # required for HTTP/3 (QUIC)
 
-# Add certifcate for domain and modify .env LETS_ENCRYPT_PATH with the site key/cert path
-sudo certbot certonly --standalone -d `your_domain.com`;
+# Issue a certificate and set LETS_ENCRYPT_PATH in .env to its directory
+sudo certbot certonly --standalone -d your_domain.com
 
-# Copy service file to systemd
-sudo cp /etc/ruche/ruche.service /etc/systemd/system/ruche.service;
-# Enable the service
-sudo systemctl enable ruche;
+# Install systemd service
+sudo cp /etc/ruche/ruche.service /etc/systemd/system/ruche.service
+sudo systemctl enable ruche
 
-# git pull, download and rebuild assets if needed, rebuild the project, stop the service, make release  copy to ruche-release and start the service
-sh rebuild.sh;
+# Pull, (re)build assets if needed, rebuild the project, swap binaries, restart
+sh rebuild.sh
 ```
 
+---
 
-### Postgres Database Setup
+## PostgreSQL Setup
+
 ```bash
-# Create a new database
-sudo -u postgres psql -c "CREATE DATABASE ruche;";
-# Update the password in the .env file and in the database
-sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'password';";
+# Create the database
+sudo -u postgres psql -c "CREATE DATABASE ruche;"
 
-# Allow socket connection in pg_hba.conf
-# find the file location
-sudo -u postgres psql -c "SHOW hba_file;";
-# modify default local with METHOD trust
-# local   all             all                                     trust
-sudo nano /etc/postgresql/17/main/pg_hba.conf;
-# Restart postgresql
+# Set the password (align with your .env)
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'password';"
+
+# Allow socket connections in pg_hba.conf (adjust path to your distro)
+sudo -u postgres psql -c "SHOW hba_file;"
+# edit: choose your local auth method (e.g., trust/scram)
+sudo nano /etc/postgresql/17/main/pg_hba.conf
+
+# Restart
 sudo systemctl restart postgresql
 ```
 
+---
 
+## Configuration
 
+> Choose **one** DB configuration method: a single `DATABASE_URL`, **or** split variables (split runs migrations at startup).
+
+| Variable                                                 | Type           | Default | Scope   | Description                                                 |
+| -------------------------------------------------------- | -------------- | ------: | ------- | ----------------------------------------------------------- |
+| `ENV`                                                    | `DEV` | `PROD` |   `DEV` | global  | Execution mode (ports, tasks).                              |
+| `RIOT_API_KEY`                                           | string         |       – | backend | Riot API key used by Riven.                                 |
+| `DATABASE_URL`                                           | URL            |       – | backend | PostgreSQL connection string (recommended in prod).         |
+| `DB_USER_NAME` / `DB_PASSWORD` / `DB_NAME` / `DB_SOCKET` | strings        |       – | backend | Alternative to `DATABASE_URL` (runs migrations on startup). |
+| `MAX_PG_CONNECTIONS`                                     | int            |    `10` | backend | Pool size when using split DB vars.                         |
+| `MAX_MATCHES`                                            | int            |  `1500` | backend | Soft limit when fetching historical match IDs.              |
+| `MATCH_TASK_UPDATE_INTERVAL`                             | seconds        |     `5` | backend | Background match update interval.                           |
+| `LIVE_GAME_CACHE_UPDATE_INTERVAL`                        | seconds        |    `30` | backend | Live-game cache refresh interval.                           |
+| `LOL_PRO_TASK_ON_STARTUP`                                | bool           | `false` | backend | Sync pro players on startup.                                |
+| `SITE_MAP_TASK_ON_STARTUP`                               | bool           | `false` | backend | Generate sitemap on startup.                                |
+| `LETS_ENCRYPT_PATH`                                      | path           |       – | prod    | Folder with `fullchain.pem` & `privkey.pem`.                |
+
+> `DB_CHUNK_SIZE` remains a **const** at compile time (default **500**).
+
+---
 
 ## Contributing
-### Contributions are welcome! Please follow these steps:
-- **Fork** the repository.
-- **Create a new branch** for your feature or bugfix.
-- **Write clear, concise commit messages**.
-- **Submit a pull request** detailing your changes.
+
+1. **Fork** the repository
+2. **Create a branch** for your feature/bugfix
+3. Write **clear, concise commits**
+4. Open a **Pull Request** describing your change
+
+---
 
 ## Acknowledgements
-- **Riot Games**: For providing the API and resources necessary for data retrieval.
-- **Leptos Framework**: For enabling a reactive frontend in Rust.
-- **Open Source Community**: For the numerous libraries and tools that make this project possible.
 
+* **Riot Games** for APIs and assets
+* **Leptos** for the reactive Rust SSR/CSR framework
+* The **open source** ecosystem
 
+---
 
 ## Future Roadmap
-- **Implement Team Tab in Match Details**
-  - Provide an in-depth breakdown of team compositions and stats.
-- **Mobile Optimization**
-    - Improve responsiveness and usability on mobile devices.
-- **Improve Mark Branding**
-    - Enhance the visual identity of Ruche with a unique and memorable brand.
+
+* **Team tab** in match details (deeper composition & team stats)
+* **Mobile optimization** (responsiveness & touch ergonomics)
+* **Branding** improvements (visual identity)
+
+
