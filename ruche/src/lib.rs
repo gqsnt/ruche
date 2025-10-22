@@ -230,8 +230,8 @@ pub mod ssr {
         let cert_der = CertificateDer::from_pem_file(&cert).expect("failed to load cert");
         let key_der  = PrivateKeyDer::from_pem_file(&key).expect("failed to load key");
 
-        let h2_tls = make_rustls_server_config_h2(Some((cert_der.clone(), key_der.clone_key())));
-        let h3_tls = make_rustls_server_config_h3(Some((cert_der, key_der.clone_key())));
+        let h2_tls = make_rustls_server_config_h2(cert_der.clone(), key_der.clone_key());
+        let h3_tls = make_rustls_server_config_h3(cert_der, key_der.clone_key());
 
         let config = RustlsConfig::from_config(h2_tls.clone());
         // Create a QUIC (HTTP/3) endpoint so we advertise Alt-Svc for browsers.
@@ -301,11 +301,6 @@ pub mod ssr {
     pub async fn serve_locally(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
         let default_cert = PathBuf::from("certs").join("localhost+2.pem");
         let default_key  = PathBuf::from("certs").join("localhost+2-key.pem");
-        let (cert_path, key_path) = if default_cert.exists() && default_key.exists() {
-            (default_cert, default_key)
-        } else {
-            make_test_cert_files("ruche_local", true)
-        };
         let axum_rustls = RustlsConfig::from_pem_file(cert_path.clone(), key_path.clone())
             .await
             .expect("failed to load rustls config for local TLS");
@@ -317,22 +312,7 @@ pub mod ssr {
         Ok(())
     }
 
-    fn make_quinn_endpoint_from_socket(
-        udp: std::net::UdpSocket,
-        tls_config: Arc<ServerConfig>,
-    ) -> Endpoint {
-        let server_config = quinn::ServerConfig::with_crypto(Arc::new(
-            quinn::crypto::rustls::QuicServerConfig::try_from(tls_config).unwrap(),
-        ));
-        let ep = quinn::Endpoint::new(
-            EndpointConfig::default(),
-            Some(server_config),
-            udp,
-            StdArc::new(quinn::TokioRuntime),
-        )
-            .expect("failed to create quinn endpoint");
-        ep
-    }
+
 
     pub async fn get_sitemap() -> impl IntoResponse {
         match ServeFile::new(
@@ -368,12 +348,9 @@ pub mod ssr {
     }
 
     pub fn make_rustls_server_config_h3(
-        cert_key: Option<(CertificateDer<'static>, PrivateKeyDer)>,
+        cert: CertificateDer<'static>,
+        key: PrivateKeyDer,
     ) -> Arc<rustls::ServerConfig> {
-        let (cert, key) = match cert_key {
-            Some((cert, key)) => (cert, key),
-            None => make_test_cert_rustls(vec!["localhost".to_string()]),
-        };
         let mut tls_config = rustls::ServerConfig::builder_with_provider(
             rustls::crypto::ring::default_provider().into(),
         )
@@ -388,12 +365,10 @@ pub mod ssr {
     }
 
     pub fn make_rustls_server_config_h2(
-        cert_key: Option<(CertificateDer<'static>, PrivateKeyDer)>,
+        cert: CertificateDer<'static>,
+        key: PrivateKeyDer,
     ) -> Arc<rustls::ServerConfig> {
-        let (cert, key) = match cert_key {
-            Some((cert, key)) => (cert, key),
-            None => make_test_cert_rustls(vec!["localhost".to_string()]),
-        };
+
         let mut tls_config = rustls::ServerConfig::builder_with_provider(
             rustls::crypto::ring::default_provider().into(),
         )
@@ -407,69 +382,10 @@ pub mod ssr {
     }
 
 
-    pub fn make_test_cert_rustls(
-        subject_alt_names: Vec<String>,
-    ) -> (
-        rustls::pki_types::CertificateDer<'static>,
-        rustls::pki_types::PrivateKeyDer<'static>,
-    ) {
-        let (cert, key_pair) = make_test_cert(subject_alt_names);
-        let cert = rustls::pki_types::CertificateDer::from(cert);
-        use rustls::pki_types::pem::PemObject;
-        let key = rustls::pki_types::PrivateKeyDer::from_pem(
-            rustls::pki_types::pem::SectionKind::PrivateKey,
-            key_pair.serialize_der(),
-        )
-            .unwrap();
-        (cert, key)
-    }
 
-    pub fn make_test_cert(subject_alt_names: Vec<String>) -> (rcgen::Certificate, rcgen::KeyPair) {
-        use rcgen::generate_simple_self_signed;
-        let key_pair = generate_simple_self_signed(subject_alt_names).unwrap();
-        (key_pair.cert, key_pair.signing_key)
-    }
 
-    /// Create cert files for test.
-    /// This may leave the certs behind after the test.
-    pub fn make_test_cert_files(
-        test_name: &str,
-        regen: bool,
-    ) -> (std::path::PathBuf, std::path::PathBuf) {
-        use std::io::Write;
 
-        // Create a temporary directory
-        let temp_dir = std::env::temp_dir()
-            .join("tonic_h3_test_certs")
-            .join(test_name);
-        println!("Generating test certs in {:?}", temp_dir);
 
-        // remove and regenerate.
-        if regen {
-            let _ = std::fs::remove_dir_all(&temp_dir);
-        }
-        std::fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
-
-        // Define file paths in temp directory
-        let cert_path = temp_dir.join("cert.pem");
-        let key_path = temp_dir.join("key.pem");
-        if !key_path.exists() || !cert_path.exists() {
-            let (cert, key) = make_test_cert(vec!["localhost".to_string(), "127.0.0.1".to_string()]);
-
-            // Save certificate to file
-            let mut cert_f = std::fs::File::create(&cert_path).expect("Failed to create cert file");
-            cert_f
-                .write_all(cert.pem().as_bytes())
-                .expect("Failed to write cert");
-
-            // Save private key to file
-            let mut key_f = std::fs::File::create(&key_path).expect("Failed to create key file");
-            key_f
-                .write_all(key.serialize_pem().as_bytes())
-                .expect("Failed to write key");
-        }
-        (cert_path, key_path)
-    }
 
 }
 
