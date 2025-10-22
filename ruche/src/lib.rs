@@ -240,8 +240,7 @@ pub mod ssr {
         // Spawn the H3 router in the background. Clone the app so we don't move it
         // twice (once into the H3 task, once into the h2 server below).
         let alt_svc_value = format!("h3=\":{}\"; ma=2592000; persist=1", socket_addr.port());
-        let app_for_h3 = app.clone();
-        let srv_h = axum_h3::H3Router::new(app_for_h3)
+        let srv_h = axum_h3::H3Router::new(app.clone())
             .serve(acceptor);
         log!("listening on {}", socket_addr);
         // Advertise HTTP/3 (h3) to browsers using Alt-Svc so that clients can attempt h3 (QUIC) on h3_addr
