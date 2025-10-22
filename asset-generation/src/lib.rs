@@ -41,6 +41,11 @@ pub struct Args {
     /// force rebuild logo
     #[arg(long, default_value_t = false)]
     pub logo: bool,
+    
+    /// specify version to download assets from
+    /// if not specified, the latest version will be used
+    #[arg(long)]
+    pub version: Option<String>,
 }
 
 pub type AppResult<T> = Result<T, AppError>;
@@ -111,8 +116,8 @@ pub struct ImageToDownload {
     path: PathBuf,
 }
 
-pub async fn download_images() -> AppResult<(bool, bool, bool, bool, bool)> {
-    let version = get_current_version().await?;
+pub async fn download_images(version:String) -> AppResult<(bool, bool, bool, bool, bool)> {
+    
     let (items_images, profile_icons_images, perks) = tokio::join!(
         get_items(version.clone()),
         update_profile_icons_image(version.clone()),

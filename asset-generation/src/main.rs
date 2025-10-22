@@ -2,13 +2,18 @@ use clap::Parser;
 use image::ImageFormat;
 use ravif::{Encoder, Img};
 use rgb::FromSlice;
-use asset_generation::{convert_not_found_images_and_rebuild_sprite, download_images, get_assets_path, get_temp_path, Args};
+use asset_generation::{convert_not_found_images_and_rebuild_sprite, download_images, get_assets_path, get_current_version, get_temp_path, AppResult, Args};
 
 #[tokio::main]
-async fn main() {
+async fn main() ->AppResult<()>{
     let args=  Args::parse();
     let start = std::time::Instant::now();
-    let (items_modified, profile_icons_modified, perks_modified, champion_modified, summoner_spells_modified) = download_images().await.unwrap();
+    let version = if let Some(version) = args.version{
+        version
+    }else{
+        get_current_version().await?
+    };
+    let (items_modified, profile_icons_modified, perks_modified, champion_modified, summoner_spells_modified) = download_images(version).await?;
 
     convert_not_found_images_and_rebuild_sprite(
         args.items || items_modified,
@@ -44,5 +49,5 @@ async fn main() {
             .map_err(|e| format!("Failed to write file: {}", e)).unwrap();
     }
     println!("Time taken: {:?}", start.elapsed());
-
+    Ok(())
 }

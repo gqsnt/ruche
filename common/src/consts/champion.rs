@@ -195,7 +195,7 @@ impl Champion {
 
     #[inline]
     pub fn options_all() -> Vec<(u16, &'static str)> {
-        Champion::iter().map(|c| (c.id(), c.label())).collect()
+        Champion::iter().filter(|c|c.id() != 0).map(|c| (c.id(), c.label())).collect()
     }
 }
 
