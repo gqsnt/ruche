@@ -83,7 +83,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         .expect("Failed to install rustls crypto provider");
 
     let site_address = leptos_options.site_addr;
-    let alt_svc_value = format!("h3=\":{}\"; ma=2592000; persist=1", site_address.port());
+
 
     let database_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let pool = PgPool::connect(database_url.as_str())

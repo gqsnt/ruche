@@ -44,12 +44,9 @@ pub mod ssr {
     use rustls::pki_types::{CertificateDer, PrivateKeyDer};
     use rustls::pki_types::pem::PemObject;
     use rustls::ServerConfig;
-    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
-    use socket2::{Socket, Domain, Type, Protocol};
-    use quinn::{EndpointConfig, Endpoint};
-    use std::sync::Arc as StdArc;
+    use std::net::{IpAddr, Ipv6Addr};
     use tower_http::set_header::SetResponseHeaderLayer;
-
+    use http::HeaderValue;
 
     pub type RiotApiState = Arc<RiotApi>;
     pub type SubscriberMap = DashMap<i32, Sender<SSEEvent>>;
@@ -241,6 +238,7 @@ pub mod ssr {
 
         // Spawn the H3 router in the background. Clone the app so we don't move it
         // twice (once into the H3 task, once into the h2 server below).
+        let alt_svc_value = format!("h3=\":{}\"; ma=2592000; persist=1", socket_addr.port());
         let app_for_h3 = app.clone()
             .layer(
                     SetResponseHeaderLayer::if_not_present(
@@ -299,8 +297,8 @@ pub mod ssr {
     }
 
     pub async fn serve_locally(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
-        let default_cert = PathBuf::from("certs").join("localhost+2.pem");
-        let default_key  = PathBuf::from("certs").join("localhost+2-key.pem");
+        let cert_path = PathBuf::from("certs").join("localhost+2.pem");
+        let key_path  = PathBuf::from("certs").join("localhost+2-key.pem");
         let axum_rustls = RustlsConfig::from_pem_file(cert_path.clone(), key_path.clone())
             .await
             .expect("failed to load rustls config for local TLS");
