@@ -42,6 +42,8 @@ pub mod ssr {
     use tower::ServiceExt;
     use tower_http::services::ServeFile;
     use crate::make_quinn_server_endpoint;
+    use tower::ServiceBuilder;
+    use http::header::HeaderValue;
 
     pub type RiotApiState = Arc<RiotApi>;
     pub type SubscriberMap = DashMap<i32, Sender<SSEEvent>>;
@@ -200,19 +202,18 @@ pub mod ssr {
     pub async fn serve(
         app: Router,
         is_prod: bool,
-        socket_addr: SocketAddr,
+        h2_socket_addr: SocketAddr,
+        h3_socket_addr: SocketAddr,
     ) -> Result<(), axum::Error> {
         if is_prod {
             tokio::spawn(redirect_http_to_https());
-            serve_with_tsl(app, socket_addr).await
+            serve_with_tsl(app, h2_socket_addr, h3_socket_addr).await
         } else {
-            serve_locally(app, socket_addr).await
+            serve_locally(app, h2_socket_addr,h3_socket_addr).await
         }
     }
 
-    pub async fn serve_with_tsl(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
-        let mut h3_addr = socket_addr.clone();
-        h3_addr.set_port(socket_addr.port() + 1);
+    pub async fn serve_with_tsl(app: Router, h2_socket_addr: SocketAddr,h3_socket_addr: SocketAddr) -> Result<(), axum::Error> {
         let lets_encrypt_dir = dotenv::var("LETS_ENCRYPT_PATH").expect("LETS_ENCRYPT_PATH not set");
         let lets_encrypt_dir = PathBuf::from(lets_encrypt_dir);
         let cert = lets_encrypt_dir.join("fullchain.pem");
@@ -223,8 +224,9 @@ pub mod ssr {
         let config = RustlsConfig::from_pem_file(cert, key)
             .await
             .expect("failed to load rustls config");
-        log!("listening on {}", socket_addr);
-        axum_server::bind_rustls(socket_addr, config)
+        log!("listening on {}", h2_socket_addr);
+        // Advertise HTTP/3 (h3) to browsers using Alt-Svc so that clients can attempt h3 (QUIC) on h3_addr
+        axum_server::bind_rustls(h2_socket_addr, config)
             .serve(app.into_make_service())
             .await
             .unwrap();
@@ -264,10 +266,8 @@ pub mod ssr {
             .unwrap();
     }
 
-    pub async fn serve_locally(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
-        let mut h3_addr = socket_addr.clone();
-        h3_addr.set_port(socket_addr.port() + 1);
-        let ep = make_quinn_server_endpoint(h3_addr);
+    pub async fn serve_locally(app: Router, h2_socket_addr: SocketAddr,h3_socket_addr: SocketAddr) -> Result<(), axum::Error> {
+        let ep = make_quinn_server_endpoint(h3_socket_addr);
         let acceptor = h3_util::quinn::H3QuinnAcceptor::new(ep);
         let svr_h = tokio::spawn(async move {
             axum_h3::H3Router::new(app)
@@ -275,7 +275,7 @@ pub mod ssr {
                 .unwrap();
         });
 
-        let listener = tokio::net::TcpListener::bind(&socket_addr)
+        let listener = tokio::net::TcpListener::bind(&h2_socket_addr)
             .await
             .expect("Creating listener");
         axum::serve(listener, app.into_make_service())

@@ -11,7 +11,7 @@ axum = { version = "0.8.6", optional = true, features = ["macros", "http2"]}
 tokio = { workspace = true, optional = true }
 tokio-stream = { version = "0.1", optional = true, features = ["sync"] }
 tower = { version = "0.5.2", optional = true, features = ["util"] }
-tower-http = { version = "0.6.4", features = ["fs", "compression-full"], optional = true }
+tower-http = { version = "0.6.4", features = ["fs", "compression-full", "set-header"], optional = true }
 sqlx = { version = "0.8.6", optional = true, features = ["postgres", "runtime-tokio-rustls", "chrono", "bigdecimal", "uuid"] }
 bigdecimal = { version = "0.4", optional = true }
 riven = { workspace = true, optional = true }
@@ -165,5 +165,3 @@ lib-default-features = false
 #
 # Optional. Defaults to "release".
 lib-profile-release = "wasm-release"
-
-

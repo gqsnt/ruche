@@ -1,4 +1,6 @@
+use http::HeaderValue;
 use sqlx::PgPool;
+use tower::ServiceBuilder;
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
@@ -14,17 +16,17 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use ruche::app::*;
     use ruche::backend::live_game_cache::LiveGameCache;
     use ruche::backend::task_director::TaskDirector;
+    use ruche::backend::tasks::daily_sql_clean::DailySqlCleanTask;
     use ruche::backend::tasks::generate_sitemap::GenerateSiteMapTask;
     use ruche::backend::tasks::handle_live_game_cache::HandleLiveGameCacheTask;
     use ruche::backend::tasks::sse_broadcast_match_updated_cleanup::SummonerUpdatedSenderCleanupTask;
     use ruche::backend::tasks::update_matches::UpdateMatchesTask;
     use ruche::backend::tasks::update_pro_players::UpdateProPlayerTask;
-    use ruche::backend::tasks::daily_sql_clean::DailySqlCleanTask;
     use ruche::ssr::get_sitemap;
+    use ruche::ssr::init_riot_api;
     use ruche::ssr::serve;
     use ruche::ssr::sse_broadcast_match_updated;
     use ruche::ssr::AppState;
-    use ruche::ssr::{init_riot_api};
     use std::net::SocketAddr;
     use std::sync::Arc;
     use tower_http::compression::predicate::NotForContentType;
@@ -78,6 +80,13 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     }
 
     let site_address = leptos_options.site_addr;
+    let h3_site_address = SocketAddr::from((
+        site_address.ip(),
+        site_address.port() + 1, // HTTP/3 on port+1
+    ));
+
+    let alt_svc_value = format!("h3=\":{}\"; ma=2592000; persist=1", h3_site_address.port());
+
     let database_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let pool = PgPool::connect(database_url.as_str())
         .await
@@ -108,18 +117,13 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         tokio::time::Duration::from_secs(10),
     ));
 
-
     if is_prod {
         task_director.add_task(GenerateSiteMapTask::new(
             pool.clone(),
             3,
             site_map_task_on_startup,
         ));
-        task_director.add_task(DailySqlCleanTask::new(
-            pool.clone(),
-            1,
-            true
-        ));
+        task_director.add_task(DailySqlCleanTask::new(pool.clone(), 1, true));
         task_director.add_task(UpdateProPlayerTask::new(
             pool.clone(),
             riot_api.clone(),
@@ -134,13 +138,37 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     let app_state = AppState {
         leptos_options: leptos_options.clone(),
         riot_api,
-        db:pool,
+        db: pool,
         live_game_cache,
         max_matches,
         summoner_updated_sender,
     };
 
     let routes = generate_route_list(App);
+
+    let middleware = ServiceBuilder::new()
+        .layer(
+            CompressionLayer::new()
+                .br(true)
+                .zstd(true)
+                .quality(CompressionLevel::Default)
+                .compress_when(
+                    SizeAbove::new(256)
+                        .and(NotForContentType::GRPC)
+                        .and(NotForContentType::IMAGES)
+                        .and(NotForContentType::SSE)
+                        .and(NotForContentType::const_new("text/javascript"))
+                        .and(NotForContentType::const_new("application/wasm"))
+                        .and(NotForContentType::const_new("text/css")),
+                ),
+        )
+        .layer(
+            tower_http::set_header::SetResponseHeaderLayer::if_not_present(
+                http::header::ALT_SVC,
+                HeaderValue::from_str(&alt_svc_value).unwrap(),
+            ),
+        );
+
     // build our application with a route
     let app = Router::<AppState>::new()
         .nest(
@@ -148,14 +176,14 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
             MemoryServe::new(load_assets!("../target/site/assets"))
                 .enable_brotli(!cfg!(debug_assertions))
                 .cache_control(CacheControl::Custom("public, max-age=31536000"))
-                .into_router::<AppState>()
+                .into_router::<AppState>(),
         )
         .nest(
             "/pkg",
             MemoryServe::new(load_assets!("../target/site/pkg"))
                 .enable_brotli(!cfg!(debug_assertions))
                 .cache_control(CacheControl::Custom("public, max-age=31536000"))
-                .into_router::<AppState>()
+                .into_router::<AppState>(),
         )
         .leptos_routes_with_context(
             &app_state,
@@ -177,23 +205,9 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(
             shell,
         ))
-        .layer(
-            CompressionLayer::new()
-                .br(true)
-                .zstd(true)
-                .quality(CompressionLevel::Default)
-                .compress_when(
-                    SizeAbove::new(256)
-                        .and(NotForContentType::GRPC)
-                        .and(NotForContentType::IMAGES)
-                        .and(NotForContentType::SSE)
-                        .and(NotForContentType::const_new("text/javascript"))
-                        .and(NotForContentType::const_new("application/wasm"))
-                        .and(NotForContentType::const_new("text/css")),
-                ),
-        )
+        .layer(middleware)
         .with_state(app_state);
-    serve(app, is_prod, site_address)
+    serve(app, is_prod, site_address, h3_site_address)
         .await
         .expect("failed to serve");
     Ok(())
