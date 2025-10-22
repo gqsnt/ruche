@@ -31,13 +31,13 @@ pub fn SummonerSearchPage(is_summoner_page: Signal<bool>) -> impl IntoView {
         ev.prevent_default();
         set_pending(true);
         search_summoner.dispatch(SearchSummoner {
-            platform_route: PlatformRoute::from(
+            platform_route: PlatformRoute::try_from(
                 platform_type_node
                     .get()
                     .expect("platform_type not valid")
                     .value()
                     .as_str(),
-            ),
+            ).unwrap_or_default(),
             game_name: game_name_node.get().expect("game_name not valid").value(),
             tag_line: tag_line_node.get().expect("tag_line not valid").value(),
         });

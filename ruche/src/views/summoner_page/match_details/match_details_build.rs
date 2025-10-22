@@ -19,7 +19,7 @@ pub fn MatchDetailsBuild(
         format!(
             "{}({})",
             participant.game_name.as_str(),
-            Champion::from(participant.champion_id).to_str()
+            Champion::try_from(participant.champion_id).unwrap().label()
         )
     };
     let participant_ids = match_details
@@ -157,25 +157,25 @@ pub fn MatchDetailsBuild(
                 </div>
             </div>
             {move || {
-                let perk_primary_style = Perk::from(selected_participant().perk_primary_style_id);
-                let perk_primary_selection = Perk::from(
+                let perk_primary_style = Perk::try_from(selected_participant().perk_primary_style_id).unwrap();
+                let perk_primary_selection = Perk::try_from(
                     selected_participant().perk_primary_selection_id,
-                );
-                let perk_primary_selection1 = Perk::from(
+                ).unwrap();
+                let perk_primary_selection1 = Perk::try_from(
                     selected_participant().perk_primary_selection1_id,
-                );
-                let perk_primary_selection2 = Perk::from(
+                ).unwrap();
+                let perk_primary_selection2 = Perk::try_from(
                     selected_participant().perk_primary_selection2_id,
-                );
-                let perk_primary_selection3 = Perk::from(
+                ).unwrap();
+                let perk_primary_selection3 = Perk::try_from(
                     selected_participant().perk_primary_selection3_id,
-                );
-                let perk_sub_style = Perk::from(selected_participant().perk_sub_style_id);
-                let perk_sub_selection1 = Perk::from(selected_participant().perk_sub_selection1_id);
-                let perk_sub_selection2 = Perk::from(selected_participant().perk_sub_selection2_id);
-                let perk_offense = Perk::from(selected_participant().perk_offense_id);
-                let perk_flex = Perk::from(selected_participant().perk_flex_id);
-                let perk_defense = Perk::from(selected_participant().perk_defense_id);
+                ).unwrap();
+                let perk_sub_style = Perk::try_from(selected_participant().perk_sub_style_id).unwrap();
+                let perk_sub_selection1 = Perk::try_from(selected_participant().perk_sub_selection1_id).unwrap();
+                let perk_sub_selection2 = Perk::try_from(selected_participant().perk_sub_selection2_id).unwrap();
+                let perk_offense = Perk::try_from(selected_participant().perk_offense_id).unwrap();
+                let perk_flex = Perk::try_from(selected_participant().perk_flex_id).unwrap();
+                let perk_defense = Perk::try_from(selected_participant().perk_defense_id).unwrap();
 
                 view! {
                     <div class="my-2 my-card w-fit">

@@ -228,10 +228,10 @@ pub mod ssr {
             LiveGame {
                 game_id: riot_match_id,
                 game_length: game_info.game_length as u16,
-                game_map: Map::from(game_info.map_id.0),
+                game_map: Map::from_id(game_info.map_id.0).unwrap(),
                 queue: game_info
                     .game_queue_config_id
-                    .map(|x| Queue::from_u16(x.0))
+                    .map(|x| Queue::from_id_or_custom(x.0))
                     .unwrap(),
                 participants,
             },
@@ -260,7 +260,7 @@ pub mod ssr {
                                 Some((
                                     puuid,
                                     (
-                                        PlatformRoute::from(game_info.platform_id.as_str()),
+                                        PlatformRoute::try_from(game_info.platform_id.as_str()).unwrap(),
                                         x.profile_icon_id,
                                     ),
                                 ))

@@ -114,7 +114,7 @@ pub mod ssr {
         }
         if let Some(queue_id) = filters.queue_id {
             let sql_filter = " AND lm.queue_id = ";
-            let queue = Queue::from(queue_id).to_u16() as i32;
+            let queue = Queue::from_id_or_custom(queue_id).id() as i32;
             statistics_query.push(sql_filter);
             statistics_query.push_bind(queue);
             participants_query.push(sql_filter);
@@ -198,7 +198,7 @@ pub mod ssr {
                     platform: row.platform.into(),
                     match_ended_since,
                     match_duration: row.lol_match_match_duration,
-                    queue: Queue::from_u16(row.lol_match_queue_id.unwrap_or_default() as u16),
+                    queue: Queue::from_id_or_custom(row.lol_match_queue_id.unwrap_or_default() as u16),
                     champion_id: row.champion_id as u16,
                     champ_level: row.champ_level as u16,
                     won: row.won,

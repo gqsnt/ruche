@@ -123,7 +123,7 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
                 format!(
                     "{}{}",
                     base_url,
-                    summoner_url(pt.as_ref(), game_name.as_str(), tag_line.as_str())
+                    summoner_url(pt.code(), game_name.as_str(), tag_line.as_str())
                 ),
                 Some(updated_at.and_utc().fixed_offset()),
             ));

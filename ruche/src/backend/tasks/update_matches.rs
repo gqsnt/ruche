@@ -178,7 +178,7 @@ async fn update_matches_task(
             .split('_')
             .next()
             .unwrap_or_default();
-        let match_platform = consts::platform_route::PlatformRoute::from(platform_code);
+        let match_platform = consts::platform_route::PlatformRoute::try_from(platform_code).unwrap_or_default();
 
         for participant in &match_data.info.participants {
             if participant.puuid == "BOT" {
@@ -232,7 +232,7 @@ async fn update_matches_task(
     // dl summoners
     let summoners_futures = summoners_to_dl.into_iter().map(|summoner| {
         let api = Arc::clone(api);
-        let pt = consts::platform_route::PlatformRoute::from(summoner.platform.as_str()).to_riven();
+        let pt = consts::platform_route::PlatformRoute::try_from(summoner.platform.as_str()).unwrap_or_default().to_riven();
         let puuid = summoner.puuid.clone();
         async move {
             (
@@ -558,7 +558,7 @@ pub async fn resolve_summoner_conflicts(db: &PgPool, api: &RiotApiState) -> AppR
         );
         for record in conflict_records {
             // Obtenir les informations actuelles pour chaque `puuid`
-            let platform_route = PlatformRoute::from(platform.as_str());
+            let platform_route = PlatformRoute::try_from(platform.as_str()).unwrap_or_default();
             let riven_ptr =
                 riven::consts::PlatformRoute::from_str(&platform_route.to_string()).unwrap();
             if let Ok(account) = api

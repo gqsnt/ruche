@@ -28,7 +28,7 @@ pub async fn get_summoner(
         _ => {
             leptos_axum::redirect(
                 summoner_not_found_url(
-                    platform_route.as_ref(),
+                    platform_route.code(),
                     game_name.as_str(),
                     tag_line.as_str(),
                 )

@@ -1,7 +1,6 @@
 use crate::AssetType;
 
 pub mod champion;
-pub mod game_mode;
 pub mod item;
 pub mod map;
 pub mod perk;

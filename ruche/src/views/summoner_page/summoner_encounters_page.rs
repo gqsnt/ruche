@@ -170,7 +170,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                                     <div class="ml-2">
                                                                                         <a
                                                                                             href=summoner_url(
-                                                                                                encounter.platform.as_ref(),
+                                                                                                encounter.platform.code(),
                                                                                                 encounter.game_name.as_str(),
                                                                                                 encounter.tag_line.as_str(),
                                                                                             )
@@ -204,10 +204,10 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                                 <a
                                                                                     class="my-button font-bold"
                                                                                     href=summoner_encounter_url(
-                                                                                        summoner_clone.platform.as_ref(),
+                                                                                        summoner_clone.platform.code(),
                                                                                         summoner_clone.game_name.as_str(),
                                                                                         summoner_clone.tag_line.as_str(),
-                                                                                        encounter.platform.as_ref(),
+                                                                                        encounter.platform.code(),
                                                                                         encounter.game_name.as_str(),
                                                                                         encounter.tag_line.as_str(),
                                                                                     )

@@ -105,7 +105,7 @@ pub async fn bulk_insert_summoners(
                     game_name: summoner_index.game_name.clone(),
                     tag_line: summoner_index.tag_line.clone(),
                     puuid: summoner_index.puuid.clone(),
-                    platform: PlatformRoute::from(summoner_index.platform.as_str()),
+                    platform: PlatformRoute::try_from(summoner_index.platform.as_str()).unwrap(),
                     summoner_level: summoner_index.summoner_level,
                     profile_icon_id: summoner_index.profile_icon_id,
                     pro_player_slug: None,

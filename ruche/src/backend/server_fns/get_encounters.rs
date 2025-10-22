@@ -93,7 +93,7 @@ pub mod ssr {
         if let Some(queue_id) = filters.queue_id {
             let sql_filter = " AND lm.queue_id = ";
             query.push(sql_filter);
-            query.push_bind(Queue::from(queue_id).to_u16() as i32);
+            query.push_bind(Queue::from_id_or_custom(queue_id).id() as i32);
         }
 
         if let Some(start_date) = start_date {

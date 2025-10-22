@@ -154,7 +154,7 @@ pub async fn download_images() -> AppResult<(bool, bool, bool, bool, bool)> {
                     url: format!(
                         "https://ddragon.leagueoflegends.com/cdn/{}/img/spell/{}.png",
                         version.clone(),
-                        SummonerSpell::from(*summoner_spell),
+                        SummonerSpell::try_from(*summoner_spell).unwrap().label(),
                     ),
                     path,
                 });

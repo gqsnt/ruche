@@ -156,7 +156,7 @@ pub struct BackEndMatchFiltersSearch {
     pub start_date: Option<CompactDate>,
     pub end_date: Option<CompactDate>,
     pub champion_id: Option<u16>,
-    pub queue_id: Option<u8>,
+    pub queue_id: Option<u16>,
 }
 
 impl BackEndMatchFiltersSearch {
@@ -176,7 +176,7 @@ impl BackEndMatchFiltersSearch {
         end_date: Option<String>,
     ) -> Self {
         Self {
-            queue_id: queue_id.map(|x| x.parse::<u8>().unwrap_or_default()),
+            queue_id: queue_id.map(|x| x.parse::<u16>().unwrap_or_default()),
             champion_id: champion_id.map(|x| x.parse::<u16>().unwrap_or_default()),
             start_date: parse_date(start_date),
             end_date: parse_date(end_date),

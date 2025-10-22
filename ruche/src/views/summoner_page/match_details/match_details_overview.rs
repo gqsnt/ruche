@@ -87,13 +87,13 @@ pub fn MatchDetailsOverviewTable(
                 {participants
                     .into_iter()
                     .map(|participant| {
-                        let champion = Champion::from(participant.champion_id);
-                        let summoner_spell1 = SummonerSpell::from(participant.summoner_spell1_id);
-                        let summoner_spell2 = SummonerSpell::from(participant.summoner_spell2_id);
-                        let primary_perk_selection = Perk::from(
+                        let champion = Champion::try_from(participant.champion_id).unwrap();
+                        let summoner_spell1 = SummonerSpell::try_from(participant.summoner_spell1_id).unwrap();
+                        let summoner_spell2 = SummonerSpell::try_from(participant.summoner_spell2_id).unwrap();
+                        let primary_perk_selection = Perk::try_from(
                             participant.perk_primary_selection_id,
-                        );
-                        let sub_perk_style = Perk::from(participant.perk_sub_style_id);
+                        ).unwrap();
+                        let sub_perk_style = Perk::try_from(participant.perk_sub_style_id).unwrap();
                         let items = [
                             participant.item0_id,
                             participant.item1_id,
@@ -159,10 +159,10 @@ pub fn MatchDetailsOverviewTable(
                                                 view! {
                                                     <a
                                                         href=summoner_encounter_url(
-                                                            summoner.platform.as_ref(),
+                                                            summoner.platform.code(),
                                                             summoner.game_name.as_str(),
                                                             summoner.tag_line.as_str(),
-                                                            participant.platform.as_ref(),
+                                                            participant.platform.code(),
                                                             participant.game_name.as_str(),
                                                             participant.tag_line.as_str(),
                                                         )
@@ -188,7 +188,7 @@ pub fn MatchDetailsOverviewTable(
                                         <a
                                             target="_blank"
                                             href=summoner_url(
-                                                participant.platform.as_ref(),
+                                                participant.platform.code(),
                                                 participant.game_name.as_str(),
                                                 participant.tag_line.as_str(),
                                             )

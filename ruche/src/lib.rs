@@ -120,7 +120,7 @@ pub mod ssr {
                         let db = state.db.clone();
                         let riot_api = state.riot_api.clone();
                         let live_game_cache = state.live_game_cache.clone();
-                        let platform_route = PlatformRoute::from(platform_route.as_str());
+                        let platform_route = PlatformRoute::from_code(platform_route.as_str()).unwrap();
                         tokio::spawn(async move {
                             let puuid = Puuid::new(
                                 find_summoner_puuid_by_id(&db, summoner_id)

@@ -172,9 +172,9 @@ pub mod ssr {
         if let Some(queue_id) = filters.queue_id {
             let sql_filter = " AND lm.queue_id = ";
             query.push(sql_filter);
-            query.push_bind(Queue::from(queue_id).to_u16() as i32);
+            query.push_bind(Queue::from_id_or_custom(queue_id).id() as i32);
             stats_query.push(sql_filter);
-            stats_query.push_bind(Queue::from(queue_id).to_u16() as i32);
+            stats_query.push_bind(Queue::from_id_or_custom(queue_id).id() as i32);
         }
 
         if let Some(start_date) = start_date {
@@ -217,7 +217,7 @@ pub mod ssr {
                     riot_match_id: RiotMatchId::new(row.riot_match_id.as_str()),
                     match_ended_since,
                     match_duration: row.match_duration,
-                    queue: row.queue_id.map(|q| Queue::from_u16(q as u16)).unwrap(),
+                    queue: row.queue_id.map(|q| Queue::from_id_or_custom(q as u16)).unwrap_or(Queue::Custom),
                     platform: row.platform.into(),
                     participant: SummonerEncounterParticipant {
                         summoner_id,

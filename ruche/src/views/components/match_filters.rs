@@ -1,6 +1,6 @@
 use crate::views::{get_default_navigation_option, BackEndMatchFiltersSearch};
 use common::consts::champion::CHAMPION_OPTIONS;
-use common::consts::queue::QUEUE_OPTIONS;
+use common::consts::queue::{Queue};
 use itertools::Itertools;
 use leptos::context::provide_context;
 use leptos::prelude::*;
@@ -123,12 +123,12 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
                             <option value="" selected=move || queue_id().is_none()>
                                 All
                             </option>
-                            {QUEUE_OPTIONS
-                                .iter()
+                            {Queue::options_basic()
+                                .into_iter()
                                 .map(|(inner_queue_id, queue_name)| {
                                     view! {
                                         <option
-                                            value=*inner_queue_id
+                                            value=inner_queue_id
                                             selected=move || {
                                                 inner_queue_id.to_string() == queue_id().unwrap_or_default()
                                             }

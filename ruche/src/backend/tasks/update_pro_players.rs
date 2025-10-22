@@ -313,7 +313,7 @@ pub async fn get_pro_player_info(slug: &str) -> AppResult<ProPlayerShort> {
             .map(|account| ProPlayerAccountShort {
                 game_name: account.gamename,
                 tag_line: account.tagline,
-                platform: PlatformRoute::from(account.server.as_str()),
+                platform: PlatformRoute::try_from(account.server.as_str()).unwrap_or_default(),
             })
             .collect(),
     })

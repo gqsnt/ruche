@@ -53,7 +53,7 @@ pub fn SummonerEncounterPage() -> impl IntoView {
                 summoner_id,
                 page_number.unwrap_or(1),
                 is_with,
-                PlatformRoute::from(encounter_platform.as_str()),
+                PlatformRoute::try_from(encounter_platform.as_str()).unwrap(),
                 encounter_slug,
                 Some(filters),
             )
@@ -189,24 +189,24 @@ pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl I
     .filter_map(|i| Item::try_from(*i).ok())
     .collect::<Vec<_>>();
     let (champion, encounter_champion) = (
-        Champion::from(match_.participant.champion_id),
-        Champion::from(match_.encounter.champion_id),
+        Champion::try_from(match_.participant.champion_id).unwrap(),
+        Champion::try_from(match_.encounter.champion_id).unwrap(),
     );
     let (summoner_spell1, summoner_spell2) = (
-        SummonerSpell::from(match_.participant.summoner_spell1_id),
-        SummonerSpell::from(match_.participant.summoner_spell2_id),
+        SummonerSpell::try_from(match_.participant.summoner_spell1_id).unwrap(),
+        SummonerSpell::try_from(match_.participant.summoner_spell2_id).unwrap(),
     );
     let (encounter_summoner_spell1, encounter_summoner_spell2) = (
-        SummonerSpell::from(match_.encounter.summoner_spell1_id),
-        SummonerSpell::from(match_.encounter.summoner_spell2_id),
+        SummonerSpell::try_from(match_.encounter.summoner_spell1_id).unwrap(),
+        SummonerSpell::try_from(match_.encounter.summoner_spell2_id).unwrap(),
     );
     let (primary_perk_selection, encounter_primary_perk_selection) = (
-        Perk::from(match_.participant.perk_primary_selection_id),
-        Perk::from(match_.encounter.perk_primary_selection_id),
+        Perk::try_from(match_.participant.perk_primary_selection_id).unwrap(),
+        Perk::try_from(match_.encounter.perk_primary_selection_id).unwrap(),
     );
     let (sub_perk_style, encounter_sub_perk_style) = (
-        Perk::from(match_.participant.perk_sub_style_id),
-        Perk::from(match_.encounter.perk_sub_style_id),
+        Perk::try_from(match_.participant.perk_sub_style_id).unwrap(),
+        Perk::try_from(match_.encounter.perk_sub_style_id).unwrap(),
     );
 
     view! {

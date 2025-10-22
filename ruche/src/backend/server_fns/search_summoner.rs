@@ -26,7 +26,7 @@ pub async fn search_summoner(
         Ok(summoner) => {
             leptos_axum::redirect(
                 summoner_url(
-                    platform_route.as_ref(),
+                    platform_route.code(),
                     summoner.game_name.as_str(),
                     summoner.tag_line.as_str(),
                 )
@@ -35,7 +35,7 @@ pub async fn search_summoner(
         }
         Err(_) => {
             let not_found_url = summoner_not_found_url(
-                platform_route.as_ref(),
+                platform_route.code(),
                 game_name.as_ref(),
                 tag_line.as_ref(),
             );
@@ -57,7 +57,7 @@ pub async fn search_summoner(
                     {
                         Ok(Some(summoner_data)) => {
                             let redirect_url = summoner_url(
-                                platform_route.as_ref(),
+                                platform_route.code(),
                                 account
                                     .game_name
                                     .clone()

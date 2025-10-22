@@ -1,75 +1,63 @@
 use bitcode::{Decode, Encode};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
+use strum::{AsRefStr, Display, EnumIter, IntoEnumIterator, IntoStaticStr};
 
+#[derive(
+    Debug, Clone, Copy, Eq, PartialEq, Hash, Encode, Decode,
+    IntoPrimitive, TryFromPrimitive, EnumIter, AsRefStr, Display, IntoStaticStr
+)]
 #[repr(u8)]
-#[derive(Debug, Clone, Copy , Encode,Decode, Eq, PartialEq, Hash)]
 pub enum Map {
+    #[strum(serialize = "Summoner's Rift Original Summer Variant")]
     SummonersRiftOriginalSummerVariant = 1,
+    #[strum(serialize = "Summoner's Rift Original Autumn Variant")]
     SummonersRiftOriginalAutumnVariant = 2,
+    #[strum(serialize = "The Proving Grounds")]
     TheProvingGrounds = 3,
+    #[strum(serialize = "Twisted Treeline Original Version")]
     TwistedTreelineOriginalVersion = 4,
+    #[strum(serialize = "The Crystal Scar")]
     TheCrystalScar = 8,
+    #[strum(serialize = "Twisted Treeline")]
     TwistedTreeline = 10,
+    #[strum(serialize = "Summoner's Rift")]
     SummonersRift = 11,
+    #[strum(serialize = "Howling Abyss")]
     HowlingAbyss = 12,
+    #[strum(serialize = "Butcher's Bridge")]
     ButchersBridge = 14,
+    #[strum(serialize = "Cosmic Ruins")]
     CosmicsRuin = 16,
+    #[strum(serialize = "Valoran City Park")]
     ValoranCityPark = 18,
+    #[strum(serialize = "Substructure 43")]
     Substructure43 = 19,
+    #[strum(serialize = "Crash Site")]
     CrashSite = 20,
+    #[strum(serialize = "Nexus Blitz")]
     NexusBlitz = 21,
+    #[strum(serialize = "Convergence")]
     Convergence = 22,
+    #[strum(serialize = "Arena")]
     Arena = 30,
+    #[strum(serialize = "Swarm")]
     Swarm = 33,
-    TheBandlewood=35
+    #[strum(serialize = "The Bandle wood")]
+    TheBandlewood = 35,
 }
 
 impl Map {
-    pub const fn get_static_name(&self) -> &'static str {
-        match self {
-            Map::SummonersRiftOriginalSummerVariant => "Summoner's Rift Original Summer Variant",
-            Map::SummonersRiftOriginalAutumnVariant => "Summoner's Rift Original Autumn Variant",
-            Map::TheProvingGrounds => "The Proving Grounds",
-            Map::TwistedTreelineOriginalVersion => "Twisted Treeline Original Version",
-            Map::TheCrystalScar => "The Crystal Scar",
-            Map::TwistedTreeline => "Twisted Treeline",
-            Map::SummonersRift => "Summoner's Rift",
-            Map::HowlingAbyss => "Howling Abyss",
-            Map::ButchersBridge => "Butcher's Bridge",
-            Map::CosmicsRuin => "Cosmic Ruins",
-            Map::ValoranCityPark => "Valoran City Park",
-            Map::Substructure43 => "Substructure 43",
-            Map::CrashSite => "Crash Site",
-            Map::NexusBlitz => "Nexus Blitz",
-            Map::Convergence => "Convergence",
-            Map::Arena => "Arena",
-            Map::Swarm => "Swarm",
-            Map::TheBandlewood => "The Bandle wood"
-        }
-    }
-}
+    #[inline]
+    pub fn id(self) -> u8 { self.into() }
 
-impl From<u8> for Map {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => Map::SummonersRiftOriginalSummerVariant,
-            2 => Map::SummonersRiftOriginalAutumnVariant,
-            3 => Map::TheProvingGrounds,
-            4 => Map::TwistedTreelineOriginalVersion,
-            8 => Map::TheCrystalScar,
-            10 => Map::TwistedTreeline,
-            11 => Map::SummonersRift,
-            12 => Map::HowlingAbyss,
-            14 => Map::ButchersBridge,
-            16 => Map::CosmicsRuin,
-            18 => Map::ValoranCityPark,
-            19 => Map::Substructure43,
-            20 => Map::CrashSite,
-            21 => Map::NexusBlitz,
-            22 => Map::Convergence,
-            30 => Map::Arena,
-            33 => Map::Swarm,
-            35 => Map::TheBandlewood,
-            _ => panic!("Invalid map id"),
-        }
+    #[inline]
+    pub fn label(self) -> &'static str { self.into() }
+
+    #[inline]
+    pub fn from_id(id: u8) -> Option<Self> { Self::try_from(id).ok() }
+
+    #[inline]
+    pub fn options_all() -> Vec<(u8, &'static str)> {
+        Map::iter().map(|m| (m.id(), m.label())).collect()
     }
 }

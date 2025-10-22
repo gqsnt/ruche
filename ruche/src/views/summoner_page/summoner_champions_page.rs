@@ -246,7 +246,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                     >
                                                         {
                                                             let (index, champion): (usize, ChampionStats) = champion_with_index;
-                                                            let champion_enum = Champion::from(champion.champion_id);
+                                                            let champion_enum = Champion::try_from(champion.champion_id).unwrap();
                                                             view! {
                                                                 <tr class="p-1">
                                                                     <td class="text-center bg-gray-800 border border-gray-700">
@@ -259,7 +259,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                                                 parent_class="my-1 w-8 h-8 sprite-wrapper".to_string()
                                                                                 class="rounded-full self-scale-66 sprite-inner".to_string()
                                                                             />
-                                                                            <div class="ml-2 text-center">{champion_enum.to_str()}</div>
+                                                                            <div class="ml-2 text-center">{champion_enum.label()}</div>
                                                                         </div>
                                                                     </td>
                                                                     <td class="text-xs border border-gray-800">
@@ -398,9 +398,10 @@ impl TableSortType {
         // is reversed because we want to sort in descending order
         let ordering = match self {
             TableSortType::Index => idx_b.cmp(idx_a),
-            TableSortType::Champion => Champion::from(b.champion_id)
-                .to_str()
-                .cmp(Champion::from(a.champion_id).to_str()),
+            TableSortType::Champion => Champion::try_from(b.champion_id)
+                .unwrap()
+                .label()
+                .cmp(Champion::try_from(a.champion_id).unwrap().label()),
             TableSortType::WinRate => (a.win_rate).partial_cmp(&b.win_rate).unwrap(),
             TableSortType::AvgKDA => a.avg_kda.partial_cmp(&b.avg_kda).unwrap(),
             TableSortType::AvgGold => a.avg_gold_earned.partial_cmp(&b.avg_gold_earned).unwrap(),

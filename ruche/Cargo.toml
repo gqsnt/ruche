@@ -33,7 +33,7 @@ axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
 
 rustls = { version = "0.23.16" , features = ["ring"], optional = true}
 
-bitcode = "0.6.7"
+bitcode = {workspace = true}
 leptos = { git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c",features = ["nightly", "bitcode"] }
 leptos_axum = { git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c", optional = true}
 leptos_meta ={ git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c"}

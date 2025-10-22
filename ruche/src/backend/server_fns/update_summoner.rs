@@ -66,7 +66,7 @@ pub async fn update_summoner(
         if has_changed {
             leptos_axum::redirect(
                 summoner_url(
-                    platform_route.as_ref(),
+                    platform_route.code(),
                     acc_game_name.trim(),
                     acc_tag_line.trim(),
                 )

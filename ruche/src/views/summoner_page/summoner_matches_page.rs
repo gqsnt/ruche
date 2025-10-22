@@ -157,11 +157,11 @@ pub fn SummonerMatchesPage() -> impl IntoView {
 pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
     let summoner = expect_context::<Summoner>();
     let (show_details, set_show_details) = signal(false);
-    let champion = Champion::from(match_.champion_id);
-    let summoner_spell1 = SummonerSpell::from(match_.summoner_spell1_id);
-    let summoner_spell2 = SummonerSpell::from(match_.summoner_spell2_id);
-    let primary_perk_selection = Perk::from(match_.perk_primary_selection_id);
-    let sub_perk_style = Perk::from(match_.perk_sub_style_id);
+    let champion = Champion::try_from(match_.champion_id).unwrap();
+    let summoner_spell1 = SummonerSpell::try_from(match_.summoner_spell1_id).unwrap();
+    let summoner_spell2 = SummonerSpell::try_from(match_.summoner_spell2_id).unwrap();
+    let primary_perk_selection = Perk::try_from(match_.perk_primary_selection_id).unwrap();
+    let sub_perk_style = Perk::try_from(match_.perk_sub_style_id).unwrap();
     if primary_perk_selection == Perk::UNKNOWN {
         //log!("{:?}", match_.perk_primary_selection_id);
     }
@@ -223,7 +223,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                             .participants
                             .into_iter()
                             .map(|participant| {
-                                let champion = Champion::from(participant.champion_id);
+                                let champion = Champion::try_from(participant.champion_id).unwrap();
                                 view! {
                                     <div class="flex items-center gap-1 w-[130px]">
                                         <ImgChampion
@@ -236,10 +236,10 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                                 view! {
                                                     <a
                                                         href=summoner_encounter_url(
-                                                            summoner.platform.as_ref(),
+                                                            summoner.platform.code(),
                                                             summoner.game_name.as_str(),
                                                             summoner.tag_line.as_str(),
-                                                            participant.platform.as_ref(),
+                                                            participant.platform.code(),
                                                             participant.game_name.as_str(),
                                                             participant.tag_line.as_str(),
                                                         )
@@ -265,7 +265,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         <a
                                             target="_blank"
                                             href=summoner_url(
-                                                participant.platform.as_ref(),
+                                                participant.platform.code(),
                                                 participant.game_name.as_str(),
                                                 participant.tag_line.as_str(),
                                             )
@@ -443,7 +443,7 @@ pub fn MatchInfoCard(
                     class:text-blue-300=won.is_some() && won.unwrap()
                     class=" uppercase font-bold text-ellipsis max-w-[90%] overflow-hidden whitespace-nowrap"
                 >
-                    {queue.to_str()}
+                    {queue.label()}
                 </div>
                 <div>{match_ended_since.to_string()}</div>
             </div>

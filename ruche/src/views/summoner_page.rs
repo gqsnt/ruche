@@ -49,7 +49,7 @@ pub fn SummonerPage() -> impl IntoView {
     let summoner_resource = leptos::server::Resource::new_bitcode_blocking(
         move || (platform_type(), summoner_slug()),
         |(platform, summoner_slug)| async move {
-            get_summoner(PlatformRoute::from(platform.as_str()), summoner_slug).await
+            get_summoner(PlatformRoute::try_from(platform.as_str()).unwrap_or_default(), summoner_slug).await
         },
     );
 
@@ -219,7 +219,7 @@ pub fn SummonerInfo(
                 class=("mr-2", !is_self)
             >
                 <a href=summoner_url(
-                    platform.as_ref(),
+                    platform.code(),
                     game_name.as_ref(),
                     tag_line.as_ref(),
                 )>{game_name.clone()}#{tag_line.clone()}</a>
@@ -257,7 +257,7 @@ pub struct Summoner {
 impl Summoner {
     pub fn to_route_path(&self) -> String {
         summoner_url(
-            self.platform.as_ref(),
+            self.platform.code(),
             self.game_name.as_ref(),
             self.tag_line.as_ref(),
         )

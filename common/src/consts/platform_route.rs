@@ -1,5 +1,7 @@
 use bitcode::{Decode, Encode};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
+use strum::{EnumIter, EnumString, IntoStaticStr};
 
 pub const PLATFORM_ROUTE_OPTIONS: [PlatformRoute; 16] = [
     PlatformRoute::BR1,
@@ -20,191 +22,96 @@ pub const PLATFORM_ROUTE_OPTIONS: [PlatformRoute; 16] = [
     PlatformRoute::VN2,
 ];
 
-/// Platform routes for League of Legends (LoL), Teamfight Tactics (TFT), and Legends of Runeterra (LoR).
 #[derive(
-    PartialEq, Eq, Hash, PartialOrd, Ord, Encode,Decode, Clone, Copy, Debug,Default, Serialize, Deserialize
+    PartialEq, Eq, Hash, PartialOrd, Ord, Encode, Decode, Clone, Copy, Debug, Default,
+    Serialize, Deserialize,
+    IntoPrimitive, TryFromPrimitive, EnumIter, EnumString, IntoStaticStr
 )]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum PlatformRoute {
-    /// Brazil.
-    ///
-    /// `16` (riotapi-schema ID/repr)
-    BR1 = 16,
-
-    /// Europe, Northeast.
-    ///
-    /// `17` (riotapi-schema ID/repr)
-    EUN1 = 17,
-
-    /// Europe, West.
-    ///
-    /// `18` (riotapi-schema ID/repr)
+    /// Europe, West. (default)
     #[default]
+    #[strum(serialize = "EUW", serialize = "EUW1")]
     EUW1 = 18,
 
+    /// Brazil.
+    #[strum(serialize = "BR", serialize = "BR1")]
+    BR1 = 16,
+    /// Europe, Northeast.
+    #[strum(serialize = "EUNE", serialize = "EUN1")]
+    EUN1 = 17,
     /// Japan.
-    ///
-    /// `19` (riotapi-schema ID/repr)
+    #[strum(serialize = "JP", serialize = "JP1")]
     JP1 = 19,
-
     /// Korea.
-    ///
-    /// `20` (riotapi-schema ID/repr)
+    #[strum(serialize = "KR")]
     KR = 20,
-
     /// Latin America, North.
-    ///
-    /// `21` (riotapi-schema ID/repr)
+    #[strum(serialize = "LAN", serialize = "LA1")]
     LA1 = 21,
-
     /// Latin America, South.
-    ///
-    /// `22` (riotapi-schema ID/repr)
+    #[strum(serialize = "LAS", serialize = "LA2")]
     LA2 = 22,
-
     /// Middle East and North Africa.
-    ///
-    /// `37` (riotapi-schema ID/repr)
+    #[strum(serialize = "MENA", serialize = "ME1")]
     ME1 = 37,
-
     /// North America.
-    ///
-    /// `23` (riotapi-schema ID/repr)
+    #[strum(serialize = "NA", serialize = "NA1")]
     NA1 = 23,
-
     /// Oceania.
-    ///
-    /// `24` (riotapi-schema ID/repr)
+    #[strum(serialize = "OCE", serialize = "OC1")]
     OC1 = 24,
-
-    /// Philippines
-    ///
-    /// `32` (riotapi-schema ID/repr)
+    /// Philippines.
+    #[strum(serialize = "PH", serialize = "PH2")]
     PH2 = 32,
-
-    /// Russia
-    ///
-    /// `25` (riotapi-schema ID/repr)
+    /// Russia.
+    #[strum(serialize = "RU")]
     RU = 25,
-
-    /// Singapore
-    ///
-    /// `33` (riotapi-schema ID/repr)
+    /// Singapore.
+    #[strum(serialize = "SG", serialize = "SG2")]
     SG2 = 33,
-
-    /// Thailand
-    ///
-    /// `34` (riotapi-schema ID/repr)
+    /// Thailand.
+    #[strum(serialize = "TH", serialize = "TH2")]
     TH2 = 34,
-
-    /// Turkey
-    ///
-    /// `26` (riotapi-schema ID/repr)
+    /// Turkey.
+    #[strum(serialize = "TR", serialize = "TR1")]
     TR1 = 26,
-
-    /// Taiwan
-    ///
-    /// `35` (riotapi-schema ID/repr)
+    /// Taiwan.
+    #[strum(serialize = "TW", serialize = "TW2")]
     TW2 = 35,
-
-    /// Vietnam
-    ///
-    /// `36` (riotapi-schema ID/repr)
+    /// Vietnam.
+    #[strum(serialize = "VN", serialize = "VN2")]
     VN2 = 36,
-
-    /// Public Beta Environment, special beta testing platform. Located in North America.
-    ///
-    /// `31` (riotapi-schema ID/repr)
+    /// Public Beta Environment.
+    #[strum(serialize = "PBE", serialize = "PBE1")]
     PBE1 = 31,
 }
 
 impl PlatformRoute {
+    #[inline]
+    pub fn id(self) -> u8 { self.into() }
+
+    /// Short region code (`"EUW"`, `"NA"`, …). Uses `IntoStaticStr`.
+    #[inline]
+    pub fn code(self) -> &'static str { self.into() }
+
+    /// Accept both `"EUW"` and `"EUW1"` (and friends).
+    #[inline]
+    pub fn from_code(code: &str) -> Option<Self> {
+        <Self as std::str::FromStr>::from_str(code).ok()
+    }
+
     #[cfg(feature = "ssr")]
     pub fn to_riven(&self) -> riven::consts::PlatformRoute {
         use std::str::FromStr;
-        riven::consts::PlatformRoute::from_str(self.to_string().as_str()).unwrap()
-    }
-
-    #[cfg(feature = "ssr")]
-    pub fn from_raw_str(value: &str) -> Self {
-        match value {
-            "BR1" => PlatformRoute::BR1,
-            "EUN1" => PlatformRoute::EUN1,
-            "EUW1" => PlatformRoute::EUW1,
-            "JP1" => PlatformRoute::JP1,
-            "KR" => PlatformRoute::KR,
-            "LA1" => PlatformRoute::LA1,
-            "LA2" => PlatformRoute::LA2,
-            "ME1" => PlatformRoute::ME1,
-            "NA1" => PlatformRoute::NA1,
-            "OC1" => PlatformRoute::OC1,
-            "PH2" => PlatformRoute::PH2,
-            "RU" => PlatformRoute::RU,
-            "SG2" => PlatformRoute::SG2,
-            "TH2" => PlatformRoute::TH2,
-            "TR1" => PlatformRoute::TR1,
-            "TW2" => PlatformRoute::TW2,
-            "VN2" => PlatformRoute::VN2,
-            "PBE1" => PlatformRoute::PBE1,
-            _ => PlatformRoute::EUW1,
-        }
+        riven::consts::PlatformRoute::from_str((*self).into()).unwrap_or(riven::consts::PlatformRoute::EUW1)
     }
 }
 
-impl From<&str> for PlatformRoute {
-    fn from(value: &str) -> Self {
-        match value {
-            "BR" => PlatformRoute::BR1,
-            "EUNE" => PlatformRoute::EUN1,
-            "EUW" => PlatformRoute::EUW1,
-            "JP" => PlatformRoute::JP1,
-            "KR" => PlatformRoute::KR,
-            "LAN" => PlatformRoute::LA1,
-            "LAS" => PlatformRoute::LA2,
-            "MENA" => PlatformRoute::ME1,
-            "NA" => PlatformRoute::NA1,
-            "OCE" => PlatformRoute::OC1,
-            "PH" => PlatformRoute::PH2,
-            "RU" => PlatformRoute::RU,
-            "SG" => PlatformRoute::SG2,
-            "TH" => PlatformRoute::TH2,
-            "TR" => PlatformRoute::TR1,
-            "TW" => PlatformRoute::TW2,
-            "VN" => PlatformRoute::VN2,
-            "PBE" => PlatformRoute::PBE1,
-            _ => PlatformRoute::EUW1,
-        }
-    }
-}
-
-impl AsRef<str> for PlatformRoute {
-    fn as_ref(&self) -> &str {
-        match self {
-            PlatformRoute::BR1 => "BR",
-            PlatformRoute::EUN1 => "EUNE",
-            PlatformRoute::EUW1 => "EUW",
-            PlatformRoute::JP1 => "JP",
-            PlatformRoute::KR => "KR",
-            PlatformRoute::LA1 => "LAN",
-            PlatformRoute::LA2 => "LAS",
-            PlatformRoute::ME1 => "MENA",
-            PlatformRoute::NA1 => "NA",
-            PlatformRoute::OC1 => "OCE",
-            PlatformRoute::PH2 => "PH",
-            PlatformRoute::RU => "RU",
-            PlatformRoute::SG2 => "SG",
-            PlatformRoute::TH2 => "TH",
-            PlatformRoute::TR1 => "TR",
-            PlatformRoute::TW2 => "TW",
-            PlatformRoute::VN2 => "VN",
-            PlatformRoute::PBE1 => "PBE",
-        }
-    }
-}
 
 impl std::fmt::Display for PlatformRoute {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_ref())
+        f.write_str(self.code())
     }
 }

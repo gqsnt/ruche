@@ -238,7 +238,7 @@ pub mod ssr {
 
     impl PlatformRouteDb {
         pub fn from_raw_str(str: &str) -> Self {
-            PlatformRoute::from_raw_str(str).into()
+            PlatformRoute::from_code(str).unwrap_or_default().into()
         }
     }
 

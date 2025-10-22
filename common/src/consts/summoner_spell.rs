@@ -1,104 +1,55 @@
-use std::fmt::Formatter;
 use bitcode::{Decode, Encode};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
+use once_cell::sync::Lazy;
+use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 
 #[repr(u16)]
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Encode,Decode)]
+#[derive(
+    Debug, Clone, Copy, Eq, PartialEq, Hash, Encode, Decode,
+    IntoPrimitive, TryFromPrimitive, EnumIter, IntoStaticStr
+)]
+#[allow(non_camel_case_types)]
 pub enum SummonerSpell {
+    #[num_enum(default)]
+    #[strum(serialize = "UNKNOWN")]
     UNKNOWN = 0,
-    SummonerBarrier = 21,
-    SummonerBoost = 1,
-    SummonerCherryFlash = 2202,
-    SummonerCherryHold = 2201,
-    SummonerDot = 14,
-    SummonerExhaust = 3,
-    SummonerFlash = 4,
-    SummonerHaste = 6,
-    SummonerHeal = 7,
-    SummonerMana = 13,
-    SummonerPoroRecall = 30,
-    SummonerPoroThrow = 31,
-    SummonerSmite = 11,
-    #[allow(non_camel_case_types)]
-    SummonerSnowURFSnowball_Mark = 39,
-    SummonerSnowball = 32,
-    SummonerTeleport = 12,
-    #[allow(non_camel_case_types)]
-    Summoner_UltBookPlaceholder = 54,
-    #[allow(non_camel_case_types)]
-    Summoner_UltBookSmitePlaceholder = 55,
+
+    #[strum(serialize = "SummonerBarrier")]                 SummonerBarrier = 21,
+    #[strum(serialize = "SummonerBoost")]                   SummonerBoost = 1,
+    #[strum(serialize = "SummonerCherryFlash")]             SummonerCherryFlash = 2202,
+    #[strum(serialize = "SummonerCherryHold")]              SummonerCherryHold = 2201,
+    #[strum(serialize = "SummonerDot")]                     SummonerDot = 14,
+    #[strum(serialize = "SummonerExhaust")]                 SummonerExhaust = 3,
+    #[strum(serialize = "SummonerFlash")]                   SummonerFlash = 4,
+    #[strum(serialize = "SummonerHaste")]                   SummonerHaste = 6,
+    #[strum(serialize = "SummonerHeal")]                    SummonerHeal = 7,
+    #[strum(serialize = "SummonerMana")]                    SummonerMana = 13,
+    #[strum(serialize = "SummonerPoroRecall")]              SummonerPoroRecall = 30,
+    #[strum(serialize = "SummonerPoroThrow")]               SummonerPoroThrow = 31,
+    #[strum(serialize = "SummonerSmite")]                   SummonerSmite = 11,
+    #[strum(serialize = "SummonerSnowURFSnowball_Mark")]    SummonerSnowURFSnowball_Mark = 39,
+    #[strum(serialize = "SummonerSnowball")]                SummonerSnowball = 32,
+    #[strum(serialize = "SummonerTeleport")]                SummonerTeleport = 12,
+    #[strum(serialize = "Summoner_UltBookPlaceholder")]     Summoner_UltBookPlaceholder = 54,
+    #[strum(serialize = "Summoner_UltBookSmitePlaceholder")]Summoner_UltBookSmitePlaceholder = 55,
 }
 
-impl From<u16> for SummonerSpell {
-    fn from(value: u16) -> Self {
-        match value {
-            0 => SummonerSpell::UNKNOWN,
-            21 => SummonerSpell::SummonerBarrier,
-            1 => SummonerSpell::SummonerBoost,
-            2202 => SummonerSpell::SummonerCherryFlash,
-            2201 => SummonerSpell::SummonerCherryHold,
-            14 => SummonerSpell::SummonerDot,
-            3 => SummonerSpell::SummonerExhaust,
-            4 => SummonerSpell::SummonerFlash,
-            6 => SummonerSpell::SummonerHaste,
-            7 => SummonerSpell::SummonerHeal,
-            13 => SummonerSpell::SummonerMana,
-            30 => SummonerSpell::SummonerPoroRecall,
-            31 => SummonerSpell::SummonerPoroThrow,
-            11 => SummonerSpell::SummonerSmite,
-            39 => SummonerSpell::SummonerSnowURFSnowball_Mark,
-            32 => SummonerSpell::SummonerSnowball,
-            12 => SummonerSpell::SummonerTeleport,
-            54 => SummonerSpell::Summoner_UltBookPlaceholder,
-            55 => SummonerSpell::Summoner_UltBookSmitePlaceholder,
-            _ => SummonerSpell::UNKNOWN,
-        }
+impl SummonerSpell {
+    #[inline]
+    pub fn id(self) -> u16 { self.into() }
+
+    #[inline]
+    pub fn label(self) -> &'static str { self.into() }
+
+    /// Replacement for the old `SUMMONER_SPELL_OPTIONS`.
+    #[inline]
+    pub fn ids_non_unknown() -> Vec<u16> {
+        SummonerSpell::iter()
+            .filter(|s| *s != SummonerSpell::UNKNOWN)
+            .map(|s| s.id())
+            .collect()
     }
 }
 
-pub static SUMMONER_SPELL_OPTIONS: &[u16] = &[
-    SummonerSpell::SummonerBarrier as u16,
-    SummonerSpell::SummonerBoost as u16,
-    SummonerSpell::SummonerCherryFlash as u16,
-    SummonerSpell::SummonerCherryHold as u16,
-    SummonerSpell::SummonerDot as u16,
-    SummonerSpell::SummonerExhaust as u16,
-    SummonerSpell::SummonerFlash as u16,
-    SummonerSpell::SummonerHaste as u16,
-    SummonerSpell::SummonerHeal as u16,
-    SummonerSpell::SummonerMana as u16,
-    SummonerSpell::SummonerPoroRecall as u16,
-    SummonerSpell::SummonerPoroThrow as u16,
-    SummonerSpell::SummonerSmite as u16,
-    SummonerSpell::SummonerSnowURFSnowball_Mark as u16,
-    SummonerSpell::SummonerSnowball as u16,
-    SummonerSpell::SummonerTeleport as u16,
-    SummonerSpell::Summoner_UltBookPlaceholder as u16,
-    SummonerSpell::Summoner_UltBookSmitePlaceholder as u16,
-];
-
-impl std::fmt::Display for SummonerSpell {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let str = match self {
-            SummonerSpell::UNKNOWN => "UNKNOWN",
-            SummonerSpell::SummonerBarrier => "SummonerBarrier",
-            SummonerSpell::SummonerBoost => "SummonerBoost",
-            SummonerSpell::SummonerCherryFlash => "SummonerCherryFlash",
-            SummonerSpell::SummonerCherryHold => "SummonerCherryHold",
-            SummonerSpell::SummonerDot => "SummonerDot",
-            SummonerSpell::SummonerExhaust => "SummonerExhaust",
-            SummonerSpell::SummonerFlash => "SummonerFlash",
-            SummonerSpell::SummonerHaste => "SummonerHaste",
-            SummonerSpell::SummonerHeal => "SummonerHeal",
-            SummonerSpell::SummonerMana => "SummonerMana",
-            SummonerSpell::SummonerPoroRecall => "SummonerPoroRecall",
-            SummonerSpell::SummonerPoroThrow => "SummonerPoroThrow",
-            SummonerSpell::SummonerSmite => "SummonerSmite",
-            SummonerSpell::SummonerSnowURFSnowball_Mark => "SummonerSnowURFSnowball_Mark",
-            SummonerSpell::SummonerSnowball => "SummonerSnowURFSnowball_Mark",
-            SummonerSpell::SummonerTeleport => "SummonerSnowball",
-            SummonerSpell::Summoner_UltBookPlaceholder => "SummonerTeleport",
-            SummonerSpell::Summoner_UltBookSmitePlaceholder => "Summoner_UltBookSmitePlaceholder",
-        };
-        write!(f, "{}", str)
-    }
-}
+pub static SUMMONER_SPELL_OPTIONS: Lazy<Vec<u16>> =
+    Lazy::new(|| SummonerSpell::ids_non_unknown());

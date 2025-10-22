@@ -40,7 +40,7 @@ pub fn SummonerLivePage() -> impl IntoView {
         |(_, _, refresh_version, id, platform_type, set_pending_value)| async move {
             let r = get_live_game(
                 id,
-                PlatformRoute::from(platform_type.as_str()),
+                PlatformRoute::try_from(platform_type.as_str()).unwrap(),
                 refresh_version > 0,
             )
             .await;
@@ -96,8 +96,8 @@ pub fn SummonerLivePage() -> impl IntoView {
                                 view! {
                                     <div class="flex flex-col space-y-2">
                                         <div class="flex space-x-2">
-                                            <div>{result.queue.to_str()}</div>
-                                            <div>{result.game_map.get_static_name()}</div>
+                                            <div>{result.queue.label()}</div>
+                                            <div>{result.game_map.label()}</div>
                                             <div>
                                                 {format!(
                                                     "{:02}:{:02}",
@@ -160,13 +160,13 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                 {participants
                     .into_iter()
                     .map(|participant| {
-                        let champion = Champion::from(participant.champion_id);
-                        let summoner_spell1 = SummonerSpell::from(participant.summoner_spell1_id);
-                        let summoner_spell2 = SummonerSpell::from(participant.summoner_spell2_id);
-                        let perk_primary_selection = Perk::from(
+                        let champion = Champion::try_from(participant.champion_id).unwrap();
+                        let summoner_spell1 = SummonerSpell::try_from(participant.summoner_spell1_id).unwrap();
+                        let summoner_spell2 = SummonerSpell::try_from(participant.summoner_spell2_id).unwrap();
+                        let perk_primary_selection = Perk::try_from(
                             participant.perk_primary_selection_id,
-                        );
-                        let perk_sub_style = Perk::from(participant.perk_sub_style_id);
+                        ).unwrap();
+                        let perk_sub_style = Perk::try_from(participant.perk_sub_style_id).unwrap();
 
                         view! {
                             <tr>
@@ -212,10 +212,10 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                                 view! {
                                                     <a
                                                         href=summoner_encounter_url(
-                                                            summoner.platform.as_ref(),
+                                                            summoner.platform.code(),
                                                             summoner.game_name.as_str(),
                                                             summoner.tag_line.as_str(),
-                                                            participant.platform.as_ref(),
+                                                            participant.platform.code(),
                                                             participant.game_name.as_str(),
                                                             participant.tag_line.as_str(),
                                                         )
@@ -241,7 +241,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                         <a
                                             target="_blank"
                                             href=summoner_url(
-                                                participant.platform.as_ref(),
+                                                participant.platform.code(),
                                                 participant.game_name.as_str(),
                                                 participant.tag_line.as_str(),
                                             )
