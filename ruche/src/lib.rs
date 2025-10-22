@@ -252,8 +252,8 @@ pub mod ssr {
         );
         let srv=  axum_server::bind_rustls(socket_addr, config)
             .serve(app.into_make_service());
-        tokio::join!(
-            svr_h,
+        let (srv_h, srv) = tokio::join!(
+            srv_h,
             srv,
         );
         Ok(())
