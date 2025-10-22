@@ -78,9 +78,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     } else {
         leptos_options.site_addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     }
-    rustls::crypto::ring::default_provider()
-        .install_default()
-        .expect("Failed to install rustls crypto provider");
+
 
     let site_address = leptos_options.site_addr;
 
