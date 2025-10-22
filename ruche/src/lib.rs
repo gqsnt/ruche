@@ -41,9 +41,13 @@ pub mod ssr {
     use tokio_stream::StreamExt;
     use tower::ServiceExt;
     use tower_http::services::ServeFile;
-    use crate::make_quinn_server_endpoint;
-    use tower::ServiceBuilder;
-    use http::header::HeaderValue;
+    use rustls::pki_types::{CertificateDer, PrivateKeyDer};
+    use rustls::pki_types::pem::PemObject;
+    use rustls::ServerConfig;
+    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
+    use socket2::{Socket, Domain, Type, Protocol};
+    use quinn::{EndpointConfig, Endpoint};
+    use std::sync::Arc as StdArc;
 
     pub type RiotApiState = Arc<RiotApi>;
     pub type SubscriberMap = DashMap<i32, Sender<SSEEvent>>;
@@ -202,18 +206,17 @@ pub mod ssr {
     pub async fn serve(
         app: Router,
         is_prod: bool,
-        h2_socket_addr: SocketAddr,
-        h3_socket_addr: SocketAddr,
+        socket_addr: SocketAddr,
     ) -> Result<(), axum::Error> {
         if is_prod {
             tokio::spawn(redirect_http_to_https());
-            serve_with_tsl(app, h2_socket_addr, h3_socket_addr).await
+            serve_with_tsl(app, socket_addr).await
         } else {
-            serve_locally(app, h2_socket_addr,h3_socket_addr).await
+            serve_locally(app, socket_addr).await
         }
     }
 
-    pub async fn serve_with_tsl(app: Router, h2_socket_addr: SocketAddr,h3_socket_addr: SocketAddr) -> Result<(), axum::Error> {
+    pub async fn serve_with_tsl(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
         let lets_encrypt_dir = dotenv::var("LETS_ENCRYPT_PATH").expect("LETS_ENCRYPT_PATH not set");
         let lets_encrypt_dir = PathBuf::from(lets_encrypt_dir);
         let cert = lets_encrypt_dir.join("fullchain.pem");
@@ -221,12 +224,32 @@ pub mod ssr {
         if !cert.exists() || !key.exists() {
             panic!("Certificate or key file not found");
         }
-        let config = RustlsConfig::from_pem_file(cert, key)
-            .await
-            .expect("failed to load rustls config");
-        log!("listening on {}", h2_socket_addr);
+
+        let cert_der = CertificateDer::from_pem_file(&cert).expect("failed to load cert");
+        let key_der  = PrivateKeyDer::from_pem_file(&key).expect("failed to load key");
+
+        let h2_tls = make_rustls_server_config_h2(Some((cert_der.clone(), key_der.clone_key())));
+        let h3_tls = make_rustls_server_config_h3(Some((cert_der, key_der.clone_key())));
+
+        let config = RustlsConfig::from_config(h2_tls.clone());
+        // Create a QUIC (HTTP/3) endpoint so we advertise Alt-Svc for browsers.
+        // Keep the endpoint alive for the lifetime of the server by binding it here.
+        let quic_ep = make_quinn_server_endpoint_dual(socket_addr, h3_tls);
+        let acceptor = h3_util::quinn::H3QuinnAcceptor::new(quic_ep);
+
+        // Spawn the H3 router in the background. Clone the app so we don't move it
+        // twice (once into the H3 task, once into the h2 server below).
+        let app_for_h3 = app.clone();
+        let _svr_h = tokio::spawn(async move {
+            // Initialize the H3 router; keep any errors visible during development.
+            let _ = axum_h3::H3Router::new(app_for_h3)
+                .serve(acceptor)
+                .await
+                .unwrap();
+        });
+        log!("listening on {}", socket_addr);
         // Advertise HTTP/3 (h3) to browsers using Alt-Svc so that clients can attempt h3 (QUIC) on h3_addr
-        axum_server::bind_rustls(h2_socket_addr, config)
+        axum_server::bind_rustls(socket_addr, config)
             .serve(app.into_make_service())
             .await
             .unwrap();
@@ -266,22 +289,100 @@ pub mod ssr {
             .unwrap();
     }
 
-    pub async fn serve_locally(app: Router, h2_socket_addr: SocketAddr,h3_socket_addr: SocketAddr) -> Result<(), axum::Error> {
-        let ep = make_quinn_server_endpoint(h3_socket_addr);
-        let acceptor = h3_util::quinn::H3QuinnAcceptor::new(ep);
-        let svr_h = tokio::spawn(async move {
-            axum_h3::H3Router::new(app)
-                .await
-                .unwrap();
-        });
+    pub async fn serve_locally(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
+        let default_cert = PathBuf::from("certs").join("localhost+2.pem");
+        let default_key  = PathBuf::from("certs").join("localhost+2-key.pem");
+        let (cert_path, key_path) = if default_cert.exists() && default_key.exists() {
+            (default_cert, default_key)
+        } else {
+            make_test_cert_files("ruche_local", true)
+        };
 
-        let listener = tokio::net::TcpListener::bind(&h2_socket_addr)
+        // Serve H2/H1 over TLS (TCP) with the same cert as QUIC to satisfy Alt-Svc origin checks.
+        let axum_rustls = RustlsConfig::from_pem_file(cert_path.clone(), key_path.clone())
             .await
-            .expect("Creating listener");
-        axum::serve(listener, app.into_make_service())
-            .await
-            .unwrap();
+            .expect("failed to load rustls config for local TLS");
+
+        // QUIC/H3 must use a cert trusted by the browser; reuse the same mkcert files.
+        let cert_der = CertificateDer::from_pem_file(&cert_path).expect("failed to load cert (H3)");
+        let key_der  = PrivateKeyDer::from_pem_file(&key_path).expect("failed to load key (H3)");
+        let h3_tls   = make_rustls_server_config_h3(Some((cert_der, key_der)));
+
+        // --- Bind two explicit UDP sockets on the same port: ::1 and 127.0.0.1 ---
+        // Rationale: on Windows, IPv6 UDP sockets are often v6-only; binding [::] does not
+        // necessarily cover IPv4 or loopback semantics as expected by curl resolving ::1.
+        let port = socket_addr.port();
+
+        // IPv6 loopback (::1:port), v6-only
+        let v6 = Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))
+            .expect("create v6 udp");
+        v6.set_only_v6(true).expect("set v6 only");
+        v6.set_nonblocking(true).expect("nonblocking v6");
+        let v6_addr = SocketAddrV6::new(Ipv6Addr::LOCALHOST, port, 0, 0);
+        v6.bind(&v6_addr.into()).expect("bind ::1:port");
+        let v6_udp: std::net::UdpSocket = v6.into();
+
+        // IPv4 loopback (127.0.0.1:port)
+        let v4 = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))
+            .expect("create v4 udp");
+        v4.set_nonblocking(true).expect("nonblocking v4");
+        let v4_addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, port);
+        v4.bind(&v4_addr.into()).expect("bind 127.0.0.1:port");
+        let v4_udp: std::net::UdpSocket = v4.into();
+
+        // Build QUIC endpoints from both sockets
+        let ep_v6 = make_quinn_endpoint_from_socket(v6_udp, h3_tls.clone());
+        let ep_v4 = make_quinn_endpoint_from_socket(v4_udp, h3_tls.clone());
+
+        let acceptor_v6 = h3_util::quinn::H3QuinnAcceptor::new(ep_v6);
+        let acceptor_v4 = h3_util::quinn::H3QuinnAcceptor::new(ep_v4);
+
+        // Spawn the H3 router in the background. Clone the app so we don't move it
+        // twice (once into the H3 task, once into the h2 server below).
+        let app_for_h3a = app.clone();
+        let app_for_h3b = app.clone();
+        let svr_h_v6 = axum_h3::H3Router::new(app_for_h3a).serve(acceptor_v6);
+        let svr_h_v4 = axum_h3::H3Router::new(app_for_h3b).serve(acceptor_v4);
+
+        // Serve the app over TLS (h2) using axum_server which will advertise Alt-Svc
+        // for HTTP/3 separately via the QUIC endpoint.
+        log!("listening (local TLS) on {}", socket_addr);
+
+        let svr_h2 = axum_server::bind_rustls(socket_addr, axum_rustls)
+        .serve(app.into_make_service());
+
+
+        let (h6,h4n,h2)=  tokio::join!(svr_h_v6, svr_h_v4, svr_h2);
+        match h6 {
+            Ok(_) => log!("H3 v6 server exited normally"),
+            Err(e) => log!("H3 v6 server exited with error: {}", e),
+        }
+        match h4n {
+            Ok(_) => log!("H3 v4 server exited normally"),
+            Err(e) => log!("H3 v4 server exited with error: {}", e),
+        }
+        match h2 {
+            Ok(_) => log!("H2 server exited normally"),
+            Err(e) => log!("H2 server exited with error: {}", e),
+        }
         Ok(())
+    }
+
+    fn make_quinn_endpoint_from_socket(
+        udp: std::net::UdpSocket,
+        tls_config: Arc<ServerConfig>,
+    ) -> Endpoint {
+        let server_config = quinn::ServerConfig::with_crypto(Arc::new(
+            quinn::crypto::rustls::QuicServerConfig::try_from(tls_config).unwrap(),
+        ));
+        let ep = quinn::Endpoint::new(
+            EndpointConfig::default(),
+            Some(server_config),
+            udp,
+            StdArc::new(quinn::TokioRuntime),
+        )
+            .expect("failed to create quinn endpoint");
+        ep
     }
 
     pub async fn get_sitemap() -> impl IntoResponse {
@@ -307,94 +408,120 @@ pub mod ssr {
             }
         }
     }
-}
 
-pub fn make_quinn_server_endpoint(in_addr: SocketAddr) -> quinn::Endpoint {
-    let tls_config = Arc::new(make_rustls_server_config());
-
-    let server_config = quinn::ServerConfig::with_crypto(Arc::new(
-        quinn::crypto::rustls::QuicServerConfig::try_from(tls_config).unwrap(),
-    ));
-    quinn::Endpoint::server(server_config, in_addr).unwrap()
-}
-
-pub fn make_rustls_server_config() -> rustls::ServerConfig {
-    let (cert, key) =make_test_cert_rustls(vec!["localhost".to_string()]);
-    let mut tls_config = rustls::ServerConfig::builder_with_provider(
-        rustls::crypto::ring::default_provider().into(),
-    )
-        .with_safe_default_protocol_versions()
-        .unwrap()
-        .with_no_client_auth()
-        .with_single_cert(vec![cert.clone()], key.clone_key())
-        .unwrap();
-    tls_config.alpn_protocols = vec![b"h3".to_vec()];
-    tls_config.max_early_data_size = u32::MAX;
-    tls_config
-}
-
-
-pub fn make_test_cert_rustls(
-    subject_alt_names: Vec<String>,
-) -> (
-    rustls::pki_types::CertificateDer<'static>,
-    rustls::pki_types::PrivateKeyDer<'static>,
-) {
-    let (cert, key_pair) = make_test_cert(subject_alt_names);
-    let cert = rustls::pki_types::CertificateDer::from(cert);
-    use rustls::pki_types::pem::PemObject;
-    let key = rustls::pki_types::PrivateKeyDer::from_pem(
-        rustls::pki_types::pem::SectionKind::PrivateKey,
-        key_pair.serialize_der(),
-    )
-        .unwrap();
-    (cert, key)
-}
-
-pub fn make_test_cert(subject_alt_names: Vec<String>) -> (rcgen::Certificate, rcgen::KeyPair) {
-    use rcgen::generate_simple_self_signed;
-    let key_pair = generate_simple_self_signed(subject_alt_names).unwrap();
-    (key_pair.cert, key_pair.signing_key)
-}
-
-/// Create cert files for test.
-/// This may leave the certs behind after the test.
-pub fn make_test_cert_files(
-    test_name: &str,
-    regen: bool,
-) -> (std::path::PathBuf, std::path::PathBuf) {
-    use std::io::Write;
-
-    // Create a temporary directory
-    let temp_dir = std::env::temp_dir()
-        .join("tonic_h3_test_certs")
-        .join(test_name);
-
-    // remove and regenerate.
-    if regen {
-        let _ = std::fs::remove_dir_all(&temp_dir);
+    pub fn make_quinn_server_endpoint_dual(in_addr: SocketAddr, tls_config: Arc<ServerConfig>) -> quinn::Endpoint {
+        let server_config = quinn::ServerConfig::with_crypto(Arc::new(
+            quinn::crypto::rustls::QuicServerConfig::try_from(tls_config).unwrap(),
+        ));
+        // Bind QUIC on [::]:port (IPv6 unspecified). On Windows this is dual-stack by default.
+        let v6_addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), in_addr.port());
+        quinn::Endpoint::server(server_config, v6_addr).expect("failed to bind QUIC endpoint")
     }
-    std::fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
 
-    // Define file paths in temp directory
-    let cert_path = temp_dir.join("cert.pem");
-    let key_path = temp_dir.join("key.pem");
-    if !key_path.exists() || !cert_path.exists() {
-        let (cert, key) = make_test_cert(vec!["localhost".to_string(), "127.0.0.1".to_string()]);
-
-        // Save certificate to file
-        let mut cert_f = std::fs::File::create(&cert_path).expect("Failed to create cert file");
-        cert_f
-            .write_all(cert.pem().as_bytes())
-            .expect("Failed to write cert");
-
-        // Save private key to file
-        let mut key_f = std::fs::File::create(&key_path).expect("Failed to create key file");
-        key_f
-            .write_all(key.serialize_pem().as_bytes())
-            .expect("Failed to write key");
+    pub fn make_rustls_server_config_h3(
+        cert_key: Option<(CertificateDer<'static>, PrivateKeyDer)>,
+    ) -> Arc<rustls::ServerConfig> {
+        let (cert, key) = match cert_key {
+            Some((cert, key)) => (cert, key),
+            None => make_test_cert_rustls(vec!["localhost".to_string()]),
+        };
+        let mut tls_config = rustls::ServerConfig::builder_with_provider(
+            rustls::crypto::ring::default_provider().into(),
+        )
+            .with_safe_default_protocol_versions()
+            .unwrap()
+            .with_no_client_auth()
+            .with_single_cert(vec![cert.clone()], key.clone_key())
+            .unwrap();
+        tls_config.alpn_protocols = vec![b"h3".to_vec()];
+        tls_config.max_early_data_size = u32::MAX;
+        Arc::new(tls_config)
     }
-    (cert_path, key_path)
+
+    pub fn make_rustls_server_config_h2(
+        cert_key: Option<(CertificateDer<'static>, PrivateKeyDer)>,
+    ) -> Arc<rustls::ServerConfig> {
+        let (cert, key) = match cert_key {
+            Some((cert, key)) => (cert, key),
+            None => make_test_cert_rustls(vec!["localhost".to_string()]),
+        };
+        let mut tls_config = rustls::ServerConfig::builder_with_provider(
+            rustls::crypto::ring::default_provider().into(),
+        )
+            .with_safe_default_protocol_versions()
+            .unwrap()
+            .with_no_client_auth()
+            .with_single_cert(vec![cert.clone()], key.clone_key())
+            .unwrap();
+        tls_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
+        Arc::new(tls_config)
+    }
+
+
+    pub fn make_test_cert_rustls(
+        subject_alt_names: Vec<String>,
+    ) -> (
+        rustls::pki_types::CertificateDer<'static>,
+        rustls::pki_types::PrivateKeyDer<'static>,
+    ) {
+        let (cert, key_pair) = make_test_cert(subject_alt_names);
+        let cert = rustls::pki_types::CertificateDer::from(cert);
+        use rustls::pki_types::pem::PemObject;
+        let key = rustls::pki_types::PrivateKeyDer::from_pem(
+            rustls::pki_types::pem::SectionKind::PrivateKey,
+            key_pair.serialize_der(),
+        )
+            .unwrap();
+        (cert, key)
+    }
+
+    pub fn make_test_cert(subject_alt_names: Vec<String>) -> (rcgen::Certificate, rcgen::KeyPair) {
+        use rcgen::generate_simple_self_signed;
+        let key_pair = generate_simple_self_signed(subject_alt_names).unwrap();
+        (key_pair.cert, key_pair.signing_key)
+    }
+
+    /// Create cert files for test.
+    /// This may leave the certs behind after the test.
+    pub fn make_test_cert_files(
+        test_name: &str,
+        regen: bool,
+    ) -> (std::path::PathBuf, std::path::PathBuf) {
+        use std::io::Write;
+
+        // Create a temporary directory
+        let temp_dir = std::env::temp_dir()
+            .join("tonic_h3_test_certs")
+            .join(test_name);
+        println!("Generating test certs in {:?}", temp_dir);
+
+        // remove and regenerate.
+        if regen {
+            let _ = std::fs::remove_dir_all(&temp_dir);
+        }
+        std::fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
+
+        // Define file paths in temp directory
+        let cert_path = temp_dir.join("cert.pem");
+        let key_path = temp_dir.join("key.pem");
+        if !key_path.exists() || !cert_path.exists() {
+            let (cert, key) = make_test_cert(vec!["localhost".to_string(), "127.0.0.1".to_string()]);
+
+            // Save certificate to file
+            let mut cert_f = std::fs::File::create(&cert_path).expect("Failed to create cert file");
+            cert_f
+                .write_all(cert.pem().as_bytes())
+                .expect("Failed to write cert");
+
+            // Save private key to file
+            let mut key_f = std::fs::File::create(&key_path).expect("Failed to create key file");
+            key_f
+                .write_all(key.serialize_pem().as_bytes())
+                .expect("Failed to write key");
+        }
+        (cert_path, key_path)
+    }
+
 }
 
 

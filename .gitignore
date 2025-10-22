@@ -14,7 +14,8 @@ ruche/end2end/node_modules/
 ruche/test-results/
 ruche/end2end/playwright-report/
 ruche/playwright/.cache/
-
-
+certs
+condense.exe
+output.txt
 .env
 .idea

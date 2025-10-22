@@ -78,14 +78,12 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     } else {
         leptos_options.site_addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     }
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
 
     let site_address = leptos_options.site_addr;
-    let h3_site_address = SocketAddr::from((
-        site_address.ip(),
-        site_address.port() + 1, // HTTP/3 on port+1
-    ));
-
-    let alt_svc_value = format!("h3=\":{}\"; ma=2592000; persist=1", h3_site_address.port());
+    let alt_svc_value = format!("h3=\":{}\"; ma=2592000; persist=1", site_address.port());
 
     let database_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let pool = PgPool::connect(database_url.as_str())
@@ -171,20 +169,20 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
 
     // build our application with a route
     let app = Router::<AppState>::new()
-        .nest(
-            "/assets",
-            MemoryServe::new(load_assets!("../target/site/assets"))
-                .enable_brotli(!cfg!(debug_assertions))
-                .cache_control(CacheControl::Custom("public, max-age=31536000"))
-                .into_router::<AppState>(),
-        )
-        .nest(
-            "/pkg",
-            MemoryServe::new(load_assets!("../target/site/pkg"))
-                .enable_brotli(!cfg!(debug_assertions))
-                .cache_control(CacheControl::Custom("public, max-age=31536000"))
-                .into_router::<AppState>(),
-        )
+        // .nest(
+        //     "/assets",
+        //     MemoryServe::new(load_assets!("../target/site/assets"))
+        //         .enable_brotli(!cfg!(debug_assertions))
+        //         .cache_control(CacheControl::Custom("public, max-age=31536000"))
+        //         .into_router::<AppState>(),
+        // )
+        // .nest(
+        //     "/pkg",
+        //     MemoryServe::new(load_assets!("../target/site/pkg"))
+        //         .enable_brotli(!cfg!(debug_assertions))
+        //         .cache_control(CacheControl::Custom("public, max-age=31536000"))
+        //         .into_router::<AppState>(),
+        // )
         .leptos_routes_with_context(
             &app_state,
             routes,
@@ -207,7 +205,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         ))
         .layer(middleware)
         .with_state(app_state);
-    serve(app, is_prod, site_address, h3_site_address)
+    serve(app, is_prod, site_address)
         .await
         .expect("failed to serve");
     Ok(())
