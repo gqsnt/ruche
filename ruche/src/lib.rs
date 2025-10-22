@@ -240,27 +240,23 @@ pub mod ssr {
         // Spawn the H3 router in the background. Clone the app so we don't move it
         // twice (once into the H3 task, once into the h2 server below).
         let alt_svc_value = format!("h3=\":{}\"; ma=2592000; persist=1", socket_addr.port());
-        let app_for_h3 = app.clone()
-            .layer(
-                    SetResponseHeaderLayer::if_not_present(
-                                       http::header::ALT_SVC,
-                                    HeaderValue::from_str(&alt_svc_value).unwrap()
-                        )
-
-            );
-        let _svr_h = tokio::spawn(async move {
-            // Initialize the H3 router; keep any errors visible during development.
-            let _ = axum_h3::H3Router::new(app_for_h3)
-                .serve(acceptor)
-                .await
-                .unwrap();
-        });
+        let app_for_h3 = app.clone();
+        let srv_h = axum_h3::H3Router::new(app_for_h3)
+            .serve(acceptor);
         log!("listening on {}", socket_addr);
         // Advertise HTTP/3 (h3) to browsers using Alt-Svc so that clients can attempt h3 (QUIC) on h3_addr
-        axum_server::bind_rustls(socket_addr, config)
-            .serve(app.into_make_service())
-            .await
-            .unwrap();
+        let app = app.layer(
+            SetResponseHeaderLayer::if_not_present(
+                http::header::ALT_SVC,
+                HeaderValue::from_str(&alt_svc_value).unwrap()
+            )
+        );
+        let srv=  axum_server::bind_rustls(socket_addr, config)
+            .serve(app.into_make_service());
+        tokio::join!(
+            svr_h,
+            srv,
+        );
         Ok(())
     }
 
