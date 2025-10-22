@@ -48,6 +48,8 @@ pub mod ssr {
     use socket2::{Socket, Domain, Type, Protocol};
     use quinn::{EndpointConfig, Endpoint};
     use std::sync::Arc as StdArc;
+    use tower_http::set_header::SetResponseHeaderLayer;
+
 
     pub type RiotApiState = Arc<RiotApi>;
     pub type SubscriberMap = DashMap<i32, Sender<SSEEvent>>;
@@ -239,7 +241,14 @@ pub mod ssr {
 
         // Spawn the H3 router in the background. Clone the app so we don't move it
         // twice (once into the H3 task, once into the h2 server below).
-        let app_for_h3 = app.clone();
+        let app_for_h3 = app.clone()
+            .layer(
+                    SetResponseHeaderLayer::if_not_present(
+                                       http::header::ALT_SVC,
+                                    HeaderValue::from_str(&alt_svc_value).unwrap()
+                        )
+
+            );
         let _svr_h = tokio::spawn(async move {
             // Initialize the H3 router; keep any errors visible during development.
             let _ = axum_h3::H3Router::new(app_for_h3)
@@ -297,74 +306,14 @@ pub mod ssr {
         } else {
             make_test_cert_files("ruche_local", true)
         };
-
-        // Serve H2/H1 over TLS (TCP) with the same cert as QUIC to satisfy Alt-Svc origin checks.
         let axum_rustls = RustlsConfig::from_pem_file(cert_path.clone(), key_path.clone())
             .await
             .expect("failed to load rustls config for local TLS");
-
-        // QUIC/H3 must use a cert trusted by the browser; reuse the same mkcert files.
-        let cert_der = CertificateDer::from_pem_file(&cert_path).expect("failed to load cert (H3)");
-        let key_der  = PrivateKeyDer::from_pem_file(&key_path).expect("failed to load key (H3)");
-        let h3_tls   = make_rustls_server_config_h3(Some((cert_der, key_der)));
-
-        // --- Bind two explicit UDP sockets on the same port: ::1 and 127.0.0.1 ---
-        // Rationale: on Windows, IPv6 UDP sockets are often v6-only; binding [::] does not
-        // necessarily cover IPv4 or loopback semantics as expected by curl resolving ::1.
-        let port = socket_addr.port();
-
-        // IPv6 loopback (::1:port), v6-only
-        let v6 = Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))
-            .expect("create v6 udp");
-        v6.set_only_v6(true).expect("set v6 only");
-        v6.set_nonblocking(true).expect("nonblocking v6");
-        let v6_addr = SocketAddrV6::new(Ipv6Addr::LOCALHOST, port, 0, 0);
-        v6.bind(&v6_addr.into()).expect("bind ::1:port");
-        let v6_udp: std::net::UdpSocket = v6.into();
-
-        // IPv4 loopback (127.0.0.1:port)
-        let v4 = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))
-            .expect("create v4 udp");
-        v4.set_nonblocking(true).expect("nonblocking v4");
-        let v4_addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, port);
-        v4.bind(&v4_addr.into()).expect("bind 127.0.0.1:port");
-        let v4_udp: std::net::UdpSocket = v4.into();
-
-        // Build QUIC endpoints from both sockets
-        let ep_v6 = make_quinn_endpoint_from_socket(v6_udp, h3_tls.clone());
-        let ep_v4 = make_quinn_endpoint_from_socket(v4_udp, h3_tls.clone());
-
-        let acceptor_v6 = h3_util::quinn::H3QuinnAcceptor::new(ep_v6);
-        let acceptor_v4 = h3_util::quinn::H3QuinnAcceptor::new(ep_v4);
-
-        // Spawn the H3 router in the background. Clone the app so we don't move it
-        // twice (once into the H3 task, once into the h2 server below).
-        let app_for_h3a = app.clone();
-        let app_for_h3b = app.clone();
-        let svr_h_v6 = axum_h3::H3Router::new(app_for_h3a).serve(acceptor_v6);
-        let svr_h_v4 = axum_h3::H3Router::new(app_for_h3b).serve(acceptor_v4);
-
-        // Serve the app over TLS (h2) using axum_server which will advertise Alt-Svc
-        // for HTTP/3 separately via the QUIC endpoint.
-        log!("listening (local TLS) on {}", socket_addr);
-
-        let svr_h2 = axum_server::bind_rustls(socket_addr, axum_rustls)
-        .serve(app.into_make_service());
-
-
-        let (h6,h4n,h2)=  tokio::join!(svr_h_v6, svr_h_v4, svr_h2);
-        match h6 {
-            Ok(_) => log!("H3 v6 server exited normally"),
-            Err(e) => log!("H3 v6 server exited with error: {}", e),
-        }
-        match h4n {
-            Ok(_) => log!("H3 v4 server exited normally"),
-            Err(e) => log!("H3 v4 server exited with error: {}", e),
-        }
-        match h2 {
-            Ok(_) => log!("H2 server exited normally"),
-            Err(e) => log!("H2 server exited with error: {}", e),
-        }
+        log!("listening (local TLS, H1/H2 only) on {}", socket_addr);
+        axum_server::bind_rustls(socket_addr, axum_rustls)
+            .serve(app.into_make_service())
+            .await
+            .unwrap();
         Ok(())
     }
 

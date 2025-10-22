@@ -144,45 +144,24 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
 
     let routes = generate_route_list(App);
 
-    let middleware = ServiceBuilder::new()
-        .layer(
-            CompressionLayer::new()
-                .br(true)
-                .zstd(true)
-                .quality(CompressionLevel::Default)
-                .compress_when(
-                    SizeAbove::new(256)
-                        .and(NotForContentType::GRPC)
-                        .and(NotForContentType::IMAGES)
-                        .and(NotForContentType::SSE)
-                        .and(NotForContentType::const_new("text/javascript"))
-                        .and(NotForContentType::const_new("application/wasm"))
-                        .and(NotForContentType::const_new("text/css")),
-                ),
-        )
-        .layer(
-            tower_http::set_header::SetResponseHeaderLayer::if_not_present(
-                http::header::ALT_SVC,
-                HeaderValue::from_str(&alt_svc_value).unwrap(),
-            ),
-        );
+
 
     // build our application with a route
     let app = Router::<AppState>::new()
-        // .nest(
-        //     "/assets",
-        //     MemoryServe::new(load_assets!("../target/site/assets"))
-        //         .enable_brotli(!cfg!(debug_assertions))
-        //         .cache_control(CacheControl::Custom("public, max-age=31536000"))
-        //         .into_router::<AppState>(),
-        // )
-        // .nest(
-        //     "/pkg",
-        //     MemoryServe::new(load_assets!("../target/site/pkg"))
-        //         .enable_brotli(!cfg!(debug_assertions))
-        //         .cache_control(CacheControl::Custom("public, max-age=31536000"))
-        //         .into_router::<AppState>(),
-        // )
+        .nest(
+            "/assets",
+            MemoryServe::new(load_assets!("../target/site/assets"))
+                .enable_brotli(!cfg!(debug_assertions))
+                .cache_control(CacheControl::Custom("public, max-age=31536000"))
+                .into_router::<AppState>(),
+        )
+        .nest(
+            "/pkg",
+            MemoryServe::new(load_assets!("../target/site/pkg"))
+                .enable_brotli(!cfg!(debug_assertions))
+                .cache_control(CacheControl::Custom("public, max-age=31536000"))
+                .into_router::<AppState>(),
+        )
         .leptos_routes_with_context(
             &app_state,
             routes,
@@ -203,7 +182,21 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(
             shell,
         ))
-        .layer(middleware)
+        .layer(
+            CompressionLayer::new()
+                .br(true)
+                .zstd(true)
+                .quality(CompressionLevel::Default)
+                .compress_when(
+                    SizeAbove::new(256)
+                        .and(NotForContentType::GRPC)
+                        .and(NotForContentType::IMAGES)
+                        .and(NotForContentType::SSE)
+                        .and(NotForContentType::const_new("text/javascript"))
+                        .and(NotForContentType::const_new("application/wasm"))
+                        .and(NotForContentType::const_new("text/css")),
+                ),
+        )
         .with_state(app_state);
     serve(app, is_prod, site_address)
         .await
