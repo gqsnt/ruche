@@ -30,7 +30,7 @@ async-stream = {version = "0.3.6", optional = true}
 
 serde_json = {workspace = true, optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
-axum-h3 = { version = "0.0.4"}
+
 rustls = { version = "0.23.16" , features = ["ring"], optional = true}
 
 bitcode = "0.6.7"
@@ -50,14 +50,18 @@ gloo-net = "0.6.0"
 common={path="../common"}
 log = "0.4.27"
 axum-extra = {version = "0.10.3", optional = true}
-
-
-
+quinn = { version = "0.11.7", optional = true }
+h3-util = {version = "0.0.4" ,optional = true, default-features = false, features = ["quinn"]}
+rcgen = { version = "0.14.5", optional = true}
+axum-h3 = {version = "0.0.4", optional = true}
 
 [features]
 hydrate = ["leptos/hydrate"]
 ssr = [
     "dep:axum-extra",
+    "dep:quinn",
+    "dep:axum-h3",
+    "dep:rcgen",
     "dep:axum",
     "dep:tokio",
     "dep:tokio-stream",
@@ -83,7 +87,9 @@ ssr = [
     "dep:rustls",
     "dep:serde_json",
     "dep:flate2",
-    "common/ssr"
+    "common/ssr",
+    "dep:h3-util",
+
 ]
 
 

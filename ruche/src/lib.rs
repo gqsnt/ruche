@@ -1,3 +1,6 @@
+use std::net::SocketAddr;
+use std::sync::Arc;
+
 pub mod app;
 pub mod views;
 
@@ -38,6 +41,7 @@ pub mod ssr {
     use tokio_stream::StreamExt;
     use tower::ServiceExt;
     use tower_http::services::ServeFile;
+    use crate::make_quinn_server_endpoint;
 
     pub type RiotApiState = Arc<RiotApi>;
     pub type SubscriberMap = DashMap<i32, Sender<SSEEvent>>;
@@ -207,6 +211,8 @@ pub mod ssr {
     }
 
     pub async fn serve_with_tsl(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
+        let mut h3_addr = socket_addr.clone();
+        h3_addr.set_port(socket_addr.port() + 1);
         let lets_encrypt_dir = dotenv::var("LETS_ENCRYPT_PATH").expect("LETS_ENCRYPT_PATH not set");
         let lets_encrypt_dir = PathBuf::from(lets_encrypt_dir);
         let cert = lets_encrypt_dir.join("fullchain.pem");
@@ -259,14 +265,19 @@ pub mod ssr {
     }
 
     pub async fn serve_locally(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
+        let mut h3_addr = socket_addr.clone();
+        h3_addr.set_port(socket_addr.port() + 1);
+        let ep = make_quinn_server_endpoint(h3_addr);
+        let acceptor = h3_util::quinn::H3QuinnAcceptor::new(ep);
+        let svr_h = tokio::spawn(async move {
+            axum_h3::H3Router::new(app)
+                .await
+                .unwrap();
+        });
+
         let listener = tokio::net::TcpListener::bind(&socket_addr)
             .await
             .expect("Creating listener");
-        log!("listening on {}", socket_addr);
-        let h3_router = axum_h3::H3Router::new(app);
-        h3_router.serve(
-            listener
-        )
         axum::serve(listener, app.into_make_service())
             .await
             .unwrap();
@@ -297,6 +308,95 @@ pub mod ssr {
         }
     }
 }
+
+pub fn make_quinn_server_endpoint(in_addr: SocketAddr) -> quinn::Endpoint {
+    let tls_config = Arc::new(make_rustls_server_config());
+
+    let server_config = quinn::ServerConfig::with_crypto(Arc::new(
+        quinn::crypto::rustls::QuicServerConfig::try_from(tls_config).unwrap(),
+    ));
+    quinn::Endpoint::server(server_config, in_addr).unwrap()
+}
+
+pub fn make_rustls_server_config() -> rustls::ServerConfig {
+    let (cert, key) =make_test_cert_rustls(vec!["localhost".to_string()]);
+    let mut tls_config = rustls::ServerConfig::builder_with_provider(
+        rustls::crypto::ring::default_provider().into(),
+    )
+        .with_safe_default_protocol_versions()
+        .unwrap()
+        .with_no_client_auth()
+        .with_single_cert(vec![cert.clone()], key.clone_key())
+        .unwrap();
+    tls_config.alpn_protocols = vec![b"h3".to_vec()];
+    tls_config.max_early_data_size = u32::MAX;
+    tls_config
+}
+
+
+pub fn make_test_cert_rustls(
+    subject_alt_names: Vec<String>,
+) -> (
+    rustls::pki_types::CertificateDer<'static>,
+    rustls::pki_types::PrivateKeyDer<'static>,
+) {
+    let (cert, key_pair) = make_test_cert(subject_alt_names);
+    let cert = rustls::pki_types::CertificateDer::from(cert);
+    use rustls::pki_types::pem::PemObject;
+    let key = rustls::pki_types::PrivateKeyDer::from_pem(
+        rustls::pki_types::pem::SectionKind::PrivateKey,
+        key_pair.serialize_der(),
+    )
+        .unwrap();
+    (cert, key)
+}
+
+pub fn make_test_cert(subject_alt_names: Vec<String>) -> (rcgen::Certificate, rcgen::KeyPair) {
+    use rcgen::generate_simple_self_signed;
+    let key_pair = generate_simple_self_signed(subject_alt_names).unwrap();
+    (key_pair.cert, key_pair.signing_key)
+}
+
+/// Create cert files for test.
+/// This may leave the certs behind after the test.
+pub fn make_test_cert_files(
+    test_name: &str,
+    regen: bool,
+) -> (std::path::PathBuf, std::path::PathBuf) {
+    use std::io::Write;
+
+    // Create a temporary directory
+    let temp_dir = std::env::temp_dir()
+        .join("tonic_h3_test_certs")
+        .join(test_name);
+
+    // remove and regenerate.
+    if regen {
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+    std::fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
+
+    // Define file paths in temp directory
+    let cert_path = temp_dir.join("cert.pem");
+    let key_path = temp_dir.join("key.pem");
+    if !key_path.exists() || !cert_path.exists() {
+        let (cert, key) = make_test_cert(vec!["localhost".to_string(), "127.0.0.1".to_string()]);
+
+        // Save certificate to file
+        let mut cert_f = std::fs::File::create(&cert_path).expect("Failed to create cert file");
+        cert_f
+            .write_all(cert.pem().as_bytes())
+            .expect("Failed to write cert");
+
+        // Save private key to file
+        let mut key_f = std::fs::File::create(&key_path).expect("Failed to create key file");
+        key_f
+            .write_all(key.serialize_pem().as_bytes())
+            .expect("Failed to write key");
+    }
+    (cert_path, key_path)
+}
+
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
