@@ -14,7 +14,6 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use image::imageops::FilterType;
 use reqwest::header;
-use reqwest::redirect::Policy;
 use thiserror::Error;
 
 #[derive(Parser, Debug)]
