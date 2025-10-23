@@ -26,8 +26,10 @@ rustflags = ["--cfg", "erase_components"]
 
 [profile.wasm-release]
 inherits = "release"
-opt-level = 3
-lto = 'fat'
+opt-level = "z"
+lto = true
 codegen-units = 1
 panic = "abort"
 rustflags = ["-Ctarget-cpu=native", "--cfg", "erase_components"]
+
+
