@@ -150,11 +150,6 @@ impl PlatformRoute {
     }
 }
 
-// impl From<&str> for PlatformRoute {
-//     fn from(s: &str) -> Self {
-//         PlatformRoute::from_code(s).unwrap_or(PlatformRoute::EUW)
-//     }
-// }
 
 impl std::fmt::Display for PlatformRoute {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -20,8 +20,7 @@ pub fn SummonerSearchPage(is_summoner_page: Signal<bool>) -> impl IntoView {
         params
             .read()
             .get("platform_type")
-            .map(|k|PlatformRoute::from_code(&k).unwrap().code())
-            .unwrap_or(PlatformRoute::EUW.code())
+            .unwrap_or(PlatformRoute::EUW.code().to_string())
     };
 
     let game_name_node = NodeRef::<Input>::new();
