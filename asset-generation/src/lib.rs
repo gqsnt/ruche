@@ -11,8 +11,10 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use image::imageops::FilterType;
+use reqwest::header;
+use reqwest::redirect::Policy;
 use thiserror::Error;
 
 #[derive(Parser, Debug)]
@@ -235,33 +237,37 @@ pub async fn convert_to_avif(asset_type: AssetType, modified: bool) -> AppResult
                 .unwrap()
                 .to_string();
 
-            let image_data = tokio::fs::read(path.clone()).await?;
             let image_path = default_assets_path.join(format!("{}.avif", name));
 
             // Spawn a task for each file processing
             let task = tokio::spawn(async move {
-                let image = image::load_from_memory_with_format(&image_data, ImageFormat::Png)
-                    .map_err(|e| format!("Failed to load image at {}: {}", path.display(), e))?
-                    .resize_exact(size.0, size.1, FilterType::Lanczos3)
-                    .to_rgba8();
-
-                tokio::fs::write(
-                    image_path,
-                    Encoder::new()
-                        .with_quality(75.0)
-                        .with_speed(1)
-                        .encode_rgba(Img::new(
-                            image.as_bytes().as_rgba(),
-                            image.width() as usize,
-                            image.height() as usize,
-                        ))
-                        .unwrap()
-                        .avif_file,
-                )
+                let image_data = match tokio::fs::read(&path).await {
+                    Ok(b) => b,
+                    Err(e) => return Err(format!("Read failed {}: {}", path.display(), e)),
+                };
+                if let Err(e) = validate_png(&image_data) {
+                    let _ = tokio::fs::remove_file(&path).await;
+                    return Err(format!("Invalid PNG {}, purged: {}", path.display(), e));
+                }
+                let image = match image::load_from_memory_with_format(&image_data, ImageFormat::Png) {
+                    Ok(img) => img.resize_exact(size.0, size.1, FilterType::Lanczos3).to_rgba8(),
+                    Err(e) => {
+                        let _ = tokio::fs::remove_file(&path).await;
+                        return Err(format!("Decode failed {}, purged: {}", path.display(), e));
+                    }
+                };
+                let out = Encoder::new()
+                    .with_quality(75.0)
+                    .with_speed(1)
+                    .encode_rgba(Img::new(
+                        image.as_bytes().as_rgba(),
+                        image.width() as usize,
+                        image.height() as usize,
+                    ))
+                    .map_err(|e| format!("AVIF encode failed {}: {e}", path.display()))?;
+                tokio::fs::write(&image_path, out.avif_file)
                     .await
-                    .map_err(|e| format!("Failed to write file: {}", e))?;
-                println!("Converted: {}", path.display());
-
+                    .map_err(|e| format!("Write failed {}: {}", image_path.display(), e))?;
                 Ok::<(), String>(())
             });
 
@@ -302,16 +308,16 @@ pub async fn rebuild_css_sprite(asset_type: AssetType, modified: bool) -> AppRes
         let path = entry.path();
         if path.is_file() {
             let task = tokio::task::spawn(async move {
-                let name = path.file_stem()
-                    .and_then(|stem| stem.to_str())
-                    .unwrap_or("")
-                    .to_string();
-
-                let image_data = tokio::fs::read(&path).await.unwrap();
+                let name = path.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_string();
+                let image_data = tokio::fs::read(&path).await
+                    .map_err(|e| format!("Read failed {}: {}", path.display(), e))?;
+                if let Err(e) = validate_png(&image_data) {
+                    let _ = tokio::fs::remove_file(&path).await;
+                    return Err(format!("Invalid PNG {}, purged: {}", path.display(), e));
+                }
                 let img = image::load_from_memory_with_format(&image_data, ImageFormat::Png)
-                    .map_err(|e| format!("Failed to load image at {}: {}", path.display(), e)).unwrap()
+                    .map_err(|e| format!("Decode failed {}: {}", path.display(), e))?
                     .resize_exact(size.0, size.1, FilterType::Lanczos3);
-                println!("Loaded: {}", path.display());
                 Ok::<(String, DynamicImage), String>((name, img))
             });
 
@@ -330,7 +336,10 @@ pub async fn rebuild_css_sprite(asset_type: AssetType, modified: bool) -> AppRes
             Err(e) => eprintln!("Task panicked: {:?}", e),
         }
     }
-
+    if all_images.is_empty() {
+        eprintln!("No valid images for {}. Skip sprite.", asset_type.get_path());
+        return Ok(());
+    }
     // find w h for a square sprite
     let n_images = all_images.len();
     let n_images_sqrt = (n_images as f64).sqrt().ceil() as u32;
@@ -386,9 +395,7 @@ pub async fn download_and_save_images(images_to_download: Vec<ImageToDownload>) 
     if images_to_download.is_empty() {
         return Ok(());
     }
-
-    let client = reqwest::Client::new();
-
+    let client = build_http_client()?;
     futures::stream::iter(images_to_download)
         .for_each_concurrent(10, |image| {
             let client = client.clone();
@@ -399,38 +406,91 @@ pub async fn download_and_save_images(images_to_download: Vec<ImageToDownload>) 
             }
         })
         .await;
-
     Ok(())
 }
 
-async fn download_image(client: &reqwest::Client, image: &ImageToDownload) -> AppResult<()> {
-    let image_data = download_with_retry(client, &image.url, 3).await?;
-
-    if let Some(parent) = image.path.parent() {
-        tokio::fs::create_dir_all(parent).await?;
-    }
-    tokio::fs::write(&image.path, &image_data).await?;
-    println!("Downloaded: {}", image.url);
-    Ok(())
-}
 
 async fn download_with_retry(
     client: &reqwest::Client,
     url: &str,
     retries: usize,
-) -> Result<Vec<u8>, reqwest::Error> {
-    let mut attempts = 0;
+) -> AppResult<Vec<u8>> {
+    let mut attempts = 0usize;
     loop {
-        match client.get(url).send().await {
-            Ok(response) => return response.bytes().await.map(|b| b.to_vec()),
-            Err(_) if attempts < retries => {
-                attempts += 1;
-                tokio::time::sleep(std::time::Duration::from_secs(2_u64.pow(attempts as u32)))
-                    .await;
+        let resp = client
+            .get(url)
+            .header(header::ACCEPT, "image/png") // force PNG si possible
+            .send()
+            .await;
+
+        match resp {
+            Ok(r) => {
+                let r = r.error_for_status(); // gère 4xx/5xx
+                match r {
+                    Ok(ok) => {
+                        let ct = ok.headers()
+                            .get(header::CONTENT_TYPE)
+                            .and_then(|v| v.to_str().ok().map(|v|v.to_string()))
+                            .unwrap_or("".to_string());
+                        let bytes = ok.bytes().await.map_err(AppError::from)?;
+                        // Accepte si Content-Type est PNG OU si la signature l’est réellement
+                        if !ct.contains("image/png") && !is_png_magic(&bytes) {
+                            return Err(AppError::CustomError(format!(
+                                "Unexpected content-type ({ct}) for {url}"
+                            )));
+                        }
+                        validate_png(&bytes)?;
+                        return Ok(bytes.to_vec());
+                    }
+                    Err(e) => {
+                        let code = e.status().map(|s| s.as_u16()).unwrap_or(0);
+                        let retryable = code == 429 || (500..=599).contains(&code);
+                        if attempts < retries && retryable {
+                            attempts += 1;
+                            tokio::time::sleep(Duration::from_millis(500u64 << attempts)).await;
+                            continue;
+                        }
+                        return Err(AppError::ReqwestError(Arc::new(e)));
+                    }
+                }
             }
-            Err(e) => return Err(e),
+            Err(e) => {
+                if attempts < retries {
+                    attempts += 1;
+                    tokio::time::sleep(Duration::from_millis(500u64 << attempts)).await;
+                    continue;
+                }
+                return Err(AppError::ReqwestError(Arc::new(e)));
+            }
         }
     }
+}
+
+async fn download_image(client: &reqwest::Client, image: &ImageToDownload) -> AppResult<()> {
+    if let Some(parent) = image.path.parent() {
+        tokio::fs::create_dir_all(parent).await?;
+    }
+
+    // Si déjà présent, valider ; sinon re-télécharger
+    if image.path.exists() {
+        match tokio::fs::read(&image.path).await {
+            Ok(b) if validate_png(&b).is_ok() => {
+                println!("Already valid: {}", image.path.display());
+                return Ok(());
+            }
+            _ => {
+                let _ = tokio::fs::remove_file(&image.path).await;
+            }
+        }
+    }
+
+    let bytes = download_with_retry(client, &image.url, 3).await?;
+    // Écriture atomique via suffixe .part puis rename
+    let tmp = image.path.with_extension("part");
+    tokio::fs::write(&tmp, &bytes).await?;
+    tokio::fs::rename(&tmp, &image.path).await?;
+    println!("Downloaded: {}", image.url);
+    Ok(())
 }
 
 pub async fn get_perks(version: String) -> AppResult<Vec<ImageToDownload>> {
@@ -569,13 +629,14 @@ impl StaticUrl {
     pub async fn get(&self) -> AppResult<String> {
         let client = reqwest::Client::builder()
             .danger_accept_invalid_certs(true)
+            .connect_timeout(Duration::from_secs(5))
+            .timeout(Duration::from_secs(20))
+            .user_agent(concat!("ruche-asset-gen/", env!("CARGO_PKG_VERSION")))
             .build()?;
-        client
-            .get(self.url().as_str())
-            .send()
-            .await?
-            .text()
-            .await
+        client.get(self.url().as_str())
+            .send().await?
+            .error_for_status()?
+            .text().await
             .map_err(|e| e.into())
     }
 }
@@ -657,4 +718,29 @@ struct JsonPerk2 {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProfileIconJson {
     pub id: i32,
+}
+
+
+fn is_png_magic(b: &[u8]) -> bool {
+    b.len() >= 8 && &b[0..8] == b"\x89PNG\r\n\x1a\n"
+}
+
+
+
+fn build_http_client() -> Result<reqwest::Client, AppError> {
+    Ok(reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(20))
+        .pool_idle_timeout(Duration::from_secs(30))
+        .user_agent(concat!("ruche-asset-gen/", env!("CARGO_PKG_VERSION")))
+        .build()?)
+}
+
+fn validate_png(bytes: &[u8]) -> AppResult<()> {
+    if !is_png_magic(bytes) {
+        return Err(AppError::CustomError("Invalid PNG signature".into()));
+    }
+    image::load_from_memory_with_format(bytes, ImageFormat::Png)
+        .map(|_| ())
+        .map_err(|e| AppError::CustomError(format!("PNG decode failed: {e}")))
 }
