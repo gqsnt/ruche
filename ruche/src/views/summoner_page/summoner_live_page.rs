@@ -33,14 +33,14 @@ pub fn SummonerLivePage() -> impl IntoView {
                 sse_match_update_version.get().unwrap_or_default(),
                 refresh_signal.get(),
                 summoner.id,
-                summoner.platform.to_string(),
+                summoner.platform.code(),
                 set_pending,
             )
         },
         |(_, _, refresh_version, id, platform_type, set_pending_value)| async move {
             let r = get_live_game(
                 id,
-                PlatformRoute::try_from(platform_type.as_str()).unwrap(),
+                PlatformRoute::try_from(platform_type).unwrap(),
                 refresh_version > 0,
             )
             .await;

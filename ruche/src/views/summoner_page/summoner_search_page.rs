@@ -20,7 +20,8 @@ pub fn SummonerSearchPage(is_summoner_page: Signal<bool>) -> impl IntoView {
         params
             .read()
             .get("platform_type")
-            .unwrap_or(PlatformRoute::EUW1.to_string())
+            .map(|k|PlatformRoute::from_code(&k).unwrap().code())
+            .unwrap_or(PlatformRoute::EUW.code())
     };
 
     let game_name_node = NodeRef::<Input>::new();
@@ -96,10 +97,10 @@ pub fn SummonerSearchPage(is_summoner_page: Signal<bool>) -> impl IntoView {
                         .map(|pt| {
                             view! {
                                 <option
-                                    value=pt.to_string()
-                                    selected=move || { platform_type().eq(&pt.to_string()) }
+                                    value=pt.code()
+                                    selected=move || { platform_type().eq(pt.code()) }
                                 >
-                                    {pt.to_string()}
+                                    {pt.code()}
                                 </option>
                             }
                         })

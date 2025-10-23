@@ -154,20 +154,20 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
 
     // build our application with a route
     let app = Router::<AppState>::new()
-        .nest(
-            "/assets",
-            MemoryServe::new(load_assets!("../target/site/assets"))
-                .enable_brotli(!cfg!(debug_assertions))
-                .cache_control(CacheControl::Custom("public, max-age=31536000"))
-                .into_router::<AppState>(),
-        )
-        .nest(
-            "/pkg",
-            MemoryServe::new(load_assets!("../target/site/pkg"))
-                .enable_brotli(!cfg!(debug_assertions))
-                .cache_control(CacheControl::Custom("public, max-age=31536000"))
-                .into_router::<AppState>(),
-        )
+        // .nest(
+        //     "/assets",
+        //     MemoryServe::new(load_assets!("../target/site/assets"))
+        //         .enable_brotli(!cfg!(debug_assertions))
+        //         .cache_control(CacheControl::Custom("public, max-age=31536000"))
+        //         .into_router::<AppState>(),
+        // )
+        // .nest(
+        //     "/pkg",
+        //     MemoryServe::new(load_assets!("../target/site/pkg"))
+        //         .enable_brotli(!cfg!(debug_assertions))
+        //         .cache_control(CacheControl::Custom("public, max-age=31536000"))
+        //         .into_router::<AppState>(),
+        // )
         .leptos_routes_with_context(
             &app_state,
             routes,
