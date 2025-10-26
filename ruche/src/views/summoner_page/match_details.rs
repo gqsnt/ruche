@@ -154,6 +154,12 @@ pub struct LolMatchParticipantDetails {
     pub skills_timeline: Vec<Skill>,
 }
 
+impl PartialEq for LolMatchParticipantDetails {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
 #[derive(Clone)]
 pub struct LolMatchTimeline {
     pub id: i32,

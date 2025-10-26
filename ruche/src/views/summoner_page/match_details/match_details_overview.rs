@@ -15,38 +15,42 @@ pub fn MatchDetailsOverview(
     summoner_id: i32,
     match_details: ReadSignal<Vec<LolMatchParticipantDetails>>,
 ) -> impl IntoView {
-    let details = match_details();
-    let (summoner_team, summoner_team_won) = {
+    let derived = Memo::new(move |_| {
+        let details = match_details(); // tracked here
+
         let detail = details
             .iter()
-            .find(|participant| participant.summoner_id == summoner_id)
+            .find(|p| p.summoner_id == summoner_id)
             .expect("Summoner id not found");
-        (detail.team_id, detail.won)
-    };
-    let other_team = if summoner_team == 100 { 200 } else { 100 };
-    let first_team = details
-        .iter()
-        .filter(|participant| participant.team_id == summoner_team)
-        .cloned()
-        .collect::<Vec<_>>();
-    let second_team = details
-        .iter()
-        .filter(|participant| participant.team_id != summoner_team)
-        .cloned()
-        .collect::<Vec<_>>();
+
+        let summoner_team = detail.team_id;
+        let summoner_team_won = detail.won;
+
+        let first_team = details
+            .iter()
+            .filter(|p| p.team_id == summoner_team)
+            .cloned()
+            .collect::<Vec<_>>();
+        let second_team = details
+            .iter()
+            .filter(|p| p.team_id != summoner_team)
+            .cloned()
+            .collect::<Vec<_>>();
+
+        (summoner_team, summoner_team_won, first_team, second_team)
+    });
     view! {
         <div>
-            <MatchDetailsOverviewTable
-                won=summoner_team_won
-                team_id=summoner_team
-                participants=first_team
-            />
-            <MatchDetailsOverviewTable
-                won=!summoner_team_won
-                team_id=other_team
-                participants=second_team
-            />
-
+             {move || {
+                let (team_id, won, first, second) = {
+                    let (t, w, f, s) = derived();
+                    (t, w, f, s)
+                };
+                view! {
+                    <MatchDetailsOverviewTable won=won team_id=team_id participants=first />
+                    <MatchDetailsOverviewTable won=!won team_id=if team_id==100 {200} else {100} participants=second />
+                }
+            }}
         </div>
     }
 }

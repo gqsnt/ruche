@@ -15,44 +15,51 @@ pub fn MatchDetailsBuild(
     summoner_id: i32,
     match_details: ReadSignal<Vec<LolMatchParticipantDetails>>,
 ) -> impl IntoView {
-    let summoner_name_with_champion = |participant: &LolMatchParticipantDetails| {
+    let summoner_name_with_champion = |p: &LolMatchParticipantDetails| {
         format!(
             "{}({})",
-            participant.game_name.as_str(),
-            Champion::try_from(participant.champion_id).unwrap_or_default().label()
+            p.game_name.as_str(),
+            Champion::try_from(p.champion_id).unwrap_or_default().label()
         )
     };
-    let participant_ids = match_details
-        .read_untracked()
-        .iter()
-        .map(|x| (x.summoner_id, summoner_name_with_champion(x)))
-        .collect::<HashMap<i32, String>>();
-    let find_participant = move |summoner_id: i32| {
-        match_details
-            .read_untracked()
+
+
+    let participant_ids = Memo::new(move |_| {
+        match_details()
             .iter()
-            .find(|x| x.summoner_id == summoner_id)
-            .cloned()
-            .expect("Participant not found")
+            .map(|x| (x.summoner_id, summoner_name_with_champion(x)))
+            .collect::<HashMap<i32, String>>()
+    });
+
+    let find_participant = move |id: i32| {
+        match_details.with_untracked(|v| {
+            v.iter()
+                .find(|x| x.summoner_id == id)
+                .cloned()
+                .expect("Participant not found")
+        })
     };
-    let (selected_participant, set_selected_participant) = signal(find_participant(summoner_id));
+
+    let (selected_participant, set_selected_participant) =
+        signal(find_participant(summoner_id));
+
     view! {
         <div class="text-left">
-            <select
+             <select
                 class="my-select"
                 aria-label="Select a participant"
-                  prop:value=move || selected_participant().summoner_id.to_string()
+                prop:value=move || selected_participant().summoner_id.to_string()
                 on:change=move |e| {
-              let id = event_target_value(&e).parse::<i32>().expect("Invalid summoner id");
-             set_selected_participant(find_participant(id));
-        }
+                    let id = event_target_value(&e).parse::<i32>().expect("Invalid summoner id");
+                    set_selected_participant(find_participant(id));
+                }
             >
-                 <For
-                    each=move || participant_ids.clone()
+                <For
+                    each=move || participant_ids().clone()
                     key=|(id, _)| *id
                     let:entry
-                  >
-                { let (id, name) = entry; view!{ <option value=id>{name}</option> } }
+                >
+                    { let (id, name) = entry; view!{ <option value=id>{name}</option> } }
                 </For>
             </select>
             <div class="my-card w-fit my-2">
