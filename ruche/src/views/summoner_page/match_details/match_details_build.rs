@@ -23,13 +23,13 @@ pub fn MatchDetailsBuild(
         )
     };
     let participant_ids = match_details
-        .read()
+        .read_untracked()
         .iter()
         .map(|x| (x.summoner_id, summoner_name_with_champion(x)))
         .collect::<HashMap<i32, String>>();
     let find_participant = move |summoner_id: i32| {
         match_details
-            .read()
+            .read_untracked()
             .iter()
             .find(|x| x.summoner_id == summoner_id)
             .cloned()

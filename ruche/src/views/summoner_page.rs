@@ -13,7 +13,7 @@ use leptos::either::Either;
 use leptos::prelude::Read;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos_router::components::A;
+use leptos_router::components::{Outlet, A};
 use leptos_router::hooks::use_params_map;
 
 pub mod match_details;
@@ -177,6 +177,7 @@ pub fn SummonerPage() -> impl IntoView {
                         </div>
 
                         <SummonerNav />
+                        <Outlet/>
                     }
                 }),
                 Err(_) => Either::Right(()),

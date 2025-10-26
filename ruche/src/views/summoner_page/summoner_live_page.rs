@@ -58,9 +58,9 @@ pub fn SummonerLivePage() -> impl IntoView {
     meta_store.description().set(format!("Watch {}#{}'s live game now on Ruche. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
     meta_store
         .url()
-        .set(format!("{}?tab=live", summoner.to_route_path()));
+        .set(format!("{}/live", summoner.to_route_path()));
     view! {
-        <div class="w-[768px]">
+        <div class="w-[768px] my-2">
             <div class="flex justify-start mb-2">
                 <button
                     class="my-button flex items-center"

@@ -150,20 +150,12 @@ pub fn summoner_not_found_url(platform: &str, game_name: &str, tag_line: &str) -
 }
 
 pub fn summoner_encounter_url(
-    platform: &str,
-    game_name: &str,
-    tag_line: &str,
-    encounter_platform: &str,
-    encounter_game_name: &str,
-    encounter_tag_line: &str,
+    self_platform: &str, self_game: &str, self_tag: &str,
+    encounter_platform: &str, encounter_game: &str, encounter_tag: &str,
 ) -> String {
-    format!(
-        "/platform/{}/summoners/{}?tab=encounter&encounter_slug={}&encounter_platform={}",
-        platform,
-        summoner_to_slug(game_name, tag_line),
-        summoner_to_slug(encounter_game_name, encounter_tag_line),
-        encounter_platform
-    )
+    let base = summoner_url(self_platform, self_game, self_tag);
+    let slug = format!("{}-{}", encounter_game, encounter_tag); // keep your existing slugging logic
+    format!("{}/encounter/{}/{}", base, encounter_platform, slug)
 }
 
 pub fn round_to_2_decimal_places(value: f64) -> f64 {

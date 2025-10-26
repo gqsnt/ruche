@@ -30,7 +30,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
     let (search_summoner, set_search_summoner) =
         query_signal_with_options::<String>("q", get_default_navigation_option());
     let (search_summoner_signal, set_search_summoner_signal) =
-        signal(search_summoner.get().unwrap_or_default());
+        signal(search_summoner.get_untracked().unwrap_or_default());
 
     let (pending, set_pending) = signal(false);
 
@@ -75,7 +75,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
     meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
     meta_store
         .url()
-        .set(format!("{}?tab=encounters", summoner.to_route_path()));
+        .set(format!("{}/encounters", summoner.to_route_path()));
 
     view! {
         <div>

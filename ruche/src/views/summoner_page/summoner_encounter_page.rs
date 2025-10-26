@@ -18,19 +18,19 @@ use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, IntoView};
-use leptos_router::hooks::{query_signal_with_options, use_query_map};
+use leptos_router::hooks::{query_signal_with_options, use_params_map};
 
 
 #[component]
 pub fn SummonerEncounterPage() -> impl IntoView {
     let summoner = expect_context::<Summoner>();
     let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
-    let queries = use_query_map();
+    let params = use_params_map();
     let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
     let (is_with, set_is_with) = signal(true);
 
-    let encounter_slug = move || queries.read().get("encounter_slug").unwrap_or_default();
-    let encounter_platform = move || queries.read().get("encounter_platform").unwrap_or_default();
+    let encounter_slug = move || params.read().get("encounter_slug").unwrap_or_default();
+    let encounter_platform = move || params.read().get("encounter_platform").unwrap_or_default();
 
     let (page_number, set_page_number) =
         query_signal_with_options::<u16>("page", get_default_navigation_option());
