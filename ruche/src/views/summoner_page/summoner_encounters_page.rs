@@ -142,7 +142,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                 let:encounter
                                                             >
                                                                 {
-                                                
+
                                                                     let profile_icon = ProfileIcon(encounter.profile_icon_id);
                                                                     let vs_match_count = encounter.match_count
                                                                         - encounter.with_match_count;
@@ -154,7 +154,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                         encounter.with_win_count,
                                                                         encounter.with_match_count,
                                                                     );
-                                                                    
+
                                                                     let summoner_encounter_url = summoner_encounter_url(
                                                                                         summoner_clone.platform.code(),
                                                                                         summoner_clone.game_name.as_str(),

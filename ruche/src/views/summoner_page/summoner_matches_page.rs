@@ -26,7 +26,6 @@ use leptos::{component, view, IntoView};
 use leptos_router::components::A;
 use leptos_router::hooks::query_signal_with_options;
 
-
 #[component]
 pub fn SummonerMatchesPage() -> impl IntoView {
     let summoner = expect_context::<Summoner>();
@@ -183,6 +182,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
     .collect::<Vec<_>>();
 
     view! {
+
         <div class="flex flex-col">
             <div class="min-h-24 w-full flex rounded text-xs">
                 <div

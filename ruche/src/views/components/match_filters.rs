@@ -8,7 +8,7 @@ use leptos::{component, view, IntoView};
 use leptos_router::hooks::query_signal_with_options;
 
 #[component]
-pub fn MatchFilters(children: Children) -> impl IntoView {
+pub fn MatchFilters(hidden:Signal<bool>,children: Children) -> impl IntoView {
     let (start_date, set_start_date) =
         query_signal_with_options("filters[start_date]", get_default_navigation_option());
 
@@ -44,7 +44,7 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
     let to_opt = |v: String| if v.is_empty() { None } else { Some(v) };
 
     view! {
-        <div class="flex justify-center my-2">
+        <div class="flex justify-center my-2" class:hidden=move ||hidden() >
             <div class="my-card w-[768px]">
                 <div class="flex text-left space-x-2 justify-center">
                     <div class="flex flex-col">

@@ -11,7 +11,11 @@ use leptos_router::{
     ParamSegment, StaticSegment,
 };
 use serde::{Deserialize, Serialize};
-use crate::views::components::match_filters::MatchFilters;
+use crate::views::summoner_page::summoner_champions_page::SummonerChampionsPage;
+use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterPage;
+use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersPage;
+use crate::views::summoner_page::summoner_live_page::SummonerLivePage;
+use crate::views::summoner_page::summoner_matches_page::SummonerMatchesPage;
 
 pub const SITE_URL: &str = "https://ruche.lol";
 
@@ -91,36 +95,20 @@ pub fn App() -> impl IntoView {
                         view=SummonerPage
                       >
                         // index → Matches
-                        <Route path=StaticSegment("") view=move || view! {
-                          <MatchFilters>
-                            <crate::views::summoner_page::summoner_matches_page::SummonerMatchesPage />
-                          </MatchFilters>
-                        } />
+                        <Route path=StaticSegment("") view=SummonerMatchesPage />
                     
-                        <Route path=StaticSegment("champions") view=move || view! {
-                          <MatchFilters>
-                            <crate::views::summoner_page::summoner_champions_page::SummonerChampionsPage />
-                          </MatchFilters>
-                        } />
+                        <Route path=StaticSegment("champions") view=SummonerChampionsPage />
                     
-                        <Route path=StaticSegment("encounters") view=move || view! {
-                          <MatchFilters>
-                            <crate::views::summoner_page::summoner_encounters_page::SummonerEncountersPage />
-                          </MatchFilters>
-                        } />
+                        <Route path=StaticSegment("encounters") view=SummonerEncountersPage/>
                     
                         <Route path=StaticSegment("live")
-                               view=crate::views::summoner_page::summoner_live_page::SummonerLivePage />
+                               view=SummonerLivePage />
                     
                         <Route
                           path=(StaticSegment("encounter"),
                                 ParamSegment("encounter_platform"),
                                 ParamSegment("encounter_slug"))
-                          view=move || view! {
-                            <MatchFilters>
-                              <crate::views::summoner_page::summoner_encounter_page::SummonerEncounterPage />
-                            </MatchFilters>
-                          }
+                          view=SummonerEncounterPage
                         />
                       </ParentRoute>
                     </ParentRoute>

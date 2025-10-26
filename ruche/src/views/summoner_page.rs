@@ -14,7 +14,8 @@ use leptos::prelude::Read;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::components::{Outlet, A};
-use leptos_router::hooks::use_params_map;
+use leptos_router::hooks::{use_location, use_params_map};
+use crate::views::components::match_filters::MatchFilters;
 
 pub mod match_details;
 pub mod summoner_champions_page;
@@ -177,7 +178,15 @@ pub fn SummonerPage() -> impl IntoView {
                         </div>
 
                         <SummonerNav />
-                        <Outlet/>
+                        {
+                             let location = use_location();
+
+                          view!{
+                                <MatchFilters hidden=Signal::derive(move || location.pathname.get().ends_with("/live"))>
+                                  <Outlet />
+                                </MatchFilters>
+                            }
+                        }
                     }
                 }),
                 Err(_) => Either::Right(()),
