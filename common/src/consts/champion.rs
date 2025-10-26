@@ -9,6 +9,7 @@ use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
     IntoPrimitive, TryFromPrimitive, EnumIter, IntoStaticStr
 )]
 pub enum Champion {
+
     #[num_enum(default)]
     #[strum(serialize = "UNKNOWN")]
     UNKNOWN = 0,
@@ -184,6 +185,12 @@ pub enum Champion {
     #[strum(serialize = "Zilean")]         Zilean = 26,
     #[strum(serialize = "Zoe")]            Zoe = 142,
     #[strum(serialize = "Zyra")]           Zyra = 143,
+}
+
+impl Default for Champion{
+    fn default() -> Self {
+        Champion::UNKNOWN
+    }
 }
 
 impl Champion {

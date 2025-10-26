@@ -8,7 +8,7 @@ use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_params_map, use_query_map};
 
 #[component]
-pub fn SummonerSearchPage(is_summoner_page: Signal<bool>) -> impl IntoView {
+pub fn SummonerSearchPage(is_summoner_page: Memo<bool>) -> impl IntoView {
     let query = use_query_map();
     let params = use_params_map();
     let search_summoner = ServerAction::<SearchSummoner>::new();

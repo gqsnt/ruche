@@ -16,6 +16,7 @@ use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use leptos_router::components::A;
 
 #[component]
 pub fn SummonerLivePage() -> impl IntoView {
@@ -160,13 +161,13 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                 {participants
                     .into_iter()
                     .map(|participant| {
-                        let champion = Champion::try_from(participant.champion_id).unwrap();
-                        let summoner_spell1 = SummonerSpell::try_from(participant.summoner_spell1_id).unwrap();
-                        let summoner_spell2 = SummonerSpell::try_from(participant.summoner_spell2_id).unwrap();
+                        let champion = Champion::try_from(participant.champion_id).unwrap_or_default();
+                        let summoner_spell1 = SummonerSpell::try_from(participant.summoner_spell1_id).unwrap_or_default();
+                        let summoner_spell2 = SummonerSpell::try_from(participant.summoner_spell2_id).unwrap_or_default();
                         let perk_primary_selection = Perk::try_from(
                             participant.perk_primary_selection_id,
-                        ).unwrap();
-                        let perk_sub_style = Perk::try_from(participant.perk_sub_style_id).unwrap();
+                        ).unwrap_or_default();
+                        let perk_sub_style = Perk::try_from(participant.perk_sub_style_id).unwrap_or_default();
 
                         view! {
                             <tr>
@@ -210,7 +211,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                         {(participant.encounter_count > 0)
                                             .then(|| {
                                                 view! {
-                                                    <a
+                                                    <A
                                                         href=summoner_encounter_url(
                                                             summoner.platform.code(),
                                                             summoner.game_name.as_str(),
@@ -219,26 +220,26 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                                             participant.game_name.as_str(),
                                                             participant.tag_line.as_str(),
                                                         )
-                                                        class="text-xs bg-green-800 rounded px-0.5 text-center"
+                                                        attr:class="text-xs bg-green-800 rounded px-0.5 text-center"
                                                     >
                                                         {participant.encounter_count}
-                                                    </a>
+                                                    </A>
                                                 }
                                             })}
                                         {participant
                                             .pro_player_slug
                                             .map(|pps| {
                                                 view! {
-                                                    <a
+                                                    <A
                                                         target="_blank"
                                                         href=format!("https://lolpros.gg/player/{}", pps.as_ref())
-                                                        class="text-xs bg-purple-800 rounded px-0.5 text-center"
+                                                        attr:class="text-xs bg-purple-800 rounded px-0.5 text-center"
                                                     >
                                                         pro
-                                                    </a>
+                                                    </A>
                                                 }
                                             })}
-                                        <a
+                                        <A
                                             target="_blank"
                                             href=summoner_url(
                                                 participant.platform.code(),
@@ -251,7 +252,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                                 participant.game_name.as_str(),
                                                 participant.tag_line.as_str(),
                                             )}
-                                        </a>
+                                        </A>
                                     </div>
                                     <span class="text-[11px]">
                                         Lvl. {participant.summoner_level}

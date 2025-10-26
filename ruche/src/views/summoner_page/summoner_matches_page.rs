@@ -23,6 +23,7 @@ use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use leptos_router::components::A;
 use leptos_router::hooks::query_signal_with_options;
 
 
@@ -157,11 +158,11 @@ pub fn SummonerMatchesPage() -> impl IntoView {
 pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
     let summoner = expect_context::<Summoner>();
     let (show_details, set_show_details) = signal(false);
-    let champion = Champion::try_from(match_.champion_id).unwrap();
-    let summoner_spell1 = SummonerSpell::try_from(match_.summoner_spell1_id).unwrap();
-    let summoner_spell2 = SummonerSpell::try_from(match_.summoner_spell2_id).unwrap();
-    let primary_perk_selection = Perk::try_from(match_.perk_primary_selection_id).unwrap();
-    let sub_perk_style = Perk::try_from(match_.perk_sub_style_id).unwrap();
+    let champion = Champion::try_from(match_.champion_id).unwrap_or_default();
+    let summoner_spell1 = SummonerSpell::try_from(match_.summoner_spell1_id).unwrap_or_default();
+    let summoner_spell2 = SummonerSpell::try_from(match_.summoner_spell2_id).unwrap_or_default();
+    let primary_perk_selection = Perk::try_from(match_.perk_primary_selection_id).unwrap_or_default();
+    let sub_perk_style = Perk::try_from(match_.perk_sub_style_id).unwrap_or_default();
     if primary_perk_selection == Perk::UNKNOWN {
         //log!("{:?}", match_.perk_primary_selection_id);
     }
@@ -223,7 +224,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                             .participants
                             .into_iter()
                             .map(|participant| {
-                                let champion = Champion::try_from(participant.champion_id).unwrap();
+                                let champion = Champion::try_from(participant.champion_id).unwrap_or_default();
                                 view! {
                                     <div class="flex items-center gap-1 w-[130px]">
                                         <ImgChampion
@@ -234,7 +235,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                         {(participant.encounter_count > 1)
                                             .then(|| {
                                                 view! {
-                                                    <a
+                                                    <A
                                                         href=summoner_encounter_url(
                                                             summoner.platform.code(),
                                                             summoner.game_name.as_str(),
@@ -243,39 +244,36 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                                             participant.game_name.as_str(),
                                                             participant.tag_line.as_str(),
                                                         )
-                                                        class="text-xs bg-green-800 rounded px-0.5 text-center"
+                                                        attr:class="text-xs bg-green-800 rounded px-0.5 text-center"
                                                     >
                                                         {participant.encounter_count}
-                                                    </a>
+                                                    </A>
                                                 }
                                             })}
                                         {participant
                                             .pro_player_slug
                                             .map(|pps| {
                                                 view! {
-                                                    <a
+                                                    <A
                                                         target="_blank"
                                                         href=format!("https://lolpros.gg/player/{}", pps.as_ref())
-                                                        class="text-xs bg-purple-800 rounded px-0.5 text-center"
+                                                        attr:class="text-xs bg-purple-800 rounded px-0.5 text-center"
                                                     >
                                                         pro
-                                                    </a>
+                                                    </A>
                                                 }
                                             })}
-                                        <a
+                                        <A
                                             target="_blank"
                                             href=summoner_url(
                                                 participant.platform.code(),
                                                 participant.game_name.as_str(),
                                                 participant.tag_line.as_str(),
                                             )
-                                            class:text-white=participant.summoner_id
-                                                == match_.summoner_id
-
-                                            class="text-ellipsis overflow-hidden whitespace-nowrap "
+                                            attr:class=move || format!("text-ellipsis overflow-hidden whitespace-nowrap {}", if participant.summoner_id== match_.summoner_id { "text-white" } else { "" })
                                         >
                                             {participant.game_name.clone()}
-                                        </a>
+                                        </A>
                                     </div>
                                 }
                             })

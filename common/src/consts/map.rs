@@ -8,6 +8,7 @@ use strum::{AsRefStr, Display, EnumIter, IntoEnumIterator, IntoStaticStr};
 )]
 #[repr(u8)]
 pub enum Map {
+    UNKNOWN=0,
     #[strum(serialize = "Summoner's Rift Original Summer Variant")]
     SummonersRiftOriginalSummerVariant = 1,
     #[strum(serialize = "Summoner's Rift Original Autumn Variant")]

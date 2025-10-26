@@ -2,7 +2,7 @@ use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::views::summoner_page::summoner_search_page::SummonerSearchPage;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos_router::components::Outlet;
+use leptos_router::components::{Outlet, A};
 use leptos_router::hooks::use_location;
 
 #[component]
@@ -17,12 +17,12 @@ pub fn PlatformTypePage() -> impl IntoView {
         .image()
         .set("https://ruche.lol/assets/favicon.ico".to_string());
     meta_store.url().set(location.pathname.get());
-    let req_include_summoner = move || location.pathname.get().contains("summoners");
+    let req_include_summoner = Memo::new(move |_| location.pathname.get().contains("summoners"));
     view! {
         <div class="my-0 mx-auto max-w-5xl text-center">
-            <a href="/" class="p-6 text-4xl my-4">
+            <A href="/" attr:class="p-6 text-4xl my-4">
                 "Welcome to Ruche"
-            </a>
+            </A>
             {move || {
                 (!req_include_summoner())
                     .then(|| {
@@ -31,7 +31,7 @@ pub fn PlatformTypePage() -> impl IntoView {
                         }
                     })
             }}
-            <SummonerSearchPage is_summoner_page=Signal::derive(req_include_summoner) />
+            <SummonerSearchPage is_summoner_page=req_include_summoner />
             <Outlet />
         </div>
     }

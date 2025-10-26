@@ -30,45 +30,14 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
         start_date(),
         end_date(),
     ));
+
+    Effect::new(move |_| {
+        filters_signal.set(BackEndMatchFiltersSearch::from_signals(
+            queue_id(), champion_id(), start_date(), end_date()
+        ));
+    });
     provide_context(filters_signal);
 
-    enum FilterField {
-        StartDate,
-        EndDate,
-        ChampionId,
-        QueueId,
-    }
-
-    let set_optional_value = move |setter: SignalSetter<Option<String>>,
-                                   value: String,
-                                   field: FilterField| {
-        let value = if value.is_empty() { None } else { Some(value) };
-        setter.set(value.clone());
-        let filters = match field {
-            FilterField::StartDate => BackEndMatchFiltersSearch::from_signals(
-                queue_id(),
-                champion_id(),
-                value,
-                end_date(),
-            ),
-            FilterField::EndDate => BackEndMatchFiltersSearch::from_signals(
-                queue_id(),
-                champion_id(),
-                start_date(),
-                value,
-            ),
-            FilterField::ChampionId => {
-                BackEndMatchFiltersSearch::from_signals(queue_id(), value, start_date(), end_date())
-            }
-            FilterField::QueueId => BackEndMatchFiltersSearch::from_signals(
-                value,
-                champion_id(),
-                start_date(),
-                end_date(),
-            ),
-        };
-        filters_signal.set(filters);
-    };
 
     view! {
         <div class="flex justify-center">
@@ -81,30 +50,21 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
                             class="my-select"
                             id="champion_id"
                             prop:value=move || champion_id().unwrap_or_default()
-                            on:change=move |e| set_optional_value(
-                                set_champion_id,
-                                event_target_value(&e),
-                                FilterField::ChampionId,
-                            )
+                            on:change=move |e| {
+                                let v = event_target_value(&e);
+                                set_champion_id(if v.is_empty() { None } else { Some(v) });
+                              }
                         >
-                            <option value="" selected=move || champion_id().is_none()>
-                                All
-                            </option>
-                            {CHAMPION_OPTIONS
-                                .iter()
-                                .map(|(id, champion)| {
-                                    view! {
-                                        <option
-                                            value=*id
-                                            selected=move || {
-                                                *id.to_string() == champion_id().unwrap_or_default()
-                                            }
-                                        >
-                                            {champion.to_string()}
-                                        </option>
-                                    }
-                                })
-                                .collect_vec()}
+                            <option value="">All</option>
+                              <For
+                                each=|| CHAMPION_OPTIONS.iter().cloned()
+                                key=|(id, _)| *id
+                                let:opt
+                              >
+                                {let (id, label) = opt;
+                                  view!{ <option value=id>{label}</option> }
+                                }
+                              </For>
                         </select>
                     </div>
                     <div class="flex flex-col">
@@ -114,30 +74,21 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
                             name="queue_id"
                             id="queue_id"
                             prop:value=move || queue_id().unwrap_or_default()
-                            on:change=move |e| set_optional_value(
-                                set_queue_id,
-                                event_target_value(&e),
-                                FilterField::QueueId,
-                            )
+                            on:change=move |e|{
+            let v = event_target_value(&e);
+            set_queue_id(if v.is_empty() { None } else { Some(v) });
+        }
                         >
-                            <option value="" selected=move || queue_id().is_none()>
-                                All
-                            </option>
-                            {Queue::options_basic()
-                                .into_iter()
-                                .map(|(inner_queue_id, queue_name)| {
-                                    view! {
-                                        <option
-                                            value=inner_queue_id
-                                            selected=move || {
-                                                inner_queue_id.to_string() == queue_id().unwrap_or_default()
-                                            }
-                                        >
-                                            {queue_name.to_string()}
-                                        </option>
-                                    }
-                                })
-                                .collect_vec()}
+                             <option value="">All</option>
+                            <For
+                                each=|| Queue::options_basic()
+                                key=|(id, _)| *id
+                                let:opt
+                              >
+                                {let (id, label) = opt;
+                                  view!{ <option value=id>{label}</option> }
+                                }
+                              </For>
                         </select>
                     </div>
                     <div class="flex flex-col">
@@ -150,11 +101,10 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
                             id="start_date"
                             value=start_date()
                             prop:value=move || start_date().unwrap_or_default()
-                            on:input=move |e| set_optional_value(
-                                set_start_date,
-                                event_target_value(&e),
-                                FilterField::StartDate,
-                            )
+                            on:input=move |e| {
+             let v =  event_target_value(&e);
+            set_start_date(if v.is_empty() { None } else { Some(v) });
+        }
                         />
                     </div>
                     <div class="flex flex-col">
@@ -167,11 +117,10 @@ pub fn MatchFilters(children: Children) -> impl IntoView {
                             id="end_date"
                             value=end_date()
                             prop:value=move || end_date().unwrap_or_default()
-                            on:input=move |e| set_optional_value(
-                                set_end_date,
-                                event_target_value(&e),
-                                FilterField::EndDate,
-                            )
+                            on:input=move |e|{
+            let v = event_target_value(&e);
+            set_end_date( if v.is_empty() {None} else {Some(v)})
+        }
                         />
                     </div>
                 </div>

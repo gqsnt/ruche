@@ -1,6 +1,7 @@
 use bitcode::{Decode, Encode};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use strum::{EnumIter, IntoStaticStr};
+use crate::consts::summoner_spell::SummonerSpell;
 
 #[repr(u16)]
 #[derive(
@@ -94,6 +95,12 @@ pub enum Perk {
     #[strum(serialize = "Scorch")]                   Scorch = 8237,
     #[strum(serialize = "Waterwalking")]             Waterwalking = 8232,
     #[strum(serialize = "GatheringStorm")]           GatheringStorm = 8236,
+}
+
+impl Default for Perk {
+    fn default() -> Self {
+        Perk::UNKNOWN
+    }
 }
 
 impl Perk {

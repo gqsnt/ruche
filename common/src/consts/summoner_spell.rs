@@ -34,6 +34,12 @@ pub enum SummonerSpell {
     #[strum(serialize = "Summoner_UltBookSmitePlaceholder")]Summoner_UltBookSmitePlaceholder = 55,
 }
 
+impl Default for SummonerSpell{
+    fn default() -> Self {
+        SummonerSpell::UNKNOWN
+    }
+}
+
 impl SummonerSpell {
     #[inline]
     pub fn id(self) -> u16 { self.into() }

@@ -19,7 +19,7 @@ pub fn MatchDetailsBuild(
         format!(
             "{}({})",
             participant.game_name.as_str(),
-            Champion::try_from(participant.champion_id).unwrap().label()
+            Champion::try_from(participant.champion_id).unwrap_or_default().label()
         )
     };
     let participant_ids = match_details
@@ -41,26 +41,19 @@ pub fn MatchDetailsBuild(
             <select
                 class="my-select"
                 aria-label="Select a participant"
-                prop:value=summoner_id
-                on:change=move |e| set_selected_participant(
-                    find_participant(
-                        event_target_value(&e).parse::<i32>().expect("Invalid summoner id"),
-                    ),
-                )
+                  prop:value=move || selected_participant().summoner_id.to_string()
+                on:change=move |e| {
+              let id = event_target_value(&e).parse::<i32>().expect("Invalid summoner id");
+             set_selected_participant(find_participant(id));
+        }
             >
-                {participant_ids
-                    .into_iter()
-                    .map(|(id, name)| {
-                        view! {
-                            <option
-                                value=id
-                                selected=move || id == selected_participant().summoner_id
-                            >
-                                {name.clone()}
-                            </option>
-                        }
-                    })
-                    .collect::<Vec<_>>()}
+                 <For
+                    each=move || participant_ids.clone()
+                    key=|(id, _)| *id
+                    let:entry
+                  >
+                { let (id, name) = entry; view!{ <option value=id>{name}</option> } }
+                </For>
             </select>
             <div class="my-card w-fit my-2">
                 <div>Items Build</div>
@@ -80,7 +73,7 @@ pub fn MatchDetailsBuild(
                                                 .map(|item_event| {
                                                     let is_sold_item = item_event.event_type
                                                         == ItemEventType::Sold;
-                                                    let item_enum = Item::try_from(item_event.item_id).unwrap();
+                                                    let item_enum = Item::try_from(item_event.item_id).unwrap_or_default();
                                                     view! {
                                                         <ImgItem
                                                             item=item_enum
@@ -115,7 +108,6 @@ pub fn MatchDetailsBuild(
                                             view! {
                                                 <div
                                                     class="flex mb-8 items-center "
-                                                    v-if="idx > first_frame_with_events"
                                                 >
                                                     <div class="flex items-center h-7 border-4 border-gray-900 bg-gray-900">
                                                         >
@@ -157,25 +149,25 @@ pub fn MatchDetailsBuild(
                 </div>
             </div>
             {move || {
-                let perk_primary_style = Perk::try_from(selected_participant().perk_primary_style_id).unwrap();
+                let perk_primary_style = Perk::try_from(selected_participant().perk_primary_style_id).unwrap_or_default();
                 let perk_primary_selection = Perk::try_from(
                     selected_participant().perk_primary_selection_id,
-                ).unwrap();
+                ).unwrap_or_default();
                 let perk_primary_selection1 = Perk::try_from(
                     selected_participant().perk_primary_selection1_id,
-                ).unwrap();
+                ).unwrap_or_default();
                 let perk_primary_selection2 = Perk::try_from(
                     selected_participant().perk_primary_selection2_id,
-                ).unwrap();
+                ).unwrap_or_default();
                 let perk_primary_selection3 = Perk::try_from(
                     selected_participant().perk_primary_selection3_id,
-                ).unwrap();
-                let perk_sub_style = Perk::try_from(selected_participant().perk_sub_style_id).unwrap();
-                let perk_sub_selection1 = Perk::try_from(selected_participant().perk_sub_selection1_id).unwrap();
-                let perk_sub_selection2 = Perk::try_from(selected_participant().perk_sub_selection2_id).unwrap();
-                let perk_offense = Perk::try_from(selected_participant().perk_offense_id).unwrap();
-                let perk_flex = Perk::try_from(selected_participant().perk_flex_id).unwrap();
-                let perk_defense = Perk::try_from(selected_participant().perk_defense_id).unwrap();
+                ).unwrap_or_default();
+                let perk_sub_style = Perk::try_from(selected_participant().perk_sub_style_id).unwrap_or_default();
+                let perk_sub_selection1 = Perk::try_from(selected_participant().perk_sub_selection1_id).unwrap_or_default();
+                let perk_sub_selection2 = Perk::try_from(selected_participant().perk_sub_selection2_id).unwrap_or_default();
+                let perk_offense = Perk::try_from(selected_participant().perk_offense_id).unwrap_or_default();
+                let perk_flex = Perk::try_from(selected_participant().perk_flex_id).unwrap_or_default();
+                let perk_defense = Perk::try_from(selected_participant().perk_defense_id).unwrap_or_default();
 
                 view! {
                     <div class="my-2 my-card w-fit">

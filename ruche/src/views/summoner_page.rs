@@ -13,6 +13,7 @@ use leptos::either::Either;
 use leptos::prelude::Read;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use leptos_router::components::A;
 use leptos_router::hooks::use_params_map;
 
 pub mod match_details;
@@ -218,23 +219,23 @@ pub fn SummonerInfo(
                 class=("ml-2", is_self)
                 class=("mr-2", !is_self)
             >
-                <a href=summoner_url(
+                <A href=summoner_url(
                     platform.code(),
                     game_name.as_ref(),
                     tag_line.as_ref(),
-                )>{game_name.clone()}#{tag_line.clone()}</a>
+                )>{game_name.clone()}#{tag_line.clone()}</A>
                 <div class="flex ">
                     <span>lvl. {move || level_signal()}</span>
                     {pro_slug
                         .map(|pps| {
                             view! {
-                                <a
+                                <A
                                     target="_blank"
                                     href=format!("https://lolpros.gg/player/{}", pps.as_ref())
-                                    class=" bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
+                                    attr:class=" bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
                                 >
                                     PRO
-                                </a>
+                                </A>
                             }
                         })}
                 </div>

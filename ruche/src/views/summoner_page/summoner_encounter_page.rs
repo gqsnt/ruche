@@ -189,24 +189,24 @@ pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl I
     .filter_map(|i| Item::try_from(*i).ok())
     .collect::<Vec<_>>();
     let (champion, encounter_champion) = (
-        Champion::try_from(match_.participant.champion_id).unwrap(),
-        Champion::try_from(match_.encounter.champion_id).unwrap(),
+        Champion::try_from(match_.participant.champion_id).unwrap_or_default(),
+        Champion::try_from(match_.encounter.champion_id).unwrap_or_default(),
     );
     let (summoner_spell1, summoner_spell2) = (
-        SummonerSpell::try_from(match_.participant.summoner_spell1_id).unwrap(),
-        SummonerSpell::try_from(match_.participant.summoner_spell2_id).unwrap(),
+        SummonerSpell::try_from(match_.participant.summoner_spell1_id).unwrap_or_default(),
+        SummonerSpell::try_from(match_.participant.summoner_spell2_id).unwrap_or_default(),
     );
     let (encounter_summoner_spell1, encounter_summoner_spell2) = (
-        SummonerSpell::try_from(match_.encounter.summoner_spell1_id).unwrap(),
-        SummonerSpell::try_from(match_.encounter.summoner_spell2_id).unwrap(),
+        SummonerSpell::try_from(match_.encounter.summoner_spell1_id).unwrap_or_default(),
+        SummonerSpell::try_from(match_.encounter.summoner_spell2_id).unwrap_or_default(),
     );
     let (primary_perk_selection, encounter_primary_perk_selection) = (
-        Perk::try_from(match_.participant.perk_primary_selection_id).unwrap(),
-        Perk::try_from(match_.encounter.perk_primary_selection_id).unwrap(),
+        Perk::try_from(match_.participant.perk_primary_selection_id).unwrap_or_default(),
+        Perk::try_from(match_.encounter.perk_primary_selection_id).unwrap_or_default(),
     );
     let (sub_perk_style, encounter_sub_perk_style) = (
-        Perk::try_from(match_.participant.perk_sub_style_id).unwrap(),
-        Perk::try_from(match_.encounter.perk_sub_style_id).unwrap(),
+        Perk::try_from(match_.participant.perk_sub_style_id).unwrap_or_default(),
+        Perk::try_from(match_.encounter.perk_sub_style_id).unwrap_or_default(),
     );
 
     view! {

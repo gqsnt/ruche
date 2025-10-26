@@ -27,12 +27,10 @@ thiserror = {workspace = true, optional = true}
 serde={workspace = true, features = ["derive"]}
 flate2 = { version = "1.0.35", optional = true }
 async-stream = {version = "0.3.6", optional = true}
-
 serde_json = {workspace = true, optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
 
 rustls = { version = "0.23.16" , features = ["ring"], optional = true}
-
 bitcode = {workspace = true}
 leptos = { git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c",features = ["nightly", "bitcode"] }
 leptos_axum = { git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c", optional = true}
@@ -40,6 +38,7 @@ leptos_meta ={ git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e88
 leptos_router = { git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c",features = ["nightly"] }
 reactive_stores ={git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c"}
 reactive_stores_macro = {git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c"}
+
 wasm-bindgen = "0.2.104"
 itertools = "0.14.0"
 urlencoding = "2"

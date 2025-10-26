@@ -15,6 +15,7 @@ use common::consts::HasStaticSrcAsset;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use leptos_router::components::A;
 use leptos_router::hooks::query_signal_with_options;
 
 #[component]
@@ -141,7 +142,7 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                 let:encounter
                                                             >
                                                                 {
-                                                                    let encounter: SummonerEncountersSummoner = encounter;
+                                                
                                                                     let profile_icon = ProfileIcon(encounter.profile_icon_id);
                                                                     let vs_match_count = encounter.match_count
                                                                         - encounter.with_match_count;
@@ -153,6 +154,15 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                         encounter.with_win_count,
                                                                         encounter.with_match_count,
                                                                     );
+                                                                    
+                                                                    let summoner_encounter_url = summoner_encounter_url(
+                                                                                        summoner_clone.platform.code(),
+                                                                                        summoner_clone.game_name.as_str(),
+                                                                                        summoner_clone.tag_line.as_str(),
+                                                                                        encounter.platform.code(),
+                                                                                        encounter.game_name.to_string().as_str(),
+                                                                                        encounter.tag_line.as_str(),
+                                                                                    );
 
                                                                     view! {
                                                                         <tr>
@@ -168,16 +178,16 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                                         />
                                                                                     </div>
                                                                                     <div class="ml-2">
-                                                                                        <a
+                                                                                        <A
                                                                                             href=summoner_url(
                                                                                                 encounter.platform.code(),
-                                                                                                encounter.game_name.as_str(),
+                                                                                                encounter.game_name.clone().as_str(),
                                                                                                 encounter.tag_line.as_str(),
                                                                                             )
-                                                                                            class="text-blue-300 hover:underline"
+                                                                                            attr:class="text-blue-300 hover:underline"
                                                                                         >
                                                                                             {encounter.game_name.to_string()}
-                                                                                        </a>
+                                                                                        </A>
                                                                                     </div>
                                                                                 </div>
                                                                             </td>
@@ -201,19 +211,12 @@ pub fn SummonerEncountersPage() -> impl IntoView {
                                                                             </td>
                                                                             <td class="px-2 ">{encounter.match_count}</td>
                                                                             <td class="px-2">
-                                                                                <a
-                                                                                    class="my-button font-bold"
-                                                                                    href=summoner_encounter_url(
-                                                                                        summoner_clone.platform.code(),
-                                                                                        summoner_clone.game_name.as_str(),
-                                                                                        summoner_clone.tag_line.as_str(),
-                                                                                        encounter.platform.code(),
-                                                                                        encounter.game_name.as_str(),
-                                                                                        encounter.tag_line.as_str(),
-                                                                                    )
+                                                                                <A
+                                                                                    attr:class="my-button font-bold"
+                                                                                    href=summoner_encounter_url
                                                                                 >
                                                                                     >
-                                                                                </a>
+                                                                                </A>
                                                                             </td>
                                                                         </tr>
                                                                     }

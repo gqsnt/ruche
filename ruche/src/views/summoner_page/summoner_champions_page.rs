@@ -246,7 +246,7 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                                                     >
                                                         {
                                                             let (index, champion): (usize, ChampionStats) = champion_with_index;
-                                                            let champion_enum = Champion::try_from(champion.champion_id).unwrap();
+                                                            let champion_enum = Champion::try_from(champion.champion_id).unwrap_or_default();
                                                             view! {
                                                                 <tr class="p-1">
                                                                     <td class="text-center bg-gray-800 border border-gray-700">
@@ -401,7 +401,7 @@ impl TableSortType {
             TableSortType::Champion => Champion::try_from(b.champion_id)
                 .unwrap()
                 .label()
-                .cmp(Champion::try_from(a.champion_id).unwrap().label()),
+                .cmp(Champion::try_from(a.champion_id).unwrap_or_default().label()),
             TableSortType::WinRate => (a.win_rate).partial_cmp(&b.win_rate).unwrap(),
             TableSortType::AvgKDA => a.avg_kda.partial_cmp(&b.avg_kda).unwrap(),
             TableSortType::AvgGold => a.avg_gold_earned.partial_cmp(&b.avg_gold_earned).unwrap(),

@@ -98,7 +98,7 @@ pub fn SummonerNav() -> impl IntoView {
                             } else {
                                 "disabled-tab"
                             }
-                        }>Encouter</button>
+                        }>Encounter</button>
                     </li>
                 </ul>
             </nav>

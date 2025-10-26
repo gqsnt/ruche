@@ -8,6 +8,7 @@ use common::consts::perk::Perk;
 use common::consts::summoner_spell::SummonerSpell;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use leptos_router::components::A;
 
 #[component]
 pub fn MatchDetailsOverview(
@@ -84,16 +85,19 @@ pub fn MatchDetailsOverviewTable(
                 </tr>
             </thead>
             <tbody>
-                {participants
-                    .into_iter()
-                    .map(|participant| {
-                        let champion = Champion::try_from(participant.champion_id).unwrap();
-                        let summoner_spell1 = SummonerSpell::try_from(participant.summoner_spell1_id).unwrap();
-                        let summoner_spell2 = SummonerSpell::try_from(participant.summoner_spell2_id).unwrap();
+                <For
+                each=move ||participants.clone()
+                 key=|participant| participant.id
+                let:participant
+        >
+                {
+                        let champion = Champion::try_from(participant.champion_id).unwrap_or_default();
+                        let summoner_spell1 = SummonerSpell::try_from(participant.summoner_spell1_id).unwrap_or_default();
+                        let summoner_spell2 = SummonerSpell::try_from(participant.summoner_spell2_id).unwrap_or_default();
                         let primary_perk_selection = Perk::try_from(
                             participant.perk_primary_selection_id,
-                        ).unwrap();
-                        let sub_perk_style = Perk::try_from(participant.perk_sub_style_id).unwrap();
+                        ).unwrap_or_default();
+                        let sub_perk_style = Perk::try_from(participant.perk_sub_style_id).unwrap_or_default();
                         let items = [
                             participant.item0_id,
                             participant.item1_id,
@@ -157,7 +161,7 @@ pub fn MatchDetailsOverviewTable(
                                         {(participant.encounter_count > 1)
                                             .then(|| {
                                                 view! {
-                                                    <a
+                                                    <A
                                                         href=summoner_encounter_url(
                                                             summoner.platform.code(),
                                                             summoner.game_name.as_str(),
@@ -166,26 +170,26 @@ pub fn MatchDetailsOverviewTable(
                                                             participant.game_name.as_str(),
                                                             participant.tag_line.as_str(),
                                                         )
-                                                        class="text-xs bg-green-800 rounded px-0.5 text-center"
+                                                        attr:class="text-xs bg-green-800 rounded px-0.5 text-center"
                                                     >
                                                         {participant.encounter_count}
-                                                    </a>
+                                                    </A>
                                                 }
                                             })}
                                         {summoner
                                             .pro_slug
                                             .map(|pps| {
                                                 view! {
-                                                    <a
+                                                    <A
                                                         target="_blank"
                                                         href=format!("https://lolpros.gg/player/{}", pps.as_ref())
-                                                        class="text-xs bg-purple-800 rounded px-0.5 text-center"
+                                                        attr:class="text-xs bg-purple-800 rounded px-0.5 text-center"
                                                     >
                                                         pro
-                                                    </a>
+                                                    </A>
                                                 }
                                             })}
-                                        <a
+                                        <A
                                             target="_blank"
                                             href=summoner_url(
                                                 participant.platform.code(),
@@ -194,7 +198,7 @@ pub fn MatchDetailsOverviewTable(
                                             )
                                         >
                                             {participant.game_name.clone()}
-                                        </a>
+                                        </A>
                                     </div>
                                     <span class="text-[11px]">
                                         Lvl. {participant.summoner_level}
@@ -245,8 +249,9 @@ pub fn MatchDetailsOverviewTable(
                                 </td>
                             </tr>
                         }
-                    })
-                    .collect::<Vec<_>>()}
+                    }
+
+        </For>
             </tbody>
         </table>
     }
