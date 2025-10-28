@@ -10,7 +10,7 @@ git pull
 
 # Build assets and application
 cargo run --release --bin asset-generation
-cargo leptos build --release
+cargo leptos build --release --split
 
 # Stop the service
 systemctl stop "$SERVICE_NAME"
