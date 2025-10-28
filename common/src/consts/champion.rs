@@ -8,10 +8,10 @@ use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
     Debug, Clone, Copy, Eq, PartialEq, Hash, Encode, Decode,
     IntoPrimitive, TryFromPrimitive, EnumIter, IntoStaticStr
 )]
+#[derive(Default)]
 pub enum Champion {
-
-    #[num_enum(default)]
     #[strum(serialize = "UNKNOWN")]
+    #[default]
     UNKNOWN = 0,
 
     #[strum(serialize = "Aatrox")]         Aatrox = 266,
@@ -187,11 +187,6 @@ pub enum Champion {
     #[strum(serialize = "Zyra")]           Zyra = 143,
 }
 
-impl Default for Champion{
-    fn default() -> Self {
-        Champion::UNKNOWN
-    }
-}
 
 impl Champion {
     #[inline]
@@ -207,4 +202,4 @@ impl Champion {
 }
 
 // Keep a drop-in replacement for CHAMPION_OPTIONS (now lazy).
-pub static CHAMPION_OPTIONS: Lazy<Vec<(u16, &'static str)>> = Lazy::new(|| Champion::options_all());
+pub static CHAMPION_OPTIONS: Lazy<Vec<(u16, &'static str)>> = Lazy::new(Champion::options_all);

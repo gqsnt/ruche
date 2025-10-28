@@ -29,7 +29,7 @@ impl LazyRoute for SummonerEncounterRoute {fn data() -> Self {
     Self{}
 }
 
-    fn view(this: Self) -> AnyView {
+    fn view(_this: Self) -> AnyView {
 
         let summoner = expect_context::<Summoner>();
         let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();

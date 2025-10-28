@@ -1,4 +1,4 @@
-use std::future::Future;
+
 use bitcode::{Decode, Encode};
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_matches::get_matches;
@@ -36,7 +36,7 @@ impl LazyRoute for SummonerMatchesRoute{fn data() -> Self {
         Self{}
     }
 
-fn view(this: Self) -> AnyView {
+fn view(_this: Self) -> AnyView {
     let summoner = expect_context::<Summoner>();
     let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();

@@ -8,9 +8,10 @@ use strum::{EnumIter, IntoStaticStr};
     Debug, Clone, Copy, Eq, PartialEq, Hash, Encode, Decode,
     IntoPrimitive, TryFromPrimitive, EnumIter, IntoStaticStr
 )]
+#[derive(Default)]
 pub enum Perk {
-    #[num_enum(default)]
     #[strum(serialize = "UNKNOWN")]
+    #[default]
     UNKNOWN = 0,
 
     #[strum(serialize = "StatsHealScaling")]         StatsHealScaling = 5001,
@@ -97,11 +98,6 @@ pub enum Perk {
     #[strum(serialize = "GatheringStorm")]           GatheringStorm = 8236,
 }
 
-impl Default for Perk {
-    fn default() -> Self {
-        Perk::UNKNOWN
-    }
-}
 
 impl Perk {
     #[inline]

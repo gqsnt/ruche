@@ -9,9 +9,10 @@ use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
     IntoPrimitive, TryFromPrimitive, EnumIter, IntoStaticStr
 )]
 #[allow(non_camel_case_types)]
+#[derive(Default)]
 pub enum SummonerSpell {
-    #[num_enum(default)]
     #[strum(serialize = "UNKNOWN")]
+    #[default]
     UNKNOWN = 0,
 
     #[strum(serialize = "SummonerBarrier")]                 SummonerBarrier = 21,
@@ -34,11 +35,6 @@ pub enum SummonerSpell {
     #[strum(serialize = "Summoner_UltBookSmitePlaceholder")]Summoner_UltBookSmitePlaceholder = 55,
 }
 
-impl Default for SummonerSpell{
-    fn default() -> Self {
-        SummonerSpell::UNKNOWN
-    }
-}
 
 impl SummonerSpell {
     #[inline]
@@ -58,4 +54,4 @@ impl SummonerSpell {
 }
 
 pub static SUMMONER_SPELL_OPTIONS: Lazy<Vec<u16>> =
-    Lazy::new(|| SummonerSpell::ids_non_unknown());
+    Lazy::new(SummonerSpell::ids_non_unknown);

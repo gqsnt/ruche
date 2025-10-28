@@ -1,3 +1,4 @@
+use std::fmt::Formatter;
 use bitcode::{Decode, Encode};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Encode, Decode)]
@@ -174,16 +175,6 @@ pub enum SSEEvent {
 }
 
 impl SSEEvent {
-    // Convert to a compact string representation
-    pub fn to_string(&self) -> String {
-        match self {
-            SSEEvent::LiveGame(value) => {
-                format!("0:{}", value.map(|v| v.to_string()).unwrap_or_default())
-            }
-            SSEEvent::SummonerMatches(value) => format!("1:{}", value),
-        }
-    }
-
     // Parse from a compact string representation
     pub fn from_string(s: &str) -> Result<Self, &'static str> {
         let parts: Vec<&str> = s.split(':').collect();
@@ -198,6 +189,17 @@ impl SSEEvent {
                 Err(_) => Err("Invalid u16 value"),
             },
             _ => Err("Invalid event type"),
+        }
+    }
+}
+
+impl std::fmt::Display for SSEEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SSEEvent::LiveGame(value) => {
+                write!(f, "0:{}", value.map(|v| v.to_string()).unwrap_or_default())
+            }
+            SSEEvent::SummonerMatches(value) => write!(f, "1:{}", value),
         }
     }
 }

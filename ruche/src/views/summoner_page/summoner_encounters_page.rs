@@ -14,7 +14,7 @@ use common::consts::profile_icon::ProfileIcon;
 use common::consts::HasStaticSrcAsset;
 use leptos::either::Either;
 use leptos::prelude::*;
-use leptos::{component, view, IntoView};
+use leptos::{ view};
 use leptos_router::components::A;
 use leptos_router::hooks::query_signal_with_options;
 use leptos_router::{lazy_route, LazyRoute};
@@ -27,7 +27,7 @@ impl LazyRoute for SummonerEncountersRoute {fn data() -> Self {
     Self{}
 }
 
-    fn view(this: Self) -> AnyView {
+    fn view(_this: Self) -> AnyView {
         let summoner = expect_context::<Summoner>();
         let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();

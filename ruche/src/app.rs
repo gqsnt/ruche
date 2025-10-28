@@ -6,10 +6,10 @@ use leptos::prelude::*;
 
 use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, Title};
 use leptos_router::components::{ParentRoute, Redirect};
-use leptos_router::{components::{Route, Router, Routes}, path, Lazy, ParamSegment, StaticSegment};
+use leptos_router::{components::{Route, Router, Routes}, path, Lazy};
 use serde::{Deserialize, Serialize};
 use crate::views::summoner_page::summoner_champions_page::SummonerChampionsRoute;
-use crate::views::summoner_page::summoner_encounter_page::{SummonerEncounterMatch, SummonerEncounterRoute};
+use crate::views::summoner_page::summoner_encounter_page::{ SummonerEncounterRoute};
 use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersRoute;
 use crate::views::summoner_page::summoner_live_page::SummonerLiveRoute;
 use crate::views::summoner_page::summoner_matches_page::SummonerMatchesRoute;

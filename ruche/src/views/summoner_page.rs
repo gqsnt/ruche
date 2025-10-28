@@ -19,7 +19,6 @@ use leptos::{component, view, IntoView};
 use leptos_router::components::{Outlet, A};
 use leptos_router::hooks::{use_location, use_params_map};
 use leptos_router::{lazy_route, LazyRoute};
-use std::future::Future;
 
 pub mod match_details;
 pub mod summoner_champions_page;
@@ -112,7 +111,7 @@ impl LazyRoute for SummonerPageRoute {
                             gloo_net::eventsource::futures::EventSource::new(
                                 format!(
                                     "/sse/match_updated/{}/{}",
-                                    summoner.platform.to_string(),
+                                    summoner.platform,
                                     summoner.id
                                 )
                                 .as_str(),
