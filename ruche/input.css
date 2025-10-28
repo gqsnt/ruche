@@ -9,8 +9,6 @@
 @tailwind utilities;
 
 
-
-
 @theme{
     --color-red-50: #FDEDEF;
     --color-red-100: #FBDBDF;
@@ -57,36 +55,41 @@
 
 /* not default size sprite*/
 /*add width and height*/
-.sprite-wrapper{
+.sprite-wrapper {
     position: relative;
 }
+
 /*add scale % of ori to wrapper*/
-.sprite-inner{
+.sprite-inner {
     transform-origin: top left;
 }
 
-.height-inherit{
+.height-inherit {
     height: inherit;
 }
 
 
-.self-scale-33{
+.self-scale-33 {
     transform: scale(33.33%);
 }
-.self-scale-66{
+
+.self-scale-66 {
     transform: scale(66.66%);
 }
 
-.self-scale-78{
+.self-scale-78 {
     transform: scale(78.78%);
 }
-.self-scale-57{
+
+.self-scale-57 {
     transform: scale(57.14%);
 }
-.self-scale-72{
+
+.self-scale-72 {
     transform: scale(72.72%);
 }
-.self-scale-136{
+
+.self-scale-136 {
     transform: scale(136.36%);
 }
 
@@ -101,6 +104,15 @@ html {
 
     .selected-pagination {
         @apply flex items-center justify-center px-3 h-8 text-blue-600 border border-gray-300 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white;
+    }
+
+
+    .active-tab {
+        @apply text-center block border border-blue-500 rounded py-2 px-4 bg-blue-500 hover:bg-blue-700 text-gray-900;
+    }
+
+    .default-tab {
+        @apply text-center block border bg-gray-200 border-white rounded hover:border-gray-200 text-gray-900 hover:bg-gray-300 py-2 px-4;
     }
 
     .summoner-nav .tab {
@@ -129,20 +141,19 @@ html {
     }
 
 
-
-    .my-select{
+    .my-select {
         @apply bg-gray-200 border border-gray-200 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500;
     }
 
-    .my-input{
+    .my-input {
         @apply shadow bg-gray-200 border rounded  py-2 px-3 text-gray-700 leading-tight focus:outline-none;
     }
 
-    .my-button{
+    .my-button {
         @apply bg-blue-500 hover:bg-blue-700 text-gray-900 font-bold py-2 px-4 rounded focus:outline-none;
     }
 
-    .my-card{
+    .my-card {
         @apply border-gray-950 bg-gray-800 rounded p-2;
     }
 
