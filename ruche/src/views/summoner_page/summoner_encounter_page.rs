@@ -18,8 +18,9 @@ use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, IntoView};
-use leptos_router::hooks::{query_signal_with_options, use_params_map};
+use leptos_router::hooks::{query_signal_with_options, use_params};
 use leptos_router::{lazy_route, LazyRoute};
+use crate::app::{EncounterPlatformRouteParams, EncounterSlugParams};
 
 pub struct SummonerEncounterRoute{
 }
@@ -33,12 +34,26 @@ impl LazyRoute for SummonerEncounterRoute {fn data() -> Self {
 
         let summoner = expect_context::<Summoner>();
         let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
-        let params = use_params_map();
         let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
         let (is_with, set_is_with) = signal(true);
 
-        let encounter_slug = move || params.read().get("encounter_slug").unwrap_or_default();
-        let encounter_platform = move || params.read().get("encounter_platform").unwrap_or_default();
+        let encounter_slug_params = use_params::<EncounterSlugParams>();
+        let encounter_platform_route_params = use_params::<EncounterPlatformRouteParams>();
+
+        let encounter_slug = move ||
+            encounter_slug_params
+                .read()
+                .as_ref()
+                .ok()
+                .and_then(|p|p.encounter_slug.clone())
+                .unwrap_or_default();
+        let encounter_platform = move ||
+            encounter_platform_route_params
+                .read()
+                .as_ref()
+                .ok()
+                .and_then(|p|p.encounter_platform_route)
+                .unwrap_or_default();
 
         let (page_number, set_page_number) =
             query_signal_with_options::<u16>("page", get_default_navigation_option());
@@ -61,7 +76,7 @@ impl LazyRoute for SummonerEncounterRoute {fn data() -> Self {
                     summoner_id,
                     page_number.unwrap_or(1),
                     is_with,
-                    PlatformRoute::try_from(encounter_platform.as_str()).unwrap(),
+                    encounter_platform,
                     encounter_slug,
                     Some(filters),
                 )
@@ -78,95 +93,95 @@ impl LazyRoute for SummonerEncounterRoute {fn data() -> Self {
         });
 
         view! {
-        <div class="flex my-card justify-center space-x-2 my-2">
-            <button
+            <div class="flex my-card justify-center space-x-2 my-2">
+                <button
 
-                class="w-[22rem] "
-                class=("active-tab", move || is_with())
-                class=("default-tab", move || !is_with())
-                on:click=move |_| set_is_with(true)
-            >
-                With
-            </button>
-            <button
-                class="w-[22rem] "
-                class=("active-tab", move || !is_with())
-                class=("default-tab", move || is_with())
-                on:click=move |_| set_is_with(false)
-            >
-                VS
-            </button>
-        </div>
-        <div class="w-[768px]">
-            <Transition fallback=move || {
-                view! { <div class="text-center">Loading Encounter</div> }
-            }>
-                {move || Suspend::new(async move {
-                    match encounter_resource.await {
-                        Ok(encounter_result) => {
-                            let total_pages = encounter_result.total_pages;
-                            let current_page = page_number().unwrap_or(1);
-                            if total_pages == 0 || total_pages < current_page {
-                                set_reset_page_number(true);
-                            }
-                            if encounter_result.matches.is_empty() {
-                                Ok(
-                                    Either::Left(
-                                        view! {
-                                            <div class="text-center">No Encounter Matches Found</div>
-                                        },
-                                    ),
-                                )
-                            } else {
-                                Ok(
-                                    Either::Right(
-                                        view! {
-                                            <div class="flex flex-col">
-                                                <div class="flex w-full my-card justify-between mb-1">
-                                                    <SummonerEncounterInfo
-                                                        summoner=encounter_result.summoner
-                                                        is_self=true
-                                                    />
-                                                    <SummonerEncounterInfo
-                                                        summoner=encounter_result.encounter
-                                                        is_self=false
-                                                    />
+                    class="w-[22rem] "
+                    class=("active-tab", move || is_with())
+                    class=("default-tab", move || !is_with())
+                    on:click=move |_| set_is_with(true)
+                >
+                    With
+                </button>
+                <button
+                    class="w-[22rem] "
+                    class=("active-tab", move || !is_with())
+                    class=("default-tab", move || is_with())
+                    on:click=move |_| set_is_with(false)
+                >
+                    VS
+                </button>
+            </div>
+            <div class="w-[768px]">
+                <Transition fallback=move || {
+                    view! { <div class="text-center">Loading Encounter</div> }
+                }>
+                    {move || Suspend::new(async move {
+                        match encounter_resource.await {
+                            Ok(encounter_result) => {
+                                let total_pages = encounter_result.total_pages;
+                                let current_page = page_number().unwrap_or(1);
+                                if total_pages == 0 || total_pages < current_page {
+                                    set_reset_page_number(true);
+                                }
+                                if encounter_result.matches.is_empty() {
+                                    Ok(
+                                        Either::Left(
+                                            view! {
+                                                <div class="text-center">No Encounter Matches Found</div>
+                                            },
+                                        ),
+                                    )
+                                } else {
+                                    Ok(
+                                        Either::Right(
+                                            view! {
+                                                <div class="flex flex-col">
+                                                    <div class="flex w-full my-card justify-between mb-1">
+                                                        <SummonerEncounterInfo
+                                                            summoner=encounter_result.summoner
+                                                            is_self=true
+                                                        />
+                                                        <SummonerEncounterInfo
+                                                            summoner=encounter_result.encounter
+                                                            is_self=false
+                                                        />
+                                                    </div>
+                                                    <div class="flex w-full my-card justify-between">
+                                                        <SummonerEncounterStats
+                                                            stats=encounter_result.summoner_stats.clone()
+                                                            is_self=true
+                                                        />
+                                                        <SummonerEncounterStats
+                                                            stats=encounter_result.encounter_stats.clone()
+                                                            is_self=false
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <div class="flex w-full my-card justify-between">
-                                                    <SummonerEncounterStats
-                                                        stats=encounter_result.summoner_stats.clone()
-                                                        is_self=true
-                                                    />
-                                                    <SummonerEncounterStats
-                                                        stats=encounter_result.encounter_stats.clone()
-                                                        is_self=false
-                                                    />
+                                                <div class="flex flex-col space-y-2 mt-2">
+                                                    <For
+                                                        each=move || encounter_result.matches.clone()
+                                                        key=|match_| match_.match_id
+                                                        let:match_
+                                                    >
+                                                        <SummonerEncounterMatchComponent match_=match_ />
+                                                    </For>
                                                 </div>
-                                            </div>
-                                            <div class="flex flex-col space-y-2 mt-2">
-                                                <For
-                                                    each=move || encounter_result.matches.clone()
-                                                    key=|match_| match_.match_id
-                                                    let:match_
-                                                >
-                                                    <SummonerEncounterMatchComponent match_=match_ />
-                                                </For>
-                                            </div>
 
-                                            <Show when=move || (encounter_result.total_pages > 1)>
-                                                <Pagination max_page=encounter_result.total_pages />
-                                            </Show>
-                                        },
-                                    ),
-                                )
+                                                <Show when=move || (encounter_result.total_pages > 1)>
+                                                    <Pagination max_page=encounter_result.total_pages />
+                                                </Show>
+                                            },
+                                        ),
+                                    )
+                                }
                             }
+                            Err(e) => Err(e),
                         }
-                        Err(e) => Err(e),
-                    }
-                })}
-            </Transition>
-        </div>
-    }.into_any()
+                    })}
+                </Transition>
+            </div>
+        }.into_any()
 
     }
 

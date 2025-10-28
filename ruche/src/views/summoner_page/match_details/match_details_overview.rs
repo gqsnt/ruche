@@ -41,14 +41,18 @@ pub fn MatchDetailsOverview(
     });
     view! {
         <div>
-             {move || {
+            {move || {
                 let (team_id, won, first, second) = {
                     let (t, w, f, s) = derived();
                     (t, w, f, s)
                 };
                 view! {
                     <MatchDetailsOverviewTable won=won team_id=team_id participants=first />
-                    <MatchDetailsOverviewTable won=!won team_id=if team_id==100 {200} else {100} participants=second />
+                    <MatchDetailsOverviewTable
+                        won=!won
+                        team_id=if team_id == 100 { 200 } else { 100 }
+                        participants=second
+                    />
                 }
             }}
         </div>
@@ -90,18 +94,27 @@ pub fn MatchDetailsOverviewTable(
             </thead>
             <tbody>
                 <For
-                each=move ||participants.clone()
-                 key=|participant| participant.id
-                let:participant
-        >
-                {
-                        let champion = Champion::try_from(participant.champion_id).unwrap_or_default();
-                        let summoner_spell1 = SummonerSpell::try_from(participant.summoner_spell1_id).unwrap_or_default();
-                        let summoner_spell2 = SummonerSpell::try_from(participant.summoner_spell2_id).unwrap_or_default();
+                    each=move || participants.clone()
+                    key=|participant| participant.id
+                    let:participant
+                >
+                    {
+                        let champion = Champion::try_from(participant.champion_id)
+                            .unwrap_or_default();
+                        let summoner_spell1 = SummonerSpell::try_from(
+                                participant.summoner_spell1_id,
+                            )
+                            .unwrap_or_default();
+                        let summoner_spell2 = SummonerSpell::try_from(
+                                participant.summoner_spell2_id,
+                            )
+                            .unwrap_or_default();
                         let primary_perk_selection = Perk::try_from(
-                            participant.perk_primary_selection_id,
-                        ).unwrap_or_default();
-                        let sub_perk_style = Perk::try_from(participant.perk_sub_style_id).unwrap_or_default();
+                                participant.perk_primary_selection_id,
+                            )
+                            .unwrap_or_default();
+                        let sub_perk_style = Perk::try_from(participant.perk_sub_style_id)
+                            .unwrap_or_default();
                         let items = [
                             participant.item0_id,
                             participant.item1_id,
@@ -126,7 +139,8 @@ pub fn MatchDetailsOverviewTable(
                                     <ImgChampion
                                         champion
                                         parent_class="w-8 h-8 sprite-wrapper relative".to_string()
-                                        class="rounded-full self-scale-66 block sprite-inner".to_string()
+                                        class="rounded-full self-scale-66 block sprite-inner"
+                                            .to_string()
                                     >
                                         <span class="absolute left-[-3px] bottom-[-3px] w-[15px] h-[15px] bg-gray-600 rounded-full text-[10px] text-center">
                                             {participant.champ_level}
@@ -255,7 +269,7 @@ pub fn MatchDetailsOverviewTable(
                         }
                     }
 
-        </For>
+                </For>
             </tbody>
         </table>
     }

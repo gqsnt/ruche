@@ -1,3 +1,4 @@
+
 use crate::backend::server_fns::search_summoner::SearchSummoner;
 use crate::views::PendingLoading;
 use common::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
@@ -5,23 +6,35 @@ use leptos::ev::SubmitEvent;
 use leptos::html::{Input, Select};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos_router::hooks::{use_params_map, use_query_map};
+use leptos_router::hooks::{use_params, use_query};
+use crate::app::{PlatformRouteParams, SummonerSearchQuery};
 
 #[component]
 pub fn SummonerSearchPage(is_summoner_page: Memo<bool>) -> impl IntoView {
-    let query = use_query_map();
-    let params = use_params_map();
     let search_summoner = ServerAction::<SearchSummoner>::new();
     let (pending, set_pending) = signal(false);
 
-    let game_name = move || query.read().get("game_name").unwrap_or_default();
-    let tag_line = move || query.read().get("tag_line").unwrap_or_default();
-    let platform_type = move || {
-        params
-            .read()
-            .get("platform_route")
-            .unwrap_or(PlatformRoute::EUW.code().to_string())
-    };
+    let summoner_search_query = use_query::<SummonerSearchQuery>();
+    let platform_route_param = use_params::<PlatformRouteParams>();
+    let game_name = move || summoner_search_query
+        .read()
+        .as_ref()
+        .ok()
+        .and_then(|q| q.game_name.clone())
+        .unwrap_or_default();
+    let tag_line = move || summoner_search_query
+        .read()
+        .as_ref()
+        .ok()
+        .and_then(|q| q.tag_line.clone())
+        .unwrap_or_default();
+    let platform_type = move ||platform_route_param
+        .read()
+        .as_ref()
+        .ok()
+        .and_then(|p|p.platform_route)
+        .unwrap_or_default().code();
+
 
     let game_name_node = NodeRef::<Input>::new();
     let tag_line_node = NodeRef::<Input>::new();

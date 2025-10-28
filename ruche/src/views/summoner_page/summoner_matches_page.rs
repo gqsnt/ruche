@@ -197,7 +197,6 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
     .collect::<Vec<_>>();
 
     view! {
-
         <div class="flex flex-col">
             <div class="min-h-24 w-full flex rounded text-xs">
                 <div
@@ -239,7 +238,8 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                             .participants
                             .into_iter()
                             .map(|participant| {
-                                let champion = Champion::try_from(participant.champion_id).unwrap_or_default();
+                                let champion = Champion::try_from(participant.champion_id)
+                                    .unwrap_or_default();
                                 view! {
                                     <div class="flex items-center gap-1 w-[130px]">
                                         <ImgChampion
@@ -285,7 +285,16 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                                 participant.game_name.as_str(),
                                                 participant.tag_line.as_str(),
                                             )
-                                            attr:class=move || format!("text-ellipsis overflow-hidden whitespace-nowrap {}", if participant.summoner_id== match_.summoner_id { "text-white" } else { "" })
+                                            attr:class=move || {
+                                                format!(
+                                                    "text-ellipsis overflow-hidden whitespace-nowrap {}",
+                                                    if participant.summoner_id == match_.summoner_id {
+                                                        "text-white"
+                                                    } else {
+                                                        ""
+                                                    },
+                                                )
+                                            }
                                         >
                                             {participant.game_name.clone()}
                                         </A>

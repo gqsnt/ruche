@@ -35,42 +35,57 @@ pub fn SummonerNav() -> impl IntoView {
     let tab_class = move |active: bool| if active { "active-tab" } else { "default-tab" };
 
     view! {
-      <div class="flex justify-center">
-        <nav class="w-[768px]">
-          <ul class="flex justify-start space-x-2">
-            <li>
-              <A href=move || format!("{}{}", base.read(), filters_qs()) attr:class=move || tab_class(is_matches())>
-                "Matches"
-              </A>
-            </li>
-            <li>
-              <A href=move || format!("{}/champions{}", base.read(), filters_qs()) attr:class=move || tab_class(is_champions())>
-                "Champions"
-              </A>
-            </li>
-            <li>
-              <A href=move || format!("{}/encounters{}", base.read(), filters_qs()) attr:class=move || tab_class(is_encounters())>
-                "Encounters"
-              </A>
-            </li>
-            <li>
-              <A href=move || format!("{}/live", base.read())
-                 attr:class=move || {
-                   if is_live() { "active-tab" }
-                   else if sse_in_live_game().0.is_some() { "default-ig-tab" }
-                   else { "default-tab" }
-                 }>
-                "Live"
-              </A>
-            </li>
-            <li>
-              <button class=move || if is_encounter() { "active-tab" } else { "disabled-tab" }>
-                "Encounter"
-              </button>
-            </li>
-          </ul>
-        </nav>
-      </div>
+        <div class="flex justify-center">
+            <nav class="w-[768px]">
+                <ul class="flex justify-start space-x-2">
+                    <li>
+                        <A
+                            href=move || format!("{}{}", base.read(), filters_qs())
+                            attr:class=move || tab_class(is_matches())
+                        >
+                            "Matches"
+                        </A>
+                    </li>
+                    <li>
+                        <A
+                            href=move || format!("{}/champions{}", base.read(), filters_qs())
+                            attr:class=move || tab_class(is_champions())
+                        >
+                            "Champions"
+                        </A>
+                    </li>
+                    <li>
+                        <A
+                            href=move || format!("{}/encounters{}", base.read(), filters_qs())
+                            attr:class=move || tab_class(is_encounters())
+                        >
+                            "Encounters"
+                        </A>
+                    </li>
+                    <li>
+                        <A
+                            href=move || format!("{}/live", base.read())
+                            attr:class=move || {
+                                if is_live() {
+                                    "active-tab"
+                                } else if sse_in_live_game().0.is_some() {
+                                    "default-ig-tab"
+                                } else {
+                                    "default-tab"
+                                }
+                            }
+                        >
+                            "Live"
+                        </A>
+                    </li>
+                    <li>
+                        <button class=move || {
+                            if is_encounter() { "active-tab" } else { "disabled-tab" }
+                        }>"Encounter"</button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
     }
 }
 

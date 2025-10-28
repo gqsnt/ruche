@@ -68,66 +68,70 @@ impl LazyRoute for SummonerLiveRoute {fn data() -> Self {
             .url()
             .set(format!("{}/live", summoner.to_route_path()));
         view! {
-        <div class="w-[768px] my-2">
-            <div class="flex justify-start mb-2">
-                <button
-                    class="my-button flex items-center"
-                    on:click=move |_| {
-                        set_pending(true);
-                        set_refresh_signal(refresh_signal() + 1);
-                    }
-                >
-                    <PendingLoading pending>Refresh</PendingLoading>
-                </button>
-            </div>
-            <Transition
-                fallback=move || {
-                    view! { <div class="text-center">Not In Live Game</div> }
-                }
-                set_pending
-            >
-                {move || Suspend::new(async move {
-                    match live_game_resource.await {
-                        Ok(Some(result)) => {
-                            let first_team = result
-                                .participants
-                                .iter()
-                                .filter(|participant| participant.team_id == 100)
-                                .cloned()
-                                .collect::<Vec<_>>();
-                            let second_team = result
-                                .participants
-                                .iter()
-                                .filter(|participant| participant.team_id == 200)
-                                .cloned()
-                                .collect::<Vec<_>>();
-                            Either::Right(
-                                view! {
-                                    <div class="flex flex-col space-y-2">
-                                        <div class="flex space-x-2">
-                                            <div>{result.queue.label()}</div>
-                                            <div>{result.game_map.label()}</div>
-                                            <div>
-                                                {format!(
-                                                    "{:02}:{:02}",
-                                                    result.game_length / 60,
-                                                    result.game_length % 60,
-                                                )}
-                                            </div>
-                                        </div>
-                                        <MatchLiveTable team_id=100 participants=first_team />
-                                        <MatchLiveTable team_id=200 participants=second_team />
-
-                                    </div>
-                                },
-                            )
+            <div class="w-[768px] my-2">
+                <div class="flex justify-start mb-2">
+                    <button
+                        class="my-button flex items-center"
+                        on:click=move |_| {
+                            set_pending(true);
+                            set_refresh_signal(refresh_signal() + 1);
                         }
-                        _ => Either::Left(view! { <div class="text-center">Not In Live Game</div> }),
+                    >
+                        <PendingLoading pending>Refresh</PendingLoading>
+                    </button>
+                </div>
+                <Transition
+                    fallback=move || {
+                        view! { <div class="text-center">Not In Live Game</div> }
                     }
-                })}
-            </Transition>
-        </div>
-    }.into_any()
+                    set_pending
+                >
+                    {move || Suspend::new(async move {
+                        match live_game_resource.await {
+                            Ok(Some(result)) => {
+                                let first_team = result
+                                    .participants
+                                    .iter()
+                                    .filter(|participant| participant.team_id == 100)
+                                    .cloned()
+                                    .collect::<Vec<_>>();
+                                let second_team = result
+                                    .participants
+                                    .iter()
+                                    .filter(|participant| participant.team_id == 200)
+                                    .cloned()
+                                    .collect::<Vec<_>>();
+                                Either::Right(
+                                    view! {
+                                        <div class="flex flex-col space-y-2">
+                                            <div class="flex space-x-2">
+                                                <div>{result.queue.label()}</div>
+                                                <div>{result.game_map.label()}</div>
+                                                <div>
+                                                    {format!(
+                                                        "{:02}:{:02}",
+                                                        result.game_length / 60,
+                                                        result.game_length % 60,
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <MatchLiveTable team_id=100 participants=first_team />
+                                            <MatchLiveTable team_id=200 participants=second_team />
+
+                                        </div>
+                                    },
+                                )
+                            }
+                            _ => {
+                                Either::Left(
+                                    view! { <div class="text-center">Not In Live Game</div> },
+                                )
+                            }
+                        }
+                    })}
+                </Transition>
+            </div>
+        }.into_any()
 
     }
 
@@ -175,13 +179,22 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                 {participants
                     .into_iter()
                     .map(|participant| {
-                        let champion = Champion::try_from(participant.champion_id).unwrap_or_default();
-                        let summoner_spell1 = SummonerSpell::try_from(participant.summoner_spell1_id).unwrap_or_default();
-                        let summoner_spell2 = SummonerSpell::try_from(participant.summoner_spell2_id).unwrap_or_default();
+                        let champion = Champion::try_from(participant.champion_id)
+                            .unwrap_or_default();
+                        let summoner_spell1 = SummonerSpell::try_from(
+                                participant.summoner_spell1_id,
+                            )
+                            .unwrap_or_default();
+                        let summoner_spell2 = SummonerSpell::try_from(
+                                participant.summoner_spell2_id,
+                            )
+                            .unwrap_or_default();
                         let perk_primary_selection = Perk::try_from(
-                            participant.perk_primary_selection_id,
-                        ).unwrap_or_default();
-                        let perk_sub_style = Perk::try_from(participant.perk_sub_style_id).unwrap_or_default();
+                                participant.perk_primary_selection_id,
+                            )
+                            .unwrap_or_default();
+                        let perk_sub_style = Perk::try_from(participant.perk_sub_style_id)
+                            .unwrap_or_default();
 
                         view! {
                             <tr>
@@ -192,7 +205,8 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                 >
                                     <ImgChampion
                                         champion
-                                        class="self-scale-66 rounded-full block sprite-inner".to_string()
+                                        class="self-scale-66 rounded-full block sprite-inner"
+                                            .to_string()
                                         parent_class="w-8 h-8 sprite-wrapper".to_string()
                                     />
                                 </td>

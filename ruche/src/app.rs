@@ -1,13 +1,15 @@
+
 use crate::views::platform_type_page::PlatformTypePage;
 use crate::views::summoner_page::{ SummonerPageRoute};
 use leptos::config::LeptosOptions;
 use leptos::prelude::GlobalAttributes;
 use leptos::prelude::*;
-
+use leptos_router::params::Params;
 use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, Title};
 use leptos_router::components::{ParentRoute, Redirect};
 use leptos_router::{components::{Route, Router, Routes}, path, Lazy};
 use serde::{Deserialize, Serialize};
+use common::consts::platform_route::PlatformRoute;
 use crate::views::summoner_page::summoner_champions_page::SummonerChampionsRoute;
 use crate::views::summoner_page::summoner_encounter_page::{ SummonerEncounterRoute};
 use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersRoute;
@@ -85,7 +87,7 @@ pub fn App() -> impl IntoView {
                       view=PlatformTypePage
                     >
                       <Route path=path!("") view=move || view! {} />
-                    
+
                       // Turn this into a parent route
                       <ParentRoute
                         path=path!("summoners/:summoner_slug")
@@ -93,16 +95,11 @@ pub fn App() -> impl IntoView {
                       >
                         // index → Matches
                         <Route path=path!("") view={Lazy::<SummonerMatchesRoute>::new()} />
-                    
                         <Route path=path!("champions") view={Lazy::<SummonerChampionsRoute>::new()} />
-                    
                         <Route path=path!("encounters")view={Lazy::<SummonerEncountersRoute>::new()}/>
-                    
-                        <Route path=path!("live")
-                               view={Lazy::<SummonerLiveRoute>::new()} />
-                    
+                        <Route path=path!("live") view={Lazy::<SummonerLiveRoute>::new()} />
                         <Route
-                          path=path!("encounter/:encounter_platform/:encounter_slug")
+                          path=path!("encounter/:encounter_platform_route/:encounter_slug")
                           view={Lazy::<SummonerEncounterRoute>::new()}
                         />
                       </ParentRoute>
@@ -113,3 +110,44 @@ pub fn App() -> impl IntoView {
         </Router>
     }
 }
+
+
+
+#[derive(Params, Debug, PartialEq, Clone)]
+pub struct SummonerSlugParams{
+    pub summoner_slug:Option<String>,
+}
+#[derive(Params, Debug, PartialEq, Clone)]
+pub struct PlatformRouteParams{
+    pub platform_route:Option<PlatformRoute>,
+}
+
+
+#[derive(Params, Debug, PartialEq, Clone)]
+pub struct EncounterSlugParams{
+    pub encounter_slug:Option<String>,
+}
+
+#[derive(Params, Debug, PartialEq, Clone)]
+pub struct EncounterPlatformRouteParams{
+    pub encounter_platform_route:Option<PlatformRoute>,
+}
+
+//
+// #[derive(Params, Debug, PartialEq)]
+// pub struct PageQuery{
+//     pub page:Option<u16>
+// }
+
+
+
+
+#[derive(Params, Debug, PartialEq, Clone)]
+pub struct SummonerSearchQuery{
+    pub game_name:Option<String>,
+    pub tag_line:Option<String>
+}
+
+
+
+

@@ -44,7 +44,7 @@ pub fn MatchFilters(hidden:Signal<bool>,children: Children) -> impl IntoView {
     let to_opt = |v: String| if v.is_empty() { None } else { Some(v) };
 
     view! {
-        <div class="flex justify-center my-2" class:hidden=move ||hidden() >
+        <div class="flex justify-center my-2" class:hidden=move || hidden()>
             <div class="my-card w-[768px]">
                 <div class="flex text-left space-x-2 justify-center">
                     <div class="flex flex-col">
@@ -57,12 +57,11 @@ pub fn MatchFilters(hidden:Signal<bool>,children: Children) -> impl IntoView {
                             on:change=move |e| set_champion_id(to_opt(event_target_value(&e)))
                         >
                             <option value="">All</option>
-                            <For
-                                each=|| CHAMPION_OPTIONS.iter().cloned()
-                                key=|(id, _)| *id
-                                let:opt
-                            >
-                                { let (id, label) = opt; view!{ <option value=id>{label}</option> } }
+                            <For each=|| CHAMPION_OPTIONS.iter().cloned() key=|(id, _)| *id let:opt>
+                                {
+                                    let (id, label) = opt;
+                                    view! { <option value=id>{label}</option> }
+                                }
                             </For>
                         </select>
                     </div>
@@ -77,12 +76,11 @@ pub fn MatchFilters(hidden:Signal<bool>,children: Children) -> impl IntoView {
                             on:change=move |e| set_queue_id(to_opt(event_target_value(&e)))
                         >
                             <option value="">All</option>
-                            <For
-                                each=|| Queue::options_basic()
-                                key=|(id, _)| *id
-                                let:opt
-                            >
-                                { let (id, label) = opt; view!{ <option value=id>{label}</option> } }
+                            <For each=|| Queue::options_basic() key=|(id, _)| *id let:opt>
+                                {
+                                    let (id, label) = opt;
+                                    view! { <option value=id>{label}</option> }
+                                }
                             </For>
                         </select>
                     </div>
