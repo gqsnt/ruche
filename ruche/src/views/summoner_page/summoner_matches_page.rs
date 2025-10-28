@@ -37,7 +37,7 @@ impl LazyRoute for SummonerMatchesRoute{fn data() -> Self {
     }
 
 fn view(_this: Self) -> AnyView {
-    let summoner = expect_context::<Summoner>();
+    let summoner = expect_context::<ReadSignal<Summoner>>();
     let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
@@ -58,7 +58,7 @@ fn view(_this: Self) -> AnyView {
             (
                 sse_match_update_version.get().unwrap_or_default(),
                 match_filters_updated.get(),
-                summoner.id,
+                summoner.read().id,
                 page_number(),
             )
         },
@@ -69,11 +69,11 @@ fn view(_this: Self) -> AnyView {
 
     meta_store.title().set(format!(
         "{}#{} | Matches | Ruche",
-        summoner.game_name.as_str(),
-        summoner.tag_line.as_str()
+        summoner.read().game_name.as_str(),
+        summoner.read().tag_line.as_str()
     ));
-    meta_store.description().set(format!("Explore {}#{}'s match history on Ruche. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
-    meta_store.url().set(summoner.to_route_path());
+    meta_store.description().set(format!("Explore {}#{}'s match history on Ruche. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
+    meta_store.url().set(summoner.read().to_route_path());
     view! {
         <div class="w-[768px] inline-block align-top justify-center">
             <div class="">
@@ -170,7 +170,7 @@ fn view(_this: Self) -> AnyView {
 
 #[component]
 pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
-    let summoner = expect_context::<Summoner>();
+    let summoner = expect_context::<ReadSignal<Summoner>>();
     let (show_details, set_show_details) = signal(false);
     let champion = Champion::try_from(match_.champion_id).unwrap_or_default();
     let summoner_spell1 = SummonerSpell::try_from(match_.summoner_spell1_id).unwrap_or_default();
@@ -252,9 +252,9 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                                 view! {
                                                     <A
                                                         href=summoner_encounter_url(
-                                                            summoner.platform.code(),
-                                                            summoner.game_name.as_str(),
-                                                            summoner.tag_line.as_str(),
+                                                            summoner.read().platform.code(),
+                                                            summoner.read().game_name.as_str(),
+                                                            summoner.read().tag_line.as_str(),
                                                             participant.platform.code(),
                                                             participant.game_name.as_str(),
                                                             participant.tag_line.as_str(),
@@ -279,7 +279,6 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                                 }
                                             })}
                                         <A
-                                            target="_blank"
                                             href=summoner_url(
                                                 participant.platform.code(),
                                                 participant.game_name.as_str(),

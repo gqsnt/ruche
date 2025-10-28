@@ -65,7 +65,7 @@ pub fn MatchDetailsOverviewTable(
     team_id: u16,
     participants: Vec<LolMatchParticipantDetails>,
 ) -> impl IntoView {
-    let summoner = expect_context::<Summoner>();
+    let summoner = expect_context::<ReadSignal<Summoner>>();
     view! {
         <table class="table-fixed text-xs w-full border-collapse">
             <colgroup>
@@ -130,10 +130,10 @@ pub fn MatchDetailsOverviewTable(
 
                         view! {
                             <tr
-                                class=("bg-red-900", !won && participant.summoner_id != summoner.id)
-                                class=("bg-blue-900", won && participant.summoner_id != summoner.id)
-                                class=("bg-red-800", !won && participant.summoner_id == summoner.id)
-                                class=("bg-blue-800", won && participant.summoner_id == summoner.id)
+                                class=("bg-red-900", !won && participant.summoner_id != summoner.read().id)
+                                class=("bg-blue-900", won && participant.summoner_id != summoner.read().id)
+                                class=("bg-red-800", !won && participant.summoner_id == summoner.read().id)
+                                class=("bg-blue-800", won && participant.summoner_id == summoner.read().id)
                             >
                                 <td class="pl-2.5 py-1">
                                     <ImgChampion
@@ -181,9 +181,9 @@ pub fn MatchDetailsOverviewTable(
                                                 view! {
                                                     <A
                                                         href=summoner_encounter_url(
-                                                            summoner.platform.code(),
-                                                            summoner.game_name.as_str(),
-                                                            summoner.tag_line.as_str(),
+                                                            summoner.read().platform.code(),
+                                                            summoner.read().game_name.as_str(),
+                                                            summoner.read().tag_line.as_str(),
                                                             participant.platform.code(),
                                                             participant.game_name.as_str(),
                                                             participant.tag_line.as_str(),
@@ -195,6 +195,7 @@ pub fn MatchDetailsOverviewTable(
                                                 }
                                             })}
                                         {summoner
+                                            .read()
                                             .pro_slug
                                             .map(|pps| {
                                                 view! {
@@ -208,7 +209,6 @@ pub fn MatchDetailsOverviewTable(
                                                 }
                                             })}
                                         <A
-                                            target="_blank"
                                             href=summoner_url(
                                                 participant.platform.code(),
                                                 participant.game_name.as_str(),

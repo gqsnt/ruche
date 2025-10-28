@@ -32,7 +32,7 @@ impl LazyRoute for SummonerEncounterRoute {fn data() -> Self {
 
     fn view(_this: Self) -> AnyView {
 
-        let summoner = expect_context::<Summoner>();
+        let summoner = expect_context::<ReadSignal<Summoner>>();
         let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
         let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
         let (is_with, set_is_with) = signal(true);
@@ -62,7 +62,7 @@ impl LazyRoute for SummonerEncounterRoute {fn data() -> Self {
             move || {
                 (
                     sse_match_update_version.get().unwrap_or_default(),
-                    summoner.id,
+                    summoner.read().id,
                     match_filters_updated.get(),
                     page_number(),
                     encounter_slug(),

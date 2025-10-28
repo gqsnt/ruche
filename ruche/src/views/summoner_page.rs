@@ -38,7 +38,6 @@ impl LazyRoute for SummonerPageRoute {
     fn data() -> Self {
         let platform_route_params = use_params::<PlatformRouteParams>();
         let summoner_slug_params = use_params::<SummonerSlugParams>();
-
         let platform_type = move ||
             platform_route_params
                 .read()
@@ -70,6 +69,7 @@ impl LazyRoute for SummonerPageRoute {
     fn view(this: Self) -> AnyView {
         let SummonerPageRoute { summoner_resource } = this;
         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+
         view! {
             <Transition fallback=move || {
                 view! { <div class="text-center">Loading Summoner</div> }
@@ -90,7 +90,8 @@ impl LazyRoute for SummonerPageRoute {
                                 );
                                 provide_context(sse_match_update_version);
                                 provide_context(sse_in_live_game);
-                                provide_context(summoner.clone());
+                                let (summoner, _) = signal(summoner);
+                                provide_context(summoner);
                                 let update_summoner_action = ServerAction::<UpdateSummoner>::new();
                                 let (pending, set_pending) = signal(false);
                                 Effect::new(move |_| {
@@ -116,8 +117,8 @@ impl LazyRoute for SummonerPageRoute {
                                         gloo_net::eventsource::futures::EventSource::new(
                                                 format!(
                                                     "/sse/match_updated/{}/{}",
-                                                    summoner.platform,
-                                                    summoner.id,
+                                                    summoner.read().platform,
+                                                    summoner.read().id,
                                                 )
                                                     .as_str(),
                                             )
@@ -165,17 +166,17 @@ impl LazyRoute for SummonerPageRoute {
                                 meta_store
                                     .image()
                                     .set(
-                                        ProfileIcon(summoner.profile_icon_id).get_static_asset_url(),
+                                        ProfileIcon(summoner.read().profile_icon_id).get_static_asset_url(),
                                     );
 
                                 view! {
                                     <div class="flex justify-center">
                                         <div class="flex w-[768px] my-2 space-x-2">
                                             <SummonerInfo
-                                                game_name=summoner.game_name.clone()
-                                                tag_line=summoner.tag_line.clone()
-                                                pro_slug=summoner.pro_slug
-                                                platform=summoner.platform
+                                                game_name=summoner.read().game_name.clone()
+                                                tag_line=summoner.read().tag_line.clone()
+                                                pro_slug=summoner.read().pro_slug
+                                                platform=summoner.read().platform
                                                 level_signal=level_signal
                                                 profile_icon_signal=profile_icon_signal
                                             />
@@ -188,10 +189,10 @@ impl LazyRoute for SummonerPageRoute {
                                                         set_pending(true);
                                                         update_summoner_action
                                                             .dispatch(UpdateSummoner {
-                                                                summoner_id: summoner.id,
-                                                                game_name: summoner.game_name.clone(),
-                                                                tag_line: summoner.tag_line.clone(),
-                                                                platform_route: summoner.platform,
+                                                                summoner_id: summoner.read().id,
+                                                                game_name: summoner.read().game_name.clone(),
+                                                                tag_line: summoner.read().tag_line.clone(),
+                                                                platform_route: summoner.read().platform,
                                                             });
                                                     }
                                                 >

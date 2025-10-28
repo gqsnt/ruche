@@ -28,7 +28,7 @@ impl LazyRoute for SummonerLiveRoute {fn data() -> Self {
 }
 
     fn view(_this: Self) -> AnyView {
-        let summoner = expect_context::<Summoner>();
+        let summoner = expect_context::<ReadSignal<Summoner>>();
         let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
         let sse_in_live_game = expect_context::<ReadSignal<SSEInLiveGame>>();
         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
@@ -41,8 +41,8 @@ impl LazyRoute for SummonerLiveRoute {fn data() -> Self {
                     sse_in_live_game.get(),
                     sse_match_update_version.get().unwrap_or_default(),
                     refresh_signal.get(),
-                    summoner.id,
-                    summoner.platform.code(),
+                    summoner.read().id,
+                    summoner.read().platform.code(),
                     set_pending,
                 )
             },
@@ -60,13 +60,13 @@ impl LazyRoute for SummonerLiveRoute {fn data() -> Self {
 
         meta_store.title().set(format!(
             "{}#{} | Live Game | Ruche",
-            summoner.game_name.as_str(),
-            summoner.tag_line.as_str()
+            summoner.read().game_name.as_str(),
+            summoner.read().tag_line.as_str()
         ));
-        meta_store.description().set(format!("Watch {}#{}'s live game now on Ruche. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
+        meta_store.description().set(format!("Watch {}#{}'s live game now on Ruche. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
         meta_store
             .url()
-            .set(format!("{}/live", summoner.to_route_path()));
+            .set(format!("{}/live", summoner.read().to_route_path()));
         view! {
             <div class="w-[768px] my-2">
                 <div class="flex justify-start mb-2">
@@ -142,7 +142,7 @@ impl LazyRoute for SummonerLiveRoute {fn data() -> Self {
 
 #[component]
 pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> impl IntoView {
-    let summoner = expect_context::<Summoner>();
+    let summoner = expect_context::<ReadSignal<Summoner>>();
     let is_blue_team = || team_id == 100;
 
     view! {
@@ -241,9 +241,9 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                                 view! {
                                                     <A
                                                         href=summoner_encounter_url(
-                                                            summoner.platform.code(),
-                                                            summoner.game_name.as_str(),
-                                                            summoner.tag_line.as_str(),
+                                                            summoner.read().platform.code(),
+                                                            summoner.read().game_name.as_str(),
+                                                            summoner.read().tag_line.as_str(),
                                                             participant.platform.code(),
                                                             participant.game_name.as_str(),
                                                             participant.tag_line.as_str(),
@@ -268,7 +268,6 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                                 }
                                             })}
                                         <A
-                                            target="_blank"
                                             href=summoner_url(
                                                 participant.platform.code(),
                                                 participant.game_name.as_str(),

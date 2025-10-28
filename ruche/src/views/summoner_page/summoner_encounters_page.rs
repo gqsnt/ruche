@@ -28,7 +28,7 @@ impl LazyRoute for SummonerEncountersRoute {fn data() -> Self {
 }
 
     fn view(_this: Self) -> AnyView {
-        let summoner = expect_context::<Summoner>();
+        let summoner = expect_context::<ReadSignal<Summoner>>();
         let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
         let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
@@ -56,7 +56,7 @@ impl LazyRoute for SummonerEncountersRoute {fn data() -> Self {
                     sse_match_update_version.get().unwrap_or_default(),
                     search_summoner.get(),
                     match_filters_updated.get(),
-                    summoner.id,
+                    summoner.read().id,
                     page_number(),
                     set_pending,
                 )
@@ -77,13 +77,13 @@ impl LazyRoute for SummonerEncountersRoute {fn data() -> Self {
 
         meta_store.title().set(format!(
             "{}#{} | Encounters | Ruche",
-            summoner.game_name.as_str(),
-            summoner.tag_line.as_str()
+            summoner.read().game_name.as_str(),
+            summoner.read().tag_line.as_str()
         ));
-        meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
+        meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
         meta_store
             .url()
-            .set(format!("{}/encounters", summoner.to_route_path()));
+            .set(format!("{}/encounters", summoner.read().to_route_path()));
 
         view! {
             <div>
@@ -118,7 +118,6 @@ impl LazyRoute for SummonerEncountersRoute {fn data() -> Self {
                     view! { <div class="text-center">Loading Encounters</div> }
                 }>
                     {move || {
-                        let summoner_clone = summoner.clone();
                         Suspend::new(async move {
                             match encounters_resource.await {
                                 Ok(encounters_result) => {
@@ -162,9 +161,9 @@ impl LazyRoute for SummonerEncountersRoute {fn data() -> Self {
                                                                             encounter.with_match_count,
                                                                         );
                                                                         let summoner_encounter_url = summoner_encounter_url(
-                                                                            summoner_clone.platform.code(),
-                                                                            summoner_clone.game_name.as_str(),
-                                                                            summoner_clone.tag_line.as_str(),
+                                                                            summoner.read().platform.code(),
+                                                                            summoner.read().game_name.as_str(),
+                                                                            summoner.read().tag_line.as_str(),
                                                                             encounter.platform.code(),
                                                                             encounter.game_name.to_string().as_str(),
                                                                             encounter.tag_line.as_str(),

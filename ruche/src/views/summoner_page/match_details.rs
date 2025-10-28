@@ -22,7 +22,7 @@ pub fn MatchDetails(
     riot_match_id: RiotMatchId,
     platform: PlatformRoute,
 ) -> impl IntoView {
-    let summoner = expect_context::<Summoner>();
+    let summoner = expect_context::<ReadSignal<Summoner>>();
     let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
     let match_details = Resource::new_bitcode(
         move || {
@@ -31,7 +31,7 @@ pub fn MatchDetails(
                 match_id,
                 riot_match_id,
                 platform,
-                summoner.id,
+                summoner.read().id,
             )
         },
         |(_, match_id, riot_match_id, platform, summoner_id)| async move {
@@ -47,19 +47,19 @@ pub fn MatchDetails(
                     <Show when=move || match_detail_tab() == "overview">
                         <MatchDetailsOverview
                             match_details=match_details_signal
-                            summoner_id=summoner.id
+                            summoner_id=summoner.read().id
                         />
                     </Show>
                     <Show when=move || match_detail_tab() == "team">
                         <MatchDetailsTeam
                             _match_details=match_details_signal
-                            _summoner_id=summoner.id
+                            _summoner_id=summoner.read().id
                         />
                     </Show>
                     <Show when=move || match_detail_tab() == "build">
                         <MatchDetailsBuild
                             match_details=match_details_signal
-                            summoner_id=summoner.id
+                            summoner_id=summoner.read().id
                         />
                     </Show>
                 }

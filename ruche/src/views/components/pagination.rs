@@ -44,8 +44,7 @@ pub fn Pagination(max_page: u16) -> impl IntoView {
                     key=|k| k.unwrap_or_default()
                     let:opt
                 >
-                    {
-                    match opt {
+                    {match opt {
                         None => {
                             Either::Right(
 

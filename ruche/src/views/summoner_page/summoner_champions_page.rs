@@ -20,7 +20,7 @@ impl LazyRoute for SummonerChampionsRoute {fn data() -> Self {
 }
 
     fn view(_this: Self) -> AnyView {
-        let summoner = expect_context::<Summoner>();
+        let summoner = expect_context::<ReadSignal<Summoner>>();
         let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
         let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
@@ -34,7 +34,7 @@ impl LazyRoute for SummonerChampionsRoute {fn data() -> Self {
                 (
                     sse_match_update_version.get().unwrap_or_default(),
                     match_filters_updated.get(),
-                    summoner.id,
+                    summoner.read().id,
                 )
             },
             |(_, filters, summoner_id)| async move {
@@ -54,13 +54,13 @@ impl LazyRoute for SummonerChampionsRoute {fn data() -> Self {
 
         meta_store.title().set(format!(
             "{}#{} | Champions | Ruche",
-            summoner.game_name.as_str(),
-            summoner.tag_line.as_str()
+            summoner.read().game_name.as_str(),
+            summoner.read().tag_line.as_str()
         ));
-        meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
+        meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
         meta_store
             .url()
-            .set(format!("{}/champions", summoner.to_route_path()));
+            .set(format!("{}/champions", summoner.read().to_route_path()));
         view! {
             <div>
                 <Transition fallback=move || {

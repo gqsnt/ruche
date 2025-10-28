@@ -10,6 +10,7 @@
 
 
 
+
 @theme{
     --color-red-50: #FDEDEF;
     --color-red-100: #FBDBDF;
@@ -102,20 +103,32 @@ html {
         @apply flex items-center justify-center px-3 h-8 text-blue-600 border border-gray-300 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white;
     }
 
-    .active-tab {
-        @apply text-center block border border-blue-500 rounded py-2 px-4 bg-blue-500 hover:bg-blue-700 text-gray-900;
+    .summoner-nav .tab {
+        /* base de l’ancienne default-tab (hors couleurs/border dynamiques) */
+        @apply text-center block rounded py-2 px-4 text-gray-900 border;
     }
 
-    .default-ig-tab {
-        @apply text-center block border border-green-400 rounded py-2 px-4 bg-green-400 hover:bg-green-700 text-gray-900;
-    }
-    .disabled-tab {
-        @apply block py-2 px-4 text-gray-200 cursor-not-allowed bg-gray-700 rounded border border-gray-700;
+    /* Actif : remplace l’ancienne .active-tab quand <A/> met aria-current */
+    .summoner-nav .tab[aria-current] {
+        @apply border-blue-500 bg-blue-500 hover:bg-blue-700;
     }
 
-    .default-tab{
-        @apply text-center block border bg-gray-200 border-white rounded hover:border-gray-200 text-gray-900 hover:bg-gray-300 py-2 px-4;
+    /* Désactivé : remplace l’ancienne .disabled-tab quand vous rendez l’onglet inaccessible */
+    .summoner-nav .tab[aria-disabled="true"] {
+        @apply text-gray-200 cursor-not-allowed bg-gray-700 border border-gray-700;
     }
+
+    /* Live (non actif) : remplace l’ancienne .default-ig-tab quand data-live="1" est posé */
+    .summoner-nav .tab[data-live="1"]:not([aria-current]) {
+        @apply border-green-400 bg-green-400 hover:bg-green-700;
+    }
+
+    /* Par défaut (non actif, non disabled, non live) : remplace l’ancienne .default-tab */
+    .summoner-nav .tab:not([aria-current]):not([aria-disabled="true"]):not([data-live="1"]) {
+        @apply bg-gray-200 border-white hover:border-gray-200 hover:bg-gray-300;
+    }
+
+
 
     .my-select{
         @apply bg-gray-200 border border-gray-200 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500;

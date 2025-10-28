@@ -2,17 +2,16 @@ use crate::views::summoner_page::{SSEInLiveGame, Summoner};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::components::A;
-use leptos_router::hooks::{ use_location, use_params_map, use_query_map};
+use leptos_router::hooks::{  use_params_map, use_query_map};
 
 #[component]
 pub fn SummonerNav() -> impl IntoView {
     let sse_in_live_game = expect_context::<ReadSignal<SSEInLiveGame>>();
-    let summoner = expect_context::<Summoner>();
-    let location = use_location();
+    let summoner = expect_context::<ReadSignal<Summoner>>();
     let query = use_query_map();
     let params = use_params_map();
 
-    let base = Memo::new(move |_|summoner.to_route_path()); // e.g. /platform/EUW/summoners/slug
+    let base = Memo::new(move |_|summoner.read().to_route_path()); // e.g. /platform/EUW/summoners/slug
 
     // Build ?filters[...] query string to preserve across tabs
     let filters_qs = Memo::new(move |_| {
@@ -24,24 +23,24 @@ pub fn SummonerNav() -> impl IntoView {
         if parts.is_empty() { String::new() } else { format!("?{}", parts.join("&")) }
     });
 
-    // Active helpers
-    let path = move || location.pathname.get();
-    let is_matches   = move || path() == base.get() || path() == format!("{}/", base.read());
-    let is_champions = move || path().starts_with(&format!("{}/champions", base.read()));
-    let is_encounters= move || path().starts_with(&format!("{}/encounters", base.read()));
-    let is_live      = move || path().starts_with(&format!("{}/live", base.read()));
-    let is_encounter = move || params.read().get("encounter_slug").is_some();
-
-    let tab_class = move |active: bool| if active { "active-tab" } else { "default-tab" };
-
+    let encounter_href = Memo::new(move |_| {
+        let p = params.read();
+        match (p.get("encounter_platform_route"), p.get("encounter_slug")) {
+            (Some(platform), Some(slug)) => {
+                Some(format!("{}/encounter/{}/{}", base.read(), platform, slug))
+            }
+            _ => None,
+        }
+    });
     view! {
         <div class="flex justify-center">
-            <nav class="w-[768px]">
+            <nav class="w-[768px] summoner-nav" aria-label="Summoner navigation">
                 <ul class="flex justify-start space-x-2">
                     <li>
                         <A
                             href=move || format!("{}{}", base.read(), filters_qs())
-                            attr:class=move || tab_class(is_matches())
+                            exact=true
+                            attr:class="tab"
                         >
                             "Matches"
                         </A>
@@ -49,7 +48,7 @@ pub fn SummonerNav() -> impl IntoView {
                     <li>
                         <A
                             href=move || format!("{}/champions{}", base.read(), filters_qs())
-                            attr:class=move || tab_class(is_champions())
+                            attr:class="tab"
                         >
                             "Champions"
                         </A>
@@ -57,7 +56,7 @@ pub fn SummonerNav() -> impl IntoView {
                     <li>
                         <A
                             href=move || format!("{}/encounters{}", base.read(), filters_qs())
-                            attr:class=move || tab_class(is_encounters())
+                            attr:class="tab"
                         >
                             "Encounters"
                         </A>
@@ -65,23 +64,32 @@ pub fn SummonerNav() -> impl IntoView {
                     <li>
                         <A
                             href=move || format!("{}/live", base.read())
-                            attr:class=move || {
-                                if is_live() {
-                                    "active-tab"
-                                } else if sse_in_live_game().0.is_some() {
-                                    "default-ig-tab"
-                                } else {
-                                    "default-tab"
-                                }
-                            }
+                            // highlight via CSS when data-live="1"
+                            attr:data-live=move || sse_in_live_game().0.map(|_| "1")
+                            attr:class="tab"
                         >
                             "Live"
                         </A>
                     </li>
                     <li>
-                        <button class=move || {
-                            if is_encounter() { "active-tab" } else { "disabled-tab" }
-                        }>"Encounter"</button>
+                        {move || match encounter_href.get() {
+                            Some(href) => {
+                                view! {
+                                    <A href=href attr:class="tab">
+                                        "Encounter"
+                                    </A>
+                                }
+                                    .into_any()
+                            }
+                            None => {
+                                view! {
+                                    <span class="tab" aria-disabled="true">
+                                        "Encounter"
+                                    </span>
+                                }
+                                    .into_any()
+                            }
+                        }}
                     </li>
                 </ul>
             </nav>
