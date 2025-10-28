@@ -19,7 +19,7 @@ pub fn SummonerSearchPage(is_summoner_page: Memo<bool>) -> impl IntoView {
     let platform_type = move || {
         params
             .read()
-            .get("platform_type")
+            .get("platform_route")
             .unwrap_or(PlatformRoute::EUW.code().to_string())
     };
 
@@ -86,9 +86,9 @@ pub fn SummonerSearchPage(is_summoner_page: Memo<bool>) -> impl IntoView {
                 />
                 <select
                     class="my-select"
-                    aria-label="Platform Type"
+                    aria-label="Platform Route"
                     node_ref=platform_type_node
-                    name="platform_type"
+                    name="platform_route"
                     prop:value=platform_type
                 >
                     {PLATFORM_ROUTE_OPTIONS

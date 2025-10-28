@@ -35,7 +35,7 @@ pub fn SummonerPage() -> impl IntoView {
     let platform_type = move || {
         params
             .read()
-            .get("platform_type")
+            .get("platform_route")
             .clone()
             .unwrap_or_default()
     };

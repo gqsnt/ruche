@@ -6,10 +6,7 @@ use leptos::prelude::*;
 
 use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, Title};
 use leptos_router::components::{ParentRoute, Redirect};
-use leptos_router::{
-    components::{Route, Router, Routes},
-    ParamSegment, StaticSegment,
-};
+use leptos_router::{components::{Route, Router, Routes}, path, ParamSegment, StaticSegment};
 use serde::{Deserialize, Serialize};
 use crate::views::summoner_page::summoner_champions_page::SummonerChampionsPage;
 use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterPage;
@@ -79,35 +76,33 @@ pub fn App() -> impl IntoView {
                     fallback=|| view! { <div class="text-center">Page Not Found</div> }
                 >
                     <Route
-                        path=StaticSegment("")
+                        path=path!("")
                         view=move || view! { <Redirect path="platform/EUW" /> }
                     />
                     // app.rs
                     <ParentRoute
-                      path=(StaticSegment("platform"), ParamSegment("platform_type"))
+                      path=path!("platform/:platform_route")
                       view=PlatformTypePage
                     >
-                      <Route path=StaticSegment("") view=move || view! {} />
+                      <Route path=path!("") view=move || view! {} />
                     
                       // Turn this into a parent route
                       <ParentRoute
-                        path=(StaticSegment("summoners"), ParamSegment("summoner_slug"))
+                        path=path!("summoners/:summoner_slug")
                         view=SummonerPage
                       >
                         // index → Matches
-                        <Route path=StaticSegment("") view=SummonerMatchesPage />
+                        <Route path=path!("") view=SummonerMatchesPage />
                     
-                        <Route path=StaticSegment("champions") view=SummonerChampionsPage />
+                        <Route path=path!("champions") view=SummonerChampionsPage />
                     
-                        <Route path=StaticSegment("encounters") view=SummonerEncountersPage/>
+                        <Route path=path!("encounters")view=SummonerEncountersPage/>
                     
-                        <Route path=StaticSegment("live")
+                        <Route path=path!("live")
                                view=SummonerLivePage />
                     
                         <Route
-                          path=(StaticSegment("encounter"),
-                                ParamSegment("encounter_platform"),
-                                ParamSegment("encounter_slug"))
+                          path=path!("encounter/:encounter_platform/:encounter_slug")
                           view=SummonerEncounterPage
                         />
                       </ParentRoute>

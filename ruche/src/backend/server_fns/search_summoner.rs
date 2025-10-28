@@ -109,14 +109,13 @@ pub mod ssr {
             r#"
             SELECT id, game_name, tag_line, platform
             FROM summoners
-            WHERE game_name like $1
-              AND lower(tag_line) like lower($2)
-              AND platform = $3
+            WHERE platform = $1 AND  game_name = $2
+              AND lower(tag_line) = lower($3)
               "#,
         )
+        .bind(PlatformRouteDb::from(*platform_route))
         .bind(game_name)
         .bind(tag_line)
-        .bind(PlatformRouteDb::from(*platform_route))
         .fetch_one(db)
         .await
         .map_err(|e| e.into())
