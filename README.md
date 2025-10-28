@@ -86,6 +86,7 @@ Shared filters are persisted in the URL:
 - **Components**: `SummonerSearchPage`, `SummonerNav`, `MatchFilters`, `Pagination`, `MatchDetails` (Overview/Build/Team), and pages for Matches/Champions/Encounters/Encounter/Live.
 - **Serialization**: **Bitcode** payloads (small and fast) with zstd compression.
 - **UX**: accessible controls, fast navigation, URL-synced state.
+- **WASM splitting**: use the new LazyRoute feature from **Leptos**
 
 ### Backend
 - **Axum + Tokio** (async), **SQLx + PostgreSQL**, **Riven** (Riot API).
