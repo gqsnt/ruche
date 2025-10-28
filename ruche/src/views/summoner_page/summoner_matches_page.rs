@@ -1,3 +1,4 @@
+use std::future::Future;
 use bitcode::{Decode, Encode};
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_matches::get_matches;
@@ -7,7 +8,6 @@ use crate::utils::{
     RiotMatchId,
 };
 use crate::views::components::pagination::Pagination;
-use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner};
 use crate::views::{
     get_default_navigation_option, BackEndMatchFiltersSearch, ImgChampion, ImgItem, ImgPerk,
@@ -25,9 +25,18 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::components::A;
 use leptos_router::hooks::query_signal_with_options;
+use leptos_router::{lazy_route, LazyRoute};
+use crate::views::summoner_page::match_details::MatchDetails;
 
-#[component]
-pub fn SummonerMatchesPage() -> impl IntoView {
+pub struct SummonerMatchesRoute{
+}
+
+#[lazy_route]
+impl LazyRoute for SummonerMatchesRoute{fn data() -> Self {
+        Self{}
+    }
+
+fn view(this: Self) -> AnyView {
     let summoner = expect_context::<Summoner>();
     let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
@@ -150,8 +159,14 @@ pub fn SummonerMatchesPage() -> impl IntoView {
                 </Transition>
             </div>
         </div>
+    }.into_any()
+
     }
+
 }
+
+
+
 
 #[component]
 pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {

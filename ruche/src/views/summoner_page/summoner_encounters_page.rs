@@ -17,67 +17,75 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::components::A;
 use leptos_router::hooks::query_signal_with_options;
+use leptos_router::{lazy_route, LazyRoute};
 
-#[component]
-pub fn SummonerEncountersPage() -> impl IntoView {
-    let summoner = expect_context::<Summoner>();
-    let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
-    let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-    let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
+pub struct SummonerEncountersRoute{
+}
 
-    let (page_number, set_page_number) =
-        query_signal_with_options::<u16>("page", get_default_navigation_option());
-    let (search_summoner, set_search_summoner) =
-        query_signal_with_options::<String>("q", get_default_navigation_option());
-    let (search_summoner_signal, set_search_summoner_signal) =
-        signal(search_summoner.get_untracked().unwrap_or_default());
+#[lazy_route]
+impl LazyRoute for SummonerEncountersRoute {fn data() -> Self {
+    Self{}
+}
 
-    let (pending, set_pending) = signal(false);
+    fn view(this: Self) -> AnyView {
+        let summoner = expect_context::<Summoner>();
+        let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
+        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+        let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
 
-    let (reset_page_number, set_reset_page_number) = signal(false);
-    Effect::new(move |_| {
-        if reset_page_number() {
-            set_page_number(None);
-            set_reset_page_number(false);
-        }
-    });
+        let (page_number, set_page_number) =
+            query_signal_with_options::<u16>("page", get_default_navigation_option());
+        let (search_summoner, set_search_summoner) =
+            query_signal_with_options::<String>("q", get_default_navigation_option());
+        let (search_summoner_signal, set_search_summoner_signal) =
+            signal(search_summoner.get_untracked().unwrap_or_default());
 
-    let encounters_resource = Resource::new_bitcode(
-        move || {
-            (
-                sse_match_update_version.get().unwrap_or_default(),
-                search_summoner.get(),
-                match_filters_updated.get(),
-                summoner.id,
-                page_number(),
-                set_pending,
-            )
-        },
-        |(_, search_summoner, filters, summoner_id, page_number, set_pending_value)| async move {
-            //println!("{:?} {:?} {:?}", filters, summoner.unwrap(), page_number);
-            let r = get_encounters(
-                summoner_id,
-                page_number.unwrap_or(1),
-                search_summoner,
-                Some(filters),
-            )
-            .await;
-            set_pending_value(false);
-            r
-        },
-    );
+        let (pending, set_pending) = signal(false);
 
-    meta_store.title().set(format!(
-        "{}#{} | Encounters | Ruche",
-        summoner.game_name.as_str(),
-        summoner.tag_line.as_str()
-    ));
-    meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
-    meta_store
-        .url()
-        .set(format!("{}/encounters", summoner.to_route_path()));
+        let (reset_page_number, set_reset_page_number) = signal(false);
+        Effect::new(move |_| {
+            if reset_page_number() {
+                set_page_number(None);
+                set_reset_page_number(false);
+            }
+        });
 
-    view! {
+        let encounters_resource = Resource::new_bitcode(
+            move || {
+                (
+                    sse_match_update_version.get().unwrap_or_default(),
+                    search_summoner.get(),
+                    match_filters_updated.get(),
+                    summoner.id,
+                    page_number(),
+                    set_pending,
+                )
+            },
+            |(_, search_summoner, filters, summoner_id, page_number, set_pending_value)| async move {
+                //println!("{:?} {:?} {:?}", filters, summoner.unwrap(), page_number);
+                let r = get_encounters(
+                    summoner_id,
+                    page_number.unwrap_or(1),
+                    search_summoner,
+                    Some(filters),
+                )
+                    .await;
+                set_pending_value(false);
+                r
+            },
+        );
+
+        meta_store.title().set(format!(
+            "{}#{} | Encounters | Ruche",
+            summoner.game_name.as_str(),
+            summoner.tag_line.as_str()
+        ));
+        meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
+        meta_store
+            .url()
+            .set(format!("{}/encounters", summoner.to_route_path()));
+
+        view! {
         <div>
             <div class="my-card flex space-x-2 my-2 w-fit">
                 <input
@@ -247,8 +255,13 @@ pub fn SummonerEncountersPage() -> impl IntoView {
             </Transition>
 
         </div>
+    }.into_any()
+
     }
+
 }
+
+
 
 #[derive(Clone, Default, Encode,Decode)]
 pub struct SummonerEncountersResult {

@@ -1,18 +1,18 @@
 use crate::views::platform_type_page::PlatformTypePage;
-use crate::views::summoner_page::SummonerPage;
+use crate::views::summoner_page::{ SummonerPageRoute};
 use leptos::config::LeptosOptions;
 use leptos::prelude::GlobalAttributes;
 use leptos::prelude::*;
 
 use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, Title};
 use leptos_router::components::{ParentRoute, Redirect};
-use leptos_router::{components::{Route, Router, Routes}, path, ParamSegment, StaticSegment};
+use leptos_router::{components::{Route, Router, Routes}, path, Lazy, ParamSegment, StaticSegment};
 use serde::{Deserialize, Serialize};
-use crate::views::summoner_page::summoner_champions_page::SummonerChampionsPage;
-use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterPage;
-use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersPage;
-use crate::views::summoner_page::summoner_live_page::SummonerLivePage;
-use crate::views::summoner_page::summoner_matches_page::SummonerMatchesPage;
+use crate::views::summoner_page::summoner_champions_page::SummonerChampionsRoute;
+use crate::views::summoner_page::summoner_encounter_page::{SummonerEncounterMatch, SummonerEncounterRoute};
+use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersRoute;
+use crate::views::summoner_page::summoner_live_page::SummonerLiveRoute;
+use crate::views::summoner_page::summoner_matches_page::SummonerMatchesRoute;
 
 pub const SITE_URL: &str = "https://ruche.lol";
 
@@ -89,21 +89,21 @@ pub fn App() -> impl IntoView {
                       // Turn this into a parent route
                       <ParentRoute
                         path=path!("summoners/:summoner_slug")
-                        view=SummonerPage
+                        view={Lazy::<SummonerPageRoute>::new()}
                       >
                         // index → Matches
-                        <Route path=path!("") view=SummonerMatchesPage />
+                        <Route path=path!("") view={Lazy::<SummonerMatchesRoute>::new()} />
                     
-                        <Route path=path!("champions") view=SummonerChampionsPage />
+                        <Route path=path!("champions") view={Lazy::<SummonerChampionsRoute>::new()} />
                     
-                        <Route path=path!("encounters")view=SummonerEncountersPage/>
+                        <Route path=path!("encounters")view={Lazy::<SummonerEncountersRoute>::new()}/>
                     
                         <Route path=path!("live")
-                               view=SummonerLivePage />
+                               view={Lazy::<SummonerLiveRoute>::new()} />
                     
                         <Route
                           path=path!("encounter/:encounter_platform/:encounter_slug")
-                          view=SummonerEncounterPage
+                          view={Lazy::<SummonerEncounterRoute>::new()}
                         />
                       </ParentRoute>
                     </ParentRoute>

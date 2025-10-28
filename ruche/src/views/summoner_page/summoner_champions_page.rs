@@ -9,52 +9,59 @@ use itertools::Itertools;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use leptos_router::{lazy_route, LazyRoute};
 
+pub struct SummonerChampionsRoute{
+}
 
-#[component]
-pub fn SummonerChampionsPage() -> impl IntoView {
-    let summoner = expect_context::<Summoner>();
-    let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
-    let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-    let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
-    let (table_sort, set_table_sort) =
-        signal::<(TableSortType, bool)>((TableSortType::default(), true));
-    let current_sort_type = move || table_sort.get().0;
-    let current_sort_normal_flow = move || table_sort.get().1;
+#[lazy_route]
+impl LazyRoute for SummonerChampionsRoute {fn data() -> Self {
+    Self{}
+}
 
-    let champions_resource = Resource::new_bitcode(
-        move || {
-            (
-                sse_match_update_version.get().unwrap_or_default(),
-                match_filters_updated.get(),
-                summoner.id,
-            )
-        },
-        |(_, filters, summoner_id)| async move {
-            //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_champions(summoner_id, Some(filters)).await
-        },
-    );
+    fn view(this: Self) -> AnyView {
+        let summoner = expect_context::<Summoner>();
+        let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
+        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+        let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
+        let (table_sort, set_table_sort) =
+            signal::<(TableSortType, bool)>((TableSortType::default(), true));
+        let current_sort_type = move || table_sort.get().0;
+        let current_sort_normal_flow = move || table_sort.get().1;
 
-    let toggle_sort = move |sort_type: TableSortType| {
-        let (sort, is_desc) = table_sort.get();
-        if sort == sort_type {
-            set_table_sort((sort_type, !is_desc));
-        } else {
-            set_table_sort((sort_type, true));
-        }
-    };
+        let champions_resource = Resource::new_bitcode(
+            move || {
+                (
+                    sse_match_update_version.get().unwrap_or_default(),
+                    match_filters_updated.get(),
+                    summoner.id,
+                )
+            },
+            |(_, filters, summoner_id)| async move {
+                //println!("{:?} {:?} {:?}", filters, summoner, page_number);
+                get_champions(summoner_id, Some(filters)).await
+            },
+        );
 
-    meta_store.title().set(format!(
-        "{}#{} | Champions | Ruche",
-        summoner.game_name.as_str(),
-        summoner.tag_line.as_str()
-    ));
-    meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
-    meta_store
-        .url()
-        .set(format!("{}/champions", summoner.to_route_path()));
-    view! {
+        let toggle_sort = move |sort_type: TableSortType| {
+            let (sort, is_desc) = table_sort.get();
+            if sort == sort_type {
+                set_table_sort((sort_type, !is_desc));
+            } else {
+                set_table_sort((sort_type, true));
+            }
+        };
+
+        meta_store.title().set(format!(
+            "{}#{} | Champions | Ruche",
+            summoner.game_name.as_str(),
+            summoner.tag_line.as_str()
+        ));
+        meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
+        meta_store
+            .url()
+            .set(format!("{}/champions", summoner.to_route_path()));
+        view! {
         <div>
             <Transition fallback=move || {
                 view! { <div class="text-center">Loading Champions</div> }
@@ -334,8 +341,13 @@ pub fn SummonerChampionsPage() -> impl IntoView {
                 })}
             </Transition>
         </div>
+    }.into_any()
+
     }
+
 }
+
+
 
 #[component]
 pub fn TableHeaderItem<S, R, T>(

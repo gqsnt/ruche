@@ -19,57 +19,65 @@ use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, IntoView};
 use leptos_router::hooks::{query_signal_with_options, use_params_map};
+use leptos_router::{lazy_route, LazyRoute};
 
+pub struct SummonerEncounterRoute{
+}
 
-#[component]
-pub fn SummonerEncounterPage() -> impl IntoView {
-    let summoner = expect_context::<Summoner>();
-    let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
-    let params = use_params_map();
-    let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
-    let (is_with, set_is_with) = signal(true);
+#[lazy_route]
+impl LazyRoute for SummonerEncounterRoute {fn data() -> Self {
+    Self{}
+}
 
-    let encounter_slug = move || params.read().get("encounter_slug").unwrap_or_default();
-    let encounter_platform = move || params.read().get("encounter_platform").unwrap_or_default();
+    fn view(this: Self) -> AnyView {
 
-    let (page_number, set_page_number) =
-        query_signal_with_options::<u16>("page", get_default_navigation_option());
+        let summoner = expect_context::<Summoner>();
+        let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
+        let params = use_params_map();
+        let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
+        let (is_with, set_is_with) = signal(true);
 
-    let encounter_resource = leptos::server::Resource::new_bitcode(
-        move || {
-            (
-                sse_match_update_version.get().unwrap_or_default(),
-                summoner.id,
-                match_filters_updated.get(),
-                page_number(),
-                encounter_slug(),
-                encounter_platform(),
-                is_with.get(),
-            )
-        },
-        |(_, summoner_id, filters, page_number, encounter_slug, encounter_platform, is_with)| async move {
-            //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-            get_encounter(
-                summoner_id,
-                page_number.unwrap_or(1),
-                is_with,
-                PlatformRoute::try_from(encounter_platform.as_str()).unwrap(),
-                encounter_slug,
-                Some(filters),
-            )
-            .await
-        },
-    );
+        let encounter_slug = move || params.read().get("encounter_slug").unwrap_or_default();
+        let encounter_platform = move || params.read().get("encounter_platform").unwrap_or_default();
 
-    let (reset_page_number, set_reset_page_number) = signal::<bool>(false);
-    Effect::new(move |_| {
-        if reset_page_number() {
-            set_page_number(None);
-            set_reset_page_number(false);
-        }
-    });
+        let (page_number, set_page_number) =
+            query_signal_with_options::<u16>("page", get_default_navigation_option());
 
-    view! {
+        let encounter_resource = leptos::server::Resource::new_bitcode(
+            move || {
+                (
+                    sse_match_update_version.get().unwrap_or_default(),
+                    summoner.id,
+                    match_filters_updated.get(),
+                    page_number(),
+                    encounter_slug(),
+                    encounter_platform(),
+                    is_with.get(),
+                )
+            },
+            |(_, summoner_id, filters, page_number, encounter_slug, encounter_platform, is_with)| async move {
+                //println!("{:?} {:?} {:?}", filters, summoner, page_number);
+                get_encounter(
+                    summoner_id,
+                    page_number.unwrap_or(1),
+                    is_with,
+                    PlatformRoute::try_from(encounter_platform.as_str()).unwrap(),
+                    encounter_slug,
+                    Some(filters),
+                )
+                    .await
+            },
+        );
+
+        let (reset_page_number, set_reset_page_number) = signal::<bool>(false);
+        Effect::new(move |_| {
+            if reset_page_number() {
+                set_page_number(None);
+                set_reset_page_number(false);
+            }
+        });
+
+        view! {
         <div class="flex my-card justify-center space-x-2 my-2">
             <button
 
@@ -158,8 +166,12 @@ pub fn SummonerEncounterPage() -> impl IntoView {
                 })}
             </Transition>
         </div>
+    }.into_any()
+
     }
+
 }
+
 
 #[component]
 pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl IntoView {

@@ -1,10 +1,11 @@
-use bitcode::{Decode, Encode};
 use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::backend::server_fns::get_summoner::get_summoner;
 use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::utils::{summoner_url, ProPlayerSlug, SSEEvent};
+use crate::views::components::match_filters::MatchFilters;
 use crate::views::summoner_page::summoner_nav::SummonerNav;
 use crate::views::{ImgSrc, PendingLoading};
+use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use common::consts::profile_icon::ProfileIcon;
 use common::consts::HasStaticSrcAsset;
@@ -12,10 +13,13 @@ use leptos::context::provide_context;
 use leptos::either::Either;
 use leptos::prelude::Read;
 use leptos::prelude::*;
+use leptos::server::codee::binary::BitcodeCodec;
 use leptos::{component, view, IntoView};
+
 use leptos_router::components::{Outlet, A};
 use leptos_router::hooks::{use_location, use_params_map};
-use crate::views::components::match_filters::MatchFilters;
+use leptos_router::{lazy_route, LazyRoute};
+use std::future::Future;
 
 pub mod match_details;
 pub mod summoner_champions_page;
@@ -26,36 +30,50 @@ pub mod summoner_matches_page;
 pub mod summoner_nav;
 pub mod summoner_search_page;
 
-#[component]
-pub fn SummonerPage() -> impl IntoView {
-    let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+pub struct SummonerPageRoute {
+    pub summoner_resource: Resource<Result<Summoner, ServerFnError>, BitcodeCodec>,
+}
 
-    let params = use_params_map();
+#[lazy_route]
+impl LazyRoute for SummonerPageRoute {
+    fn data() -> Self {
+        let params = use_params_map();
 
-    let platform_type = move || {
-        params
-            .read()
-            .get("platform_route")
-            .clone()
-            .unwrap_or_default()
-    };
-    let summoner_slug = move || {
-        params
-            .read()
-            .get("summoner_slug")
-            .clone()
-            .unwrap_or_default()
-    };
+        let platform_type = move || {
+            params
+                .read()
+                .get("platform_route")
+                .clone()
+                .unwrap_or_default()
+        };
+        let summoner_slug = move || {
+            params
+                .read()
+                .get("summoner_slug")
+                .clone()
+                .unwrap_or_default()
+        };
 
-    // Update the summoner signal when resource changes
-    let summoner_resource = leptos::server::Resource::new_bitcode_blocking(
-        move || (platform_type(), summoner_slug()),
-        |(platform, summoner_slug)| async move {
-            get_summoner(PlatformRoute::try_from(platform.as_str()).unwrap_or_default(), summoner_slug).await
-        },
-    );
+        let summoner_resource = leptos::server::Resource::new_bitcode_blocking(
+            move || (platform_type(), summoner_slug()),
+            |(platform, summoner_slug)| async move {
+                get_summoner(
+                    PlatformRoute::try_from(platform.as_str()).unwrap_or_default(),
+                    summoner_slug,
+                )
+                .await
+            },
+        );
+        Self { summoner_resource }
+    }
 
-    let summoner_view = move || {
+    fn view(this: Self) -> AnyView {
+        let SummonerPageRoute { summoner_resource } = this;
+        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+        view!{
+          <Transition fallback=move || {
+            view! { <div class="text-center">Loading Summoner</div> }
+        }>{ move ||
         Suspend::new(async move {
             match summoner_resource.await {
                 Ok(summoner) => Either::Left({
@@ -192,12 +210,8 @@ pub fn SummonerPage() -> impl IntoView {
                 Err(_) => Either::Right(()),
             }
         })
-    };
-
-    view! {
-        <Transition fallback=move || {
-            view! { <div class="text-center">Loading Summoner</div> }
-        }>{summoner_view}</Transition>
+    }</Transition>
+    }.into_any()
     }
 }
 
@@ -254,7 +268,8 @@ pub fn SummonerInfo(
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug,  Encode,Decode)]
+
+#[derive(Clone, PartialEq, Eq, Debug, Encode, Decode)]
 pub struct Summoner {
     pub id: i32,
     pub game_name: String,

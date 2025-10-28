@@ -17,49 +17,57 @@ use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::components::A;
+use leptos_router::{lazy_route, LazyRoute};
 
-#[component]
-pub fn SummonerLivePage() -> impl IntoView {
-    let summoner = expect_context::<Summoner>();
-    let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
-    let sse_in_live_game = expect_context::<ReadSignal<SSEInLiveGame>>();
-    let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+pub struct SummonerLiveRoute{
+}
 
-    let (refresh_signal, set_refresh_signal) = signal(0);
-    let (pending, set_pending) = signal(false);
-    let live_game_resource = Resource::new_bitcode(
-        move || {
-            (
-                sse_in_live_game.get(),
-                sse_match_update_version.get().unwrap_or_default(),
-                refresh_signal.get(),
-                summoner.id,
-                summoner.platform.code(),
-                set_pending,
-            )
-        },
-        |(_, _, refresh_version, id, platform_type, set_pending_value)| async move {
-            let r = get_live_game(
-                id,
-                PlatformRoute::try_from(platform_type).unwrap(),
-                refresh_version > 0,
-            )
-            .await;
-            set_pending_value(false);
-            r
-        },
-    );
+#[lazy_route]
+impl LazyRoute for SummonerLiveRoute {fn data() -> Self {
+    Self{}
+}
 
-    meta_store.title().set(format!(
-        "{}#{} | Live Game | Ruche",
-        summoner.game_name.as_str(),
-        summoner.tag_line.as_str()
-    ));
-    meta_store.description().set(format!("Watch {}#{}'s live game now on Ruche. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
-    meta_store
-        .url()
-        .set(format!("{}/live", summoner.to_route_path()));
-    view! {
+    fn view(this: Self) -> AnyView {
+        let summoner = expect_context::<Summoner>();
+        let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
+        let sse_in_live_game = expect_context::<ReadSignal<SSEInLiveGame>>();
+        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+
+        let (refresh_signal, set_refresh_signal) = signal(0);
+        let (pending, set_pending) = signal(false);
+        let live_game_resource = Resource::new_bitcode(
+            move || {
+                (
+                    sse_in_live_game.get(),
+                    sse_match_update_version.get().unwrap_or_default(),
+                    refresh_signal.get(),
+                    summoner.id,
+                    summoner.platform.code(),
+                    set_pending,
+                )
+            },
+            |(_, _, refresh_version, id, platform_type, set_pending_value)| async move {
+                let r = get_live_game(
+                    id,
+                    PlatformRoute::try_from(platform_type).unwrap(),
+                    refresh_version > 0,
+                )
+                    .await;
+                set_pending_value(false);
+                r
+            },
+        );
+
+        meta_store.title().set(format!(
+            "{}#{} | Live Game | Ruche",
+            summoner.game_name.as_str(),
+            summoner.tag_line.as_str()
+        ));
+        meta_store.description().set(format!("Watch {}#{}'s live game now on Ruche. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner.game_name.as_str(), summoner.tag_line.as_str()));
+        meta_store
+            .url()
+            .set(format!("{}/live", summoner.to_route_path()));
+        view! {
         <div class="w-[768px] my-2">
             <div class="flex justify-start mb-2">
                 <button
@@ -119,8 +127,14 @@ pub fn SummonerLivePage() -> impl IntoView {
                 })}
             </Transition>
         </div>
+    }.into_any()
+
     }
+
 }
+
+
+
 
 #[component]
 pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> impl IntoView {
