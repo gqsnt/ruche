@@ -50,7 +50,11 @@ pub fn MatchDetails(
                 <button
                     on:click=move |_| set_match_detail_tab(MatchDetailTabs::Overview)
                     class=move || {
-                        if matches!(match_detail_tab() ,MatchDetailTabs::Overview) { "active-tab" } else { "default-tab" }
+                        if matches!(match_detail_tab(), MatchDetailTabs::Overview) {
+                            "active-tab"
+                        } else {
+                            "default-tab"
+                        }
                     }
                 >
                     Overview
@@ -58,7 +62,11 @@ pub fn MatchDetails(
                 <button
                     on:click=move |_| set_match_detail_tab(MatchDetailTabs::Team)
                     class=move || {
-                        if matches!(match_detail_tab() ,MatchDetailTabs::Team) { "active-tab" } else { "default-tab" }
+                        if matches!(match_detail_tab(), MatchDetailTabs::Team) {
+                            "active-tab"
+                        } else {
+                            "default-tab"
+                        }
                     }
                 >
                     Team
@@ -66,7 +74,11 @@ pub fn MatchDetails(
                 <button
                     on:click=move |_| set_match_detail_tab(MatchDetailTabs::Build)
                     class=move || {
-                        if matches!(match_detail_tab() ,MatchDetailTabs::Build) { "active-tab" } else { "default-tab" }
+                        if matches!(match_detail_tab(), MatchDetailTabs::Build) {
+                            "active-tab"
+                        } else {
+                            "default-tab"
+                        }
                     }
                 >
                     Build
@@ -75,36 +87,42 @@ pub fn MatchDetails(
             <div>
                 <Transition fallback=move || {
                     view! { <div class="text-center">Loading Match Details</div> }
-                }>{move ||
-                Suspend::new(async move {
-        match match_details.await {
-            Ok(match_details) => Either::Left({
-                let match_details = Arc::new(match_details);
+                }>
+                    {move || Suspend::new(async move {
+                        match match_details.await {
+                            Ok(match_details) => {
+                                Either::Left({
+                                    let match_details = Arc::new(match_details);
+                                    match &*match_detail_tab.read() {
+                                        MatchDetailTabs::Overview => {
+                                            EitherOf3::A(
 
-                match &*match_detail_tab.read() {
-                    MatchDetailTabs::Overview => EitherOf3::A(view! {
-                        <MatchDetailsOverview
-                            match_details=match_details
-                            in_encounter=in_encounter
-                        />
-                    }),
-                    MatchDetailTabs::Team => EitherOf3::B(view! {
-                        <MatchDetailsTeam
-                            _match_details=match_details
-                        />
-                    }),
-                    MatchDetailTabs::Build =>EitherOf3::C( view! {
-                        <MatchDetailsBuild
-                            match_details=match_details
-                        />
-                    }),
-                }
-            }),
-            Err(_) => Either::Right(()),
-        }
-    })
+                                                view! {
+                                                    <MatchDetailsOverview
+                                                        match_details=match_details
+                                                        in_encounter=in_encounter
+                                                    />
+                                                },
+                                            )
+                                        }
+                                        MatchDetailTabs::Team => {
+                                            EitherOf3::B(
+                                                view! { <MatchDetailsTeam _match_details=match_details /> },
+                                            )
+                                        }
+                                        MatchDetailTabs::Build => {
+                                            EitherOf3::C(
+                                                view! { <MatchDetailsBuild match_details=match_details /> },
+                                            )
+                                        }
+                                    }
+                                })
+                            }
+                            Err(_) => Either::Right(()),
+                        }
+                    })}
 
-        }</Transition>
+                </Transition>
             </div>
         </div>
     }

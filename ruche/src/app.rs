@@ -137,7 +137,7 @@ pub fn to_summoner_identifier_memo(
     Memo::new(move |_| {
         summoner_route_params.get()
             .ok()
-            .map(|sr| {
+            .and_then(|sr| {
                 match (sr.summoner_slug, sr.platform_route){
                     (Some(ss), Some(platform_route)) => {
                         let (game_name, tag_line)  = parse_summoner_slug(&ss);
@@ -152,7 +152,6 @@ pub fn to_summoner_identifier_memo(
                     _ => None
                 }
             })
-            .flatten()
             .unwrap()
     })
 }
@@ -182,7 +181,7 @@ pub fn to_encounter_identifier_memo(
     Memo::new(move |_| {
         summoner_route_params.get()
             .ok()
-            .map(|sr| {
+            .and_then(|sr| {
                 match (sr.encounter_slug, sr.encounter_platform_route){
                     (Some(ss), Some(platform_route)) => {
                         let (game_name, tag_line)  = parse_summoner_slug(&ss);
@@ -197,7 +196,6 @@ pub fn to_encounter_identifier_memo(
                     _ => None
                 }
             })
-            .flatten()
             .unwrap()
     })
 }

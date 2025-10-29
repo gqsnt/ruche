@@ -140,7 +140,7 @@ pub async fn update_pro_player(db: &PgPool, api: RiotApiState) -> AppResult<()> 
     // dl summoners
     let summoners_futures = not_found_accounts.into_iter().map(|pro_player_account| {
         let api = api.clone();
-        let pt = PlatformRoute::from(pro_player_account.platform).to_riven();
+        let pt = pro_player_account.platform.to_riven();
         async move {
             let response = api
                 .account_v1()

@@ -33,7 +33,9 @@ pub fn MatchFilters(hidden:Signal<bool>,children: Children) -> impl IntoView {
                             class="my-select"
                             id="champion_id"
                             prop:value=filters.champion_id().get()
-                            on:change=move |e| filters.champion_id().set(to_opt_u16(event_target_value(&e)))
+                            on:change=move |e| {
+                                filters.champion_id().set(to_opt_u16(event_target_value(&e)))
+                            }
                         >
                             <option value="">All</option>
                             <For each=|| CHAMPION_OPTIONS.iter().cloned() key=|(id, _)| *id let:opt>
@@ -52,7 +54,9 @@ pub fn MatchFilters(hidden:Signal<bool>,children: Children) -> impl IntoView {
                             name="queue_id"
                             id="queue_id"
                             prop:value=filters.queue_id().get()
-                            on:change=move |e| filters.queue_id().set(to_opt_u16(event_target_value(&e)))
+                            on:change=move |e| {
+                                filters.queue_id().set(to_opt_u16(event_target_value(&e)))
+                            }
                         >
                             <option value="">All</option>
                             <For each=|| Queue::options_basic() key=|(id, _)| *id let:opt>
@@ -71,8 +75,12 @@ pub fn MatchFilters(hidden:Signal<bool>,children: Children) -> impl IntoView {
                             type="date"
                             name="start_date"
                             id="start_date"
-                            prop:value=move || filters.start_date().get().map(|start_date|start_date.to_string())
-                            on:input=move |e| filters.start_date().set(to_opt_date(event_target_value(&e)))
+                            prop:value=move || {
+                                filters.start_date().get().map(|start_date| start_date.to_string())
+                            }
+                            on:input=move |e| {
+                                filters.start_date().set(to_opt_date(event_target_value(&e)))
+                            }
                         />
                     </div>
 
@@ -83,8 +91,12 @@ pub fn MatchFilters(hidden:Signal<bool>,children: Children) -> impl IntoView {
                             type="date"
                             name="end_date"
                             id="end_date"
-                            prop:value=move || filters.end_date().get().map(|end_date|end_date.to_string())
-                            on:input=move |e| filters.end_date().set(to_opt_date(event_target_value(&e)))
+                            prop:value=move || {
+                                filters.end_date().get().map(|end_date| end_date.to_string())
+                            }
+                            on:input=move |e| {
+                                filters.end_date().set(to_opt_date(event_target_value(&e)))
+                            }
                         />
                     </div>
                 </div>

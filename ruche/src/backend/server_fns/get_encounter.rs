@@ -54,8 +54,8 @@ pub mod ssr {
     ) -> AppResult<SummonerEncounterResult> {
         
         let (summoner, encounter) = tokio::join!(
-            resolve_summoner_by_s_identifier(&db, &summoner_identifier),
-            resolve_summoner_by_s_identifier(&db, &encounter_identifier),
+            resolve_summoner_by_s_identifier(db, &summoner_identifier),
+            resolve_summoner_by_s_identifier(db, &encounter_identifier),
         );
         
 

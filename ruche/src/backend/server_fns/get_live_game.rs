@@ -113,7 +113,7 @@ pub mod ssr {
     pub async fn find_and_insert_new_summoners(
         db: &PgPool,
         riot_api: &RiotApiState,
-        puuids_details: &Vec<(String, PlatformRoute, i64)>,
+        puuids_details: &[(String, PlatformRoute, i64)],
     ) -> AppResult<HashMap<String, SummonerFull>> {
         let futures = puuids_details
             .iter()
@@ -214,13 +214,13 @@ pub mod ssr {
                 perk_sub_style_id,
                 game_name: summoner_detail.game_name.clone(),
                 tag_line: summoner_detail.tag_line.clone(),
-                platform: summoner_detail.platform.into(),
+                platform: summoner_detail.platform,
                 summoner_level: summoner_detail.summoner_level as u16,
                 team_id: participant.team_id as u16,
                 ranked_stats,
                 champion_stats,
                 encounter_count: 0,
-                pro_player_slug: summoner_detail.pro_player_slug.clone(),
+                pro_player_slug: summoner_detail.pro_player_slug,
             })
         }
         (
@@ -248,7 +248,7 @@ pub mod ssr {
     )> {
         let participant_puuids_info = live_games
             .iter()
-            .map(|game_info| {
+            .flat_map(|game_info| {
                 game_info
                     .participants
                     .iter()
@@ -271,7 +271,6 @@ pub mod ssr {
                     })
                     .collect::<Vec<_>>()
             })
-            .flatten()
             .unique_by(|(puuid, _)| puuid.clone())
             .collect::<HashMap<String, (PlatformRoute, i64)>>();
         let participant_puuids = participant_puuids_info

@@ -61,7 +61,7 @@ pub mod ssr {
         let arc_id = S_IDENTIFIER_TO_ID
             .try_get_with(s_identifier.clone(), async move {
                 // 1) Fast path: DB lookup by slug
-                db_lookup_id_by_s_identifier(db, s_identifier).await?.map(|id|Arc::new(id))
+                db_lookup_id_by_s_identifier(db, s_identifier).await?.map(Arc::new)
                     .ok_or(AppError::CustomError("summoner not found".to_string()))
             })
             .await

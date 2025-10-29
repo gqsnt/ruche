@@ -47,7 +47,12 @@ pub fn MatchDetailsOverview(
                     (t, w, f, s)
                 };
                 view! {
-                    <MatchDetailsOverviewTable won=won team_id=team_id participants=first in_encounter   />
+                    <MatchDetailsOverviewTable
+                        won=won
+                        team_id=team_id
+                        participants=first
+                        in_encounter
+                    />
                     <MatchDetailsOverviewTable
                         won=!won
                         team_id=if team_id == 100 { 200 } else { 100 }
@@ -131,22 +136,10 @@ pub fn MatchDetailsOverviewTable(
 
                         view! {
                             <tr
-                                class=(
-                                    "bg-red-900",
-                                    !won && !participant.is_self_summoner,
-                                )
-                                class=(
-                                    "bg-blue-900",
-                                    won && !participant.is_self_summoner,
-                                )
-                                class=(
-                                    "bg-red-800",
-                                    !won && participant.is_self_summoner,
-                                )
-                                class=(
-                                    "bg-blue-800",
-                                    won && participant.is_self_summoner,
-                                )
+                                class=("bg-red-900", !won && !participant.is_self_summoner)
+                                class=("bg-blue-900", won && !participant.is_self_summoner)
+                                class=("bg-red-800", !won && participant.is_self_summoner)
+                                class=("bg-blue-800", won && participant.is_self_summoner)
                             >
                                 <td class="pl-2.5 py-1">
                                     <ImgChampion
@@ -193,7 +186,12 @@ pub fn MatchDetailsOverviewTable(
                                             .then(|| {
                                                 view! {
                                                     <A
-                                                        href=summoner_encounter_url(participant.platform.code(),&participant.game_name, &participant.tag_line,in_encounter)
+                                                        href=summoner_encounter_url(
+                                                            participant.platform.code(),
+                                                            &participant.game_name,
+                                                            &participant.tag_line,
+                                                            in_encounter,
+                                                        )
                                                         attr:class="text-xs bg-green-800 rounded px-0.5 text-center"
                                                     >
                                                         {participant.encounter_count}

@@ -162,7 +162,6 @@ async fn update_matches_task(
         });
     let trashed_matches:Vec<_> = trashed_matches
         .into_iter()
-        .map(|(match_, match_not_updated)| (match_,match_not_updated))
         .collect();
     let match_datas = match_datas
         .into_iter()

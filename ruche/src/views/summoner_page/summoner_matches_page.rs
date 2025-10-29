@@ -239,7 +239,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                                             participant.platform.code(),
                                                             participant.game_name.as_str(),
                                                             participant.tag_line.as_str(),
-                                                    false
+                                                            false,
                                                         )
                                                         attr:class="text-xs bg-green-800 rounded px-0.5 text-center"
                                                     >

@@ -100,7 +100,7 @@ impl LazyRoute for SummonerPageRoute {
                                         }
                                     });
                                     #[cfg(not(feature = "ssr"))]
-                                     {
+                                    {
                                         use futures::StreamExt;
                                         use send_wrapper::SendWrapper;
                                         use crate::utils::SSEEvent;
@@ -136,8 +136,12 @@ impl LazyRoute for SummonerPageRoute {
                                                 }),
                                         );
                                         on_cleanup(move || source.take().close());
-                                        let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
-                                        let sse_in_live = expect_context::<RwSignal<SSEInLiveGame>>();
+                                        let sse_match_update_version = expect_context::<
+                                            RwSignal<Option<SSEMatchUpdateVersion>>,
+                                        >();
+                                        let sse_in_live = expect_context::<
+                                            RwSignal<SSEInLiveGame>,
+                                        >();
                                         Effect::new(move |_| {
                                             let event = s.get();
                                             match event {

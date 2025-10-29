@@ -160,7 +160,7 @@ pub mod ssr {
 
             (
                 entry.value().subscribe(),
-                in_live_game.then(|| SSEEvent::LiveGame(Some(1))),
+                in_live_game.then_some( SSEEvent::LiveGame(Some(1))),
             )
         };
         let mut summoner_matches_update_count = 0u16;

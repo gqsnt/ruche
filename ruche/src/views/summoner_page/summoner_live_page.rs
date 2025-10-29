@@ -97,7 +97,7 @@ impl LazyRoute for SummonerLiveRoute {
                     fallback=move || {
                         view! { <div class="text-center">Not In Live Game</div> }
                     }
-                    set_pending= pending.write_only()
+                    set_pending=pending.write_only()
                 >
                     {move || Suspend::new(async move {
                         match live_game_resource.await {
@@ -256,7 +256,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                                             participant.platform.code(),
                                                             participant.game_name.as_str(),
                                                             participant.tag_line.as_str(),
-                                                            false
+                                                            false,
                                                         )
                                                         attr:class="text-xs bg-green-800 rounded px-0.5 text-center"
                                                     >

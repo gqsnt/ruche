@@ -68,7 +68,7 @@ impl Task for HandleLiveGameCacheTask {
                     let match_id = cache
                         .summoner_id_to_game
                         .get(&summoner_id)
-                        .map(|entry| entry.value().clone());
+                        .map(|entry| *entry.value());
                     (match_id, summoner_id)
                 })
                 .partition(|(match_id, _)| match_id.is_none());
@@ -87,7 +87,7 @@ impl Task for HandleLiveGameCacheTask {
                 let previous_match_id = cache
                     .summoner_id_to_game
                     .get(&summoner_id)
-                    .map(|entry| entry.value().clone());
+                    .map(|entry| *entry.value());
                 match (previous_match_id, match_id) {
                     (Some(previous_match_id), Some(match_id)) => {
                         if previous_match_id != match_id {
@@ -182,14 +182,14 @@ pub async fn fetch_all_game_info(
     HashMap<i32, Option<RiotMatchId>>,
     HashMap<RiotMatchId, CurrentGameInfo>,
 ) {
-    let mut inner_none_ids = none_ids.clone();
+    let mut inner_none_ids = none_ids.to_owned();
     let ig_first_ids = ig_ids
         .iter()
-        .map(|(match_id, ids)| (*ids.iter().next().unwrap(), match_id.clone()))
+        .map(|(match_id, ids)| (*ids.iter().next().unwrap(), *match_id))
         .collect::<HashMap<i32, RiotMatchId>>();
     let mut summoner_match_id = HashMap::new();
     let mut match_id_live_game = HashMap::new();
-    let mut first_ids = ig_first_ids.keys().map(|a| *a).collect::<Vec<_>>();
+    let mut first_ids = ig_first_ids.keys().copied().collect::<Vec<_>>();
 
     let puuids = fetch_summoner_puuids_by_ids(db, &first_ids)
         .await
@@ -205,8 +205,8 @@ pub async fn fetch_all_game_info(
                 .map(|id| {
                     let (puuid, platform) = puuids.get(id).unwrap();
                     let riot_api = riot_api.clone();
-                    let puuid_ = puuid.clone();
-                    let platform_ = platform.clone();
+                    let puuid_ = *puuid;
+                    let platform_ = *platform;
                     async move {
                         (
                             *id,
@@ -257,7 +257,7 @@ pub async fn fetch_all_game_info(
         .unwrap();
     let puuid_to_ids = puuids
         .iter()
-        .map(|(id, (puuid, _))| (puuid.clone(), *id))
+        .map(|(id, (puuid, _))| (*puuid, *id))
         .collect::<HashMap<Puuid, i32>>();
 
     for (match_id, live_game) in &match_id_live_game {
@@ -282,8 +282,8 @@ pub async fn fetch_all_game_info(
                 .map(|id| {
                     let (puuid, platform) = puuids.get(id).unwrap();
                     let riot_api = riot_api.clone();
-                    let puuid_ = puuid.clone();
-                    let platform_ = platform.clone();
+                    let puuid_ = *puuid;
+                    let platform_ = *platform;
                     async move {
                         (
                             *id,

@@ -104,8 +104,6 @@ impl LazyRoute for SummonerEncountersRoute {
                             pending.set(true);
                             match_filters.page().set(None);
                             search_summoner.set(to_opt_string(local_search_summoner.get()));
-
-
                         }
                     >
                         <PendingLoading pending>Search</PendingLoading>
@@ -163,7 +161,12 @@ impl LazyRoute for SummonerEncountersRoute {
                                                                             encounter.with_win_count,
                                                                             encounter.with_match_count,
                                                                         );
-                                                                        let summoner_encounter_url = summoner_encounter_url(encounter.platform.code(), &encounter.game_name, &encounter.tag_line, false);
+                                                                        let summoner_encounter_url = summoner_encounter_url(
+                                                                            encounter.platform.code(),
+                                                                            &encounter.game_name,
+                                                                            &encounter.tag_line,
+                                                                            false,
+                                                                        );
 
                                                                         view! {
                                                                             <tr>

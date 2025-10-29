@@ -101,7 +101,6 @@ impl LazyRoute for SummonerEncounterRoute {
                     {move || Suspend::new(async move {
                         match encounter_resource.await {
                             Ok(encounter_result) => {
-                                let total_pages = encounter_result.total_pages;
                                 if encounter_result.matches.is_empty() {
                                     Ok(
                                         Either::Left(
