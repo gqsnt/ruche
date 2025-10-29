@@ -1,90 +1,93 @@
-use bitcode::{Decode, Encode};
-use crate::app::{MetaStore, MetaStoreStoreFields};
+use crate::app::{to_summoner_identifier_memo, SummonerRouteParams};
 use crate::backend::server_fns::get_encounters::get_encounters;
-use crate::utils::{
-    calculate_loss_and_win_rate, format_float_to_2digits, summoner_encounter_url, summoner_url,
-};
+use crate::utils::{calculate_loss_and_win_rate, format_float_to_2digits, summoner_encounter_url, summoner_url};
 use crate::views::components::pagination::Pagination;
-use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner};
-use crate::views::{
-    get_default_navigation_option, BackEndMatchFiltersSearch, ImgSrc, PendingLoading,
-};
+use crate::views::summoner_page::SSEMatchUpdateVersion;
+use crate::views::{BackEndMatchFiltersSearch, BackEndMatchFiltersSearchStoreFields, ImgSrc, PendingLoading};
+use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use common::consts::profile_icon::ProfileIcon;
 use common::consts::HasStaticSrcAsset;
 use leptos::either::Either;
+use leptos::prelude::codee::binary::BitcodeCodec;
 use leptos::prelude::*;
-use leptos::{ view};
+use leptos::view;
 use leptos_router::components::A;
-use leptos_router::hooks::query_signal_with_options;
+use leptos_router::hooks::use_params;
 use leptos_router::{lazy_route, LazyRoute};
+use reactive_stores::Store;
 
-pub struct SummonerEncountersRoute{
+pub struct SummonerEncountersRoute {
+    encounters_resource: Resource<Result<SummonerEncountersResult, ServerFnError>, BitcodeCodec>,
+    pending: RwSignal<bool>,
+    search_summoner: RwSignal<Option<String>>,
+    match_filters: Store<BackEndMatchFiltersSearch>,
 }
 
 #[lazy_route]
-impl LazyRoute for SummonerEncountersRoute {fn data() -> Self {
-    Self{}
-}
+impl LazyRoute for SummonerEncountersRoute {
+    fn data() -> Self {
+        let summoner_route_params = use_params::<SummonerRouteParams>();
+        let summoner_identifier_memo = to_summoner_identifier_memo(
+            summoner_route_params
+        );
+        let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
+        let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
 
-    fn view(_this: Self) -> AnyView {
-        let summoner = expect_context::<ReadSignal<Summoner>>();
-        let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
-        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-        let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
-
-        let (page_number, set_page_number) =
-            query_signal_with_options::<u16>("page", get_default_navigation_option());
-        let (search_summoner, set_search_summoner) =
-            query_signal_with_options::<String>("q", get_default_navigation_option());
-        let (search_summoner_signal, set_search_summoner_signal) =
-            signal(search_summoner.get_untracked().unwrap_or_default());
-
-        let (pending, set_pending) = signal(false);
-
-        let (reset_page_number, set_reset_page_number) = signal(false);
-        Effect::new(move |_| {
-            if reset_page_number() {
-                set_page_number(None);
-                set_reset_page_number(false);
-            }
-        });
-
+        let search_summoner = RwSignal::new(None::<String>);
+        let pending = RwSignal::new(false);
         let encounters_resource = Resource::new_bitcode(
             move || {
                 (
                     sse_match_update_version.get().unwrap_or_default(),
                     search_summoner.get(),
-                    match_filters_updated.get(),
-                    summoner.read().id,
-                    page_number(),
-                    set_pending,
+                    match_filters.get(),
+                    summoner_identifier_memo.get(),
+                    pending,
                 )
             },
-            |(_, search_summoner, filters, summoner_id, page_number, set_pending_value)| async move {
+            |(_, search_summoner, filters, summoner_identifier, pending)| async move {
                 //println!("{:?} {:?} {:?}", filters, summoner.unwrap(), page_number);
                 let r = get_encounters(
-                    summoner_id,
-                    page_number.unwrap_or(1),
+                    summoner_identifier,
                     search_summoner,
                     Some(filters),
                 )
                     .await;
-                set_pending_value(false);
+                pending.set(false);
                 r
             },
         );
+        Self {
+            encounters_resource,
+            pending,
+            search_summoner,
+            match_filters,
+        }
+    }
 
-        meta_store.title().set(format!(
-            "{}#{} | Encounters | Ruche",
-            summoner.read().game_name.as_str(),
-            summoner.read().tag_line.as_str()
-        ));
-        meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
-        meta_store
-            .url()
-            .set(format!("{}/encounters", summoner.read().to_route_path()));
+    fn view(this: Self) -> AnyView {
+        let SummonerEncountersRoute { encounters_resource, pending, search_summoner, match_filters } = this;
 
+
+        let to_opt_string = |v: String| if v.is_empty() { None } else { Some(v) };
+
+        let (local_search_summoner, set_local_search_summoner) = signal("".to_string());
+
+
+        //         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+        //
+        //         batch(|| {
+        //         meta_store.title().set(format!(
+        //             "{}#{} | Encounters | Ruche",
+        //             summoner.read().game_name.as_str(),
+        //             summoner.read().tag_line.as_str()
+        //         ));
+        //         meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
+        //         meta_store
+        //             .url()
+        //             .set(format!("{}/encounters", summoner.read().to_route_path()));
+        // });
         view! {
             <div>
                 <div class="my-card flex space-x-2 my-2 w-fit">
@@ -92,14 +95,17 @@ impl LazyRoute for SummonerEncountersRoute {fn data() -> Self {
                         type="text"
                         class="my-input"
                         placeholder="Search for a summoner"
-                        prop:value=move || search_summoner_signal.get()
-                        on:input=move |e| { set_search_summoner_signal(event_target_value(&e)) }
+                        prop:value=move || local_search_summoner()
+                        on:input=move |e| { set_local_search_summoner(event_target_value(&e)) }
                     />
                     <button
                         class="my-button flex items-center"
                         on:click=move |_| {
-                            set_pending(true);
-                            set_search_summoner(Some(search_summoner_signal.get()));
+                            pending.set(true);
+                            match_filters.page().set(None);
+                            search_summoner.set(to_opt_string(local_search_summoner.get()));
+
+
                         }
                     >
                         <PendingLoading pending>Search</PendingLoading>
@@ -107,8 +113,9 @@ impl LazyRoute for SummonerEncountersRoute {fn data() -> Self {
                     <button
                         class="my-button bg-red-700 hover:bg-red-800 text-gray-200"
                         on:click=move |_| {
-                            set_search_summoner(None);
-                            set_search_summoner_signal(String::new());
+                            search_summoner.set(None);
+                            set_local_search_summoner(String::new());
+                            match_filters.page().set(None);
                         }
                     >
                         Clear
@@ -122,10 +129,6 @@ impl LazyRoute for SummonerEncountersRoute {fn data() -> Self {
                             match encounters_resource.await {
                                 Ok(encounters_result) => {
                                     let total_pages = encounters_result.total_pages;
-                                    let current_page = page_number().unwrap_or(1);
-                                    if total_pages == 0 || total_pages < current_page {
-                                        set_reset_page_number(true);
-                                    }
                                     if !encounters_result.encounters.is_empty() {
                                         Ok(
                                             Either::Left(
@@ -160,14 +163,7 @@ impl LazyRoute for SummonerEncountersRoute {fn data() -> Self {
                                                                             encounter.with_win_count,
                                                                             encounter.with_match_count,
                                                                         );
-                                                                        let summoner_encounter_url = summoner_encounter_url(
-                                                                            summoner.read().platform.code(),
-                                                                            summoner.read().game_name.as_str(),
-                                                                            summoner.read().tag_line.as_str(),
-                                                                            encounter.platform.code(),
-                                                                            encounter.game_name.to_string().as_str(),
-                                                                            encounter.tag_line.as_str(),
-                                                                        );
+                                                                        let summoner_encounter_url = summoner_encounter_url(encounter.platform.code(), &encounter.game_name, &encounter.tag_line, false);
 
                                                                         view! {
                                                                             <tr>
@@ -253,20 +249,17 @@ impl LazyRoute for SummonerEncountersRoute {fn data() -> Self {
 
             </div>
         }.into_any()
-
     }
-
 }
 
 
-
-#[derive(Clone, Default, Encode,Decode)]
+#[derive(Clone, Default, Encode, Decode)]
 pub struct SummonerEncountersResult {
     pub total_pages: u16,
     pub encounters: Vec<SummonerEncountersSummoner>,
 }
 
-#[derive(Clone,  Encode,Decode)]
+#[derive(Clone, Encode, Decode)]
 pub struct SummonerEncountersSummoner {
     pub id: i32,
     pub match_count: u16,

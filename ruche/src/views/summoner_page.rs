@@ -1,10 +1,10 @@
-use crate::app::{MetaStore, MetaStoreStoreFields, PlatformRouteParams, SummonerSlugParams};
+use crate::app::{to_summoner_identifier_memo, MetaStore, MetaStoreStoreFields, SummonerIdentifier, SummonerRouteParams};
 use crate::backend::server_fns::get_summoner::get_summoner;
 use crate::backend::server_fns::update_summoner::UpdateSummoner;
-use crate::utils::{summoner_url, ProPlayerSlug, SSEEvent};
+use crate::utils::{summoner_url, ProPlayerSlug};
 use crate::views::components::match_filters::MatchFilters;
 use crate::views::summoner_page::summoner_nav::SummonerNav;
-use crate::views::{ImgSrc, PendingLoading};
+use crate::views::{ImgSrc, PendingLoading, ProPlayerSlugView};
 use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use common::consts::profile_icon::ProfileIcon;
@@ -19,6 +19,7 @@ use leptos::{component, view, IntoView};
 use leptos_router::components::{Outlet, A};
 use leptos_router::hooks::{use_location, use_params};
 use leptos_router::{lazy_route, LazyRoute};
+use crate::views::summoner_page::summoner_search_page::SummonerSearch;
 
 pub mod match_details;
 pub mod summoner_champions_page;
@@ -31,197 +32,180 @@ pub mod summoner_search_page;
 
 pub struct SummonerPageRoute {
     pub summoner_resource: Resource<Result<Summoner, ServerFnError>, BitcodeCodec>,
+    pub summoner_identifier_memo: Memo<SummonerIdentifier>
 }
 
 #[lazy_route]
 impl LazyRoute for SummonerPageRoute {
     fn data() -> Self {
-        let platform_route_params = use_params::<PlatformRouteParams>();
-        let summoner_slug_params = use_params::<SummonerSlugParams>();
-        let platform_type = move ||
-            platform_route_params
-                .read()
-                .as_ref()
-                .ok()
-                .and_then(|p|p.platform_route)
-                .unwrap_or_default();
-        let summoner_slug = move ||
-            summoner_slug_params
-                .read()
-                .as_ref()
-                .ok()
-                .and_then(|s|s.summoner_slug.clone())
-                .unwrap_or_default();
+        let summoner_route_params = use_params::<SummonerRouteParams>();
+        let summoner_identifier_memo = to_summoner_identifier_memo(
+            summoner_route_params
+        );
 
         let summoner_resource = leptos::server::Resource::new_bitcode_blocking(
-            move || (platform_type(), summoner_slug()),
-            |(platform, summoner_slug)| async move {
+            move || summoner_identifier_memo.get(),
+            |summoner_identifier| async move {
                 get_summoner(
-                    platform,
-                    summoner_slug,
+                    summoner_identifier
                 )
                 .await
             },
         );
-        Self { summoner_resource }
+        Self { summoner_resource, summoner_identifier_memo }
     }
 
     fn view(this: Self) -> AnyView {
-        let SummonerPageRoute { summoner_resource } = this;
+        let SummonerPageRoute { summoner_resource,summoner_identifier_memo } = this;
+        provide_context(summoner_identifier_memo);
         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-
+        let location = use_location();
         view! {
-            <Transition fallback=move || {
-                view! { <div class="text-center">Loading Summoner</div> }
-            }>
-                {move || Suspend::new(async move {
-                    match summoner_resource.await {
-                        Ok(summoner) => {
-                            Either::Left({
-                                let (level_signal, set_level) = signal(summoner.summoner_level);
-                                let (profile_icon_signal, set_profile_icon) = signal(
-                                    summoner.profile_icon_id,
-                                );
-                                let (sse_match_update_version, set_sse_match_update_version) = signal(
-                                    None::<SSEMatchUpdateVersion>,
-                                );
-                                let (sse_in_live_game, set_sse_in_live_game) = signal(
-                                    SSEInLiveGame::default(),
-                                );
-                                provide_context(sse_match_update_version);
-                                provide_context(sse_in_live_game);
-                                let (summoner, _) = signal(summoner);
-                                provide_context(summoner);
-                                let update_summoner_action = ServerAction::<UpdateSummoner>::new();
-                                let (pending, set_pending) = signal(false);
-                                Effect::new(move |_| {
-                                    let _ = update_summoner_action.version().get();
-                                    set_pending(false);
-                                    if let Some(Ok(Some((level, profile_icon_id)))) = update_summoner_action
-                                        .value()
-                                        .get()
-                                    {
-                                        if level != level_signal() {
-                                            set_level(level);
+            <div class="my-0 mx-auto max-w-5xl text-center">
+                <A href="/" attr:class="p-6 text-4xl my-4">
+                    "Welcome to Ruche"
+                </A>
+                <SummonerSearch is_summoner_page=true />
+
+                <Transition fallback=move || {
+                    view! { <div class="text-center">Loading Summoner</div> }
+                }>
+                    {move || Suspend::new(async move {
+                        match summoner_resource.await {
+                            Ok(summoner) => {
+                                Either::Left({
+                                    let (level_signal, set_level) = signal(summoner.summoner_level);
+                                    let (profile_icon_signal, set_profile_icon) = signal(
+                                        summoner.profile_icon_id,
+                                    );
+                                    let (summoner, _) = signal(summoner);
+                                    provide_context(summoner);
+                                    let update_summoner_action = ServerAction::<
+                                        UpdateSummoner,
+                                    >::new();
+                                    let pending = RwSignal::new(false);
+                                    Effect::new(move |_| {
+                                        let _ = update_summoner_action.version().get();
+                                        pending.set(false);
+                                        if let Some(Ok(Some((level, profile_icon_id)))) = update_summoner_action
+                                            .value()
+                                            .get()
+                                        {
+                                            if level != level_signal() {
+                                                set_level(level);
+                                            }
+                                            if profile_icon_id != profile_icon_signal() {
+                                                set_profile_icon(profile_icon_id);
+                                            }
                                         }
-                                        if profile_icon_id != profile_icon_signal() {
-                                            set_profile_icon(profile_icon_id);
-                                        }
-                                    }
-                                });
-                                #[cfg(not(feature = "ssr"))]
-                                let sse_event_signal = {
-                                    use futures::StreamExt;
-                                    use send_wrapper::SendWrapper;
-                                    let mut source = SendWrapper::new(
-                                        gloo_net::eventsource::futures::EventSource::new(
-                                                format!(
-                                                    "/sse/match_updated/{}/{}",
-                                                    summoner.read().platform,
-                                                    summoner.read().id,
+                                    });
+                                    #[cfg(not(feature = "ssr"))]
+                                     {
+                                        use futures::StreamExt;
+                                        use send_wrapper::SendWrapper;
+                                        use crate::utils::SSEEvent;
+                                        let mut source = SendWrapper::new(
+                                            gloo_net::eventsource::futures::EventSource::new(
+                                                    format!(
+                                                        "/sse/match_updated/{}/{}",
+                                                        summoner.read().platform,
+                                                        summoner.read().id,
+                                                    )
+                                                        .as_str(),
                                                 )
-                                                    .as_str(),
-                                            )
-                                            .expect("couldn't connect to SSE stream"),
-                                    );
-                                    let s = ReadSignal::from_stream_unsync(
-                                        source
-                                            .subscribe("message")
-                                            .expect("couldn't subscribe to SSE stream")
-                                            .filter_map(|value| async move {
-                                                value
-                                                    .map(|(_, message_event)| {
-                                                        SSEEvent::from_string(
-                                                                message_event
-                                                                    .data()
-                                                                    .as_string()
-                                                                    .expect("failed to parse sse string")
-                                                                    .as_str(),
-                                                            )
-                                                            .ok()
-                                                    })
-                                                    .ok()
-                                                    .flatten()
-                                            }),
-                                    );
-                                    on_cleanup(move || source.take().close());
-                                    s
-                                };
-                                #[cfg(feature = "ssr")]
-                                let (sse_event_signal, _) = signal(None::<SSEEvent>);
-                                Effect::new(move |_| {
-                                    let event = sse_event_signal.get();
-                                    match event {
-                                        Some(SSEEvent::SummonerMatches(version)) => {
-                                            set_sse_match_update_version(
-                                                Some(SSEMatchUpdateVersion(version)),
-                                            );
-                                        }
-                                        Some(SSEEvent::LiveGame(version)) => {
-                                            set_sse_in_live_game(SSEInLiveGame(version));
-                                        }
-                                        _ => {}
+                                                .expect("couldn't connect to SSE stream"),
+                                        );
+                                        let s = ReadSignal::from_stream_unsync(
+                                            source
+                                                .subscribe("message")
+                                                .expect("couldn't subscribe to SSE stream")
+                                                .filter_map(|value| async move {
+                                                    value
+                                                        .map(|(_, message_event)| {
+                                                            SSEEvent::from_string(
+                                                                    message_event
+                                                                        .data()
+                                                                        .as_string()
+                                                                        .expect("failed to parse sse string")
+                                                                        .as_str(),
+                                                                )
+                                                                .ok()
+                                                        })
+                                                        .ok()
+                                                        .flatten()
+                                                }),
+                                        );
+                                        on_cleanup(move || source.take().close());
+                                        let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
+                                        let sse_in_live = expect_context::<RwSignal<SSEInLiveGame>>();
+                                        Effect::new(move |_| {
+                                            let event = s.get();
+                                            match event {
+                                                Some(SSEEvent::SummonerMatches(version)) => {
+                                                    sse_match_update_version
+                                                        .set(Some(SSEMatchUpdateVersion(version)));
+                                                }
+                                                Some(SSEEvent::LiveGame(version)) => {
+                                                    sse_in_live.set(SSEInLiveGame(version));
+                                                }
+                                                _ => {}
+                                            }
+                                        });
                                     }
-                                });
-                                meta_store
-                                    .image()
-                                    .set(
-                                        ProfileIcon(summoner.read().profile_icon_id).get_static_asset_url(),
-                                    );
+                                    meta_store
+                                        .image()
+                                        .set(
+                                            ProfileIcon(summoner.read().profile_icon_id)
+                                                .get_static_asset_url(),
+                                        );
 
-                                view! {
-                                    <div class="flex justify-center">
-                                        <div class="flex w-[768px] my-2 space-x-2">
-                                            <SummonerInfo
-                                                game_name=summoner.read().game_name.clone()
-                                                tag_line=summoner.read().tag_line.clone()
-                                                pro_slug=summoner.read().pro_slug
-                                                platform=summoner.read().platform
-                                                level_signal=level_signal
-                                                profile_icon_signal=profile_icon_signal
-                                            />
-                                            <div class="h-fit">
+                                    view! {
+                                        <div class="flex justify-center">
+                                            <div class="flex w-[768px] my-2 space-x-2">
+                                                <SummonerInfo
+                                                    game_name=summoner.read().game_name.clone()
+                                                    tag_line=summoner.read().tag_line.clone()
+                                                    pro_slug=summoner.read().pro_slug
+                                                    platform=summoner.read().platform
+                                                    level_signal=level_signal
+                                                    profile_icon_signal=profile_icon_signal
+                                                />
+                                                <div class="h-fit">
 
-                                                <button
-                                                    class="my-button flex items-center"
-                                                    on:click=move |e| {
-                                                        e.prevent_default();
-                                                        set_pending(true);
-                                                        update_summoner_action
-                                                            .dispatch(UpdateSummoner {
-                                                                summoner_id: summoner.read().id,
-                                                                game_name: summoner.read().game_name.clone(),
-                                                                tag_line: summoner.read().tag_line.clone(),
-                                                                platform_route: summoner.read().platform,
-                                                            });
-                                                    }
-                                                >
-                                                    <PendingLoading pending>Update</PendingLoading>
-                                                </button>
+                                                    <button
+                                                        class="my-button flex items-center"
+                                                        on:click=move |e| {
+                                                            e.prevent_default();
+                                                            pending.set(true);
+                                                            update_summoner_action
+                                                                .dispatch(UpdateSummoner {
+                                                                    summoner_id: summoner.read().id,
+                                                                    game_name: summoner.read().game_name.clone(),
+                                                                    tag_line: summoner.read().tag_line.clone(),
+                                                                    platform_route: summoner.read().platform,
+                                                                });
+                                                        }
+                                                    >
+                                                        <PendingLoading pending>Update</PendingLoading>
+                                                    </button>
 
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    <SummonerNav />
-                                    {
-                                        let location = use_location();
-
-                                        view! {
-                                            <MatchFilters hidden=Signal::derive(move || {
-                                                location.pathname.get().ends_with("/live")
-                                            })>
-                                                <Outlet />
-                                            </MatchFilters>
-                                        }
                                     }
-                                }
-                            })
+                                })
+                            }
+                            Err(_) => Either::Right(()),
                         }
-                        Err(_) => Either::Right(()),
-                    }
-                })}
-            </Transition>
+                    })}
+                </Transition>
+                <SummonerNav />
+                <MatchFilters hidden=Signal::derive(move || {
+                    location.pathname.get().ends_with("/live")
+                })>
+                    <Outlet />
+                </MatchFilters>
+            </div>
         }.into_any()
     }
 }
@@ -261,18 +245,7 @@ pub fn SummonerInfo(
                 )>{game_name.clone()}#{tag_line.clone()}</A>
                 <div class="flex ">
                     <span>lvl. {move || level_signal()}</span>
-                    {pro_slug
-                        .map(|pps| {
-                            view! {
-                                <A
-                                    target="_blank"
-                                    href=format!("https://lolpros.gg/player/{}", pps.as_ref())
-                                    attr:class=" bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
-                                >
-                                    PRO
-                                </A>
-                            }
-                        })}
+                    <ProPlayerSlugView pro_player_slug=pro_slug small=false />
                 </div>
             </div>
         </div>

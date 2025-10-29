@@ -1,5 +1,7 @@
+use leptos::prelude::{IntoAnyAttribute, RwSignal};
+use leptos::prelude::AddAnyAttr;
 use leptos::prelude::ElementChild;
-use leptos::prelude::{Children, ClassAttribute, Get, ReadSignal, Show};
+use leptos::prelude::{Children, ClassAttribute, Get, Show};
 use leptos::{component, view, IntoView, Params};
 use leptos_router::params::Params;
 use common::consts::champion::Champion;
@@ -12,9 +14,13 @@ use leptos::prelude::CustomAttribute;
 use leptos_router::NavigateOptions;
 use std::fmt::{Debug, Formatter};
 use bitcode::{Decode, Encode};
+use leptos_router::components::A;
+use reactive_stores::Store as StoreObj;
+use reactive_stores_macro::Store;
+use crate::utils::ProPlayerSlug;
 
 pub mod components;
-pub mod platform_type_page;
+pub mod summoner_search_page;
 pub mod summoner_page;
 
 pub fn get_default_navigation_option() -> NavigateOptions {
@@ -145,7 +151,7 @@ pub fn ImgChampion(
 }
 
 #[component]
-pub fn PendingLoading(pending: ReadSignal<bool>, children: Children) -> impl IntoView {
+pub fn PendingLoading(pending: RwSignal<bool>, children: Children) -> impl IntoView {
     view! {
         <Show when=move || pending.get()>
             <svg
@@ -169,6 +175,30 @@ pub fn PendingLoading(pending: ReadSignal<bool>, children: Children) -> impl Int
     }
 }
 
+#[component]
+pub fn ProPlayerSlugView(pro_player_slug: Option<ProPlayerSlug>, small:bool) -> impl IntoView{
+    if let Some(pro_player_slug) = pro_player_slug{
+        let attr_class=
+            if small{
+                "text-xs bg-purple-800 rounded px-0.5 text-center"
+            }else{
+                "bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
+            };
+        Either::Left(view! {
+            <A
+                target="_blank"
+                attr:rel="noopener noreferrer"
+                href=format!("https://lolpros.gg/player/{}", pro_player_slug.as_ref())
+                attr:class=attr_class
+            >
+                pro
+            </A>
+        })
+    }else{
+        Either::Right(())
+    }
+}
+
 #[derive(Params, PartialEq, Clone, Default)]
 pub struct MatchFiltersSearch {
     pub queue_id: Option<u8>,
@@ -177,13 +207,16 @@ pub struct MatchFiltersSearch {
     pub end_date: Option<String>,
 }
 
-#[derive(Debug, Encode, Decode, Default, PartialEq, Clone, Copy)]
+#[derive(Debug, Encode, Decode, Default, PartialEq, Clone, Copy, Store)]
 pub struct BackEndMatchFiltersSearch {
     pub start_date: Option<CompactDate>,
     pub end_date: Option<CompactDate>,
     pub champion_id: Option<u16>,
     pub queue_id: Option<u16>,
+    pub page:Option<u16>
 }
+
+
 
 impl BackEndMatchFiltersSearch {
     #[cfg(feature = "ssr")]
@@ -195,19 +228,24 @@ impl BackEndMatchFiltersSearch {
     pub fn end_date_to_naive(&self) -> Option<chrono::NaiveDateTime> {
         crate::backend::ssr::parse_date(self.end_date.map(|x| x.to_string()))
     }
-    pub fn from_signals(
-        queue_id: Option<String>,
-        champion_id: Option<String>,
-        start_date: Option<String>,
-        end_date: Option<String>,
-    ) -> Self {
-        Self {
+
+    pub fn from_options(
+        queue_id:Option<String>,
+        champion_id:Option<String>,
+        start_date:Option<String>,
+        end_date:Option<String>,
+        page:Option<u16>
+    )-> StoreObj<Self>{
+        StoreObj::new(Self {
             queue_id: queue_id.map(|x| x.parse::<u16>().unwrap_or_default()),
             champion_id: champion_id.map(|x| x.parse::<u16>().unwrap_or_default()),
             start_date: parse_date(start_date),
             end_date: parse_date(end_date),
-        }
+            page,
+        })
     }
+
+
 }
 pub fn parse_date(date: Option<String>) -> Option<CompactDate> {
     date.and_then(|date| {

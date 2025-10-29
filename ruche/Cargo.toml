@@ -29,6 +29,7 @@ flate2 = { version = "1.0.35", optional = true }
 async-stream = {version = "0.3.6", optional = true}
 serde_json = {workspace = true, optional = true}
 axum-server = {version = "0.7.1", optional = true, features = ["tls-rustls"]}
+moka = {version = "0.12.11", features = ["future"], optional = true}
 
 rustls = { version = "0.23.16" , features = ["ring"], optional = true}
 bitcode = {workspace = true}
@@ -53,6 +54,8 @@ quinn = { version = "0.11.7", optional = true }
 h3-util = {version = "0.0.4" ,optional = true, default-features = false, features = ["quinn"]}
 rcgen = { version = "0.14.5", optional = true}
 axum-h3 = {version = "0.0.4", optional = true}
+once_cell = {version = "1.21.3", optional = true}
+
 
 [features]
 hydrate = ["leptos/hydrate"]
@@ -88,6 +91,8 @@ ssr = [
     "dep:flate2",
     "common/ssr",
     "dep:h3-util",
+    "dep:moka",
+    "dep:once_cell"
 ]
 
 

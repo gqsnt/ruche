@@ -7,6 +7,8 @@ use leptos::server_fn::codec::Bitcode;
 
 #[cfg(feature = "ssr")]
 use update_match_timeline::update_match_timeline;
+use crate::app::SummonerIdentifier;
+
 
 #[cfg(feature = "ssr")]
 pub mod update_match_timeline;
@@ -14,12 +16,19 @@ pub mod update_match_timeline;
 #[server(input=Bitcode,output=Bitcode)]
 pub async fn get_match_details(
     match_id: i32,
-    summoner_id: Option<i32>,
+    summoner_identifier: Option<SummonerIdentifier>,
     platform: PlatformRoute,
     riot_match_id: RiotMatchId,
 ) -> Result<Vec<LolMatchParticipantDetails>, ServerFnError> {
+    use crate::backend::server_fns::get_summoner::ssr::resolve_id_by_s_identifier;
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
+
+    let summoner_id =if let Some(s_id) = summoner_identifier{
+        resolve_id_by_s_identifier(&db, &s_id).await.ok()
+    }else{
+        None
+    };
 
     let (details, match_timelines) = tokio::join!(
         ssr::get_match_participants_details(&db, match_id, summoner_id),
@@ -140,6 +149,7 @@ pub mod ssr {
                 id: lmp.id,
                 lol_match_id: lmp.lol_match_id,
                 summoner_id: lmp.summoner_id,
+                is_self_summoner: summoner_id.is_some() && summoner_id.unwrap() == lmp.summoner_id,
                 game_name: lmp.game_name,
                 tag_line: lmp.tag_line,
                 platform: lmp.platform.into(),

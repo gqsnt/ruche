@@ -1,12 +1,12 @@
 use bitcode::{Decode, Encode};
-use crate::app::{MetaStore, MetaStoreStoreFields};
+use crate::app::{to_summoner_identifier_memo, SummonerRouteParams};
 use crate::backend::server_fns::get_live_game::get_live_game;
 use crate::utils::{
     calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits,
     summoner_encounter_url, summoner_url, ProPlayerSlug, RiotMatchId,
 };
-use crate::views::summoner_page::{SSEInLiveGame, SSEMatchUpdateVersion, Summoner};
-use crate::views::{ImgChampion, ImgPerk, ImgSummonerSpell, PendingLoading};
+use crate::views::summoner_page::{SSEInLiveGame, SSEMatchUpdateVersion};
+use crate::views::{ImgChampion, ImgPerk, ImgSummonerSpell, PendingLoading, ProPlayerSlugView};
 use common::consts::champion::Champion;
 use common::consts::map::Map;
 use common::consts::perk::Perk;
@@ -16,65 +16,78 @@ use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use leptos::prelude::codee::binary::BitcodeCodec;
 use leptos_router::components::A;
 use leptos_router::{lazy_route, LazyRoute};
+use leptos_router::hooks::use_params;
 
 pub struct SummonerLiveRoute{
+    live_game_resource: Resource<Result<Option<LiveGame>, ServerFnError>, BitcodeCodec>,
+    refresh_signal:RwSignal<i32>,
+    pending:RwSignal<bool>,
 }
 
 #[lazy_route]
-impl LazyRoute for SummonerLiveRoute {fn data() -> Self {
-    Self{}
-}
-
-    fn view(_this: Self) -> AnyView {
-        let summoner = expect_context::<ReadSignal<Summoner>>();
-        let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
-        let sse_in_live_game = expect_context::<ReadSignal<SSEInLiveGame>>();
-        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-
-        let (refresh_signal, set_refresh_signal) = signal(0);
-        let (pending, set_pending) = signal(false);
+impl LazyRoute for SummonerLiveRoute {
+    fn data() -> Self {
+        let summoner_route_params = use_params::<SummonerRouteParams>();
+        let summoner_identifier_memo = to_summoner_identifier_memo(
+            summoner_route_params
+        );
+        let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
+        let sse_in_live_game = expect_context::<RwSignal<SSEInLiveGame>>();
+        let pending = RwSignal::new(false);
+        let refresh_signal = RwSignal::new(0);
         let live_game_resource = Resource::new_bitcode(
             move || {
                 (
                     sse_in_live_game.get(),
                     sse_match_update_version.get().unwrap_or_default(),
                     refresh_signal.get(),
-                    summoner.read().id,
-                    summoner.read().platform.code(),
-                    set_pending,
+                    summoner_identifier_memo.get(),
+                    pending.write_only(),
                 )
             },
-            |(_, _, refresh_version, id, platform_type, set_pending_value)| async move {
+            |(_, _, refresh_version, summoner_identifier, set_pending_value)| async move {
                 let r = get_live_game(
-                    id,
-                    PlatformRoute::try_from(platform_type).unwrap(),
+                    summoner_identifier,
                     refresh_version > 0,
                 )
                     .await;
-                set_pending_value(false);
+                set_pending_value.set(false);
                 r
             },
         );
+    Self{
+        live_game_resource,
+        refresh_signal,
+        pending,
+    }
+}
 
-        meta_store.title().set(format!(
-            "{}#{} | Live Game | Ruche",
-            summoner.read().game_name.as_str(),
-            summoner.read().tag_line.as_str()
-        ));
-        meta_store.description().set(format!("Watch {}#{}'s live game now on Ruche. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
-        meta_store
-            .url()
-            .set(format!("{}/live", summoner.read().to_route_path()));
+    fn view(this: Self) -> AnyView {
+        let SummonerLiveRoute{live_game_resource, refresh_signal, pending} = this;
+        
+        //        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+// batch(|| {
+//         meta_store.title().set(format!(
+//             "{}#{} | Live Game | Ruche",
+//             summoner.read().game_name.as_str(),
+//             summoner.read().tag_line.as_str()
+//         ));
+//         meta_store.description().set(format!("Watch {}#{}'s live game now on Ruche. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
+//         meta_store
+//             .url()
+//             .set(format!("{}/live", summoner.read().to_route_path()));
+//         });
         view! {
             <div class="w-[768px] my-2">
                 <div class="flex justify-start mb-2">
                     <button
                         class="my-button flex items-center"
                         on:click=move |_| {
-                            set_pending(true);
-                            set_refresh_signal(refresh_signal() + 1);
+                            pending.set(true);
+                            refresh_signal.set(refresh_signal.get() + 1);
                         }
                     >
                         <PendingLoading pending>Refresh</PendingLoading>
@@ -84,7 +97,7 @@ impl LazyRoute for SummonerLiveRoute {fn data() -> Self {
                     fallback=move || {
                         view! { <div class="text-center">Not In Live Game</div> }
                     }
-                    set_pending
+                    set_pending= pending.write_only()
                 >
                     {move || Suspend::new(async move {
                         match live_game_resource.await {
@@ -142,7 +155,6 @@ impl LazyRoute for SummonerLiveRoute {fn data() -> Self {
 
 #[component]
 pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> impl IntoView {
-    let summoner = expect_context::<ReadSignal<Summoner>>();
     let is_blue_team = || team_id == 100;
 
     view! {
@@ -241,12 +253,10 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                                 view! {
                                                     <A
                                                         href=summoner_encounter_url(
-                                                            summoner.read().platform.code(),
-                                                            summoner.read().game_name.as_str(),
-                                                            summoner.read().tag_line.as_str(),
                                                             participant.platform.code(),
                                                             participant.game_name.as_str(),
                                                             participant.tag_line.as_str(),
+                                                            false
                                                         )
                                                         attr:class="text-xs bg-green-800 rounded px-0.5 text-center"
                                                     >
@@ -254,26 +264,15 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
                                                     </A>
                                                 }
                                             })}
-                                        {participant
-                                            .pro_player_slug
-                                            .map(|pps| {
-                                                view! {
-                                                    <A
-                                                        target="_blank"
-                                                        href=format!("https://lolpros.gg/player/{}", pps.as_ref())
-                                                        attr:class="text-xs bg-purple-800 rounded px-0.5 text-center"
-                                                    >
-                                                        pro
-                                                    </A>
-                                                }
-                                            })}
-                                        <A
-                                            href=summoner_url(
-                                                participant.platform.code(),
-                                                participant.game_name.as_str(),
-                                                participant.tag_line.as_str(),
-                                            )
-                                        >
+                                        <ProPlayerSlugView
+                                            pro_player_slug=participant.pro_player_slug
+                                            small=true
+                                        />
+                                        <A href=summoner_url(
+                                            participant.platform.code(),
+                                            participant.game_name.as_str(),
+                                            participant.tag_line.as_str(),
+                                        )>
                                             {format!(
                                                 "{}#{}",
                                                 participant.game_name.as_str(),

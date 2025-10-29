@@ -6,16 +6,15 @@ use leptos::ev::SubmitEvent;
 use leptos::html::{Input, Select};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos_router::hooks::{use_params, use_query};
-use crate::app::{PlatformRouteParams, SummonerSearchQuery};
+use leptos_router::hooks::{ use_query};
+use crate::app::{SummonerSearchQuery};
 
 #[component]
-pub fn SummonerSearchPage(is_summoner_page: Memo<bool>) -> impl IntoView {
+pub fn SummonerSearch(is_summoner_page: bool) -> impl IntoView {
     let search_summoner = ServerAction::<SearchSummoner>::new();
-    let (pending, set_pending) = signal(false);
+    let pending = RwSignal::new(false);
 
     let summoner_search_query = use_query::<SummonerSearchQuery>();
-    let platform_route_param = use_params::<PlatformRouteParams>();
     let game_name = move || summoner_search_query
         .read()
         .as_ref()
@@ -28,7 +27,7 @@ pub fn SummonerSearchPage(is_summoner_page: Memo<bool>) -> impl IntoView {
         .ok()
         .and_then(|q| q.tag_line.clone())
         .unwrap_or_default();
-    let platform_type = move ||platform_route_param
+    let platform_type = move ||summoner_search_query
         .read()
         .as_ref()
         .ok()
@@ -42,7 +41,7 @@ pub fn SummonerSearchPage(is_summoner_page: Memo<bool>) -> impl IntoView {
 
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
-        set_pending(true);
+        pending.set(true);
         search_summoner.dispatch(SearchSummoner {
             platform_route: PlatformRoute::try_from(
                 platform_type_node
@@ -58,29 +57,27 @@ pub fn SummonerSearchPage(is_summoner_page: Memo<bool>) -> impl IntoView {
 
     Effect::new(move |_| {
         let _ = search_summoner.version().get();
-        set_pending(false);
+        pending.set(false);
     });
 
     view! {
         <div class=" w-full flex my-2 justify-center">
             <form
                 on:submit=on_submit
-                class=("justify-center", move || !is_summoner_page())
+                class=("justify-center", !is_summoner_page)
                 class="flex space-x-2 items-center w-[768px]"
             >
-                {move || {
-                    is_summoner_page()
-                        .then(|| {
-                            view! {
-                                <img
-                                    src="/assets/favicon.ico"
-                                    height="38"
-                                    class="mr-2 h-[38px] w-[38px]"
-                                    alt="logo"
-                                />
-                            }
-                        })
-                }}
+                {is_summoner_page
+                    .then(|| {
+                        view! {
+                            <img
+                                src="/assets/favicon.ico"
+                                height="38"
+                                class="mr-2 h-[38px] w-[38px]"
+                                alt="logo"
+                            />
+                        }
+                    })}
                 <input
                     class="my-input"
                     type="text"

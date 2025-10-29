@@ -1,5 +1,6 @@
 use std::fmt::Formatter;
 use bitcode::{Decode, Encode};
+use common::consts::item::Item;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Encode, Decode)]
 pub struct FixedSizeString<const N: usize>([u8; N]);
@@ -137,7 +138,7 @@ pub fn parse_summoner_slug(slug: &str) -> (String, String) {
 
 pub fn summoner_url(platform: &str, game_name: &str, tag_line: &str) -> String {
     format!(
-        "/platform/{}/summoners/{}",
+        "/summoners/{}/{}/matches",
         platform,
         summoner_to_slug(game_name, tag_line)
     )
@@ -145,18 +146,17 @@ pub fn summoner_url(platform: &str, game_name: &str, tag_line: &str) -> String {
 
 pub fn summoner_not_found_url(platform: &str, game_name: &str, tag_line: &str) -> String {
     format!(
-        "/platform/{}?game_name={}&tag_line={}",
+        "/?platform_route={}&game_name={}&tag_line={}",
         platform, game_name, tag_line
     )
 }
 
 pub fn summoner_encounter_url(
-    self_platform: &str, self_game: &str, self_tag: &str,
     encounter_platform: &str, encounter_game: &str, encounter_tag: &str,
+    in_encounter:bool,
 ) -> String {
-    let base = summoner_url(self_platform, self_game, self_tag);
-    let slug = format!("{}-{}", encounter_game, encounter_tag); // keep your existing slugging logic
-    format!("{}/encounter/{}/{}", base, encounter_platform, slug)
+    let pre = in_encounter.then(||"../../".to_string());
+    format!("{}../encounter/{}/{}",pre.unwrap_or_default(), encounter_platform, summoner_to_slug(encounter_game, encounter_tag))
 }
 
 pub fn round_to_2_decimal_places(value: f64) -> f64 {
@@ -202,4 +202,10 @@ impl std::fmt::Display for SSEEvent {
             SSEEvent::SummonerMatches(value) => write!(f, "1:{}", value),
         }
     }
+}
+
+
+#[inline]
+pub fn items_from_slice(ids: &[u32]) -> Vec<Item> {
+    ids.iter().filter_map(|&i| Item::try_from(i).ok()).collect()
 }

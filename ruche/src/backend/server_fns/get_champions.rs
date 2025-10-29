@@ -3,15 +3,16 @@ use crate::views::BackEndMatchFiltersSearch;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Bitcode;
+use crate::app::SummonerIdentifier;
 
 #[server(input=Bitcode,output=Bitcode)]
 pub async fn get_champions(
-    summoner_id: i32,
+    summoner_identifier: SummonerIdentifier,
     filters: Option<BackEndMatchFiltersSearch>,
 ) -> Result<Vec<ChampionStats>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
-
+    let summoner_id = crate::backend::server_fns::get_summoner::ssr::resolve_id_by_s_identifier(&db, &summoner_identifier).await?;
     ssr::inner_get_champions(&db, summoner_id, filters.unwrap_or_default())
         .await
         .map_err(|e| e.to_server_fn_error())

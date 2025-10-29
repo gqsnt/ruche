@@ -5,25 +5,32 @@ use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Bitcode;
 
+
+
 #[server(input = Bitcode)]
 pub async fn search_summoner(
     platform_route: PlatformRoute,
     game_name: String,
     tag_line: String,
 ) -> Result<(), ServerFnError> {
+    use crate::app::SummonerIdentifier;
+    use crate::backend::server_fns::get_summoner::ssr::{find_summoner_by_id, resolve_id_by_s_identifier};
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
-
+        
+    let identifier = SummonerIdentifier{
+        game_name,
+        tag_line,
+        platform_route,
+    };
+    
     let riven_pr = platform_route.to_riven();
-    match ssr::find_summoner_by_game_name_tag_line(
-        &db,
-        &platform_route,
-        game_name.as_ref(),
-        tag_line.as_ref(),
-    )
-    .await
+    
+    match resolve_id_by_s_identifier(&db,&identifier).await
     {
-        Ok(summoner) => {
+        Ok(id) => {
+            
+            let summoner = find_summoner_by_id(&db, id).await?;
             leptos_axum::redirect(
                 summoner_url(
                     platform_route.code(),
@@ -36,16 +43,16 @@ pub async fn search_summoner(
         Err(_) => {
             let not_found_url = summoner_not_found_url(
                 platform_route.code(),
-                game_name.as_ref(),
-                tag_line.as_ref(),
+                identifier.game_name.as_ref(),
+                identifier.tag_line.as_ref(),
             );
             let riot_api = state.riot_api.clone();
             match riot_api
                 .account_v1()
                 .get_by_riot_id(
                     riven_pr.to_regional(),
-                    game_name.as_ref(),
-                    tag_line.as_ref(),
+                    identifier.game_name.as_ref(),
+                    identifier.tag_line.as_ref(),
                 )
                 .await
             {

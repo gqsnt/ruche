@@ -1,10 +1,10 @@
+use std::sync::Arc;
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
-use leptos::prelude::*;
 use leptos::{component, IntoView};
+
 
 #[component]
 pub fn MatchDetailsTeam(
-    _summoner_id: i32,
-    _match_details: ReadSignal<Vec<LolMatchParticipantDetails>>,
+    _match_details: Arc<Vec<LolMatchParticipantDetails>>,
 ) -> impl IntoView {
 }

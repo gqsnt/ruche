@@ -50,14 +50,12 @@ pub async fn update_match_timeline(
 
     for frame in timeline.info.frames.iter() {
         for event in &frame.events {
+            let Some(participant_id) = event.participant_id.filter(|&id| id > 0) else { continue; };
             let event_type = EventType::from(event.r#type.as_str());
             match event_type {
                 EventType::SkillLevelUp => {
                     let skill_slot = event.skill_slot.ok_or_else(|| {
                         AppError::CustomError("Missing skill_slot in SKILL_LEVEL_UP event".into())
-                    })?;
-                    let participant_id = event.participant_id.ok_or_else(|| {
-                        AppError::CustomError("Missing participant_id in event".into())
                     })?;
                     let participant =
                         match lol_match_timelines
@@ -83,13 +81,14 @@ pub async fn update_match_timeline(
                     })? as u32;
                     push_item_event_into_participant_id(
                         &mut lol_match_timelines,
-                        event.participant_id.unwrap(),
+                        participant_id,
                         event.timestamp,
                         ItemEvent {
                             item_id,
                             event_type: ItemEventType::Purchased,
                         },
                     );
+
                 }
                 EventType::ItemSold => {
                     let item_id = event.item_id.ok_or_else(|| {
@@ -97,7 +96,7 @@ pub async fn update_match_timeline(
                     })? as u32;
                     push_item_event_into_participant_id(
                         &mut lol_match_timelines,
-                        event.participant_id.unwrap(),
+                        participant_id,
                         event.timestamp,
                         ItemEvent {
                             item_id,
@@ -106,9 +105,6 @@ pub async fn update_match_timeline(
                     );
                 }
                 EventType::ItemUndo => {
-                    let participant_id = event.participant_id.ok_or_else(|| {
-                        AppError::CustomError("Missing participant_id in event".into())
-                    })?;
                     let participant =
                         match lol_match_timelines
                             .get_mut(&participant_id)

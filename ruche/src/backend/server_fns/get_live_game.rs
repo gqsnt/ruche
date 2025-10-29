@@ -3,24 +3,24 @@ use crate::backend::server_fns::get_encounter::ssr::find_summoner_puuid_by_id;
 #[cfg(feature = "ssr")]
 use crate::utils::Puuid;
 use crate::views::summoner_page::summoner_live_page::LiveGame;
-use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Bitcode;
+use crate::app::SummonerIdentifier;
 
 #[server(input=Bitcode,output=Bitcode)]
 pub async fn get_live_game(
-    summoner_id: i32,
-    platform_route: PlatformRoute,
+    summoner_identifier: SummonerIdentifier,
     force_refresh: bool,
 ) -> Result<Option<LiveGame>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let live_cache = state.live_game_cache.clone();
     let db = state.db.clone();
+    let summoner_id = crate::backend::server_fns::get_summoner::ssr::resolve_id_by_s_identifier(&db, &summoner_identifier).await?;
     if force_refresh || live_cache.get_game_data(summoner_id).is_none() {
         let riot_api = state.riot_api.clone();
         let puuid = Puuid::new(find_summoner_puuid_by_id(&db, summoner_id).await?.as_str());
-        let live_game = ssr::get_live_game_data(&db, &riot_api, puuid, platform_route).await?;
+        let live_game = ssr::get_live_game_data(&db, &riot_api, puuid, summoner_identifier.platform_route).await?;
         Ok(match live_game {
             Some((summoner_ids, live_data)) => {
                 live_cache.set_game_data(live_data.game_id, summoner_ids, live_data.clone());

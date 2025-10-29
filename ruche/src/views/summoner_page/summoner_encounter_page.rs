@@ -1,16 +1,12 @@
 use bitcode::{Decode, Encode};
 use crate::backend::server_fns::get_encounter::get_encounter;
-use crate::utils::{
-    calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits, DurationSince,
-    RiotMatchId,
-};
+use crate::utils::{calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits, items_from_slice, DurationSince, RiotMatchId};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::summoner_matches_page::{MatchInfoCard, MatchSummonerCard};
 use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner, SummonerInfo};
-use crate::views::{get_default_navigation_option, BackEndMatchFiltersSearch};
+use crate::views::{ BackEndMatchFiltersSearch};
 use common::consts::champion::Champion;
-use common::consts::item::Item;
 use common::consts::perk::Perk;
 use common::consts::platform_route::PlatformRoute;
 use common::consts::queue::Queue;
@@ -18,96 +14,82 @@ use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, IntoView};
-use leptos_router::hooks::{query_signal_with_options, use_params};
+use leptos::prelude::codee::binary::BitcodeCodec;
+use leptos_router::hooks::{ use_params};
 use leptos_router::{lazy_route, LazyRoute};
-use crate::app::{EncounterPlatformRouteParams, EncounterSlugParams};
+use reactive_stores::Store;
+use crate::app::{to_encounter_identifier_memo, to_summoner_identifier_memo, EncounterRouteParams, SummonerRouteParams};
 
 pub struct SummonerEncounterRoute{
+    encounter_resource: Resource<Result<SummonerEncounterResult, ServerFnError>, BitcodeCodec>,
+    is_with:RwSignal<bool>,
 }
 
 #[lazy_route]
-impl LazyRoute for SummonerEncounterRoute {fn data() -> Self {
-    Self{}
-}
+impl LazyRoute for SummonerEncounterRoute {
+    fn data() -> Self {
+        let is_with = RwSignal::new(true);
+        let summoner_route_params = use_params::<SummonerRouteParams>();
+        let summoner_identifier_memo = to_summoner_identifier_memo(
+            summoner_route_params
+        );
 
-    fn view(_this: Self) -> AnyView {
+        let encounter_route_params = use_params::<EncounterRouteParams>();
+        let encounter_identifier_memo = to_encounter_identifier_memo(
+            encounter_route_params
+        );
 
-        let summoner = expect_context::<ReadSignal<Summoner>>();
-        let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
-        let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
-        let (is_with, set_is_with) = signal(true);
-
-        let encounter_slug_params = use_params::<EncounterSlugParams>();
-        let encounter_platform_route_params = use_params::<EncounterPlatformRouteParams>();
-
-        let encounter_slug = move ||
-            encounter_slug_params
-                .read()
-                .as_ref()
-                .ok()
-                .and_then(|p|p.encounter_slug.clone())
-                .unwrap_or_default();
-        let encounter_platform = move ||
-            encounter_platform_route_params
-                .read()
-                .as_ref()
-                .ok()
-                .and_then(|p|p.encounter_platform_route)
-                .unwrap_or_default();
-
-        let (page_number, set_page_number) =
-            query_signal_with_options::<u16>("page", get_default_navigation_option());
+        let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
+        let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
 
         let encounter_resource = leptos::server::Resource::new_bitcode(
             move || {
                 (
                     sse_match_update_version.get().unwrap_or_default(),
-                    summoner.read().id,
-                    match_filters_updated.get(),
-                    page_number(),
-                    encounter_slug(),
-                    encounter_platform(),
+                    summoner_identifier_memo.get(),
+                    encounter_identifier_memo.get(),
+                    match_filters.get(),
                     is_with.get(),
                 )
             },
-            |(_, summoner_id, filters, page_number, encounter_slug, encounter_platform, is_with)| async move {
+            |(_, summoner, encounter, filters,  is_with)| async move {
                 //println!("{:?} {:?} {:?}", filters, summoner, page_number);
                 get_encounter(
-                    summoner_id,
-                    page_number.unwrap_or(1),
+                    summoner,
+                    encounter,
                     is_with,
-                    encounter_platform,
-                    encounter_slug,
                     Some(filters),
                 )
                     .await
             },
         );
+        Self{
+            encounter_resource,
+            is_with
+        }
+}
 
-        let (reset_page_number, set_reset_page_number) = signal::<bool>(false);
-        Effect::new(move |_| {
-            if reset_page_number() {
-                set_page_number(None);
-                set_reset_page_number(false);
-            }
-        });
+    fn view(this: Self) -> AnyView {
+        let SummonerEncounterRoute{ encounter_resource, is_with } = this;
+
+
 
         view! {
             <div class="flex my-card justify-center space-x-2 my-2">
                 <button
 
                     class="w-[22rem] "
-                    class=("active-tab", move || is_with())
-                    class=("default-tab", move || !is_with())
-                    on:click=move |_| set_is_with(true)
+                    class=("active-tab", move || is_with.get())
+                    class=("default-tab", move || !is_with.get())
+                    on:click=move |_| is_with.set(true)
                 >
                     With
                 </button>
                 <button
                     class="w-[22rem] "
-                    class=("active-tab", move || !is_with())
-                    class=("default-tab", move || is_with())
-                    on:click=move |_| set_is_with(false)
+                    class=("active-tab", move || !is_with.get())
+                    class=("default-tab", move || is_with.get())
+                    on:click=move |_| is_with.set(false)
                 >
                     VS
                 </button>
@@ -120,10 +102,6 @@ impl LazyRoute for SummonerEncounterRoute {fn data() -> Self {
                         match encounter_resource.await {
                             Ok(encounter_result) => {
                                 let total_pages = encounter_result.total_pages;
-                                let current_page = page_number().unwrap_or(1);
-                                if total_pages == 0 || total_pages < current_page {
-                                    set_reset_page_number(true);
-                                }
                                 if encounter_result.matches.is_empty() {
                                     Ok(
                                         Either::Left(
@@ -191,30 +169,15 @@ impl LazyRoute for SummonerEncounterRoute {fn data() -> Self {
 #[component]
 pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl IntoView {
     let (show_details, set_show_details) = signal(false);
-    let self_items = [
-        match_.participant.item0_id,
-        match_.participant.item1_id,
-        match_.participant.item2_id,
-        match_.participant.item3_id,
-        match_.participant.item4_id,
-        match_.participant.item5_id,
-        match_.participant.item6_id,
-    ]
-    .iter()
-    .filter_map(|i| Item::try_from(*i).ok())
-    .collect::<Vec<_>>();
-    let encounter_items = [
-        match_.encounter.item0_id,
-        match_.encounter.item1_id,
-        match_.encounter.item2_id,
-        match_.encounter.item3_id,
-        match_.encounter.item4_id,
-        match_.encounter.item5_id,
-        match_.encounter.item6_id,
-    ]
-    .iter()
-    .filter_map(|i| Item::try_from(*i).ok())
-    .collect::<Vec<_>>();
+
+    let self_items = items_from_slice(&[
+        match_.participant.item0_id, match_.participant.item1_id, match_.participant.item2_id,
+        match_.participant.item3_id, match_.participant.item4_id, match_.participant.item5_id, match_.participant.item6_id,
+    ]);
+    let encounter_items = items_from_slice(&[
+        match_.encounter.item0_id, match_.encounter.item1_id, match_.encounter.item2_id,
+        match_.encounter.item3_id, match_.encounter.item4_id, match_.encounter.item5_id, match_.encounter.item6_id,
+    ]);
     let (champion, encounter_champion) = (
         Champion::try_from(match_.participant.champion_id).unwrap_or_default(),
         Champion::try_from(match_.encounter.champion_id).unwrap_or_default(),
@@ -313,6 +276,7 @@ pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl I
                     match_id=match_.match_id
                     riot_match_id=match_.riot_match_id
                     platform=match_.platform
+                    in_encounter=true
                 />
             </Show>
         </div>

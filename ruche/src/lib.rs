@@ -39,6 +39,8 @@ pub mod ssr {
     use rustls::ServerConfig;
     use std::net::{IpAddr, Ipv6Addr};
     use std::time::Duration;
+    use moka::future::Cache;
+    use once_cell::sync::Lazy;
     use tokio::sync::broadcast::Sender;
     use tokio::time;
     use tokio_stream::wrappers::BroadcastStream;
@@ -46,9 +48,17 @@ pub mod ssr {
     use tower::ServiceExt;
     use tower_http::services::ServeFile;
     use tower_http::set_header::SetResponseHeaderLayer;
+    use crate::app::SummonerIdentifier;
 
     pub type RiotApiState = Arc<RiotApi>;
     pub type SubscriberMap = DashMap<i32, Sender<SSEEvent>>;
+
+    pub static S_IDENTIFIER_TO_ID: Lazy<Cache<SummonerIdentifier, Arc<i32>>> = Lazy::new(|| {
+        Cache::builder()
+            .max_capacity(200_000)
+            .time_to_idle(std::time::Duration::from_mins(30))
+            .build()
+    });
 
     #[derive(Clone, axum::extract::FromRef)]
     pub struct AppState {

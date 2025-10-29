@@ -3,20 +3,20 @@ use crate::views::BackEndMatchFiltersSearch;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Bitcode;
+use crate::app::SummonerIdentifier;
+
 #[server(input=Bitcode,output=Bitcode)]
 pub async fn get_encounters(
-    summoner_id: i32,
-    page_number: u16,
+    summoner_identifier: SummonerIdentifier,
     search_summoner: Option<String>,
     filters: Option<BackEndMatchFiltersSearch>,
 ) -> Result<SummonerEncountersResult, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
-
+    let summoner_id = crate::backend::server_fns::get_summoner::ssr::resolve_id_by_s_identifier(&db, &summoner_identifier).await?;
     ssr::inner_get_encounters(
         &db,
         summoner_id,
-        page_number as i32,
         filters.unwrap_or_default(),
         search_summoner.map(|r| r.to_string()),
     )
@@ -38,11 +38,12 @@ pub mod ssr {
     pub async fn inner_get_encounters(
         db: &PgPool,
         summoner_id: i32,
-        page: i32,
         filters: BackEndMatchFiltersSearch,
         search_summoner: Option<String>,
     ) -> AppResult<SummonerEncountersResult> {
         let per_page = 40;
+        let page= filters.page.unwrap_or(1) as i32;
+        
         let offset = (page.max(1) - 1) * per_page;
 
         let start_date = filters.start_date_to_naive();

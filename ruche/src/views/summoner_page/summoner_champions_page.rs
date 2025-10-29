@@ -1,47 +1,58 @@
 use bitcode::{Decode, Encode};
-use crate::app::{MetaStore, MetaStoreStoreFields};
+use crate::app::{to_summoner_identifier_memo,  SummonerRouteParams};
 use crate::backend::server_fns::get_champions::get_champions;
 use crate::utils::{calculate_and_format_kda, format_float_to_2digits, format_with_spaces};
-use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner};
+use crate::views::summoner_page::{SSEMatchUpdateVersion};
 use crate::views::{BackEndMatchFiltersSearch, ImgChampion};
 use common::consts::champion::Champion;
 use itertools::Itertools;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use leptos::prelude::codee::binary::BitcodeCodec;
 use leptos_router::{lazy_route, LazyRoute};
+use leptos_router::hooks::use_params;
+use reactive_stores::Store;
 
 pub struct SummonerChampionsRoute{
+    champions_resource: Resource<Result<Vec<ChampionStats>, ServerFnError>, BitcodeCodec>
 }
 
 #[lazy_route]
-impl LazyRoute for SummonerChampionsRoute {fn data() -> Self {
-    Self{}
+impl LazyRoute for SummonerChampionsRoute {
+    fn data() -> Self {
+        let summoner_route_params = use_params::<SummonerRouteParams>();
+        let summoner_identifier_memo = to_summoner_identifier_memo(
+            summoner_route_params
+        );
+        let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
+        let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
+        let champions_resource = Resource::new_bitcode(
+            move || {
+                (
+                    sse_match_update_version.get().unwrap_or_default(),
+                    match_filters.get(),
+                    summoner_identifier_memo.get()
+                )
+            },
+            |(_, filters, summoner_identifier)| async move {
+                //println!("{:?} {:?} {:?}", filters, summoner, page_number);
+                get_champions(summoner_identifier, Some(filters)).await
+            },
+        );
+    Self{
+        champions_resource
+    }
 }
 
-    fn view(_this: Self) -> AnyView {
-        let summoner = expect_context::<ReadSignal<Summoner>>();
-        let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
-        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-        let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
+    fn view(this: Self) -> AnyView {
+        let SummonerChampionsRoute{champions_resource} = this;
+
         let (table_sort, set_table_sort) =
             signal::<(TableSortType, bool)>((TableSortType::default(), true));
         let current_sort_type = move || table_sort.get().0;
         let current_sort_normal_flow = move || table_sort.get().1;
 
-        let champions_resource = Resource::new_bitcode(
-            move || {
-                (
-                    sse_match_update_version.get().unwrap_or_default(),
-                    match_filters_updated.get(),
-                    summoner.read().id,
-                )
-            },
-            |(_, filters, summoner_id)| async move {
-                //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-                get_champions(summoner_id, Some(filters)).await
-            },
-        );
 
         let toggle_sort = move |sort_type: TableSortType| {
             let (sort, is_desc) = table_sort.get();
@@ -51,16 +62,19 @@ impl LazyRoute for SummonerChampionsRoute {fn data() -> Self {
                 set_table_sort((sort_type, true));
             }
         };
-
-        meta_store.title().set(format!(
-            "{}#{} | Champions | Ruche",
-            summoner.read().game_name.as_str(),
-            summoner.read().tag_line.as_str()
-        ));
-        meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
-        meta_store
-            .url()
-            .set(format!("{}/champions", summoner.read().to_route_path()));
+        
+        //        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+// batch(|| {
+//         meta_store.title().set(format!(
+//             "{}#{} | Champions | Ruche",
+//             summoner.read().game_name.as_str(),
+//             summoner.read().tag_line.as_str()
+//         ));
+//         meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
+//         meta_store
+//             .url()
+//             .set(format!("{}/champions", summoner.read().to_route_path()));
+//         });
         view! {
             <div>
                 <Transition fallback=move || {

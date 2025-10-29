@@ -3,14 +3,16 @@ use crate::utils::{ProPlayerSlug, RiotMatchId};
 use crate::views::summoner_page::match_details::match_details_build::MatchDetailsBuild;
 use crate::views::summoner_page::match_details::match_details_overview::MatchDetailsOverview;
 use crate::views::summoner_page::match_details::match_details_team::MatchDetailsTeam;
-use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner};
+use crate::views::summoner_page::{SSEMatchUpdateVersion};
 use common::consts::platform_route::PlatformRoute;
-use leptos::either::Either;
+use leptos::either::{Either, EitherOf3};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use std::fmt::Formatter;
+use std::sync::Arc;
 use bitcode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
+use crate::app::SummonerIdentifier;
 
 pub mod match_details_build;
 pub mod match_details_overview;
@@ -21,9 +23,10 @@ pub fn MatchDetails(
     match_id: i32,
     riot_match_id: RiotMatchId,
     platform: PlatformRoute,
+    in_encounter:bool,
 ) -> impl IntoView {
-    let summoner = expect_context::<ReadSignal<Summoner>>();
-    let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
+    let summoner_identifier = expect_context::<Memo<SummonerIdentifier>>();
+    let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
     let match_details = Resource::new_bitcode(
         move || {
             (
@@ -31,66 +34,39 @@ pub fn MatchDetails(
                 match_id,
                 riot_match_id,
                 platform,
-                summoner.read().id,
+                summoner_identifier.get(),
             )
         },
-        |(_, match_id, riot_match_id, platform, summoner_id)| async move {
-            get_match_details(match_id, Some(summoner_id), platform, riot_match_id).await
+        |(_, match_id, riot_match_id, platform, summoner_identifier)| async move {
+            get_match_details(match_id, Some(summoner_identifier), platform, riot_match_id).await
         },
     );
-    let (match_detail_tab, set_match_detail_tab) = signal("overview".to_string());
-    let match_detail_view = Suspend::new(async move {
-        match match_details.await {
-            Ok(match_details) => Either::Left({
-                let (match_details_signal, _) = signal(match_details);
-                view! {
-                    <Show when=move || match_detail_tab() == "overview">
-                        <MatchDetailsOverview
-                            match_details=match_details_signal
-                            summoner_id=summoner.read().id
-                        />
-                    </Show>
-                    <Show when=move || match_detail_tab() == "team">
-                        <MatchDetailsTeam
-                            _match_details=match_details_signal
-                            _summoner_id=summoner.read().id
-                        />
-                    </Show>
-                    <Show when=move || match_detail_tab() == "build">
-                        <MatchDetailsBuild
-                            match_details=match_details_signal
-                            summoner_id=summoner.read().id
-                        />
-                    </Show>
-                }
-            }),
-            Err(_) => Either::Right(()),
-        }
-    });
+    let (match_detail_tab, set_match_detail_tab) = signal(MatchDetailTabs::Overview);
+
 
     view! {
         <div class="mt-2 w-full">
             <div class="flex space-x-2 mb-2">
                 <button
-                    on:click=move |_| set_match_detail_tab("overview".to_string())
+                    on:click=move |_| set_match_detail_tab(MatchDetailTabs::Overview)
                     class=move || {
-                        if match_detail_tab() == "overview" { "active-tab" } else { "default-tab" }
+                        if matches!(match_detail_tab() ,MatchDetailTabs::Overview) { "active-tab" } else { "default-tab" }
                     }
                 >
                     Overview
                 </button>
                 <button
-                    on:click=move |_| set_match_detail_tab("team".to_string())
+                    on:click=move |_| set_match_detail_tab(MatchDetailTabs::Team)
                     class=move || {
-                        if match_detail_tab() == "team" { "active-tab" } else { "default-tab" }
+                        if matches!(match_detail_tab() ,MatchDetailTabs::Team) { "active-tab" } else { "default-tab" }
                     }
                 >
                     Team
                 </button>
                 <button
-                    on:click=move |_| set_match_detail_tab("build".to_string())
+                    on:click=move |_| set_match_detail_tab(MatchDetailTabs::Build)
                     class=move || {
-                        if match_detail_tab() == "build" { "active-tab" } else { "default-tab" }
+                        if matches!(match_detail_tab() ,MatchDetailTabs::Build) { "active-tab" } else { "default-tab" }
                     }
                 >
                     Build
@@ -99,10 +75,47 @@ pub fn MatchDetails(
             <div>
                 <Transition fallback=move || {
                     view! { <div class="text-center">Loading Match Details</div> }
-                }>{match_detail_view}</Transition>
+                }>{move ||
+                Suspend::new(async move {
+        match match_details.await {
+            Ok(match_details) => Either::Left({
+                let match_details = Arc::new(match_details);
+
+                match &*match_detail_tab.read() {
+                    MatchDetailTabs::Overview => EitherOf3::A(view! {
+                        <MatchDetailsOverview
+                            match_details=match_details
+                            in_encounter=in_encounter
+                        />
+                    }),
+                    MatchDetailTabs::Team => EitherOf3::B(view! {
+                        <MatchDetailsTeam
+                            _match_details=match_details
+                        />
+                    }),
+                    MatchDetailTabs::Build =>EitherOf3::C( view! {
+                        <MatchDetailsBuild
+                            match_details=match_details
+                        />
+                    }),
+                }
+            }),
+            Err(_) => Either::Right(()),
+        }
+    })
+
+        }</Transition>
             </div>
         </div>
     }
+}
+
+
+#[derive(Clone, Debug,Eq, PartialEq)]
+pub enum MatchDetailTabs{
+    Overview,
+    Team,
+    Build,
 }
 
 #[derive(Clone,  Encode,Decode)]
@@ -110,6 +123,7 @@ pub struct LolMatchParticipantDetails {
     pub id: i32,
     pub lol_match_id: i32,
     pub summoner_id: i32,
+    pub is_self_summoner:bool,
     pub item0_id: u32,
     pub item1_id: u32,
     pub item2_id: u32,

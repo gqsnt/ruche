@@ -1,37 +1,37 @@
-use crate::utils::{format_with_spaces, summoner_encounter_url, summoner_url};
+use std::sync::Arc;
+use crate::utils::{format_with_spaces, items_from_slice, summoner_encounter_url, summoner_url};
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
-use crate::views::summoner_page::Summoner;
-use crate::views::{ImgChampion, ImgItem, ImgPerk, ImgSummonerSpell};
+
+use crate::views::{ImgChampion, ImgItem, ImgPerk, ImgSummonerSpell, ProPlayerSlugView};
 use common::consts::champion::Champion;
-use common::consts::item::Item;
 use common::consts::perk::Perk;
 use common::consts::summoner_spell::SummonerSpell;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::components::A;
 
+
 #[component]
 pub fn MatchDetailsOverview(
-    summoner_id: i32,
-    match_details: ReadSignal<Vec<LolMatchParticipantDetails>>,
+    match_details: Arc<Vec<LolMatchParticipantDetails>>,
+    in_encounter:bool
 ) -> impl IntoView {
     let derived = Memo::new(move |_| {
-        let details = match_details(); // tracked here
 
-        let detail = details
+        let detail = match_details
             .iter()
-            .find(|p| p.summoner_id == summoner_id)
+            .find(|p| p.is_self_summoner)
             .expect("Summoner id not found");
 
         let summoner_team = detail.team_id;
         let summoner_team_won = detail.won;
 
-        let first_team = details
+        let first_team = match_details
             .iter()
             .filter(|p| p.team_id == summoner_team)
             .cloned()
             .collect::<Vec<_>>();
-        let second_team = details
+        let second_team = match_details
             .iter()
             .filter(|p| p.team_id != summoner_team)
             .cloned()
@@ -47,11 +47,12 @@ pub fn MatchDetailsOverview(
                     (t, w, f, s)
                 };
                 view! {
-                    <MatchDetailsOverviewTable won=won team_id=team_id participants=first />
+                    <MatchDetailsOverviewTable won=won team_id=team_id participants=first in_encounter   />
                     <MatchDetailsOverviewTable
                         won=!won
                         team_id=if team_id == 100 { 200 } else { 100 }
                         participants=second
+                        in_encounter
                     />
                 }
             }}
@@ -64,8 +65,9 @@ pub fn MatchDetailsOverviewTable(
     won: bool,
     team_id: u16,
     participants: Vec<LolMatchParticipantDetails>,
+    in_encounter:bool
 ) -> impl IntoView {
-    let summoner = expect_context::<ReadSignal<Summoner>>();
+
     view! {
         <table class="table-fixed text-xs w-full border-collapse">
             <colgroup>
@@ -115,25 +117,36 @@ pub fn MatchDetailsOverviewTable(
                             .unwrap_or_default();
                         let sub_perk_style = Perk::try_from(participant.perk_sub_style_id)
                             .unwrap_or_default();
-                        let items = [
-                            participant.item0_id,
-                            participant.item1_id,
-                            participant.item2_id,
-                            participant.item3_id,
-                            participant.item4_id,
-                            participant.item5_id,
-                            participant.item6_id,
-                        ]
-                            .iter()
-                            .filter_map(|i| Item::try_from(*i).ok())
-                            .collect::<Vec<_>>();
+                        let items = items_from_slice(
+                            &[
+                                participant.item0_id,
+                                participant.item1_id,
+                                participant.item2_id,
+                                participant.item3_id,
+                                participant.item4_id,
+                                participant.item5_id,
+                                participant.item6_id,
+                            ],
+                        );
 
                         view! {
                             <tr
-                                class=("bg-red-900", !won && participant.summoner_id != summoner.read().id)
-                                class=("bg-blue-900", won && participant.summoner_id != summoner.read().id)
-                                class=("bg-red-800", !won && participant.summoner_id == summoner.read().id)
-                                class=("bg-blue-800", won && participant.summoner_id == summoner.read().id)
+                                class=(
+                                    "bg-red-900",
+                                    !won && !participant.is_self_summoner,
+                                )
+                                class=(
+                                    "bg-blue-900",
+                                    won && !participant.is_self_summoner,
+                                )
+                                class=(
+                                    "bg-red-800",
+                                    !won && participant.is_self_summoner,
+                                )
+                                class=(
+                                    "bg-blue-800",
+                                    won && participant.is_self_summoner,
+                                )
                             >
                                 <td class="pl-2.5 py-1">
                                     <ImgChampion
@@ -180,43 +193,22 @@ pub fn MatchDetailsOverviewTable(
                                             .then(|| {
                                                 view! {
                                                     <A
-                                                        href=summoner_encounter_url(
-                                                            summoner.read().platform.code(),
-                                                            summoner.read().game_name.as_str(),
-                                                            summoner.read().tag_line.as_str(),
-                                                            participant.platform.code(),
-                                                            participant.game_name.as_str(),
-                                                            participant.tag_line.as_str(),
-                                                        )
+                                                        href=summoner_encounter_url(participant.platform.code(),&participant.game_name, &participant.tag_line,in_encounter)
                                                         attr:class="text-xs bg-green-800 rounded px-0.5 text-center"
                                                     >
                                                         {participant.encounter_count}
                                                     </A>
                                                 }
                                             })}
-                                        {summoner
-                                            .read()
-                                            .pro_slug
-                                            .map(|pps| {
-                                                view! {
-                                                    <A
-                                                        target="_blank"
-                                                        href=format!("https://lolpros.gg/player/{}", pps.as_ref())
-                                                        attr:class="text-xs bg-purple-800 rounded px-0.5 text-center"
-                                                    >
-                                                        pro
-                                                    </A>
-                                                }
-                                            })}
-                                        <A
-                                            href=summoner_url(
-                                                participant.platform.code(),
-                                                participant.game_name.as_str(),
-                                                participant.tag_line.as_str(),
-                                            )
-                                        >
-                                            {participant.game_name.clone()}
-                                        </A>
+                                        <ProPlayerSlugView
+                                            pro_player_slug=participant.summoner_pro_player_slug
+                                            small=true
+                                        />
+                                        <A href=summoner_url(
+                                            participant.platform.code(),
+                                            participant.game_name.as_str(),
+                                            participant.tag_line.as_str(),
+                                        )>{participant.game_name.clone()}</A>
                                     </div>
                                     <span class="text-[11px]">
                                         Lvl. {participant.summoner_level}

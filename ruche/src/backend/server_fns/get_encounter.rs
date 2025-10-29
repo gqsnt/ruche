@@ -1,17 +1,16 @@
 use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterResult;
 use crate::views::BackEndMatchFiltersSearch;
-use common::consts::platform_route::PlatformRoute;
+
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Bitcode;
+use crate::app::SummonerIdentifier;
 
 #[server(input=Bitcode, output=Bitcode)]
 pub async fn get_encounter(
-    summoner_id: i32,
-    page_number: u16,
+    summoner_identifier: SummonerIdentifier,
+    encounter_identifier: SummonerIdentifier,
     is_with: bool,
-    encounter_platform: PlatformRoute,
-    encounter_slug: String,
     filters: Option<BackEndMatchFiltersSearch>,
 ) -> Result<SummonerEncounterResult, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
@@ -19,11 +18,9 @@ pub async fn get_encounter(
 
     Ok(ssr::get_encounter_data(
         &db,
-        summoner_id,
+        summoner_identifier,
+        encounter_identifier,
         filters.unwrap_or_default(),
-        page_number as i32,
-        encounter_slug.as_ref(),
-        encounter_platform,
         is_with,
     )
     .await?)
@@ -31,11 +28,9 @@ pub async fn get_encounter(
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use crate::backend::server_fns::get_summoner::ssr::{
-        find_summoner_by_exact_game_name_tag_line, SummonerModel,
-    };
-    use crate::backend::ssr::{format_duration_since, AppError, AppResult, PlatformRouteDb};
-    use crate::utils::{parse_summoner_slug, DurationSince, ProPlayerSlug, RiotMatchId};
+    use crate::backend::server_fns::get_summoner::ssr::{ resolve_summoner_by_s_identifier, SummonerModel};
+    use crate::backend::ssr::{format_duration_since, AppResult, PlatformRouteDb};
+    use crate::utils::{ DurationSince, ProPlayerSlug, RiotMatchId};
     use crate::views::summoner_page::summoner_encounter_page::{
         SummonerEncounterMatch, SummonerEncounterParticipant, SummonerEncounterResult,
         SummonerEncounterStats,
@@ -48,31 +43,27 @@ pub mod ssr {
     use common::consts::queue::Queue;
     use itertools::Itertools;
     use sqlx::{PgPool, QueryBuilder};
+    use crate::app::SummonerIdentifier;
 
     pub async fn get_encounter_data(
         db: &PgPool,
-        summoner_id: i32,
+        summoner_identifier: SummonerIdentifier,
+        encounter_identifier: SummonerIdentifier,
         filters: BackEndMatchFiltersSearch,
-        page_number: i32,
-        encounter_slug: &str,
-        encounter_platform: PlatformRoute,
         is_with: bool,
     ) -> AppResult<SummonerEncounterResult> {
-        let (encounter_game_name, encounter_tag_line) = parse_summoner_slug(encounter_slug);
-
+        
         let (summoner, encounter) = tokio::join!(
-            find_summoner_by_id(db, summoner_id),
-            find_summoner_by_exact_game_name_tag_line(
-                db,
-                encounter_platform,
-                encounter_game_name,
-                encounter_tag_line
-            )
+            resolve_summoner_by_s_identifier(&db, &summoner_identifier),
+            resolve_summoner_by_s_identifier(&db, &encounter_identifier),
         );
+        
+
         let summoner = summoner?;
-        let encounter = encounter?.ok_or(AppError::NotFound)?;
+        let encounter = encounter?;
         let per_page = 20;
-        let offset = (page_number.max(1) - 1) * per_page;
+        let page = filters.page.unwrap_or(1) as i32;
+        let offset = (page.max(1) - 1) * per_page;
 
         let start_date = filters.start_date_to_naive();
         let end_date = filters.end_date_to_naive();
@@ -158,8 +149,8 @@ pub mod ssr {
         stats_query.push_bind(is_with);
         query.push(" = (lmp2.won = lmp1.won) where lmp1.summoner_id = ");
         stats_query.push(" = (lmp2.won = lmp1.won) where lmp1.summoner_id = ");
-        query.push_bind(summoner_id);
-        stats_query.push_bind(summoner_id);
+        query.push_bind(summoner.id);
+        stats_query.push_bind(summoner.id);
 
         if let Some(champion_id) = filters.champion_id {
             let sql_filter = " AND lmp1.champion_id = ";
@@ -220,7 +211,7 @@ pub mod ssr {
                     queue: row.queue_id.map(|q| Queue::from_id_or_custom(q as u16)).unwrap_or(Queue::Custom),
                     platform: row.platform.into(),
                     participant: SummonerEncounterParticipant {
-                        summoner_id,
+                        summoner_id:summoner.id,
                         won: row.won,
                         champion_id: row.champion_id as u16,
                         champ_level: row.champ_level as u16,

@@ -2,11 +2,11 @@ use crate::views::summoner_page::summoner_matches_page::GetSummonerMatchesResult
 use crate::views::BackEndMatchFiltersSearch;
 use leptos::prelude::*;
 use leptos::server_fn::codec::Bitcode;
+use crate::app::SummonerIdentifier;
 
 #[server(input=Bitcode,output=Bitcode)]
 pub async fn get_matches(
-    summoner_id: i32,
-    page_number: u16,
+    summoner_identifier: SummonerIdentifier,
     filters: Option<BackEndMatchFiltersSearch>,
 ) -> Result<GetSummonerMatchesResult, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
@@ -14,8 +14,7 @@ pub async fn get_matches(
 
     ssr::fetch_matches(
         &db,
-        summoner_id,
-        page_number as i32,
+        summoner_identifier,
         filters.unwrap_or_default(),
     )
     .await
@@ -38,14 +37,17 @@ pub mod ssr {
     use common::consts::platform_route::PlatformRoute;
     use sqlx::{FromRow, PgPool, QueryBuilder};
     use std::collections::HashMap;
+    use crate::app::SummonerIdentifier;
 
     pub async fn fetch_matches(
         db: &PgPool,
-        summoner_id: i32,
-        page: i32,
+        summoner_identifier: SummonerIdentifier,
         filters: BackEndMatchFiltersSearch,
     ) -> AppResult<GetSummonerMatchesResult> {
+        
+        let summoner_id = crate::backend::server_fns::get_summoner::ssr::resolve_id_by_s_identifier(db, &summoner_identifier).await?;
         let per_page = 20;
+        let page= filters.page.unwrap_or(1) as i32;
         let offset = (page.max(1) - 1) * per_page;
 
         let start_date = filters.start_date_to_naive();

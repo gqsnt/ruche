@@ -1,18 +1,11 @@
 
 use bitcode::{Decode, Encode};
-use crate::app::{MetaStore, MetaStoreStoreFields};
+use crate::app::{to_summoner_identifier_memo,  SummonerRouteParams};
 use crate::backend::server_fns::get_matches::get_matches;
-use crate::utils::{
-    calculate_and_format_kda, calculate_loss_and_win_rate, format_duration,
-    format_float_to_2digits, summoner_encounter_url, summoner_url, DurationSince, ProPlayerSlug,
-    RiotMatchId,
-};
+use crate::utils::{calculate_and_format_kda, calculate_loss_and_win_rate, format_duration, format_float_to_2digits, items_from_slice, summoner_encounter_url, summoner_url, DurationSince, ProPlayerSlug, RiotMatchId};
 use crate::views::components::pagination::Pagination;
-use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner};
-use crate::views::{
-    get_default_navigation_option, BackEndMatchFiltersSearch, ImgChampion, ImgItem, ImgPerk,
-    ImgSummonerSpell,
-};
+use crate::views::summoner_page::{SSEMatchUpdateVersion};
+use crate::views::{ BackEndMatchFiltersSearch, ImgChampion, ImgItem, ImgPerk, ImgSummonerSpell, ProPlayerSlugView};
 
 use common::consts::champion::Champion;
 use common::consts::item::Item;
@@ -23,57 +16,59 @@ use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use leptos::prelude::codee::binary::BitcodeCodec;
 use leptos_router::components::A;
-use leptos_router::hooks::query_signal_with_options;
+use leptos_router::hooks::{ use_params};
 use leptos_router::{lazy_route, LazyRoute};
+use reactive_stores::Store;
 use crate::views::summoner_page::match_details::MatchDetails;
 
 pub struct SummonerMatchesRoute{
+    matches_resource:  Resource<Result<GetSummonerMatchesResult, ServerFnError>, BitcodeCodec>
 }
 
 #[lazy_route]
-impl LazyRoute for SummonerMatchesRoute{fn data() -> Self {
-        Self{}
-    }
+impl LazyRoute for SummonerMatchesRoute{
+    fn data() -> Self {
 
-fn view(_this: Self) -> AnyView {
-    let summoner = expect_context::<ReadSignal<Summoner>>();
-    let sse_match_update_version = expect_context::<ReadSignal<Option<SSEMatchUpdateVersion>>>();
-    let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-
-    let match_filters_updated = expect_context::<RwSignal<BackEndMatchFiltersSearch>>();
-    let (page_number, set_page_number) =
-        query_signal_with_options::<u16>("page", get_default_navigation_option());
-
-    let (reset_page_number, set_reset_page_number) = signal::<bool>(false);
-    Effect::new(move |_| {
-        if reset_page_number() {
-            set_page_number(None);
-            set_reset_page_number(false);
-        }
-    });
+    let summoner_route_params = use_params::<SummonerRouteParams>();
+    let summoner_identifier_memo = to_summoner_identifier_memo(
+        summoner_route_params
+    );
+    let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
+    let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
 
     let matches_resource = Resource::new_bitcode(
         move || {
             (
                 sse_match_update_version.get().unwrap_or_default(),
-                match_filters_updated.get(),
-                summoner.read().id,
-                page_number(),
+                match_filters.get(),
+                summoner_identifier_memo.get(),
             )
         },
-        |(_, filters, id, page_number)| async move {
-            get_matches(id, page_number.unwrap_or(1), Some(filters)).await
+        |(_, filters, summoner_identifier)| async move {
+            get_matches(summoner_identifier, Some(filters)).await
         },
     );
+        Self{
+            matches_resource
+        }
+    }
 
-    meta_store.title().set(format!(
-        "{}#{} | Matches | Ruche",
-        summoner.read().game_name.as_str(),
-        summoner.read().tag_line.as_str()
-    ));
-    meta_store.description().set(format!("Explore {}#{}'s match history on Ruche. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
-    meta_store.url().set(summoner.read().to_route_path());
+fn view(this: Self) -> AnyView {
+    let SummonerMatchesRoute{matches_resource} = this;
+
+    //let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+    // batch(|| {
+    //     meta_store.title().set(format!(
+    //         "{}#{} | Matches | Ruche",
+    //         summoner.read().game_name.as_str(),
+    //         summoner.read().tag_line.as_str()
+    //     ));
+    //     meta_store.description().set(format!("Explore {}#{}'s match history on Ruche. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
+    //     meta_store.url().set(summoner.read().to_route_path());
+    // });
+
     view! {
         <div class="w-[768px] inline-block align-top justify-center">
             <div class="">
@@ -84,10 +79,6 @@ fn view(_this: Self) -> AnyView {
                         match matches_resource.await {
                             Ok(matches_result) => {
                                 let total_pages = matches_result.total_pages;
-                                let current_page = page_number().unwrap_or(1);
-                                if total_pages == 0 || total_pages < current_page {
-                                    set_reset_page_number(true);
-                                }
                                 if matches_result.matches.is_empty() {
                                     Ok(
                                         Either::Left(
@@ -170,7 +161,6 @@ fn view(_this: Self) -> AnyView {
 
 #[component]
 pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
-    let summoner = expect_context::<ReadSignal<Summoner>>();
     let (show_details, set_show_details) = signal(false);
     let champion = Champion::try_from(match_.champion_id).unwrap_or_default();
     let summoner_spell1 = SummonerSpell::try_from(match_.summoner_spell1_id).unwrap_or_default();
@@ -183,18 +173,12 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
     if sub_perk_style == Perk::UNKNOWN {
         //log!("{:?}", match_.perk_sub_style_id);
     }
-    let items = [
-        match_.item0_id,
-        match_.item1_id,
-        match_.item2_id,
-        match_.item3_id,
-        match_.item4_id,
-        match_.item5_id,
-        match_.item6_id,
-    ]
-    .iter()
-    .filter_map(|id| Item::try_from(*id).ok())
-    .collect::<Vec<_>>();
+
+    let items = items_from_slice(&[
+        match_.item0_id, match_.item1_id, match_.item2_id,
+        match_.item3_id, match_.item4_id, match_.item5_id, match_.item6_id,
+    ]);
+
 
     view! {
         <div class="flex flex-col">
@@ -252,12 +236,10 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                                 view! {
                                                     <A
                                                         href=summoner_encounter_url(
-                                                            summoner.read().platform.code(),
-                                                            summoner.read().game_name.as_str(),
-                                                            summoner.read().tag_line.as_str(),
                                                             participant.platform.code(),
                                                             participant.game_name.as_str(),
                                                             participant.tag_line.as_str(),
+                                                    false
                                                         )
                                                         attr:class="text-xs bg-green-800 rounded px-0.5 text-center"
                                                     >
@@ -265,19 +247,10 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                                                     </A>
                                                 }
                                             })}
-                                        {participant
-                                            .pro_player_slug
-                                            .map(|pps| {
-                                                view! {
-                                                    <A
-                                                        target="_blank"
-                                                        href=format!("https://lolpros.gg/player/{}", pps.as_ref())
-                                                        attr:class="text-xs bg-purple-800 rounded px-0.5 text-center"
-                                                    >
-                                                        pro
-                                                    </A>
-                                                }
-                                            })}
+                                        <ProPlayerSlugView
+                                            pro_player_slug=participant.pro_player_slug
+                                            small=true
+                                        />
                                         <A
                                             href=summoner_url(
                                                 participant.platform.code(),
@@ -345,6 +318,7 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
                     match_id=match_.match_id
                     riot_match_id=match_.riot_match_id
                     platform=match_.platform
+                    in_encounter=false
                 />
             </Show>
         </div>
