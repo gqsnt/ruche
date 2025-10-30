@@ -177,24 +177,22 @@ pub fn PendingLoading(pending: RwSignal<bool>, children: Children) -> impl IntoV
 
 #[component]
 pub fn ProPlayerSlugView(pro_player_slug: Option<ProPlayerSlug>, small: bool) -> impl IntoView {
-    if let Some(pro_player_slug) = pro_player_slug {
-        let attr_class = if small {
-            "text-xs bg-purple-800 rounded px-0.5 text-center"
-        } else {
-            "bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
-        };
-        Either::Left(view! {
-            <A
+    let attr_class = if small {
+        "text-xs bg-purple-800 rounded px-0.5 text-center"
+    } else {
+        "bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
+    };
+    view!{
+        <Show when=move|| pro_player_slug.is_some() >
+          <A
                 target="_blank"
                 attr:rel="noopener noreferrer"
-                href=format!("https://lolpros.gg/player/{}", pro_player_slug.as_ref())
+                href=format!("https://lolpros.gg/player/{}", pro_player_slug.unwrap().as_ref())
                 attr:class=attr_class
             >
                 pro
             </A>
-        })
-    } else {
-        Either::Right(())
+        </Show>
     }
 }
 

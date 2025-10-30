@@ -84,6 +84,9 @@
 .self-scale-57 {
     transform: scale(57.14%);
 }
+.self-scale-53 {
+    transform: scale(53.33%);
+}
 
 .self-scale-72 {
     transform: scale(72.72%);
@@ -92,6 +95,8 @@
 .self-scale-136 {
     transform: scale(136.36%);
 }
+
+
 
 html {
     overflow-y: scroll; /* Always show vertical scrollbar */
@@ -159,5 +164,4 @@ html {
     .my-card {
         @apply border-gray-950 bg-gray-800 rounded p-2;
     }
-
 }

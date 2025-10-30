@@ -106,7 +106,7 @@ pub fn MatchDetails(
                                         }
                                         MatchDetailTabs::Team => {
                                             EitherOf3::B(
-                                                view! { <MatchDetailsTeam _match_details=match_details /> },
+                                                view! { <MatchDetailsTeam match_details=match_details /> },
                                             )
                                         }
                                         MatchDetailTabs::Build => {
