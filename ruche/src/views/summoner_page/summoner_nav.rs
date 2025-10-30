@@ -56,7 +56,7 @@ pub fn SummonerNav() -> impl IntoView {
                                 }
                             }
                         >
-                            <span class="tab">"Encounter"</span>
+                            <span class="tab" aria-current="page">"Encounter"</span>
                         </Show>
                     </li>
                 </ul>
