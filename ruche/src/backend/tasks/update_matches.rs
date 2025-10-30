@@ -14,8 +14,6 @@ use crate::backend::tasks::update_matches::bulk_summoners::{
 use crate::ssr::{RiotApiState, SubscriberMap};
 use crate::utils::{ProPlayerSlug, SSEEvent};
 use crate::DB_CHUNK_SIZE;
-use std::future::Future;
-use std::pin::Pin;
 use chrono::NaiveDateTime;
 use common::consts;
 use common::consts::platform_route::PlatformRoute;
@@ -26,6 +24,8 @@ use riven::consts::Champion;
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::{FromRow, PgPool};
 use std::collections::{HashMap, HashSet};
+use std::future::Future;
+use std::pin::Pin;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -140,29 +140,25 @@ async fn update_matches_task(
         .collect()
         .await;
 
-    let ( trashed_matches, match_datas): (Vec<_>, Vec<_>) = match_raw_datas
+    let (trashed_matches, match_datas): (Vec<_>, Vec<_>) = match_raw_datas
         .into_iter()
         .zip(matches_to_update.into_iter())
-        .partition(|(match_, _)| {
-            match match_{
-                Ok(Some(match_)) => {
-                    match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
-                        || match_.info.game_version.is_empty()
-                        || match_.info.game_id == 0
-                }
-                Ok(None) => {
-                    log!("Match not found");
-                    true
-                },
-                Err(e) => {
-                    log!("Error fetching match: {:?}", e);
-                    true
-                }
+        .partition(|(match_, _)| match match_ {
+            Ok(Some(match_)) => {
+                match_.info.game_mode == riven::consts::GameMode::STRAWBERRY
+                    || match_.info.game_version.is_empty()
+                    || match_.info.game_id == 0
+            }
+            Ok(None) => {
+                log!("Match not found");
+                true
+            }
+            Err(e) => {
+                log!("Error fetching match: {:?}", e);
+                true
             }
         });
-    let trashed_matches:Vec<_> = trashed_matches
-        .into_iter()
-        .collect();
+    let trashed_matches: Vec<_> = trashed_matches.into_iter().collect();
     let match_datas = match_datas
         .into_iter()
         .map(|(match_, match_not_updated)| (match_.unwrap().unwrap(), match_not_updated))
@@ -177,7 +173,8 @@ async fn update_matches_task(
             .split('_')
             .next()
             .unwrap_or_default();
-        let match_platform = consts::platform_route::PlatformRoute::try_from(platform_code).unwrap_or_default();
+        let match_platform =
+            consts::platform_route::PlatformRoute::try_from(platform_code).unwrap_or_default();
 
         for participant in &match_data.info.participants {
             if participant.puuid == "BOT" {
@@ -231,7 +228,9 @@ async fn update_matches_task(
     // dl summoners
     let summoners_futures = summoners_to_dl.into_iter().map(|summoner| {
         let api = Arc::clone(api);
-        let pt = consts::platform_route::PlatformRoute::try_from(summoner.platform.as_str()).unwrap_or_default().to_riven();
+        let pt = consts::platform_route::PlatformRoute::try_from(summoner.platform.as_str())
+            .unwrap_or_default()
+            .to_riven();
         let puuid = summoner.puuid.clone();
         async move {
             (
@@ -608,7 +607,7 @@ pub async fn find_conflicting_summoners(
     .collect())
 }
 
-pub async  fn delete_summoner_account_by_id(db: &PgPool, id: i32) -> AppResult<()> {
+pub async fn delete_summoner_account_by_id(db: &PgPool, id: i32) -> AppResult<()> {
     sqlx::query("DELETE FROM summoners WHERE id = $1")
         .bind(id)
         .execute(db)

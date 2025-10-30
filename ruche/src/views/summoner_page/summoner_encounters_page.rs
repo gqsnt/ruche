@@ -1,9 +1,16 @@
-use crate::app::{to_summoner_identifier_memo, SummonerRouteParams};
+use crate::app::{
+    to_summoner_identifier_memo, MetaStore, MetaStoreStoreFields, SummonerIdentifier,
+    SummonerRouteParams,
+};
 use crate::backend::server_fns::get_encounters::get_encounters;
-use crate::utils::{calculate_loss_and_win_rate, format_float_to_2digits, summoner_encounter_url, summoner_url};
+use crate::utils::{
+    calculate_loss_and_win_rate, format_float_to_2digits, summoner_encounter_url, summoner_url,
+};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::SSEMatchUpdateVersion;
-use crate::views::{BackEndMatchFiltersSearch, BackEndMatchFiltersSearchStoreFields, ImgSrc, PendingLoading};
+use crate::views::{
+    BackEndMatchFiltersSearch, BackEndMatchFiltersSearchStoreFields, ImgSrc, PendingLoading,
+};
 use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use common::consts::profile_icon::ProfileIcon;
@@ -22,15 +29,14 @@ pub struct SummonerEncountersRoute {
     pending: RwSignal<bool>,
     search_summoner: RwSignal<Option<String>>,
     match_filters: Store<BackEndMatchFiltersSearch>,
+    summoner_identifier_memo: Memo<SummonerIdentifier>,
 }
 
 #[lazy_route]
 impl LazyRoute for SummonerEncountersRoute {
     fn data() -> Self {
         let summoner_route_params = use_params::<SummonerRouteParams>();
-        let summoner_identifier_memo = to_summoner_identifier_memo(
-            summoner_route_params
-        );
+        let summoner_identifier_memo = to_summoner_identifier_memo(summoner_route_params);
         let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
         let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
 
@@ -48,12 +54,7 @@ impl LazyRoute for SummonerEncountersRoute {
             },
             |(_, search_summoner, filters, summoner_identifier, pending)| async move {
                 //println!("{:?} {:?} {:?}", filters, summoner.unwrap(), page_number);
-                let r = get_encounters(
-                    summoner_identifier,
-                    search_summoner,
-                    Some(filters),
-                )
-                    .await;
+                let r = get_encounters(summoner_identifier, search_summoner, Some(filters)).await;
                 pending.set(false);
                 r
             },
@@ -63,31 +64,34 @@ impl LazyRoute for SummonerEncountersRoute {
             pending,
             search_summoner,
             match_filters,
+            summoner_identifier_memo,
         }
     }
 
     fn view(this: Self) -> AnyView {
-        let SummonerEncountersRoute { encounters_resource, pending, search_summoner, match_filters } = this;
-
+        let SummonerEncountersRoute {
+            encounters_resource,
+            pending,
+            search_summoner,
+            match_filters,
+            summoner_identifier_memo,
+        } = this;
 
         let to_opt_string = |v: String| if v.is_empty() { None } else { Some(v) };
 
         let (local_search_summoner, set_local_search_summoner) = signal("".to_string());
 
+        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
-        //         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-        //
-        //         batch(|| {
-        //         meta_store.title().set(format!(
-        //             "{}#{} | Encounters | Ruche",
-        //             summoner.read().game_name.as_str(),
-        //             summoner.read().tag_line.as_str()
-        //         ));
-        //         meta_store.description().set(format!("Discover the top champions played by {}#{}. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
-        //         meta_store
-        //             .url()
-        //             .set(format!("{}/encounters", summoner.read().to_route_path()));
-        // });
+        batch(|| {
+            let me = summoner_identifier_memo.read();
+            meta_store.title().set(format!("{}#{} Encounters & Head-to-Head | Ruche", me.game_name, me.tag_line));
+            meta_store.description().set(format!(
+                "See {}#{}’s frequent teammates and opponents with with/against records and shared matches. Real-time updates, low-latency delivery.",
+                me.game_name, me.tag_line
+            ));
+            meta_store.url().set(format!("{}/encounters", me.base_route()));
+        });
         view! {
             <div>
                 <div class="my-card flex space-x-2 my-2 w-fit">
@@ -254,7 +258,6 @@ impl LazyRoute for SummonerEncountersRoute {
         }.into_any()
     }
 }
-
 
 #[derive(Clone, Default, Encode, Decode)]
 pub struct SummonerEncountersResult {

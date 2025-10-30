@@ -4016,7 +4016,6 @@ dependencies = [
  "leptos_axum",
  "leptos_meta",
  "leptos_router",
- "log",
  "memory-serve",
  "moka",
  "once_cell",

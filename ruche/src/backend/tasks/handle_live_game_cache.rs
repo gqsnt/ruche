@@ -6,17 +6,17 @@ use crate::backend::ssr::{AppResult, PlatformRouteDb};
 use crate::backend::task_director::Task;
 use crate::ssr::SubscriberMap;
 use crate::utils::{Puuid, RiotMatchId, SSEEvent};
-use std::future::Future;
-use std::pin::Pin;
 use common::consts::platform_route::PlatformRoute;
 use itertools::Itertools;
+use leptos::logging::log;
 use riven::models::spectator_v5::CurrentGameInfo;
 use riven::RiotApi;
 use sqlx::PgPool;
 use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use leptos::logging::log;
 use tokio::time::{Duration, Instant};
 
 pub struct HandleLiveGameCacheTask {
@@ -117,8 +117,12 @@ impl Task for HandleLiveGameCacheTask {
             .await
             .unwrap();
             for (match_id, game_info) in match_id_game_info {
-                let (summoner_ids, live_game) =
-                    game_info_to_live_game(match_id, game_info, &all_participants, &live_game_stats);
+                let (summoner_ids, live_game) = game_info_to_live_game(
+                    match_id,
+                    game_info,
+                    &all_participants,
+                    &live_game_stats,
+                );
                 cache.set_game_data(match_id, summoner_ids, live_game);
             }
 
@@ -191,9 +195,7 @@ pub async fn fetch_all_game_info(
     let mut match_id_live_game = HashMap::new();
     let mut first_ids = ig_first_ids.keys().copied().collect::<Vec<_>>();
 
-    let puuids = fetch_summoner_puuids_by_ids(db, &first_ids)
-        .await
-        .unwrap();
+    let puuids = fetch_summoner_puuids_by_ids(db, &first_ids).await.unwrap();
 
     while !first_ids.is_empty() {
         let five_first = first_ids
@@ -223,7 +225,6 @@ pub async fn fetch_all_game_info(
                     }
                 })
                 .collect::<Vec<_>>(),
-
         )
         .await;
         for (summoner_id, live_game) in live_game_results {

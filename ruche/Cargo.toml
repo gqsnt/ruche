@@ -43,12 +43,11 @@ reactive_stores_macro = {git="https://github.com/gqsnt/leptos-bitcode", rev="2ed
 wasm-bindgen = "0.2.104"
 itertools = "0.14.0"
 urlencoding = "2"
-http = "1.3.1"
+http = { version = "1.3.1" ,optional = true}
 console_error_panic_hook = "0.1"
 send_wrapper = "0.6.0"
 gloo-net = "0.6.0"
 common={path="../common"}
-log = "0.4.27"
 axum-extra = {version = "0.10.3", optional = true}
 quinn = { version = "0.11.7", optional = true }
 h3-util = {version = "0.0.4" ,optional = true, default-features = false, features = ["quinn"]}
@@ -92,7 +91,8 @@ ssr = [
     "common/ssr",
     "dep:h3-util",
     "dep:moka",
-    "dep:once_cell"
+    "dep:once_cell",
+    "dep:http"
 ]
 
 

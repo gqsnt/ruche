@@ -1,6 +1,6 @@
-use std::sync::Arc;
 use crate::utils::{format_with_spaces, items_from_slice, summoner_encounter_url, summoner_url};
 use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
+use std::sync::Arc;
 
 use crate::views::{ImgChampion, ImgItem, ImgPerk, ImgSummonerSpell, ProPlayerSlugView};
 use common::consts::champion::Champion;
@@ -10,14 +10,12 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::components::A;
 
-
 #[component]
 pub fn MatchDetailsOverview(
     match_details: Arc<Vec<LolMatchParticipantDetails>>,
-    in_encounter:bool
+    in_encounter: bool,
 ) -> impl IntoView {
     let derived = Memo::new(move |_| {
-
         let detail = match_details
             .iter()
             .find(|p| p.is_self_summoner)
@@ -70,9 +68,8 @@ pub fn MatchDetailsOverviewTable(
     won: bool,
     team_id: u16,
     participants: Vec<LolMatchParticipantDetails>,
-    in_encounter:bool
+    in_encounter: bool,
 ) -> impl IntoView {
-
     view! {
         <table class="table-fixed text-xs w-full border-collapse">
             <colgroup>

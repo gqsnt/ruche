@@ -1,22 +1,21 @@
+use crate::app::SummonerIdentifier;
 #[cfg(feature = "ssr")]
-use crate::utils::{summoner_not_found_url};
+use crate::utils::summoner_not_found_url;
 use crate::views::summoner_page::Summoner;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Bitcode;
-use crate::app::SummonerIdentifier;
-
 
 #[server( input=Bitcode,output=Bitcode)]
 pub async fn get_summoner(
-    summoner_identifier: SummonerIdentifier
+    summoner_identifier: SummonerIdentifier,
 ) -> Result<Summoner, ServerFnError> {
     use crate::backend::server_fns::get_summoner::ssr::resolve_summoner_by_s_identifier;
     //log!("Server::Fetching summoner: {}", summoner_slug);
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
-    match resolve_summoner_by_s_identifier(&db, &summoner_identifier).await{
+    match resolve_summoner_by_s_identifier(&db, &summoner_identifier).await {
         Ok(summoner) => Ok(summoner),
         Err(e) => {
             leptos_axum::redirect(
@@ -25,52 +24,58 @@ pub async fn get_summoner(
                     summoner_identifier.game_name.as_str(),
                     summoner_identifier.tag_line.as_str(),
                 )
-                    .as_str(),
+                .as_str(),
             );
             Err(e.into())
-        },
+        }
     }
 }
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use std::sync::Arc;
-    use sqlx::PgPool;
+    use crate::app::SummonerIdentifier;
     use crate::backend::ssr::{AppError, AppResult, Id, PlatformRouteDb};
+    use crate::ssr::S_IDENTIFIER_TO_ID;
     use crate::utils::ProPlayerSlug;
     use crate::views::summoner_page::Summoner;
     use common::consts::platform_route::PlatformRoute;
-    use crate::app::SummonerIdentifier;
-    use crate::ssr::S_IDENTIFIER_TO_ID;
-    
-    pub async fn resolve_summoner_by_s_identifier(
-        db:&PgPool, summoner_identifier: &SummonerIdentifier,
-    ) -> AppResult<Summoner>{
-       if let Ok(id) = resolve_id_by_s_identifier(db, summoner_identifier)
-           .await{
-           Ok(find_summoner_by_id(db,id).await?)
-       }else{
-           Err(AppError::CustomError("summoner not found".to_string()))
-       }
-    }
-    
+    use sqlx::PgPool;
+    use std::sync::Arc;
 
-    pub async fn resolve_id_by_s_identifier(db:&PgPool, s_identifier:&SummonerIdentifier) -> AppResult<i32> {
+    pub async fn resolve_summoner_by_s_identifier(
+        db: &PgPool,
+        summoner_identifier: &SummonerIdentifier,
+    ) -> AppResult<Summoner> {
+        if let Ok(id) = resolve_id_by_s_identifier(db, summoner_identifier).await {
+            Ok(find_summoner_by_id(db, id).await?)
+        } else {
+            Err(AppError::CustomError("summoner not found".to_string()))
+        }
+    }
+
+    pub async fn resolve_id_by_s_identifier(
+        db: &PgPool,
+        s_identifier: &SummonerIdentifier,
+    ) -> AppResult<i32> {
         // Single-flight: if N callers hit this concurrently with same slug,
         // loader runs only once; others await the same future.
         let arc_id = S_IDENTIFIER_TO_ID
             .try_get_with(s_identifier.clone(), async move {
                 // 1) Fast path: DB lookup by slug
-                db_lookup_id_by_s_identifier(db, s_identifier).await?.map(Arc::new)
+                db_lookup_id_by_s_identifier(db, s_identifier)
+                    .await?
+                    .map(Arc::new)
                     .ok_or(AppError::CustomError("summoner not found".to_string()))
             })
             .await
-            .map_err(|e|e.as_ref().clone())?; // moka error -> anyhow
+            .map_err(|e| e.as_ref().clone())?; // moka error -> anyhow
         Ok(*arc_id)
     }
 
-
-    pub async  fn db_lookup_id_by_s_identifier(db:&PgPool, s_identifier:&SummonerIdentifier) -> AppResult<Option<i32>> {
+    pub async fn db_lookup_id_by_s_identifier(
+        db: &PgPool,
+        s_identifier: &SummonerIdentifier,
+    ) -> AppResult<Option<i32>> {
         Ok(sqlx::query_as::<_, Id>(
             r#"
             SELECT
@@ -80,21 +85,15 @@ pub mod ssr {
               AND lower(ss.tag_line) = lower($3)
   "#,
         )
-            .bind(PlatformRouteDb::from(s_identifier.platform_route))
-            .bind(s_identifier.game_name.as_str())
-            .bind(s_identifier.tag_line.as_str())
-            .fetch_optional(db)
-            .await?
-            .map(|id|id.id))
+        .bind(PlatformRouteDb::from(s_identifier.platform_route))
+        .bind(s_identifier.game_name.as_str())
+        .bind(s_identifier.tag_line.as_str())
+        .fetch_optional(db)
+        .await?
+        .map(|id| id.id))
     }
 
-
-
-
-    pub async fn find_summoner_by_id(
-        db: &sqlx::PgPool,
-        summoner_id:i32
-    ) -> AppResult<Summoner> {
+    pub async fn find_summoner_by_id(db: &sqlx::PgPool, summoner_id: i32) -> AppResult<Summoner> {
         Ok(sqlx::query_as::<_, SummonerModel>(
             r#"
             SELECT

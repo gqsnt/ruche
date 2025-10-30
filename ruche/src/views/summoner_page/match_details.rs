@@ -1,18 +1,18 @@
+use crate::app::SummonerIdentifier;
 use crate::backend::server_fns::get_match_details::get_match_details;
 use crate::utils::{ProPlayerSlug, RiotMatchId};
 use crate::views::summoner_page::match_details::match_details_build::MatchDetailsBuild;
 use crate::views::summoner_page::match_details::match_details_overview::MatchDetailsOverview;
 use crate::views::summoner_page::match_details::match_details_team::MatchDetailsTeam;
-use crate::views::summoner_page::{SSEMatchUpdateVersion};
+use crate::views::summoner_page::SSEMatchUpdateVersion;
+use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use leptos::either::{Either, EitherOf3};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use serde::{Deserialize, Serialize};
 use std::fmt::Formatter;
 use std::sync::Arc;
-use bitcode::{Decode, Encode};
-use serde::{Deserialize, Serialize};
-use crate::app::SummonerIdentifier;
 
 pub mod match_details_build;
 pub mod match_details_overview;
@@ -23,7 +23,7 @@ pub fn MatchDetails(
     match_id: i32,
     riot_match_id: RiotMatchId,
     platform: PlatformRoute,
-    in_encounter:bool,
+    in_encounter: bool,
 ) -> impl IntoView {
     let summoner_identifier = expect_context::<Memo<SummonerIdentifier>>();
     let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
@@ -42,7 +42,6 @@ pub fn MatchDetails(
         },
     );
     let (match_detail_tab, set_match_detail_tab) = signal(MatchDetailTabs::Overview);
-
 
     view! {
         <div class="mt-2 w-full">
@@ -128,20 +127,19 @@ pub fn MatchDetails(
     }
 }
 
-
-#[derive(Clone, Debug,Eq, PartialEq)]
-pub enum MatchDetailTabs{
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum MatchDetailTabs {
     Overview,
     Team,
     Build,
 }
 
-#[derive(Clone,  Encode,Decode)]
+#[derive(Clone, Encode, Decode)]
 pub struct LolMatchParticipantDetails {
     pub id: i32,
     pub lol_match_id: i32,
     pub summoner_id: i32,
-    pub is_self_summoner:bool,
+    pub is_self_summoner: bool,
     pub item0_id: u32,
     pub item1_id: u32,
     pub item2_id: u32,
@@ -201,21 +199,21 @@ pub struct LolMatchTimeline {
     pub items_event_timeline: Vec<(u16, Vec<ItemEvent>)>,
 }
 
-#[derive(Clone,  Encode,Decode, Serialize, Deserialize)]
+#[derive(Clone, Encode, Decode, Serialize, Deserialize)]
 pub struct ItemEvent {
     pub item_id: u32,
     pub event_type: ItemEventType,
 }
 
 #[repr(u8)]
-#[derive(Clone,  Encode,Decode, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Encode, Decode, PartialEq, Serialize, Deserialize)]
 pub enum ItemEventType {
     Purchased,
     Sold,
 }
 
 #[repr(u8)]
-#[derive(Clone, Encode,Decode, PartialEq, Copy, Serialize, Deserialize)]
+#[derive(Clone, Encode, Decode, PartialEq, Copy, Serialize, Deserialize)]
 pub enum Skill {
     Q = 1,
     W = 2,

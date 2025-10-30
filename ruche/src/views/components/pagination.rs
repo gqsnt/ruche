@@ -1,4 +1,4 @@
-use crate::views::{ BackEndMatchFiltersSearch, BackEndMatchFiltersSearchStoreFields};
+use crate::views::{BackEndMatchFiltersSearch, BackEndMatchFiltersSearchStoreFields};
 use leptos::either::Either;
 use leptos::prelude::*;
 
@@ -10,7 +10,7 @@ pub fn Pagination(max_page: u16) -> impl IntoView {
 
     let current_page = Memo::new(move |_| filters.page().read().unwrap_or(1).clamp(1, max_page));
 
-    let set_page = move |page:Option<u16>| {
+    let set_page = move |page: Option<u16>| {
         filters.page().set(page);
     };
 
@@ -105,14 +105,30 @@ fn get_display_pages(current_page: u16, total_pages: u16) -> Vec<(usize, Option<
     let mut out = Vec::new();
     let mut push = |opt: Option<u16>| out.push((out.len(), opt));
     if total_pages <= 7 {
-        for i in 1..=total_pages { push(Some(i)); }
+        for i in 1..=total_pages {
+            push(Some(i));
+        }
     } else {
         push(Some(1));
-        if current_page > 4 { push(None); }
-        let start = if current_page > 4 { current_page - 2 } else { 2 };
-        let end = if current_page < total_pages - 3 { current_page + 2 } else { total_pages - 1 };
-        for i in start..=end { push(Some(i)); }
-        if current_page < total_pages - 3 { push(None); }
+        if current_page > 4 {
+            push(None);
+        }
+        let start = if current_page > 4 {
+            current_page - 2
+        } else {
+            2
+        };
+        let end = if current_page < total_pages - 3 {
+            current_page + 2
+        } else {
+            total_pages - 1
+        };
+        for i in start..=end {
+            push(Some(i));
+        }
+        if current_page < total_pages - 3 {
+            push(None);
+        }
         push(Some(total_pages));
     }
     out

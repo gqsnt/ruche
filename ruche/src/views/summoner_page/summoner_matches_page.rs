@@ -1,12 +1,21 @@
-
-use bitcode::{Decode, Encode};
-use crate::app::{to_summoner_identifier_memo,  SummonerRouteParams};
+use crate::app::{
+    to_summoner_identifier_memo, MetaStore, MetaStoreStoreFields, SummonerIdentifier,
+    SummonerRouteParams,
+};
 use crate::backend::server_fns::get_matches::get_matches;
-use crate::utils::{calculate_and_format_kda, calculate_loss_and_win_rate, format_duration, format_float_to_2digits, items_from_slice, summoner_encounter_url, summoner_url, DurationSince, ProPlayerSlug, RiotMatchId};
+use crate::utils::{
+    calculate_and_format_kda, calculate_loss_and_win_rate, format_duration,
+    format_float_to_2digits, items_from_slice, summoner_encounter_url, summoner_url, DurationSince,
+    ProPlayerSlug, RiotMatchId,
+};
 use crate::views::components::pagination::Pagination;
-use crate::views::summoner_page::{SSEMatchUpdateVersion};
-use crate::views::{ BackEndMatchFiltersSearch, ImgChampion, ImgItem, ImgPerk, ImgSummonerSpell, ProPlayerSlugView};
+use crate::views::summoner_page::SSEMatchUpdateVersion;
+use crate::views::{
+    BackEndMatchFiltersSearch, ImgChampion, ImgItem, ImgPerk, ImgSummonerSpell, ProPlayerSlugView,
+};
+use bitcode::{Decode, Encode};
 
+use crate::views::summoner_page::match_details::MatchDetails;
 use common::consts::champion::Champion;
 use common::consts::item::Item;
 use common::consts::perk::Perk;
@@ -14,62 +23,63 @@ use common::consts::platform_route::PlatformRoute;
 use common::consts::queue::Queue;
 use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
+use leptos::prelude::codee::binary::BitcodeCodec;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos::prelude::codee::binary::BitcodeCodec;
 use leptos_router::components::A;
-use leptos_router::hooks::{ use_params};
+use leptos_router::hooks::use_params;
 use leptos_router::{lazy_route, LazyRoute};
 use reactive_stores::Store;
-use crate::views::summoner_page::match_details::MatchDetails;
 
-pub struct SummonerMatchesRoute{
-    matches_resource:  Resource<Result<GetSummonerMatchesResult, ServerFnError>, BitcodeCodec>
+pub struct SummonerMatchesRoute {
+    matches_resource: Resource<Result<GetSummonerMatchesResult, ServerFnError>, BitcodeCodec>,
+    summoner_identifier_memo: Memo<SummonerIdentifier>,
 }
 
 #[lazy_route]
-impl LazyRoute for SummonerMatchesRoute{
+impl LazyRoute for SummonerMatchesRoute {
     fn data() -> Self {
+        let summoner_route_params = use_params::<SummonerRouteParams>();
+        let summoner_identifier_memo = to_summoner_identifier_memo(summoner_route_params);
+        let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
+        let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
 
-    let summoner_route_params = use_params::<SummonerRouteParams>();
-    let summoner_identifier_memo = to_summoner_identifier_memo(
-        summoner_route_params
-    );
-    let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
-    let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
-
-    let matches_resource = Resource::new_bitcode(
-        move || {
-            (
-                sse_match_update_version.get().unwrap_or_default(),
-                match_filters.get(),
-                summoner_identifier_memo.get(),
-            )
-        },
-        |(_, filters, summoner_identifier)| async move {
-            get_matches(summoner_identifier, Some(filters)).await
-        },
-    );
-        Self{
-            matches_resource
+        let matches_resource = Resource::new_bitcode(
+            move || {
+                (
+                    sse_match_update_version.get().unwrap_or_default(),
+                    match_filters.get(),
+                    summoner_identifier_memo.get(),
+                )
+            },
+            |(_, filters, summoner_identifier)| async move {
+                get_matches(summoner_identifier, Some(filters)).await
+            },
+        );
+        Self {
+            matches_resource,
+            summoner_identifier_memo,
         }
     }
 
-fn view(this: Self) -> AnyView {
-    let SummonerMatchesRoute{matches_resource} = this;
+    fn view(this: Self) -> AnyView {
+        let SummonerMatchesRoute {
+            matches_resource,
+            summoner_identifier_memo,
+        } = this;
 
-    //let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-    // batch(|| {
-    //     meta_store.title().set(format!(
-    //         "{}#{} | Matches | Ruche",
-    //         summoner.read().game_name.as_str(),
-    //         summoner.read().tag_line.as_str()
-    //     ));
-    //     meta_store.description().set(format!("Explore {}#{}'s match history on Ruche. Analyze detailed League Of Legends stats, KDA ratios, and performance metrics on our high-speed, resource-efficient platform.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
-    //     meta_store.url().set(summoner.read().to_route_path());
-    // });
+        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+        batch(|| {
+            let me = summoner_identifier_memo.read();
+            meta_store.title().set(format!("{}#{} Match History | Ruche", me.game_name, me.tag_line));
+            meta_store.description().set(format!(
+                "View {}#{}’s match history: results, K/D/A, items, runes, participants, and timelines. Real-time updates on a fast, full-stack Rust platform.",
+                me.game_name, me.tag_line
+            ));
+            meta_store.url().set(me.matches_route());
+        });
 
-    view! {
+        view! {
         <div class="w-[768px] inline-block align-top justify-center">
             <div class="">
                 <Transition fallback=move || {
@@ -151,13 +161,8 @@ fn view(this: Self) -> AnyView {
             </div>
         </div>
     }.into_any()
-
     }
-
 }
-
-
-
 
 #[component]
 pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
@@ -165,7 +170,8 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
     let champion = Champion::try_from(match_.champion_id).unwrap_or_default();
     let summoner_spell1 = SummonerSpell::try_from(match_.summoner_spell1_id).unwrap_or_default();
     let summoner_spell2 = SummonerSpell::try_from(match_.summoner_spell2_id).unwrap_or_default();
-    let primary_perk_selection = Perk::try_from(match_.perk_primary_selection_id).unwrap_or_default();
+    let primary_perk_selection =
+        Perk::try_from(match_.perk_primary_selection_id).unwrap_or_default();
     let sub_perk_style = Perk::try_from(match_.perk_sub_style_id).unwrap_or_default();
     if primary_perk_selection == Perk::UNKNOWN {
         //log!("{:?}", match_.perk_primary_selection_id);
@@ -175,10 +181,14 @@ pub fn MatchCard(match_: SummonerMatch) -> impl IntoView {
     }
 
     let items = items_from_slice(&[
-        match_.item0_id, match_.item1_id, match_.item2_id,
-        match_.item3_id, match_.item4_id, match_.item5_id, match_.item6_id,
+        match_.item0_id,
+        match_.item1_id,
+        match_.item2_id,
+        match_.item3_id,
+        match_.item4_id,
+        match_.item5_id,
+        match_.item6_id,
     ]);
-
 
     view! {
         <div class="flex flex-col">
@@ -455,14 +465,14 @@ pub fn MatchInfoCard(
     }
 }
 
-#[derive(Clone, Default, Encode,Decode)]
+#[derive(Clone, Default, Encode, Decode)]
 pub struct GetSummonerMatchesResult {
     pub total_pages: u16,
     pub matches: Vec<SummonerMatch>,
     pub matches_result_info: MatchesResultInfo,
 }
 
-#[derive(Clone, Default, Encode,Decode)]
+#[derive(Clone, Default, Encode, Decode)]
 pub struct MatchesResultInfo {
     pub avg_kills: f32,
     pub avg_deaths: f32,
@@ -471,7 +481,7 @@ pub struct MatchesResultInfo {
     pub total_matches: u16,
     pub total_wins: u16,
 }
-#[derive(Clone, Encode,Decode)]
+#[derive(Clone, Encode, Decode)]
 pub struct SummonerMatch {
     pub participants: Vec<SummonerMatchParticipant>,
     pub summoner_id: i32,
@@ -501,7 +511,7 @@ pub struct SummonerMatch {
     pub platform: PlatformRoute,
 }
 
-#[derive(Clone,  Encode,Decode)]
+#[derive(Clone, Encode, Decode)]
 pub struct SummonerMatchParticipant {
     pub lol_match_id: i32,
     pub summoner_id: i32,

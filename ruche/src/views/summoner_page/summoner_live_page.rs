@@ -1,5 +1,7 @@
-use bitcode::{Decode, Encode};
-use crate::app::{to_summoner_identifier_memo, SummonerRouteParams};
+use crate::app::{
+    to_summoner_identifier_memo, MetaStore, MetaStoreStoreFields, SummonerIdentifier,
+    SummonerRouteParams,
+};
 use crate::backend::server_fns::get_live_game::get_live_game;
 use crate::utils::{
     calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits,
@@ -7,6 +9,7 @@ use crate::utils::{
 };
 use crate::views::summoner_page::{SSEInLiveGame, SSEMatchUpdateVersion};
 use crate::views::{ImgChampion, ImgPerk, ImgSummonerSpell, PendingLoading, ProPlayerSlugView};
+use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
 use common::consts::map::Map;
 use common::consts::perk::Perk;
@@ -14,26 +17,25 @@ use common::consts::platform_route::PlatformRoute;
 use common::consts::queue::Queue;
 use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
+use leptos::prelude::codee::binary::BitcodeCodec;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos::prelude::codee::binary::BitcodeCodec;
 use leptos_router::components::A;
-use leptos_router::{lazy_route, LazyRoute};
 use leptos_router::hooks::use_params;
+use leptos_router::{lazy_route, LazyRoute};
 
-pub struct SummonerLiveRoute{
+pub struct SummonerLiveRoute {
     live_game_resource: Resource<Result<Option<LiveGame>, ServerFnError>, BitcodeCodec>,
-    refresh_signal:RwSignal<i32>,
-    pending:RwSignal<bool>,
+    refresh_signal: RwSignal<i32>,
+    pending: RwSignal<bool>,
+    summoner_identifier_memo: Memo<SummonerIdentifier>,
 }
 
 #[lazy_route]
 impl LazyRoute for SummonerLiveRoute {
     fn data() -> Self {
         let summoner_route_params = use_params::<SummonerRouteParams>();
-        let summoner_identifier_memo = to_summoner_identifier_memo(
-            summoner_route_params
-        );
+        let summoner_identifier_memo = to_summoner_identifier_memo(summoner_route_params);
         let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
         let sse_in_live_game = expect_context::<RwSignal<SSEInLiveGame>>();
         let pending = RwSignal::new(false);
@@ -49,37 +51,36 @@ impl LazyRoute for SummonerLiveRoute {
                 )
             },
             |(_, _, refresh_version, summoner_identifier, set_pending_value)| async move {
-                let r = get_live_game(
-                    summoner_identifier,
-                    refresh_version > 0,
-                )
-                    .await;
+                let r = get_live_game(summoner_identifier, refresh_version > 0).await;
                 set_pending_value.set(false);
                 r
             },
         );
-    Self{
-        live_game_resource,
-        refresh_signal,
-        pending,
+        Self {
+            live_game_resource,
+            refresh_signal,
+            pending,
+            summoner_identifier_memo,
+        }
     }
-}
 
     fn view(this: Self) -> AnyView {
-        let SummonerLiveRoute{live_game_resource, refresh_signal, pending} = this;
-        
-        //        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-// batch(|| {
-//         meta_store.title().set(format!(
-//             "{}#{} | Live Game | Ruche",
-//             summoner.read().game_name.as_str(),
-//             summoner.read().tag_line.as_str()
-//         ));
-//         meta_store.description().set(format!("Watch {}#{}'s live game now on Ruche. Get real-time updates and analytics with our ultra-fast, Rust-based League of Legends companion.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
-//         meta_store
-//             .url()
-//             .set(format!("{}/live", summoner.read().to_route_path()));
-//         });
+        let SummonerLiveRoute {
+            live_game_resource,
+            refresh_signal,
+            pending,
+            summoner_identifier_memo,
+        } = this;
+        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+        batch(|| {
+            let me = summoner_identifier_memo.read();
+            meta_store.title().set(format!("{}#{} Live Game | Ruche", me.game_name, me.tag_line));
+            meta_store.description().set(format!(
+                "Watch {}#{}’s live game: compositions, runes, spells, ranked and champion stats. Auto-refresh via SSE on a full-stack Rust platform.",
+                me.game_name, me.tag_line
+            ));
+            meta_store.url().set(format!("{}/live", me.base_route()));
+        });
         view! {
             <div class="w-[768px] my-2">
                 <div class="flex justify-start mb-2">
@@ -144,14 +145,10 @@ impl LazyRoute for SummonerLiveRoute {
                     })}
                 </Transition>
             </div>
-        }.into_any()
-
+        }
+        .into_any()
     }
-
 }
-
-
-
 
 #[component]
 pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> impl IntoView {
@@ -374,7 +371,7 @@ pub fn MatchLiveTable(team_id: i32, participants: Vec<LiveGameParticipant>) -> i
         </table>
     }
 }
-#[derive(Clone,  Encode,Decode)]
+#[derive(Clone, Encode, Decode)]
 pub struct LiveGame {
     pub game_length: u16,
     pub game_map: Map,
@@ -383,7 +380,7 @@ pub struct LiveGame {
     pub participants: Vec<LiveGameParticipant>,
 }
 
-#[derive(Clone, Encode,Decode)]
+#[derive(Clone, Encode, Decode)]
 pub struct LiveGameParticipant {
     pub summoner_id: i32,
     pub champion_id: u16,
@@ -402,13 +399,13 @@ pub struct LiveGameParticipant {
     pub champion_stats: Option<LiveGameParticipantChampionStats>,
 }
 
-#[derive(Clone, Default, Encode,Decode)]
+#[derive(Clone, Default, Encode, Decode)]
 pub struct LiveGameParticipantRankedStats {
     pub total_ranked: u16,
     pub total_ranked_wins: u16,
 }
 
-#[derive(Clone, Default,  Encode,Decode)]
+#[derive(Clone, Default, Encode, Decode)]
 pub struct LiveGameParticipantChampionStats {
     pub total_champion_played: u16,
     pub total_champion_wins: u16,

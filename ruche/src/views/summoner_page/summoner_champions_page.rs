@@ -1,30 +1,32 @@
-use bitcode::{Decode, Encode};
-use crate::app::{to_summoner_identifier_memo,  SummonerRouteParams};
+use crate::app::{
+    to_summoner_identifier_memo, MetaStore, MetaStoreStoreFields, SummonerIdentifier,
+    SummonerRouteParams,
+};
 use crate::backend::server_fns::get_champions::get_champions;
 use crate::utils::{calculate_and_format_kda, format_float_to_2digits, format_with_spaces};
-use crate::views::summoner_page::{SSEMatchUpdateVersion};
+use crate::views::summoner_page::SSEMatchUpdateVersion;
 use crate::views::{BackEndMatchFiltersSearch, ImgChampion};
+use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
 use itertools::Itertools;
 use leptos::either::Either;
+use leptos::prelude::codee::binary::BitcodeCodec;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos::prelude::codee::binary::BitcodeCodec;
-use leptos_router::{lazy_route, LazyRoute};
 use leptos_router::hooks::use_params;
+use leptos_router::{lazy_route, LazyRoute};
 use reactive_stores::Store;
 
-pub struct SummonerChampionsRoute{
-    champions_resource: Resource<Result<Vec<ChampionStats>, ServerFnError>, BitcodeCodec>
+pub struct SummonerChampionsRoute {
+    champions_resource: Resource<Result<Vec<ChampionStats>, ServerFnError>, BitcodeCodec>,
+    summoner_identifier_memo: Memo<SummonerIdentifier>,
 }
 
 #[lazy_route]
 impl LazyRoute for SummonerChampionsRoute {
     fn data() -> Self {
         let summoner_route_params = use_params::<SummonerRouteParams>();
-        let summoner_identifier_memo = to_summoner_identifier_memo(
-            summoner_route_params
-        );
+        let summoner_identifier_memo = to_summoner_identifier_memo(summoner_route_params);
         let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
         let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
         let champions_resource = Resource::new_bitcode(
@@ -32,7 +34,7 @@ impl LazyRoute for SummonerChampionsRoute {
                 (
                     sse_match_update_version.get().unwrap_or_default(),
                     match_filters.get(),
-                    summoner_identifier_memo.get()
+                    summoner_identifier_memo.get(),
                 )
             },
             |(_, filters, summoner_identifier)| async move {
@@ -40,19 +42,22 @@ impl LazyRoute for SummonerChampionsRoute {
                 get_champions(summoner_identifier, Some(filters)).await
             },
         );
-    Self{
-        champions_resource
+        Self {
+            champions_resource,
+            summoner_identifier_memo,
+        }
     }
-}
 
     fn view(this: Self) -> AnyView {
-        let SummonerChampionsRoute{champions_resource} = this;
+        let SummonerChampionsRoute {
+            champions_resource,
+            summoner_identifier_memo,
+        } = this;
 
         let (table_sort, set_table_sort) =
             signal::<(TableSortType, bool)>((TableSortType::default(), true));
         let current_sort_type = move || table_sort.get().0;
         let current_sort_normal_flow = move || table_sort.get().1;
-
 
         let toggle_sort = move |sort_type: TableSortType| {
             let (sort, is_desc) = table_sort.get();
@@ -62,19 +67,17 @@ impl LazyRoute for SummonerChampionsRoute {
                 set_table_sort((sort_type, true));
             }
         };
-        
-        //        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-// batch(|| {
-//         meta_store.title().set(format!(
-//             "{}#{} | Champions | Ruche",
-//             summoner.read().game_name.as_str(),
-//             summoner.read().tag_line.as_str()
-//         ));
-//         meta_store.description().set(format!("Discover the top champions played by {}#{} on League Of Legends. Access in-depth statistics, win rates, and performance insights on Ruche, powered by Rust for optimal performance.", summoner.read().game_name.as_str(), summoner.read().tag_line.as_str()));
-//         meta_store
-//             .url()
-//             .set(format!("{}/champions", summoner.read().to_route_path()));
-//         });
+
+        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
+        batch(|| {
+            let me = summoner_identifier_memo.read();
+            meta_store.title().set(format!("{}#{} Champion Stats | Ruche", me.game_name, me.tag_line));
+            meta_store.description().set(format!(
+                "Explore {}#{}’s champion stats: win rate, K/D/A, CS, damage, gold, and multi-kills. Compact binary payloads and native SSE for speed.",
+                me.game_name, me.tag_line
+            ));
+            meta_store.url().set(format!("{}/champions", me.base_route()));
+        });
         view! {
             <div>
                 <Transition fallback=move || {
@@ -357,12 +360,8 @@ impl LazyRoute for SummonerChampionsRoute {
                 </Transition>
             </div>
         }.into_any()
-
     }
-
 }
-
-
 
 #[component]
 pub fn TableHeaderItem<S, R, T>(
@@ -425,10 +424,11 @@ impl TableSortType {
         // is reversed because we want to sort in descending order
         let ordering = match self {
             TableSortType::Index => idx_b.cmp(idx_a),
-            TableSortType::Champion => Champion::try_from(b.champion_id)
-                .unwrap()
-                .label()
-                .cmp(Champion::try_from(a.champion_id).unwrap_or_default().label()),
+            TableSortType::Champion => Champion::try_from(b.champion_id).unwrap().label().cmp(
+                Champion::try_from(a.champion_id)
+                    .unwrap_or_default()
+                    .label(),
+            ),
             TableSortType::WinRate => (a.win_rate).partial_cmp(&b.win_rate).unwrap(),
             TableSortType::AvgKDA => a.avg_kda.partial_cmp(&b.avg_kda).unwrap(),
             TableSortType::AvgGold => a.avg_gold_earned.partial_cmp(&b.avg_gold_earned).unwrap(),
@@ -453,7 +453,7 @@ impl TableSortType {
     }
 }
 
-#[derive(Clone, Encode,Decode)]
+#[derive(Clone, Encode, Decode)]
 pub struct ChampionStats {
     pub avg_kills: f32,
     pub avg_deaths: f32,
@@ -471,5 +471,5 @@ pub struct ChampionStats {
     pub total_triple_kills: u16,
     pub total_quadra_kills: u16,
     pub total_penta_kills: u16,
-    pub avg_kill_participation: u16
+    pub avg_kill_participation: u16,
 }

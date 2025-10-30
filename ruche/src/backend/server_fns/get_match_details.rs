@@ -5,10 +5,9 @@ use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Bitcode;
 
+use crate::app::SummonerIdentifier;
 #[cfg(feature = "ssr")]
 use update_match_timeline::update_match_timeline;
-use crate::app::SummonerIdentifier;
-
 
 #[cfg(feature = "ssr")]
 pub mod update_match_timeline;
@@ -24,9 +23,9 @@ pub async fn get_match_details(
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
-    let summoner_id =if let Some(s_id) = summoner_identifier{
+    let summoner_id = if let Some(s_id) = summoner_identifier {
         resolve_id_by_s_identifier(&db, &s_id).await.ok()
-    }else{
+    } else {
         None
     };
 

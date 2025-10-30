@@ -2,15 +2,15 @@ use crate::backend::ssr::{AppResult, PlatformRouteDb};
 use crate::backend::task_director::Task;
 use crate::backend::tasks::calculate_next_run_to_fixed_start_hour;
 use crate::utils::summoner_url;
-use std::future::Future;
-use std::pin::Pin;
 use chrono::{DateTime, FixedOffset, NaiveDateTime};
-use common::consts::platform_route::{PlatformRoute, PLATFORM_ROUTE_OPTIONS};
+use common::consts::platform_route::PlatformRoute;
 use leptos::leptos_dom::log;
 use sitemap::structs::{SiteMapEntry, UrlEntry};
 use sitemap::writer::SiteMapWriter;
 use sqlx::PgPool;
+use std::future::Future;
 use std::path::PathBuf;
+use std::pin::Pin;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -108,10 +108,6 @@ pub async fn generate_site_map_index(index: usize, urls: &[UrlEntry]) -> AppResu
 pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
     let base_url = "https://ruche.lol";
     let mut urls = vec![get_site_map_url(base_url.to_string(), None)];
-    for platform in PLATFORM_ROUTE_OPTIONS {
-        get_site_map_url(format!("{}/platform/{}", base_url, platform), None);
-    }
-
     let total_summoners = get_total_summoners(db).await?;
     let chunk_size = 500;
     let total_chunks = total_summoners / chunk_size;

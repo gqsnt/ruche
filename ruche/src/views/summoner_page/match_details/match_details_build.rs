@@ -1,52 +1,48 @@
-use leptos::prelude::*;
-use leptos::{component, view, IntoView};
-use std::collections::HashMap;
-use std::sync::Arc;
-use itertools::Itertools;
-use crate::views::summoner_page::match_details::{ ItemEventType, LolMatchParticipantDetails, Skill};
+use crate::views::summoner_page::match_details::{
+    ItemEventType, LolMatchParticipantDetails, Skill,
+};
 use crate::views::{ImgItem, ImgPerk};
 use common::consts::champion::Champion;
 use common::consts::item::Item;
 use common::consts::perk::Perk;
-
+use itertools::Itertools;
+use leptos::prelude::*;
+use leptos::{component, view, IntoView};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 #[component]
-pub fn MatchDetailsBuild(
-    match_details: Arc<Vec<LolMatchParticipantDetails>>,
-) -> impl IntoView {
+pub fn MatchDetailsBuild(match_details: Arc<Vec<LolMatchParticipantDetails>>) -> impl IntoView {
     let summoner_name_with_champion = |p: &LolMatchParticipantDetails| {
         format!(
-            "{}({})",
+            "{} | {}",
             p.game_name.as_str(),
             Champion::try_from(p.champion_id)
                 .unwrap_or_default()
                 .label()
         )
     };
-    let match_details_participants = match_details.clone();
-    let participant_ids = Memo::new(move |_| {
-        match_details_participants
-            .iter()
-            .map(|x| (x.summoner_id, summoner_name_with_champion(x)))
-            .collect::<HashMap<i32, String>>()
-    });
+    let participant_ids =match_details
+        .iter()
+        .map(|x| (x.summoner_id, summoner_name_with_champion(x)))
+        .collect::<HashMap<i32, String>>();
 
-    let default_participant = match_details.iter()
+    let default_participant = match_details
+        .iter()
         .find(|x| x.is_self_summoner)
-        .map(|p|p.summoner_id)
+        .map(|p| p.summoner_id)
         .expect("Participant not found");
 
-
-    let find_participant =  move |id: i32| {
-        match_details.iter()
+    let find_participant = move |id: i32| {
+        match_details
+            .iter()
             .find(|x| x.summoner_id == id)
             .cloned()
             .expect("Participant not found")
     };
 
-
-
-    let (selected_participant, set_selected_participant) = signal(find_participant(default_participant));
+    let (selected_participant, set_selected_participant) =
+        signal(find_participant(default_participant));
     let total = Memo::new(move |_| selected_participant().items_event_timeline.len());
     view! {
         <div class="text-left">
@@ -59,7 +55,7 @@ pub fn MatchDetailsBuild(
                     set_selected_participant(find_participant(id));
                 }
             >
-                <For each=move || participant_ids().clone() key=|(id, _)| *id let:entry>
+                <For each=move || participant_ids.clone() key=|(id, _)| *id let:entry>
                     {
                         let (id, name) = entry;
                         view! { <option value=id>{name}</option> }
@@ -78,7 +74,7 @@ pub fn MatchDetailsBuild(
                                 .enumerate()
                                 .collect_vec()
                         }
-                        key=|(idx, _)| *idx
+                        key=move |(idx, _)| (*idx,selected_participant().summoner_id)
                         let:entry
                     >
                         {

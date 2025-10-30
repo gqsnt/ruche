@@ -1,28 +1,36 @@
-use bitcode::{Decode, Encode};
+use crate::app::{
+    to_encounter_identifier_memo, to_summoner_identifier_memo, EncounterRouteParams, MetaStore,
+    MetaStoreStoreFields, SummonerIdentifier, SummonerRouteParams,
+};
 use crate::backend::server_fns::get_encounter::get_encounter;
-use crate::utils::{calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits, items_from_slice, DurationSince, RiotMatchId};
+use crate::utils::{
+    calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits,
+    items_from_slice, DurationSince, RiotMatchId,
+};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::summoner_matches_page::{MatchInfoCard, MatchSummonerCard};
 use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner, SummonerInfo};
-use crate::views::{ BackEndMatchFiltersSearch};
+use crate::views::BackEndMatchFiltersSearch;
+use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
 use common::consts::perk::Perk;
 use common::consts::platform_route::PlatformRoute;
 use common::consts::queue::Queue;
 use common::consts::summoner_spell::SummonerSpell;
 use leptos::either::Either;
+use leptos::prelude::codee::binary::BitcodeCodec;
 use leptos::prelude::*;
 use leptos::{component, IntoView};
-use leptos::prelude::codee::binary::BitcodeCodec;
-use leptos_router::hooks::{ use_params};
+use leptos_router::hooks::use_params;
 use leptos_router::{lazy_route, LazyRoute};
 use reactive_stores::Store;
-use crate::app::{to_encounter_identifier_memo, to_summoner_identifier_memo, EncounterRouteParams, SummonerRouteParams};
 
-pub struct SummonerEncounterRoute{
+pub struct SummonerEncounterRoute {
     encounter_resource: Resource<Result<SummonerEncounterResult, ServerFnError>, BitcodeCodec>,
-    is_with:RwSignal<bool>,
+    is_with: RwSignal<bool>,
+    summoner_identifier_memo: Memo<SummonerIdentifier>,
+    encounter_identifier_memo: Memo<SummonerIdentifier>,
 }
 
 #[lazy_route]
@@ -30,14 +38,10 @@ impl LazyRoute for SummonerEncounterRoute {
     fn data() -> Self {
         let is_with = RwSignal::new(true);
         let summoner_route_params = use_params::<SummonerRouteParams>();
-        let summoner_identifier_memo = to_summoner_identifier_memo(
-            summoner_route_params
-        );
+        let summoner_identifier_memo = to_summoner_identifier_memo(summoner_route_params);
 
         let encounter_route_params = use_params::<EncounterRouteParams>();
-        let encounter_identifier_memo = to_encounter_identifier_memo(
-            encounter_route_params
-        );
+        let encounter_identifier_memo = to_encounter_identifier_memo(encounter_route_params);
 
         let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
         let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
@@ -52,27 +56,51 @@ impl LazyRoute for SummonerEncounterRoute {
                     is_with.get(),
                 )
             },
-            |(_, summoner, encounter, filters,  is_with)| async move {
+            |(_, summoner, encounter, filters, is_with)| async move {
                 //println!("{:?} {:?} {:?}", filters, summoner, page_number);
-                get_encounter(
-                    summoner,
-                    encounter,
-                    is_with,
-                    Some(filters),
-                )
-                    .await
+                get_encounter(summoner, encounter, is_with, Some(filters)).await
             },
         );
-        Self{
+        Self {
             encounter_resource,
-            is_with
+            is_with,
+            summoner_identifier_memo,
+            encounter_identifier_memo,
         }
-}
+    }
 
     fn view(this: Self) -> AnyView {
-        let SummonerEncounterRoute{ encounter_resource, is_with } = this;
+        let SummonerEncounterRoute {
+            encounter_resource,
+            is_with,
+            summoner_identifier_memo,
+            encounter_identifier_memo,
+        } = this;
+        let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
+        batch(|| {
+            let me = summoner_identifier_memo.read();
+            let opp = encounter_identifier_memo.read();
 
+            // Build canonical URL that matches router:
+            // /summoners/:platform/:me_slug/encounter/:opp_platform/:opp_slug
+            let me_slug = format!("{}-{}", me.game_name, me.tag_line);
+            let opp_slug = format!("{}-{}", opp.game_name, opp.tag_line);
+            let canonical = format!(
+                "/summoners/{}/{}/encounter/{}/{}",
+                me.platform_route.code(),
+                me_slug,
+                opp.platform_route.code(),
+                opp_slug
+            );
+
+            meta_store.title().set(format!("{}#{} vs {}#{} — Head-to-Head | Ruche", me.game_name, me.tag_line, opp.game_name, opp.tag_line));
+            meta_store.description().set(format!(
+                "Head-to-head: {}#{} vs {}#{}. Wins/losses together and against, shared matches, and detailed performance metrics. Updated in near real time.",
+                me.game_name, me.tag_line, opp.game_name, opp.tag_line
+            ));
+            meta_store.url().set(canonical);
+        });
 
         view! {
             <div class="flex my-card justify-center space-x-2 my-2">
@@ -159,23 +187,30 @@ impl LazyRoute for SummonerEncounterRoute {
                 </Transition>
             </div>
         }.into_any()
-
     }
-
 }
-
 
 #[component]
 pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl IntoView {
     let (show_details, set_show_details) = signal(false);
 
     let self_items = items_from_slice(&[
-        match_.participant.item0_id, match_.participant.item1_id, match_.participant.item2_id,
-        match_.participant.item3_id, match_.participant.item4_id, match_.participant.item5_id, match_.participant.item6_id,
+        match_.participant.item0_id,
+        match_.participant.item1_id,
+        match_.participant.item2_id,
+        match_.participant.item3_id,
+        match_.participant.item4_id,
+        match_.participant.item5_id,
+        match_.participant.item6_id,
     ]);
     let encounter_items = items_from_slice(&[
-        match_.encounter.item0_id, match_.encounter.item1_id, match_.encounter.item2_id,
-        match_.encounter.item3_id, match_.encounter.item4_id, match_.encounter.item5_id, match_.encounter.item6_id,
+        match_.encounter.item0_id,
+        match_.encounter.item1_id,
+        match_.encounter.item2_id,
+        match_.encounter.item3_id,
+        match_.encounter.item4_id,
+        match_.encounter.item5_id,
+        match_.encounter.item6_id,
     ]);
     let (champion, encounter_champion) = (
         Champion::try_from(match_.participant.champion_id).unwrap_or_default(),
@@ -334,7 +369,7 @@ pub fn SummonerEncounterStats(stats: SummonerEncounterStats, is_self: bool) -> i
     }
 }
 
-#[derive(Clone, Encode,Decode)]
+#[derive(Clone, Encode, Decode)]
 pub struct SummonerEncounterResult {
     pub total_pages: u16,
     pub matches: Vec<SummonerEncounterMatch>,
@@ -344,7 +379,7 @@ pub struct SummonerEncounterResult {
     pub encounter: Summoner,
 }
 
-#[derive(Clone, Encode,Decode, Default)]
+#[derive(Clone, Encode, Decode, Default)]
 pub struct SummonerEncounterStats {
     pub avg_kills: f32,
     pub avg_deaths: f32,
@@ -354,7 +389,7 @@ pub struct SummonerEncounterStats {
     pub total_matches: u16,
 }
 
-#[derive(Clone,  Encode,Decode)]
+#[derive(Clone, Encode, Decode)]
 pub struct SummonerEncounterParticipant {
     pub summoner_id: i32,
     pub item0_id: u32,
@@ -377,7 +412,7 @@ pub struct SummonerEncounterParticipant {
     pub won: bool,
 }
 
-#[derive(Clone, Encode,Decode)]
+#[derive(Clone, Encode, Decode)]
 pub struct SummonerEncounterMatch {
     pub match_id: i32,
     pub match_duration: Option<i32>,

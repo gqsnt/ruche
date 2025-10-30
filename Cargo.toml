@@ -21,7 +21,7 @@ num_enum = "0.7.5"
 panic = "abort"
 lto = true
 codegen-units = 1
-rustflags = ["--cfg", "erase_components"]
+rustflags = ["-Ctarget-cpu=native"]
 
 
 [profile.wasm-release]
@@ -30,6 +30,6 @@ opt-level = "z"
 lto = true
 codegen-units = 1
 panic = "abort"
-rustflags = ["-Ctarget-cpu=native", "--cfg", "erase_components"]
+rustflags = ["-Ctarget-cpu=native"]
 
 

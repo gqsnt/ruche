@@ -1,23 +1,26 @@
-use bitcode::{Decode, Encode};
-use crate::views::summoner_search_page::SummonerSearchPage;
 use crate::views::summoner_page::{SSEInLiveGame, SSEMatchUpdateVersion, SummonerPageRoute};
+use crate::views::summoner_search_page::SummonerSearchPage;
+use bitcode::{Decode, Encode};
 use leptos::config::LeptosOptions;
 
-use leptos::prelude::*;
-use leptos_router::params::{Params, ParamsError};
-use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, Title};
-use leptos_router::components::{ParentRoute, Redirect};
-use leptos_router::{components::{Route, Router, Routes}, path, Lazy};
-use reactive_stores::Store;
-use serde::{Deserialize, Serialize};
-use common::consts::platform_route::PlatformRoute;
-use crate::utils::parse_summoner_slug;
-use crate::views::BackEndMatchFiltersSearch;
+use crate::utils::{parse_summoner_slug, summoner_url, summoner_url_default};
 use crate::views::summoner_page::summoner_champions_page::SummonerChampionsRoute;
-use crate::views::summoner_page::summoner_encounter_page::{ SummonerEncounterRoute};
+use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterRoute;
 use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersRoute;
 use crate::views::summoner_page::summoner_live_page::SummonerLiveRoute;
 use crate::views::summoner_page::summoner_matches_page::SummonerMatchesRoute;
+use crate::views::BackEndMatchFiltersSearch;
+use common::consts::platform_route::PlatformRoute;
+use leptos::prelude::*;
+use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, Title};
+use leptos_router::components::{ParentRoute, Redirect};
+use leptos_router::params::{Params, ParamsError};
+use leptos_router::{
+    components::{Route, Router, Routes},
+    path, Lazy,
+};
+use reactive_stores::Store;
+use serde::{Deserialize, Serialize};
 
 pub const SITE_URL: &str = "https://ruche.lol";
 
@@ -55,12 +58,8 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
-    let sse_match_update_version = RwSignal::new(
-        None::<SSEMatchUpdateVersion>,
-    );
-    let sse_in_live_game = RwSignal::new(
-        SSEInLiveGame::default(),
-    );
+    let sse_match_update_version = RwSignal::new(None::<SSEMatchUpdateVersion>);
+    let sse_in_live_game = RwSignal::new(SSEInLiveGame::default());
 
     let filters = Store::new(BackEndMatchFiltersSearch::default());
     provide_context(sse_match_update_version);
@@ -72,17 +71,19 @@ pub fn App() -> impl IntoView {
         // id=leptos means cargo-leptos will hot-reload this stylesheet
         <Stylesheet id="leptos" href="/pkg/ruche.css" />
         // sets the document title
-        <Title text=move || meta_store.title().get() />
         <Meta name="color-scheme" content="dark light" />
         <Meta name="og:type" content="website" />
         <Meta name="og:site_name" content="Ruche" />
+        <Meta name="og:locale" content="en_US" />
+        <Meta name="twitter:card" content="summary_large_image" />
         <Meta name="robots" content="index,follow" />
 
+        <Title text=move || meta_store.title().get() />
         <Meta name="description" content=move || meta_store.description().get() />
         <Meta name="og:title" content=move || meta_store.title().get() />
         <Meta name="og:description" content=move || meta_store.description().get() />
         <Meta name="og:image" content=move || meta_store.image().get() />
-        <Meta name="og:url" content=move || meta_store.url().get() />
+        <Meta name="og:url" content=move || format!("{}{}", SITE_URL, meta_store.url().get()) />
         <Link rel="canonical" prop:href=move || format!("{}{}", SITE_URL, meta_store.url().get()) />
         <Link rel="icon" type_="image/x-icon" href="/assets/favicon.ico" />
 
@@ -120,94 +121,92 @@ pub fn App() -> impl IntoView {
     }
 }
 
-
-
 #[derive(Params, Debug, PartialEq, Clone)]
 pub struct SummonerRouteParams {
-    pub platform_route:Option<PlatformRoute>,
-    pub summoner_slug:Option<String>,
-
+    pub platform_route: Option<PlatformRoute>,
+    pub summoner_slug: Option<String>,
 }
 
-
-
 pub fn to_summoner_identifier_memo(
-    summoner_route_params: Memo<Result<SummonerRouteParams, ParamsError>>
-) -> Memo<SummonerIdentifier>{
+    summoner_route_params: Memo<Result<SummonerRouteParams, ParamsError>>,
+) -> Memo<SummonerIdentifier> {
     Memo::new(move |_| {
-        summoner_route_params.get()
+        summoner_route_params
+            .get()
             .ok()
-            .and_then(|sr| {
-                match (sr.summoner_slug, sr.platform_route){
-                    (Some(ss), Some(platform_route)) => {
-                        let (game_name, tag_line)  = parse_summoner_slug(&ss);
-                        Some(
-                            SummonerIdentifier{
-                                game_name,
-                                tag_line,
-                                platform_route,
-                            }
-                        )
-                    }
-                    _ => None
+            .and_then(|sr| match (sr.summoner_slug, sr.platform_route) {
+                (Some(ss), Some(platform_route)) => {
+                    let (game_name, tag_line) = parse_summoner_slug(&ss);
+                    Some(SummonerIdentifier {
+                        game_name,
+                        tag_line,
+                        platform_route,
+                    })
                 }
+                _ => None,
             })
             .unwrap()
     })
 }
 
-
-#[derive(Encode,Decode, PartialEq, Clone, Hash, Eq, Debug)]
-pub struct SummonerIdentifier{
-    pub game_name:String,
-    pub tag_line:String,
+#[derive(Encode, Decode, PartialEq, Clone, Hash, Eq, Debug)]
+pub struct SummonerIdentifier {
+    pub game_name: String,
+    pub tag_line: String,
     pub platform_route: PlatformRoute,
 }
 
+impl SummonerIdentifier {
+    pub fn base_route(&self) -> String {
+        summoner_url_default(
+            self.platform_route.code(),
+            self.game_name.as_ref(),
+            self.tag_line.as_ref(),
+        )
+    }
 
-
-
-
-#[derive(Params, Debug, PartialEq, Clone)]
-pub struct EncounterRouteParams{
-    pub encounter_platform_route:Option<PlatformRoute>,
-    pub encounter_slug:Option<String>,
+    pub fn matches_route(&self) -> String {
+        summoner_url(
+            self.platform_route.code(),
+            self.game_name.as_ref(),
+            self.tag_line.as_ref(),
+        )
+    }
 }
 
+#[derive(Params, Debug, PartialEq, Clone)]
+pub struct EncounterRouteParams {
+    pub encounter_platform_route: Option<PlatformRoute>,
+    pub encounter_slug: Option<String>,
+}
 
 pub fn to_encounter_identifier_memo(
-    summoner_route_params: Memo<Result<EncounterRouteParams, ParamsError>>
-) -> Memo<SummonerIdentifier>{
+    summoner_route_params: Memo<Result<EncounterRouteParams, ParamsError>>,
+) -> Memo<SummonerIdentifier> {
     Memo::new(move |_| {
-        summoner_route_params.get()
+        summoner_route_params
+            .get()
             .ok()
-            .and_then(|sr| {
-                match (sr.encounter_slug, sr.encounter_platform_route){
+            .and_then(
+                |sr| match (sr.encounter_slug, sr.encounter_platform_route) {
                     (Some(ss), Some(platform_route)) => {
-                        let (game_name, tag_line)  = parse_summoner_slug(&ss);
-                        Some(
-                            SummonerIdentifier{
-                                game_name,
-                                tag_line,
-                                platform_route,
-                            }
-                        )
+                        let (game_name, tag_line) = parse_summoner_slug(&ss);
+                        Some(SummonerIdentifier {
+                            game_name,
+                            tag_line,
+                            platform_route,
+                        })
                     }
-                    _ => None
-                }
-            })
+                    _ => None,
+                },
+            )
             .unwrap()
     })
 }
 
-
 #[derive(Params, Debug, PartialEq, Clone)]
-pub struct SummonerSearchQuery{
-    pub game_name:Option<String>,
-    pub tag_line:Option<String>,
+pub struct SummonerSearchQuery {
+    pub game_name: Option<String>,
+    pub tag_line: Option<String>,
     pub platform_route: Option<PlatformRoute>,
 }
-
-
-
-

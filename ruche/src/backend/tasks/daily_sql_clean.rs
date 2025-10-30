@@ -1,12 +1,12 @@
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::future::Future;
-use std::pin::Pin;
-use sqlx::PgPool;
-use tokio::time::Instant;
-use leptos::leptos_dom::log;
 use crate::backend::task_director::Task;
 use crate::backend::tasks::calculate_next_run_to_fixed_start_hour;
+use leptos::leptos_dom::log;
+use sqlx::PgPool;
+use std::future::Future;
+use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use tokio::time::Instant;
 
 pub struct DailySqlCleanTask {
     pub db: PgPool,
@@ -37,14 +37,14 @@ impl Task for DailySqlCleanTask {
         Box::pin(async move {
             let table_info = get_table_info(&db).await;
             log!("Daily Clean Task Before:");
-            for row in table_info{
+            for row in table_info {
                 log!("{}", row);
             }
 
             let _ = sqlx::query("VACUUM ANALYSE ").execute(&db).await;
             let table_info = get_table_info(&db).await;
             log!("Daily Clean Task After:");
-            for row in table_info{
+            for row in table_info {
                 log!("{}", row);
             }
         })
@@ -84,8 +84,7 @@ impl Task for DailySqlCleanTask {
     }
 }
 
-
-pub async fn get_table_info(db: &PgPool) -> Vec<TableInfo>{
+pub async fn get_table_info(db: &PgPool) -> Vec<TableInfo> {
     sqlx::query_as::<_, TableInfo>(r#"
             SELECT
                 relname AS table_name,
@@ -99,18 +98,20 @@ pub async fn get_table_info(db: &PgPool) -> Vec<TableInfo>{
         "#).fetch_all(db).await.unwrap()
 }
 
-
 #[derive(sqlx::FromRow, Debug)]
-pub struct TableInfo{
-    table_name:String,
-    total_size:String,
-    table_size:String,
-    index_size:String,
+pub struct TableInfo {
+    table_name: String,
+    total_size: String,
+    table_size: String,
+    index_size: String,
 }
-
 
 impl std::fmt::Display for TableInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Table Name: {}, Total Size: {}, Table Size: {}, Index Size: {}", self.table_name, self.total_size, self.table_size, self.index_size)
+        write!(
+            f,
+            "Table Name: {}, Total Size: {}, Table Size: {}, Index Size: {}",
+            self.table_name, self.total_size, self.table_size, self.index_size
+        )
     }
 }

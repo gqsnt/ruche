@@ -5,31 +5,29 @@ use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Bitcode;
 
-
-
-#[server(input = Bitcode)]
+#[server(input = Bitcode, output=Bitcode)]
 pub async fn search_summoner(
     platform_route: PlatformRoute,
     game_name: String,
     tag_line: String,
-) -> Result<(), ServerFnError> {
+) -> Result<Option<String>, ServerFnError> {
     use crate::app::SummonerIdentifier;
-    use crate::backend::server_fns::get_summoner::ssr::{find_summoner_by_id, resolve_id_by_s_identifier};
+    use crate::backend::server_fns::get_summoner::ssr::{
+        find_summoner_by_id, resolve_id_by_s_identifier,
+    };
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
-        
-    let identifier = SummonerIdentifier{
+
+    let identifier = SummonerIdentifier {
         game_name,
         tag_line,
         platform_route,
     };
-    
+
     let riven_pr = platform_route.to_riven();
-    
-    match resolve_id_by_s_identifier(&db,&identifier).await
-    {
+
+    match resolve_id_by_s_identifier(&db, &identifier).await {
         Ok(id) => {
-            
             let summoner = find_summoner_by_id(&db, id).await?;
             leptos_axum::redirect(
                 summoner_url(
@@ -97,7 +95,7 @@ pub async fn search_summoner(
             }
         }
     }
-    Ok(())
+    Ok(None)
 }
 
 #[cfg(feature = "ssr")]

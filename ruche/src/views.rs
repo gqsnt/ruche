@@ -1,27 +1,27 @@
-use leptos::prelude::{IntoAnyAttribute, RwSignal};
-use leptos::prelude::AddAnyAttr;
-use leptos::prelude::ElementChild;
-use leptos::prelude::{Children, ClassAttribute, Get, Show};
-use leptos::{component, view, IntoView, Params};
-use leptos_router::params::Params;
+use crate::utils::ProPlayerSlug;
+use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
 use common::consts::item::Item;
 use common::consts::perk::Perk;
 use common::consts::summoner_spell::SummonerSpell;
 use common::consts::HasStaticBgAsset;
 use leptos::either::Either;
+use leptos::prelude::AddAnyAttr;
 use leptos::prelude::CustomAttribute;
-use leptos_router::NavigateOptions;
-use std::fmt::{Debug, Formatter};
-use bitcode::{Decode, Encode};
+use leptos::prelude::ElementChild;
+use leptos::prelude::{Children, ClassAttribute, Get, Show};
+use leptos::prelude::{IntoAnyAttribute, RwSignal};
+use leptos::{component, view, IntoView, Params};
 use leptos_router::components::A;
+use leptos_router::params::Params;
+use leptos_router::NavigateOptions;
 use reactive_stores::Store as StoreObj;
 use reactive_stores_macro::Store;
-use crate::utils::ProPlayerSlug;
+use std::fmt::{Debug, Formatter};
 
 pub mod components;
-pub mod summoner_search_page;
 pub mod summoner_page;
+pub mod summoner_search_page;
 
 pub fn get_default_navigation_option() -> NavigateOptions {
     NavigateOptions {
@@ -176,14 +176,13 @@ pub fn PendingLoading(pending: RwSignal<bool>, children: Children) -> impl IntoV
 }
 
 #[component]
-pub fn ProPlayerSlugView(pro_player_slug: Option<ProPlayerSlug>, small:bool) -> impl IntoView{
-    if let Some(pro_player_slug) = pro_player_slug{
-        let attr_class=
-            if small{
-                "text-xs bg-purple-800 rounded px-0.5 text-center"
-            }else{
-                "bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
-            };
+pub fn ProPlayerSlugView(pro_player_slug: Option<ProPlayerSlug>, small: bool) -> impl IntoView {
+    if let Some(pro_player_slug) = pro_player_slug {
+        let attr_class = if small {
+            "text-xs bg-purple-800 rounded px-0.5 text-center"
+        } else {
+            "bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
+        };
         Either::Left(view! {
             <A
                 target="_blank"
@@ -194,7 +193,7 @@ pub fn ProPlayerSlugView(pro_player_slug: Option<ProPlayerSlug>, small:bool) -> 
                 pro
             </A>
         })
-    }else{
+    } else {
         Either::Right(())
     }
 }
@@ -213,10 +212,8 @@ pub struct BackEndMatchFiltersSearch {
     pub end_date: Option<CompactDate>,
     pub champion_id: Option<u16>,
     pub queue_id: Option<u16>,
-    pub page:Option<u16>
+    pub page: Option<u16>,
 }
-
-
 
 impl BackEndMatchFiltersSearch {
     #[cfg(feature = "ssr")]
@@ -230,12 +227,12 @@ impl BackEndMatchFiltersSearch {
     }
 
     pub fn from_options(
-        queue_id:Option<String>,
-        champion_id:Option<String>,
-        start_date:Option<String>,
-        end_date:Option<String>,
-        page:Option<u16>
-    )-> StoreObj<Self>{
+        queue_id: Option<String>,
+        champion_id: Option<String>,
+        start_date: Option<String>,
+        end_date: Option<String>,
+        page: Option<u16>,
+    ) -> StoreObj<Self> {
         StoreObj::new(Self {
             queue_id: queue_id.map(|x| x.parse::<u16>().unwrap_or_default()),
             champion_id: champion_id.map(|x| x.parse::<u16>().unwrap_or_default()),
@@ -244,8 +241,6 @@ impl BackEndMatchFiltersSearch {
             page,
         })
     }
-
-
 }
 pub fn parse_date(date: Option<String>) -> Option<CompactDate> {
     date.and_then(|date| {

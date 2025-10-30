@@ -8,7 +8,7 @@ use sqlx::PgPool;
 
 pub async fn bulk_trashed_matches(
     db: &PgPool,
-    matches: Vec<(Result<Option<Match>,RiotApiError>, LolMatchNotUpdated)>,
+    matches: Vec<(Result<Option<Match>, RiotApiError>, LolMatchNotUpdated)>,
 ) -> AppResult<()> {
     let match_ids = matches
         .iter()

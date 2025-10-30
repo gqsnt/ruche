@@ -2,18 +2,24 @@ use crate::app::{MetaStore, MetaStoreStoreFields};
 use crate::views::summoner_page::summoner_search_page::SummonerSearch;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos_router::components::{ A};
-
-
+use leptos_router::components::A;
 
 #[component]
 pub fn SummonerSearchPage() -> impl IntoView {
     let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
-    batch(||{
-        meta_store.title().set("Ruche | High-Performance League of Legends Stats and Profiles".to_string());
-        meta_store.description().set("Experience lightning-fast League of Legends statistics and summoner profiles on Ruche. Built with Rust for unmatched performance and efficiency. Search now to elevate your gaming experience.".to_string());
-        meta_store.image().set("https://ruche.lol/assets/favicon.ico".to_string());
+    batch(|| {
+        meta_store
+            .title()
+            .set("League of Legends Stats & Summoner Search | Ruche".to_string());
+        meta_store.description().set(
+            "Look up League of Legends summoner profiles, match history, champion stats, encounters, and live games. Full-stack Rust, real-time updates, compact binary payloads."
+                .to_string(),
+        );
+        meta_store.url().set("/".to_string());
+        meta_store
+            .image()
+            .set("https://ruche.lol/assets/logo.avif".to_string());
     });
 
     view! {

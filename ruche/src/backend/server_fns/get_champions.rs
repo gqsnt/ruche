@@ -1,9 +1,9 @@
+use crate::app::SummonerIdentifier;
 use crate::views::summoner_page::summoner_champions_page::ChampionStats;
 use crate::views::BackEndMatchFiltersSearch;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Bitcode;
-use crate::app::SummonerIdentifier;
 
 #[server(input=Bitcode,output=Bitcode)]
 pub async fn get_champions(
@@ -12,7 +12,11 @@ pub async fn get_champions(
 ) -> Result<Vec<ChampionStats>, ServerFnError> {
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
-    let summoner_id = crate::backend::server_fns::get_summoner::ssr::resolve_id_by_s_identifier(&db, &summoner_identifier).await?;
+    let summoner_id = crate::backend::server_fns::get_summoner::ssr::resolve_id_by_s_identifier(
+        &db,
+        &summoner_identifier,
+    )
+    .await?;
     ssr::inner_get_champions(&db, summoner_id, filters.unwrap_or_default())
         .await
         .map_err(|e| e.to_server_fn_error())

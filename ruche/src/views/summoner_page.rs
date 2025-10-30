@@ -1,4 +1,7 @@
-use crate::app::{to_summoner_identifier_memo, MetaStore, MetaStoreStoreFields, SummonerIdentifier, SummonerRouteParams};
+use crate::app::{
+    to_summoner_identifier_memo, MetaStore, MetaStoreStoreFields, SummonerIdentifier,
+    SummonerRouteParams,
+};
 use crate::backend::server_fns::get_summoner::get_summoner;
 use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::utils::{summoner_url, ProPlayerSlug};
@@ -16,10 +19,10 @@ use leptos::prelude::*;
 use leptos::server::codee::binary::BitcodeCodec;
 use leptos::{component, view, IntoView};
 
+use crate::views::summoner_page::summoner_search_page::SummonerSearch;
 use leptos_router::components::{Outlet, A};
 use leptos_router::hooks::{use_location, use_params};
 use leptos_router::{lazy_route, LazyRoute};
-use crate::views::summoner_page::summoner_search_page::SummonerSearch;
 
 pub mod match_details;
 pub mod summoner_champions_page;
@@ -32,31 +35,30 @@ pub mod summoner_search_page;
 
 pub struct SummonerPageRoute {
     pub summoner_resource: Resource<Result<Summoner, ServerFnError>, BitcodeCodec>,
-    pub summoner_identifier_memo: Memo<SummonerIdentifier>
+    pub summoner_identifier_memo: Memo<SummonerIdentifier>,
 }
 
 #[lazy_route]
 impl LazyRoute for SummonerPageRoute {
     fn data() -> Self {
         let summoner_route_params = use_params::<SummonerRouteParams>();
-        let summoner_identifier_memo = to_summoner_identifier_memo(
-            summoner_route_params
-        );
+        let summoner_identifier_memo = to_summoner_identifier_memo(summoner_route_params);
 
         let summoner_resource = leptos::server::Resource::new_bitcode_blocking(
             move || summoner_identifier_memo.get(),
-            |summoner_identifier| async move {
-                get_summoner(
-                    summoner_identifier
-                )
-                .await
-            },
+            |summoner_identifier| async move { get_summoner(summoner_identifier).await },
         );
-        Self { summoner_resource, summoner_identifier_memo }
+        Self {
+            summoner_resource,
+            summoner_identifier_memo,
+        }
     }
 
     fn view(this: Self) -> AnyView {
-        let SummonerPageRoute { summoner_resource,summoner_identifier_memo } = this;
+        let SummonerPageRoute {
+            summoner_resource,
+            summoner_identifier_memo,
+        } = this;
         provide_context(summoner_identifier_memo);
         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
         let location = use_location();
@@ -255,7 +257,6 @@ pub fn SummonerInfo(
         </div>
     }
 }
-
 
 #[derive(Clone, PartialEq, Eq, Debug, Encode, Decode)]
 pub struct Summoner {

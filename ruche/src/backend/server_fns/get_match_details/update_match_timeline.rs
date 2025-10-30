@@ -29,14 +29,10 @@ pub async fn update_match_timeline(
     let mut lol_match_timelines = HashMap::new();
 
     for participant in &timeline.info.participants.unwrap_or_default() {
-        let summoner_id = puuids_summoner_ids
-            .get(participant.puuid.as_str())
-            .ok_or_else(|| {
-                AppError::CustomError(format!(
-                    "Summoner ID not found for PUUID {}",
-                    participant.puuid
-                ))
-            })?;
+        let Some(summoner_id) = puuids_summoner_ids
+            .get(participant.puuid.as_str()) else {
+            continue;
+        };
         lol_match_timelines.insert(
             participant.participant_id,
             TempLolMatchTimeline {
@@ -50,26 +46,17 @@ pub async fn update_match_timeline(
 
     for frame in timeline.info.frames.iter() {
         for event in &frame.events {
-            let Some(participant_id) = event.participant_id.filter(|&id| id > 0) else { continue; };
+            let Some(participant_id) = event.participant_id.filter(|&id| id > 0) else {
+                continue;
+            };
             let event_type = EventType::from(event.r#type.as_str());
             match event_type {
                 EventType::SkillLevelUp => {
                     let skill_slot = event.skill_slot.ok_or_else(|| {
                         AppError::CustomError("Missing skill_slot in SKILL_LEVEL_UP event".into())
                     })?;
-                    let participant =
-                        match lol_match_timelines
-                            .get_mut(&participant_id)
-                            .ok_or_else(|| {
-                                AppError::CustomError(format!(
-                                    "Participant with ID {} not found",
-                                    participant_id
-                                ))
-                            }){
-                            Ok(p) => p,
-                            Err(_) => {
-                                continue;
-                            }
+                    let Some(participant) = lol_match_timelines.get_mut(&participant_id)else {
+                        continue;
                     };
                     participant
                         .skills_timeline
@@ -88,7 +75,6 @@ pub async fn update_match_timeline(
                             event_type: ItemEventType::Purchased,
                         },
                     );
-
                 }
                 EventType::ItemSold => {
                     let item_id = event.item_id.ok_or_else(|| {
@@ -105,20 +91,9 @@ pub async fn update_match_timeline(
                     );
                 }
                 EventType::ItemUndo => {
-                    let participant =
-                        match lol_match_timelines
-                            .get_mut(&participant_id)
-                            .ok_or_else(|| {
-                                AppError::CustomError(format!(
-                                    "Participant with ID {} not found",
-                                    participant_id
-                                ))
-                            }){
-                            Ok(p) => p,
-                            Err(_) => {
-                                continue;
-                            }
-                        };
+                    let Some(participant) = lol_match_timelines.get_mut(&participant_id)else {
+                        continue;
+                    };
                     if let Some(before_id) = event.before_id {
                         let before_id = before_id as u32;
                         if before_id != 0 {
@@ -187,9 +162,10 @@ pub fn push_item_event_into_participant_id(
     timestamp: i64,
     event: ItemEvent,
 ) {
-    let participant = participants
-        .get_mut(&participant_id)
-        .expect("Participant not found");
+    let Some(participant) = participants
+        .get_mut(&participant_id)  else {
+        return;
+    };
     participant
         .items_event_timeline
         .push(((timestamp / 60000) as u16, event));

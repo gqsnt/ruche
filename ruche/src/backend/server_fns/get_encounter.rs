@@ -1,10 +1,10 @@
 use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterResult;
 use crate::views::BackEndMatchFiltersSearch;
 
+use crate::app::SummonerIdentifier;
 use leptos::prelude::*;
 use leptos::server;
 use leptos::server_fn::codec::Bitcode;
-use crate::app::SummonerIdentifier;
 
 #[server(input=Bitcode, output=Bitcode)]
 pub async fn get_encounter(
@@ -28,9 +28,12 @@ pub async fn get_encounter(
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
-    use crate::backend::server_fns::get_summoner::ssr::{ resolve_summoner_by_s_identifier, SummonerModel};
+    use crate::app::SummonerIdentifier;
+    use crate::backend::server_fns::get_summoner::ssr::{
+        resolve_summoner_by_s_identifier, SummonerModel,
+    };
     use crate::backend::ssr::{format_duration_since, AppResult, PlatformRouteDb};
-    use crate::utils::{ DurationSince, ProPlayerSlug, RiotMatchId};
+    use crate::utils::{DurationSince, ProPlayerSlug, RiotMatchId};
     use crate::views::summoner_page::summoner_encounter_page::{
         SummonerEncounterMatch, SummonerEncounterParticipant, SummonerEncounterResult,
         SummonerEncounterStats,
@@ -43,7 +46,6 @@ pub mod ssr {
     use common::consts::queue::Queue;
     use itertools::Itertools;
     use sqlx::{PgPool, QueryBuilder};
-    use crate::app::SummonerIdentifier;
 
     pub async fn get_encounter_data(
         db: &PgPool,
@@ -52,12 +54,10 @@ pub mod ssr {
         filters: BackEndMatchFiltersSearch,
         is_with: bool,
     ) -> AppResult<SummonerEncounterResult> {
-        
         let (summoner, encounter) = tokio::join!(
             resolve_summoner_by_s_identifier(db, &summoner_identifier),
             resolve_summoner_by_s_identifier(db, &encounter_identifier),
         );
-        
 
         let summoner = summoner?;
         let encounter = encounter?;
@@ -208,10 +208,13 @@ pub mod ssr {
                     riot_match_id: RiotMatchId::new(row.riot_match_id.as_str()),
                     match_ended_since,
                     match_duration: row.match_duration,
-                    queue: row.queue_id.map(|q| Queue::from_id_or_custom(q as u16)).unwrap_or(Queue::Custom),
+                    queue: row
+                        .queue_id
+                        .map(|q| Queue::from_id_or_custom(q as u16))
+                        .unwrap_or(Queue::Custom),
                     platform: row.platform.into(),
                     participant: SummonerEncounterParticipant {
-                        summoner_id:summoner.id,
+                        summoner_id: summoner.id,
                         won: row.won,
                         champion_id: row.champion_id as u16,
                         champ_level: row.champ_level as u16,

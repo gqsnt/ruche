@@ -1,6 +1,6 @@
-use crate::views::{ parse_date, BackEndMatchFiltersSearch, BackEndMatchFiltersSearchStoreFields};
+use crate::views::{parse_date, BackEndMatchFiltersSearch, BackEndMatchFiltersSearchStoreFields};
 use common::consts::champion::CHAMPION_OPTIONS;
-use common::consts::queue::{Queue};
+use common::consts::queue::Queue;
 
 use leptos::prelude::*;
 
@@ -8,19 +8,30 @@ use leptos::{component, view, IntoView};
 use reactive_stores::Store;
 
 #[component]
-pub fn MatchFilters(hidden:Signal<bool>,children: Children) -> impl IntoView {
+pub fn MatchFilters(hidden: Signal<bool>, children: Children) -> impl IntoView {
     let filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
 
     Effect::new(move |_| {
         let _ = filters.champion_id().get();
-        let _=  filters.queue_id().get();
+        let _ = filters.queue_id().get();
         let _ = filters.start_date().get();
         let _ = filters.end_date().get();
         filters.page().set(None);
     });
-    let to_opt_date = |v: String| if v.is_empty() { None } else { parse_date(Some(v)) };
-    let to_opt_u16 = |v: String| if v.is_empty() { None } else { Some(v.parse::<u16>().unwrap_or_default()) };
-
+    let to_opt_date = |v: String| {
+        if v.is_empty() {
+            None
+        } else {
+            parse_date(Some(v))
+        }
+    };
+    let to_opt_u16 = |v: String| {
+        if v.is_empty() {
+            None
+        } else {
+            Some(v.parse::<u16>().unwrap_or_default())
+        }
+    };
 
     view! {
         <div class="flex justify-center my-2" class:hidden=move || hidden()>
@@ -32,7 +43,7 @@ pub fn MatchFilters(hidden:Signal<bool>,children: Children) -> impl IntoView {
                             name="champion_id"
                             class="my-select"
                             id="champion_id"
-                            prop:value=filters.champion_id().get()
+                            prop:value=filters.champion_id().get_untracked()
                             on:change=move |e| {
                                 filters.champion_id().set(to_opt_u16(event_target_value(&e)))
                             }
@@ -53,7 +64,7 @@ pub fn MatchFilters(hidden:Signal<bool>,children: Children) -> impl IntoView {
                             class="my-select"
                             name="queue_id"
                             id="queue_id"
-                            prop:value=filters.queue_id().get()
+                            prop:value=filters.queue_id().get_untracked()
                             on:change=move |e| {
                                 filters.queue_id().set(to_opt_u16(event_target_value(&e)))
                             }
@@ -75,9 +86,7 @@ pub fn MatchFilters(hidden:Signal<bool>,children: Children) -> impl IntoView {
                             type="date"
                             name="start_date"
                             id="start_date"
-                            prop:value=move || {
-                                filters.start_date().get().map(|start_date| start_date.to_string())
-                            }
+                            prop:value= filters.start_date().get_untracked().map(|start_date| start_date.to_string())
                             on:input=move |e| {
                                 filters.start_date().set(to_opt_date(event_target_value(&e)))
                             }
@@ -91,9 +100,7 @@ pub fn MatchFilters(hidden:Signal<bool>,children: Children) -> impl IntoView {
                             type="date"
                             name="end_date"
                             id="end_date"
-                            prop:value=move || {
-                                filters.end_date().get().map(|end_date| end_date.to_string())
-                            }
+                            prop:value=filters.end_date().get_untracked().map(|end_date| end_date.to_string())
                             on:input=move |e| {
                                 filters.end_date().set(to_opt_date(event_target_value(&e)))
                             }

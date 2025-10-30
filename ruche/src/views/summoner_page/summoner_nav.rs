@@ -1,15 +1,21 @@
-use crate::views::summoner_page::{SSEInLiveGame};
+use crate::app::EncounterRouteParams;
+use crate::views::summoner_page::SSEInLiveGame;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::components::A;
-use leptos_router::hooks::{ use_params };
-use crate::app::EncounterRouteParams;
+use leptos_router::hooks::use_params;
 
 #[component]
 pub fn SummonerNav() -> impl IntoView {
     let sse_in_live_game = expect_context::<RwSignal<SSEInLiveGame>>();
     let encounter_params = use_params::<EncounterRouteParams>();
-    let is_encounter_route = move || encounter_params.get().ok().map(|i|i.encounter_platform_route.is_some()).unwrap_or_default();
+    let is_encounter_route = move || {
+        encounter_params
+            .get()
+            .ok()
+            .map(|i| i.encounter_platform_route.is_some())
+            .unwrap_or_default()
+    };
     view! {
         <div class="flex justify-center">
             <nav class="w-[768px] summoner-nav" aria-label="Summoner navigation">

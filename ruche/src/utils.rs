@@ -1,10 +1,9 @@
-use std::fmt::Formatter;
 use bitcode::{Decode, Encode};
 use common::consts::item::Item;
+use std::fmt::Formatter;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Encode, Decode)]
 pub struct FixedSizeString<const N: usize>([u8; N]);
-
 
 impl<const N: usize> FixedSizeString<N> {
     pub fn new(value: &str) -> Self {
@@ -138,7 +137,14 @@ pub fn parse_summoner_slug(slug: &str) -> (String, String) {
 
 pub fn summoner_url(platform: &str, game_name: &str, tag_line: &str) -> String {
     format!(
-        "/summoners/{}/{}/matches",
+        "{}/matches",
+        summoner_url_default(platform, game_name, tag_line)
+    )
+}
+
+pub fn summoner_url_default(platform: &str, game_name: &str, tag_line: &str) -> String {
+    format!(
+        "/summoners/{}/{}",
         platform,
         summoner_to_slug(game_name, tag_line)
     )
@@ -152,11 +158,18 @@ pub fn summoner_not_found_url(platform: &str, game_name: &str, tag_line: &str) -
 }
 
 pub fn summoner_encounter_url(
-    encounter_platform: &str, encounter_game: &str, encounter_tag: &str,
-    in_encounter:bool,
+    encounter_platform: &str,
+    encounter_game: &str,
+    encounter_tag: &str,
+    in_encounter: bool,
 ) -> String {
-    let pre = in_encounter.then(||"../../".to_string());
-    format!("{}../encounter/{}/{}",pre.unwrap_or_default(), encounter_platform, summoner_to_slug(encounter_game, encounter_tag))
+    let pre = in_encounter.then(|| "../../".to_string());
+    format!(
+        "{}../encounter/{}/{}",
+        pre.unwrap_or_default(),
+        encounter_platform,
+        summoner_to_slug(encounter_game, encounter_tag)
+    )
 }
 
 pub fn round_to_2_decimal_places(value: f64) -> f64 {
@@ -203,7 +216,6 @@ impl std::fmt::Display for SSEEvent {
         }
     }
 }
-
 
 #[inline]
 pub fn items_from_slice(ids: &[u32]) -> Vec<Item> {

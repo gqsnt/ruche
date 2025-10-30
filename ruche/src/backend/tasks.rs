@@ -1,12 +1,12 @@
 use chrono::{Duration, Local, Timelike};
 use tokio::time::Instant;
 
+pub mod daily_sql_clean;
 pub mod generate_sitemap;
 pub mod handle_live_game_cache;
 pub mod sse_broadcast_match_updated_cleanup;
 pub mod update_matches;
 pub mod update_pro_players;
-pub mod daily_sql_clean;
 
 pub fn calculate_next_run_to_fixed_start_hour(start_hour: u32) -> Instant {
     let now = Local::now();

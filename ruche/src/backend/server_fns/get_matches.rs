@@ -1,8 +1,8 @@
+use crate::app::SummonerIdentifier;
 use crate::views::summoner_page::summoner_matches_page::GetSummonerMatchesResult;
 use crate::views::BackEndMatchFiltersSearch;
 use leptos::prelude::*;
 use leptos::server_fn::codec::Bitcode;
-use crate::app::SummonerIdentifier;
 
 #[server(input=Bitcode,output=Bitcode)]
 pub async fn get_matches(
@@ -12,13 +12,9 @@ pub async fn get_matches(
     let state = expect_context::<crate::ssr::AppState>();
     let db = state.db.clone();
 
-    ssr::fetch_matches(
-        &db,
-        summoner_identifier,
-        filters.unwrap_or_default(),
-    )
-    .await
-    .map_err(|e| e.to_server_fn_error())
+    ssr::fetch_matches(&db, summoner_identifier, filters.unwrap_or_default())
+        .await
+        .map_err(|e| e.to_server_fn_error())
 }
 
 #[cfg(feature = "ssr")]
@@ -33,21 +29,25 @@ pub mod ssr {
     use common::consts::queue::Queue;
     use itertools::Itertools;
 
+    use crate::app::SummonerIdentifier;
     use crate::utils::{DurationSince, ProPlayerSlug, RiotMatchId};
     use common::consts::platform_route::PlatformRoute;
     use sqlx::{FromRow, PgPool, QueryBuilder};
     use std::collections::HashMap;
-    use crate::app::SummonerIdentifier;
 
     pub async fn fetch_matches(
         db: &PgPool,
         summoner_identifier: SummonerIdentifier,
         filters: BackEndMatchFiltersSearch,
     ) -> AppResult<GetSummonerMatchesResult> {
-        
-        let summoner_id = crate::backend::server_fns::get_summoner::ssr::resolve_id_by_s_identifier(db, &summoner_identifier).await?;
+        let summoner_id =
+            crate::backend::server_fns::get_summoner::ssr::resolve_id_by_s_identifier(
+                db,
+                &summoner_identifier,
+            )
+            .await?;
         let per_page = 20;
-        let page= filters.page.unwrap_or(1) as i32;
+        let page = filters.page.unwrap_or(1) as i32;
         let offset = (page.max(1) - 1) * per_page;
 
         let start_date = filters.start_date_to_naive();
@@ -200,7 +200,9 @@ pub mod ssr {
                     platform: row.platform.into(),
                     match_ended_since,
                     match_duration: row.lol_match_match_duration,
-                    queue: Queue::from_id_or_custom(row.lol_match_queue_id.unwrap_or_default() as u16),
+                    queue: Queue::from_id_or_custom(
+                        row.lol_match_queue_id.unwrap_or_default() as u16
+                    ),
                     champion_id: row.champion_id as u16,
                     champ_level: row.champ_level as u16,
                     won: row.won,
