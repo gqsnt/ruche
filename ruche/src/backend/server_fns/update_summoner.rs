@@ -13,6 +13,8 @@ use leptos::server_fn::codec::Bitcode;
 #[cfg(feature = "ssr")]
 use std::string::ToString;
 
+
+
 #[server( input=Bitcode, output=Bitcode)]
 pub async fn update_summoner(
     summoner_id: i32,
@@ -20,6 +22,8 @@ pub async fn update_summoner(
     tag_line: String,
     platform_route: PlatformRoute,
 ) -> Result<Option<(u16, u16)>, ServerFnError> {
+    use crate::app::SummonerIdentifier;
+    use crate::ssr::S_IDENTIFIER_TO_ID;
     let state = expect_context::<crate::ssr::AppState>();
     let riot_api = state.riot_api.clone();
     let max_matches = state.max_matches;
@@ -42,6 +46,13 @@ pub async fn update_summoner(
         );
         let acc_game_name = account.game_name.clone().unwrap_or_default();
         let acc_tag_line = account.tag_line.clone().unwrap_or_default();
+        let acc_identifier = SummonerIdentifier{
+            platform_route,
+            game_name:acc_game_name.clone(),
+            tag_line:acc_tag_line.clone()
+        };
+        S_IDENTIFIER_TO_ID.invalidate(&acc_identifier).await;
+
         tokio::spawn(async move {
             insert_or_update_account_and_summoner(&db, platform_route, account, summoner)
                 .await

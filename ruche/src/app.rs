@@ -20,11 +20,11 @@ use leptos_router::{
     path, Lazy,
 };
 use reactive_stores::Store;
-use serde::{Deserialize, Serialize};
+
 
 pub const SITE_URL: &str = "https://ruche.lol";
 
-#[derive(Clone, reactive_stores_macro::Store, Serialize, Deserialize, Default)]
+#[derive(Clone, reactive_stores_macro::Store,Default)]
 pub struct MetaStore {
     pub title: String,
     pub description: String,

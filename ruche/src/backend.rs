@@ -78,8 +78,6 @@ pub mod ssr {
         ReqwestError(Arc<reqwest::Error>),
         #[error("Parse Error: {0}")]
         ParseIntError(ParseIntError),
-        #[error("Serde json Error: {0}")]
-        SerdeJsonError(Arc<serde_json::Error>),
         #[error("Custom Error: {0}")]
         CustomError(String),
         #[error("chrono Error: {0}")]
@@ -94,11 +92,7 @@ pub mod ssr {
         }
     }
 
-    impl From<serde_json::Error> for AppError {
-        fn from(e: serde_json::Error) -> Self {
-            AppError::SerdeJsonError(Arc::new(e))
-        }
-    }
+
 
     impl From<chrono::ParseError> for AppError {
         fn from(e: chrono::ParseError) -> Self {
@@ -146,7 +140,6 @@ pub mod ssr {
                 AppError::SiteMapError(_) => StatusCode::INTERNAL_SERVER_ERROR,
                 AppError::CustomError(_) => StatusCode::INTERNAL_SERVER_ERROR,
                 AppError::ParseIntError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::SerdeJsonError(_) => StatusCode::INTERNAL_SERVER_ERROR,
                 AppError::ChronoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
                 AppError::StdIoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             }
@@ -161,7 +154,7 @@ pub mod ssr {
     }
 
     #[derive(
-        Clone, Copy, Debug, PartialEq, PartialOrd, sqlx::Type, serde::Serialize, serde::Deserialize,
+        Clone, Copy, Debug, PartialEq, PartialOrd, sqlx::Type
     )]
     #[sqlx(type_name = "platform_type")]
     pub enum PlatformRouteDb {

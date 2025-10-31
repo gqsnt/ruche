@@ -30,6 +30,6 @@ opt-level = "z"
 lto = true
 codegen-units = 1
 panic = "abort"
-rustflags = ["-Ctarget-cpu=native"]
+rustflags = [ "-Zunstable-options",  "-Zfmt-debug=none"]
 
 

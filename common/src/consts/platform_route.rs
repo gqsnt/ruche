@@ -1,6 +1,6 @@
 use bitcode::{Decode, Encode};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use serde::{Deserialize, Serialize};
+
 use strum::{EnumIter, EnumString, IntoStaticStr};
 
 pub const PLATFORM_ROUTE_OPTIONS: [PlatformRoute; 16] = [
@@ -24,9 +24,9 @@ pub const PLATFORM_ROUTE_OPTIONS: [PlatformRoute; 16] = [
 
 #[derive(
     PartialEq, Eq, Hash, PartialOrd, Ord, Encode, Decode, Clone, Copy, Debug, Default,
-    Serialize, Deserialize,
     IntoPrimitive, TryFromPrimitive, EnumIter, EnumString, IntoStaticStr
 )]
+#[cfg_attr(feature = "ssr",derive(serde::Serialize, serde::Deserialize))]
 #[repr(u8)]
 pub enum PlatformRoute {
     /// Europe, West. (default)

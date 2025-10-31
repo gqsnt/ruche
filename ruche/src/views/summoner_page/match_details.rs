@@ -10,7 +10,7 @@ use common::consts::platform_route::PlatformRoute;
 use leptos::either::{Either, EitherOf3};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use serde::{Deserialize, Serialize};
+
 use std::fmt::Formatter;
 use std::sync::Arc;
 
@@ -199,21 +199,24 @@ pub struct LolMatchTimeline {
     pub items_event_timeline: Vec<(u16, Vec<ItemEvent>)>,
 }
 
-#[derive(Clone, Encode, Decode, Serialize, Deserialize)]
+#[derive(Clone, Encode, Decode)]
+#[cfg_attr(feature = "ssr",derive(serde::Serialize, serde::Deserialize))]
 pub struct ItemEvent {
     pub item_id: u32,
     pub event_type: ItemEventType,
 }
 
 #[repr(u8)]
-#[derive(Clone, Encode, Decode, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Encode, Decode, PartialEq)]
+#[cfg_attr(feature = "ssr",derive(serde::Serialize, serde::Deserialize))]
 pub enum ItemEventType {
     Purchased,
     Sold,
 }
 
 #[repr(u8)]
-#[derive(Clone, Encode, Decode, PartialEq, Copy, Serialize, Deserialize)]
+#[derive(Clone, Encode, Decode, PartialEq, Copy)]
+#[cfg_attr(feature = "ssr",derive(serde::Serialize, serde::Deserialize))]
 pub enum Skill {
     Q = 1,
     W = 2,

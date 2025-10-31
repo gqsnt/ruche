@@ -1,0 +1,6 @@
+[unstable]
+build-std = ["std", "panic_abort", "core", "alloc"]
+build-std-features=["default", "optimize_for_size"]
+
+[build]
+rustflags = ["--cfg=has_std"]
