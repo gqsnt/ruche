@@ -131,22 +131,27 @@ pub fn to_summoner_identifier_memo(
     summoner_route_params: Memo<Result<SummonerRouteParams, ParamsError>>,
 ) -> Memo<SummonerIdentifier> {
     Memo::new(move |_| {
-        summoner_route_params
-            .get()
-            .ok()
-            .and_then(|sr| match (sr.summoner_slug, sr.platform_route) {
-                (Some(ss), Some(platform_route)) => {
-                    let (game_name, tag_line) = parse_summoner_slug(&ss);
-                    Some(SummonerIdentifier {
-                        game_name,
-                        tag_line,
-                        platform_route,
-                    })
-                }
-                _ => None,
-            })
-            .unwrap()
+        summoner_route_params_to_identifier(summoner_route_params)
     })
+}
+
+
+pub fn summoner_route_params_to_identifier(summoner_route_params: Memo<Result<SummonerRouteParams, ParamsError>>) -> SummonerIdentifier{
+    summoner_route_params
+        .get()
+        .ok()
+        .and_then(|sr| match (sr.summoner_slug, sr.platform_route) {
+            (Some(ss), Some(platform_route)) => {
+                let (game_name, tag_line) = parse_summoner_slug(&ss);
+                Some(SummonerIdentifier {
+                    game_name,
+                    tag_line,
+                    platform_route,
+                })
+            }
+            _ => None,
+        })
+        .unwrap()
 }
 
 #[derive(Encode, Decode, PartialEq, Clone, Hash, Eq, Debug)]

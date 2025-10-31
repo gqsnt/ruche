@@ -172,9 +172,7 @@ pub fn summoner_encounter_url(
     )
 }
 
-pub fn round_to_2_decimal_places(value: f64) -> f64 {
-    (value * 100.0).round() / 100.0
-}
+
 
 pub fn format_float_to_2digits(value: f32) -> String {
     let value = (value * 100.0).round() / 100.0;

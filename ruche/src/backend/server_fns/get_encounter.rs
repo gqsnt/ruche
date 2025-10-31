@@ -33,16 +33,14 @@ pub mod ssr {
         resolve_summoner_by_s_identifier, SummonerModel,
     };
     use crate::backend::ssr::{format_duration_since, AppResult, PlatformRouteDb};
-    use crate::utils::{DurationSince, ProPlayerSlug, RiotMatchId};
+    use crate::utils::{DurationSince, RiotMatchId};
     use crate::views::summoner_page::summoner_encounter_page::{
         SummonerEncounterMatch, SummonerEncounterParticipant, SummonerEncounterResult,
         SummonerEncounterStats,
     };
-    use crate::views::summoner_page::Summoner;
     use crate::views::BackEndMatchFiltersSearch;
     use bigdecimal::{BigDecimal, ToPrimitive};
     use chrono::NaiveDateTime;
-    use common::consts::platform_route::PlatformRoute;
     use common::consts::queue::Queue;
     use itertools::Itertools;
     use sqlx::{PgPool, QueryBuilder};
@@ -384,21 +382,6 @@ pub mod ssr {
         .map_err(|e| e.into())
     }
 
-    pub async fn find_summoner_by_id(db: &PgPool, summoner_id: i32) -> AppResult<Summoner> {
-        find_summoner_model_by_id(db, summoner_id)
-            .await
-            .map(|summoner_db| Summoner {
-                id: summoner_db.id,
-                game_name: summoner_db.game_name,
-                tag_line: summoner_db.tag_line,
-                platform: PlatformRoute::from(summoner_db.platform),
-                summoner_level: summoner_db.summoner_level as u16,
-                profile_icon_id: summoner_db.profile_icon_id as u16,
-                pro_slug: summoner_db
-                    .pro_slug
-                    .map(|slug| ProPlayerSlug::new(slug.as_str())),
-            })
-    }
 
     #[derive(sqlx::FromRow)]
     pub struct SummonerEncounterStatsModel {

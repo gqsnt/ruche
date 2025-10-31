@@ -10,7 +10,7 @@ use leptos::prelude::AddAnyAttr;
 use leptos::prelude::CustomAttribute;
 use leptos::prelude::ElementChild;
 use leptos::prelude::{Children, ClassAttribute, Get, Show};
-use leptos::prelude::{RwSignal};
+use leptos::prelude::{RwSignal,IntoAnyAttribute};
 use leptos::{component, view, IntoView, Params};
 use leptos_router::components::A;
 use leptos_router::params::Params;

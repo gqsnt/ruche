@@ -80,8 +80,6 @@ impl LazyRoute for SummonerPageRoute {
                                     let (profile_icon_signal, set_profile_icon) = signal(
                                         summoner.profile_icon_id,
                                     );
-                                    let (summoner, _) = signal(summoner);
-                                    provide_context(summoner);
                                     let update_summoner_action = ServerAction::<
                                         UpdateSummoner,
                                     >::new();
@@ -101,18 +99,20 @@ impl LazyRoute for SummonerPageRoute {
                                             }
                                         }
                                     });
+
                                     #[cfg(not(feature = "ssr"))]
                                     {
+                                        let summoner_sse_url = format!(
+                                                        "/sse/match_updated/{}/{}",
+                                                        summoner.platform,
+                                                        summoner.id,
+                                                    );
                                         use futures::StreamExt;
                                         use send_wrapper::SendWrapper;
                                         use crate::utils::SSEEvent;
                                         let mut source = SendWrapper::new(
                                             gloo_net::eventsource::futures::EventSource::new(
-                                                    format!(
-                                                        "/sse/match_updated/{}/{}",
-                                                        summoner.read().platform,
-                                                        summoner.read().id,
-                                                    )
+                                                    summoner_sse_url
                                                         .as_str(),
                                                 )
                                                 .expect("couldn't connect to SSE stream"),
@@ -161,7 +161,7 @@ impl LazyRoute for SummonerPageRoute {
                                     meta_store
                                         .image()
                                         .set(
-                                            ProfileIcon(summoner.read().profile_icon_id)
+                                            ProfileIcon(summoner.profile_icon_id)
                                                 .get_static_asset_url(),
                                         );
 
@@ -169,10 +169,10 @@ impl LazyRoute for SummonerPageRoute {
                                         <div class="flex justify-center">
                                             <div class="flex w-[768px] my-2 space-x-2">
                                                 <SummonerInfo
-                                                    game_name=summoner.read().game_name.clone()
-                                                    tag_line=summoner.read().tag_line.clone()
-                                                    pro_slug=summoner.read().pro_slug
-                                                    platform=summoner.read().platform
+                                                    game_name=summoner.game_name.clone()
+                                                    tag_line=summoner.tag_line.clone()
+                                                    pro_slug=summoner.pro_slug
+                                                    platform=summoner.platform
                                                     level_signal=level_signal
                                                     profile_icon_signal=profile_icon_signal
                                                 />
@@ -185,10 +185,10 @@ impl LazyRoute for SummonerPageRoute {
                                                             pending.set(true);
                                                             update_summoner_action
                                                                 .dispatch(UpdateSummoner {
-                                                                    summoner_id: summoner.read().id,
-                                                                    game_name: summoner.read().game_name.clone(),
-                                                                    tag_line: summoner.read().tag_line.clone(),
-                                                                    platform_route: summoner.read().platform,
+                                                                    summoner_id: summoner.id,
+                                                                    game_name: summoner.game_name.clone(),
+                                                                    tag_line: summoner.tag_line.clone(),
+                                                                    platform_route: summoner.platform,
                                                                 });
                                                         }
                                                     >
@@ -269,18 +269,9 @@ pub struct Summoner {
     pub platform: PlatformRoute,
 }
 
-impl Summoner {
-    pub fn to_route_path(&self) -> String {
-        summoner_url(
-            self.platform.code(),
-            self.game_name.as_ref(),
-            self.tag_line.as_ref(),
-        )
-    }
-}
 
-#[derive(Clone, PartialEq, Eq, Copy, Default)]
+#[derive(Clone, PartialEq, Eq, Copy, Default, Debug)]
 pub struct SSEMatchUpdateVersion(pub u16);
 
-#[derive(Clone, PartialEq, Eq, Copy, Default)]
+#[derive(Clone, PartialEq, Eq, Copy, Default, Debug)]
 pub struct SSEInLiveGame(pub Option<u16>);

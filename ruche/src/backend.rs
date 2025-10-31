@@ -26,11 +26,6 @@ pub mod ssr {
 
     pub type AppResult<T> = Result<T, AppError>;
 
-    // impl From<AppError> for ServerFnError {
-    //     fn from(e: AppError) -> Self {
-    //         e.to_server_fn_error()
-    //     }
-    // }
 
     pub fn format_duration_since(date_time: NaiveDateTime) -> DurationSince {
         let now = Utc::now().naive_utc();

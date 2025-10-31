@@ -11,7 +11,8 @@ use crate::backend::tasks::update_matches::bulk_lol_matches::{
 use crate::backend::tasks::update_matches::bulk_summoners::{
     bulk_insert_summoners, bulk_update_summoners,
 };
-use crate::ssr::{RiotApiState, SubscriberMap};
+use crate::sse::{SubscriberMap};
+use crate::ssr::{RiotApiState};
 use crate::utils::{ProPlayerSlug, SSEEvent};
 use crate::DB_CHUNK_SIZE;
 use chrono::NaiveDateTime;
@@ -607,13 +608,7 @@ pub async fn find_conflicting_summoners(
     .collect())
 }
 
-pub async fn delete_summoner_account_by_id(db: &PgPool, id: i32) -> AppResult<()> {
-    sqlx::query("DELETE FROM summoners WHERE id = $1")
-        .bind(id)
-        .execute(db)
-        .await?;
-    Ok(())
-}
+
 
 pub async fn update_summoner_account_by_id(
     db: &PgPool,

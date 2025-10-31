@@ -24,10 +24,10 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use ruche::backend::tasks::sse_broadcast_match_updated_cleanup::SummonerUpdatedSenderCleanupTask;
     use ruche::backend::tasks::update_matches::UpdateMatchesTask;
     use ruche::backend::tasks::update_pro_players::UpdateProPlayerTask;
-    use ruche::ssr::get_sitemap;
+    use ruche::serve::get_sitemap;
     use ruche::ssr::init_riot_api;
-    use ruche::ssr::serve;
-    use ruche::ssr::sse_broadcast_match_updated;
+    use ruche::serve::serve;
+    use ruche::sse::sse_broadcast_match_updated;
     use ruche::ssr::AppState;
     use std::net::SocketAddr;
     use std::sync::Arc;
@@ -155,20 +155,20 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
 
     // build our application with a route
     let app = Router::<AppState>::new()
-        .nest(
-            "/assets",
-            MemoryServe::new(load_assets!("../target/site/assets"))
-                .enable_brotli(!cfg!(debug_assertions))
-                .cache_control(CacheControl::Custom("public, max-age=31536000"))
-                .into_router::<AppState>(),
-        )
-        .nest(
-            "/pkg",
-            MemoryServe::new(load_assets!("../target/site/pkg"))
-                .enable_brotli(!cfg!(debug_assertions))
-                .cache_control(CacheControl::Custom("public, max-age=31536000"))
-                .into_router::<AppState>(),
-        )
+        // .nest(
+        //     "/assets",
+        //     MemoryServe::new(load_assets!("../target/site/assets"))
+        //         .enable_brotli(!cfg!(debug_assertions))
+        //         .cache_control(CacheControl::Custom("public, max-age=31536000"))
+        //         .into_router::<AppState>(),
+        // )
+        // .nest(
+        //     "/pkg",
+        //     MemoryServe::new(load_assets!("../target/site/pkg"))
+        //         .enable_brotli(!cfg!(debug_assertions))
+        //         .cache_control(CacheControl::Custom("public, max-age=31536000"))
+        //         .into_router::<AppState>(),
+        // )
         .leptos_routes_with_context(
             &app_state,
             routes,

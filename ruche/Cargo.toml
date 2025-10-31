@@ -8,7 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 axum = { version = "0.8.6", optional = true, features = ["macros", "http2"]}
-tokio = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true, features = ["rt-multi-thread", "macros", "time", "sync"] }
 tokio-stream = { version = "0.1", optional = true, features = ["sync"] }
 tower = { version = "0.5.2", optional = true, features = ["util"] }
 tower-http = { version = "0.6.4", features = ["fs", "compression-full", "set-header"], optional = true }

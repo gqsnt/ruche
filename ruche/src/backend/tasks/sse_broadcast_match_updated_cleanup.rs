@@ -1,5 +1,5 @@
 use crate::backend::task_director::Task;
-use crate::ssr::SubscriberMap;
+use crate::sse::SubscriberMap;
 use itertools::Itertools;
 use leptos::logging::log;
 use std::future::Future;

@@ -64,25 +64,3 @@ pub fn SummonerNav() -> impl IntoView {
         </div>
     }
 }
-
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub enum Tabs {
-    #[default]
-    Matches,
-    Champions,
-    Encounters,
-    Live,
-    Encounter,
-}
-
-impl std::fmt::Display for Tabs {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Tabs::Matches => write!(f, "matches"),
-            Tabs::Champions => write!(f, "champions"),
-            Tabs::Encounters => write!(f, "encounters"),
-            Tabs::Live => write!(f, "live"),
-            Tabs::Encounter => write!(f, "encounter"),
-        }
-    }
-}

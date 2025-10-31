@@ -4,7 +4,7 @@ use crate::backend::server_fns::get_live_game::ssr::{
 };
 use crate::backend::ssr::{AppResult, PlatformRouteDb};
 use crate::backend::task_director::Task;
-use crate::ssr::SubscriberMap;
+use crate::sse::SubscriberMap;
 use crate::utils::{Puuid, RiotMatchId, SSEEvent};
 use common::consts::platform_route::PlatformRoute;
 use itertools::Itertools;
