@@ -56,17 +56,14 @@ impl Eq for ScheduledTask {}
 
 impl PartialOrd for ScheduledTask {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
+        self.next_run.partial_cmp(&other.next_run) // naturel
     }
 }
-
 impl Ord for ScheduledTask {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        // Reverse order for min-heap behavior
-        other.next_run.cmp(&self.next_run)
+        self.next_run.cmp(&other.next_run)         // naturel
     }
 }
-
 impl TaskDirector {
     /// Adds a task to the TaskDirector.
     pub fn add_task<T: Task + 'static>(&mut self, task: T) {

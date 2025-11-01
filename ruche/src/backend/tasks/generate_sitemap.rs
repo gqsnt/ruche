@@ -110,7 +110,7 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
     let mut urls = vec![get_site_map_url(base_url.to_string(), None)];
     let total_summoners = get_total_summoners(db).await?;
     let chunk_size = 1000;
-    let total_chunks = total_summoners / chunk_size;
+    let total_chunks = (total_summoners + 1) / chunk_size;
     let mut output = Vec::<u8>::new();
     let now = chrono::Utc::now().fixed_offset();
     let mut site_map_index = 0;
@@ -153,7 +153,7 @@ pub async fn write_url_to_file(idx: usize, urls:&mut Vec<UrlEntry>,url_writer:&m
     generate_site_map_index(idx, urls).await?;
     url_writer.sitemap(
         SiteMapEntry::builder()
-            .loc(format!("{}/sitemap-index{}.xml.gz", base_url, idx))
+            .loc(format!("{}/sitemap-index{}.xml", base_url, idx))
             .lastmod(now)
             .build()?,
     )?;
