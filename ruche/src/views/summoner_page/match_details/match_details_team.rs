@@ -7,7 +7,7 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use std::sync::Arc;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq,Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 enum TeamMetric {
     Kills,
     Gold,
@@ -66,8 +66,16 @@ pub fn MatchDetailsTeam(match_details: Arc<Vec<LolMatchParticipantDetails>>) -> 
     let derived = Memo::new({
         let match_details = match_details.clone();
         move |_| {
-            let team100: Vec<_> = match_details.iter().cloned().filter(|p| p.team_id == 100).collect();
-            let team200: Vec<_> = match_details.iter().cloned().filter(|p| p.team_id == 200).collect();
+            let team100: Vec<_> = match_details
+                .iter()
+                .filter(|p| p.team_id == 100)
+                .cloned()
+                .collect();
+            let team200: Vec<_> = match_details
+                .iter()
+                .filter(|p| p.team_id == 200)
+                .cloned()
+                .collect();
 
             // Determine winners from any participant flag (all teammates share it)
             let team100_won = team100.iter().any(|p| p.won);
@@ -80,7 +88,10 @@ pub fn MatchDetailsTeam(match_details: Arc<Vec<LolMatchParticipantDetails>>) -> 
                 ((team200, 200u16, true), (team100, 100u16, false))
             } else {
                 // Fallback: blue on left if result inconsistent
-                ((team100, 100u16, team100_won), (team200, 200u16, team200_won))
+                (
+                    (team100, 100u16, team100_won),
+                    (team200, 200u16, team200_won),
+                )
             }
         }
     });
@@ -101,10 +112,7 @@ pub fn MatchDetailsTeam(match_details: Arc<Vec<LolMatchParticipantDetails>>) -> 
             for m in TeamMetric::all() {
                 out.insert(
                     m,
-                    (
-                        (compute(m, &left), left_id),
-                        (compute(m, &right), right_id),
-                    ),
+                    ((compute(m, &left), left_id), (compute(m, &right), right_id)),
                 );
             }
             out
@@ -116,40 +124,44 @@ pub fn MatchDetailsTeam(match_details: Arc<Vec<LolMatchParticipantDetails>>) -> 
         <div class="my-card w-full">
             // Metric tabs
             <div class="flex flex-wrap gap-2 mb-3">
-                {TeamMetric::all().into_iter().map(|m| {
-                    let is_active = move || metric() == m;
-                    view! {
-                        <button
-                            class=("active-tab", is_active)
-                            class=("default-tab", move || !is_active())
-                            on:click=move |_| set_metric(m)
-                        >
-                            {m.label()}
-                        </button>
-                    }
-                }).collect::<Vec<_>>()}
+                {TeamMetric::all()
+                    .into_iter()
+                    .map(|m| {
+                        let is_active = move || metric() == m;
+                        view! {
+                            <button
+                                class=("active-tab", is_active)
+                                class=("default-tab", move || !is_active())
+                                on:click=move |_| set_metric(m)
+                            >
+                                {m.label()}
+                            </button>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
             </div>
 
             // Columns grid
             {move || {
                 let ((left, left_id, left_won), (right, right_id, right_won)) = derived();
                 let metric_now = metric();
-                let (( (left_max, left_sum), _ ), ( (right_max, right_sum), _ )) = totals().get(&metric_now).copied().unwrap();
-
-                // Sort participants by metric desc inside each team
+                let (((left_max, left_sum), _), ((right_max, right_sum), _)) = totals()
+                    .get(&metric_now)
+                    .copied()
+                    .unwrap();
                 let mut left_sorted = left.clone();
                 left_sorted.sort_by_key(|p| std::cmp::Reverse(metric_now.value(p)));
                 let mut right_sorted = right.clone();
                 right_sorted.sort_by_key(|p| std::cmp::Reverse(metric_now.value(p)));
 
+                // Sort participants by metric desc inside each team
+
                 view! {
                     <div class="grid grid-cols-[1fr_220px_1fr] gap-4 items-start">
                         // Left (Winning) team column
                         {team_column(left_sorted, left_id, left_won, metric_now, left_max)}
-
                         // Center donut comparison
                         {donut_center(metric_now, left_sum, right_sum, left_id, right_id)}
-
                         // Right (Losing) team column
                         {team_column(right_sorted, right_id, right_won, metric_now, right_max)}
                     </div>
@@ -162,13 +174,21 @@ pub fn MatchDetailsTeam(match_details: Arc<Vec<LolMatchParticipantDetails>>) -> 
 // === View helpers ===
 
 fn team_header(team_id: u16, won: bool) -> String {
-    let side = if team_id == 100 { "Blue Team" } else { "Red Team" };
+    let side = if team_id == 100 {
+        "Blue Team"
+    } else {
+        "Red Team"
+    };
     let res = if won { "Victory" } else { "Defeat" };
     format!("{res} ({side})")
 }
 
 fn pct_width(value: u32, max: u32) -> f32 {
-    if max == 0 { 0.0 } else { (value as f32 / max as f32) * 100.0 }
+    if max == 0 {
+        0.0
+    } else {
+        (value as f32 / max as f32) * 100.0
+    }
 }
 
 fn team_column(
@@ -182,34 +202,51 @@ fn team_column(
 
     view! {
         <div class="space-y-2">
-            <div class=format!("text-sm font-semibold {}", header_text)>{team_header(team_id, won)}</div>
+            <div class=format!(
+                "text-sm font-semibold {}",
+                header_text,
+            )>{team_header(team_id, won)}</div>
 
             <ul class="space-y-1">
-                {participants.into_iter().map(|p| {
-                    let champion = Champion::try_from(p.champion_id).unwrap_or_default();
-                    let v = metric.value(&p);
-                    let w = pct_width(v, max_in_team);
-                    let width_style = format!("width:{:.3}%;", w.max(0.0)); // keep 0..=100
-                    view! {
-                        <li>
-                            <div class="relative h-8 bg-gray-700 rounded overflow-hidden">
-                                <div class=format!("absolute inset-y-0 left-0 {} rounded", bar_bg) style=width_style></div>
+                {participants
+                    .into_iter()
+                    .map(|p| {
+                        let champion = Champion::try_from(p.champion_id).unwrap_or_default();
+                        let v = metric.value(&p);
+                        let w = pct_width(v, max_in_team);
+                        let width_style = format!("width:{:.3}%;", w.max(0.0));
+                        // keep 0..=100
+                        view! {
+                            <li>
+                                <div class="relative h-8 bg-gray-700 rounded overflow-hidden">
+                                    <div
+                                        class=format!(
+                                            "absolute inset-y-0 left-0 {} rounded",
+                                            bar_bg,
+                                        )
+                                        style=width_style
+                                    ></div>
 
-                                <div class="absolute inset-0 px-2 flex items-center justify-between">
-                                    <div class="flex items-center gap-1 min-w-0">
-                                        <ImgChampion
-                                            champion=champion
-                                            parent_class="sprite-wrapper top-[-4px] left-[-4px] w-4 h-4 relative inline-block shrink-0 mr-2".to_string()
-                                            class="sprite-inner self-scale-53 rounded-full block".to_string()
-                                        />
-                                        <span class="truncate">{p.game_name.clone()}</span>
+                                    <div class="absolute inset-0 px-2 flex items-center justify-between">
+                                        <div class="flex items-center gap-1 min-w-0">
+                                            <ImgChampion
+                                                champion=champion
+                                                parent_class="sprite-wrapper top-[-4px] left-[-4px] w-4 h-4 relative inline-block shrink-0 mr-2"
+                                                    .to_string()
+                                                class="sprite-inner self-scale-53 rounded-full block"
+                                                    .to_string()
+                                            />
+                                            <span class="truncate">{p.game_name.clone()}</span>
+                                        </div>
+                                        <span class="ml-2 tabular-nums">
+                                            {format_with_spaces(v)}
+                                        </span>
                                     </div>
-                                    <span class="ml-2 tabular-nums">{format_with_spaces(v)}</span>
                                 </div>
-                            </div>
-                        </li>
-                    }
-                }).collect::<Vec<_>>()}
+                            </li>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
             </ul>
         </div>
     }.into_any()
@@ -237,17 +274,29 @@ fn donut_center(
     let (left_bar, _) = team_classes(left_id);
     let (right_bar, _) = team_classes(right_id);
     let left_color = if left_id == 100 { "#5384E8" } else { "#E84057" };
-    let right_color = if right_id == 100 { "#5384E8" } else { "#E84057" };
+    let right_color = if right_id == 100 {
+        "#5384E8"
+    } else {
+        "#E84057"
+    };
 
     view! {
         <div class="flex flex-col items-center justify-center text-sm">
             <div class="text-center font-semibold mb-1">{metric.label()}</div>
             <svg width="140" height="140" viewBox="0 0 120 120" class="block">
                 // background ring
-                <circle cx="60" cy="60" r=radius class="fill-none stroke-gray-800" stroke-width=stroke />
+                <circle
+                    cx="60"
+                    cy="60"
+                    r=radius
+                    class="fill-none stroke-gray-800"
+                    stroke-width=stroke
+                />
                 // left arc (starts at 12 o'clock)
                 <circle
-                    cx="60" cy="60" r=radius
+                    cx="60"
+                    cy="60"
+                    r=radius
                     class="fill-none"
                     stroke=left_color
                     stroke-width=stroke
@@ -257,7 +306,9 @@ fn donut_center(
                 />
                 // right arc continues after left arc
                 <circle
-                    cx="60" cy="60" r=radius
+                    cx="60"
+                    cy="60"
+                    r=radius
                     class="fill-none"
                     stroke=right_color
                     stroke-width=stroke
@@ -266,11 +317,22 @@ fn donut_center(
                     transform=format!("rotate({} 60 60)", -90.0 + (lp * 360.0))
                 />
                 // center label
-                <text x="60" y="57" text-anchor="middle" class="fill-gray-200" font-size="12" font-weight="600">
+                <text
+                    x="60"
+                    y="57"
+                    text-anchor="middle"
+                    class="fill-gray-200"
+                    font-size="12"
+                    font-weight="600"
+                >
                     {format!("{:.0}%", lp * 100.0)}
                 </text>
                 <text x="60" y="73" text-anchor="middle" class="fill-gray-400" font-size="10">
-                    {format!("{} / {}", format_with_spaces(left_sum), format_with_spaces(left_sum + right_sum))}
+                    {format!(
+                        "{} / {}",
+                        format_with_spaces(left_sum),
+                        format_with_spaces(left_sum + right_sum),
+                    )}
                 </text>
             </svg>
             <div class="mt-1 flex items-center gap-3">
@@ -284,5 +346,6 @@ fn donut_center(
                 </span>
             </div>
         </div>
-    }.into_any()
+    }
+    .into_any()
 }

@@ -1,4 +1,4 @@
-use crate::views::summoner_page::{SummonerPageRoute};
+use crate::views::summoner_page::SummonerPageRoute;
 use crate::views::summoner_search_page::SummonerSearchPage;
 use bitcode::{Decode, Encode};
 use leptos::config::LeptosOptions;
@@ -21,10 +21,9 @@ use leptos_router::{
 };
 use reactive_stores::Store;
 
-
 pub const SITE_URL: &str = "https://ruche.lol";
 
-#[derive(Clone, reactive_stores_macro::Store,Default)]
+#[derive(Clone, reactive_stores_macro::Store, Default)]
 pub struct MetaStore {
     pub title: String,
     pub description: String,
@@ -128,13 +127,12 @@ pub struct SummonerRouteParams {
 pub fn to_summoner_identifier_memo(
     summoner_route_params: Memo<Result<SummonerRouteParams, ParamsError>>,
 ) -> Memo<SummonerIdentifier> {
-    Memo::new(move |_| {
-        summoner_route_params_to_identifier(summoner_route_params)
-    })
+    Memo::new(move |_| summoner_route_params_to_identifier(summoner_route_params))
 }
 
-
-pub fn summoner_route_params_to_identifier(summoner_route_params: Memo<Result<SummonerRouteParams, ParamsError>>) -> SummonerIdentifier{
+pub fn summoner_route_params_to_identifier(
+    summoner_route_params: Memo<Result<SummonerRouteParams, ParamsError>>,
+) -> SummonerIdentifier {
     summoner_route_params
         .get()
         .ok()

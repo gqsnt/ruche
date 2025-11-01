@@ -172,8 +172,6 @@ pub fn summoner_encounter_url(
     )
 }
 
-
-
 pub fn format_float_to_2digits(value: f32) -> String {
     let value = (value * 100.0).round() / 100.0;
     value.to_string()
@@ -190,13 +188,13 @@ impl SSEVersions {
     pub fn parse(s: &str) -> Option<Self> {
         // très tolérant : "k:v" séparés par virgule
         let parts = s.split(':').collect::<Vec<_>>();
-        if parts.len() != 2{
+        if parts.len() != 2 {
             return None;
         }
-        let (live_ver, match_ver) = (parts.get(0)?, parts.get(1)?);
-        Some(Self{
-         live_ver: live_ver.parse::<u64>().ok(),
-            match_ver:match_ver.parse::<u64>().unwrap_or_default(),
+        let (live_ver, match_ver) = (parts.first()?, parts.get(1)?);
+        Some(Self {
+            live_ver: live_ver.parse::<u64>().ok(),
+            match_ver: match_ver.parse::<u64>().unwrap_or_default(),
         })
     }
 }

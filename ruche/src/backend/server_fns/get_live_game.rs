@@ -29,7 +29,9 @@ pub async fn get_live_game(
                 .await?;
         Ok(match live_game {
             Some((summoner_ids, live_data)) => {
-                live_cache.set_game_data(live_data.game_id, summoner_ids, live_data.clone()).await;
+                live_cache
+                    .set_game_data(live_data.game_id, summoner_ids, live_data.clone())
+                    .await;
                 Some(ssr::add_encounters(&db, live_data, summoner_id).await?)
             }
             None => None,
@@ -38,7 +40,12 @@ pub async fn get_live_game(
         Ok(Some(
             ssr::add_encounters(
                 &db,
-                live_cache.get_game_data(summoner_id).await.unwrap().as_ref().clone(),
+                live_cache
+                    .get_game_data(summoner_id)
+                    .await
+                    .unwrap()
+                    .as_ref()
+                    .clone(),
                 summoner_id,
             )
             .await?,

@@ -10,9 +10,9 @@ use leptos::either::{Either, EitherOf3};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 
+use reactive_stores::Store;
 use std::fmt::Formatter;
 use std::sync::Arc;
-use reactive_stores::Store;
 
 pub mod match_details_build;
 pub mod match_details_overview;
@@ -31,7 +31,7 @@ pub fn MatchDetails(
     let match_details = Resource::new_bitcode(
         move || {
             (
-                 sse_version.match_ver().get(),
+                sse_version.match_ver().get(),
                 match_id,
                 riot_match_id,
                 platform,
@@ -201,7 +201,7 @@ pub struct LolMatchTimeline {
 }
 
 #[derive(Clone, Encode, Decode)]
-#[cfg_attr(feature = "ssr",derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
 pub struct ItemEvent {
     pub item_id: u32,
     pub event_type: ItemEventType,
@@ -209,7 +209,7 @@ pub struct ItemEvent {
 
 #[repr(u8)]
 #[derive(Clone, Encode, Decode, PartialEq)]
-#[cfg_attr(feature = "ssr",derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
 pub enum ItemEventType {
     Purchased,
     Sold,
@@ -217,7 +217,7 @@ pub enum ItemEventType {
 
 #[repr(u8)]
 #[derive(Clone, Encode, Decode, PartialEq, Copy)]
-#[cfg_attr(feature = "ssr",derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "ssr", derive(serde::Serialize, serde::Deserialize))]
 pub enum Skill {
     Q = 1,
     W = 2,

@@ -55,10 +55,8 @@ impl PartialEq for ScheduledTask {
 impl Eq for ScheduledTask {}
 
 impl PartialOrd for ScheduledTask {
-    #[allow(clippy::non_canonical_partial_ord_impl)]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        // Reverse order for min-heap behavior
-        self.next_run.partial_cmp(&other.next_run)
+        Some(self.cmp(other))
     }
 }
 

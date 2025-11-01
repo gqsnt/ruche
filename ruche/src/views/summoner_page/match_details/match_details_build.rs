@@ -22,7 +22,7 @@ pub fn MatchDetailsBuild(match_details: Arc<Vec<LolMatchParticipantDetails>>) ->
                 .label()
         )
     };
-    let participant_ids =match_details
+    let participant_ids = match_details
         .iter()
         .map(|x| (x.summoner_id, summoner_name_with_champion(x)))
         .collect::<HashMap<i32, String>>();
@@ -74,7 +74,7 @@ pub fn MatchDetailsBuild(match_details: Arc<Vec<LolMatchParticipantDetails>>) ->
                                 .enumerate()
                                 .collect_vec()
                         }
-                        key=move |(idx, _)| (*idx,selected_participant().summoner_id)
+                        key=move |(idx, _)| (*idx, selected_participant().summoner_id)
                         let:entry
                     >
                         {

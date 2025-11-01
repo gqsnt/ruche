@@ -10,7 +10,7 @@ use leptos::prelude::AddAnyAttr;
 use leptos::prelude::CustomAttribute;
 use leptos::prelude::ElementChild;
 use leptos::prelude::{Children, ClassAttribute, Get, Show};
-use leptos::prelude::{RwSignal,IntoAnyAttribute};
+use leptos::prelude::{IntoAnyAttribute, RwSignal};
 use leptos::{component, view, IntoView, Params};
 use leptos_router::components::A;
 use leptos_router::params::Params;
@@ -182,7 +182,7 @@ pub fn ProPlayerSlugView(pro_player_slug: Option<ProPlayerSlug>, small: bool) ->
     } else {
         "bg-purple-800 rounded px-1 py-0.5 text-center ml-1"
     };
-    view!{
+    view! {
         <Show when=move|| pro_player_slug.is_some() >
           <A
                 target="_blank"

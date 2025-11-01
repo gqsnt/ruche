@@ -1,6 +1,6 @@
 use std::convert::Infallible;
-use std::sync::{Arc, Weak};
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Arc, Weak};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use axum::extract::{Path, State};
@@ -17,7 +17,7 @@ use crate::utils::Puuid;
 use common::consts::platform_route::PlatformRoute;
 
 const GC_GRACE_MS: u64 = 10_000;
-const DEBOUNCE_MS: u64  = 500;
+const DEBOUNCE_MS: u64 = 500;
 #[inline]
 fn now_millis() -> u64 {
     SystemTime::now()
@@ -26,25 +26,20 @@ fn now_millis() -> u64 {
         .as_millis() as u64
 }
 
-
 #[derive(Debug, Clone, Default, PartialEq, Eq, Copy)]
 pub struct SseSnapshot {
-    pub live_ver:  u64, // 0 = pas de partie ; >0 = epoch live
+    pub live_ver: u64,  // 0 = pas de partie ; >0 = epoch live
     pub match_ver: u64, // monotone
 }
 
-impl SseSnapshot{
-    pub fn new(
-        live_ver:u64,
-        match_ver:u64
-    ) -> Self{
-        Self{
+impl SseSnapshot {
+    pub fn new(live_ver: u64, match_ver: u64) -> Self {
+        Self {
             live_ver,
             match_ver,
         }
     }
 }
-
 
 #[derive(Clone)]
 pub struct Topic {
@@ -53,38 +48,45 @@ pub struct Topic {
     subs: Arc<AtomicUsize>,
     last_empty_at: Arc<AtomicU64>,
     last_sent_at: Arc<AtomicU64>,
-    pending:     Arc<AtomicBool>,
+    pending: Arc<AtomicBool>,
 }
 
 #[derive(Default)]
 pub struct KeyState {
-    live_ver:  std::sync::atomic::AtomicU64,
+    live_ver: std::sync::atomic::AtomicU64,
     match_ver: std::sync::atomic::AtomicU64,
 }
 
 pub struct Hub {
     pub topics: DashMap<i32, Topic>,
-    pub dirty:  DashSet<i32>,
+    pub dirty: DashSet<i32>,
     gc: DashSet<i32>,
 }
 
 impl Hub {
     pub fn new() -> Arc<Self> {
-        Arc::new(Self { topics: DashMap::new(), dirty: DashSet::new(), gc: DashSet::new() })
+        Arc::new(Self {
+            topics: DashMap::new(),
+            dirty: DashSet::new(),
+            gc: DashSet::new(),
+        })
     }
 
     fn or_insert_topic(&self, sid: i32) -> Topic {
-        self.topics.entry(sid).or_insert_with(|| {
-            let (tx, _rx) = watch::channel(SseSnapshot::default());
-            Topic {
-                tx,
-                state: Arc::new(KeyState::default()),
-                subs: Arc::new(AtomicUsize::new(0)),
-                last_empty_at: Arc::new(AtomicU64::new(0)),
-                last_sent_at: Arc::new(AtomicU64::new(0)),
-                pending: Arc::new(AtomicBool::new(false)),
-            }
-        }).clone()
+        self.topics
+            .entry(sid)
+            .or_insert_with(|| {
+                let (tx, _rx) = watch::channel(SseSnapshot::default());
+                Topic {
+                    tx,
+                    state: Arc::new(KeyState::default()),
+                    subs: Arc::new(AtomicUsize::new(0)),
+                    last_empty_at: Arc::new(AtomicU64::new(0)),
+                    last_sent_at: Arc::new(AtomicU64::new(0)),
+                    pending: Arc::new(AtomicBool::new(false)),
+                }
+            })
+            .clone()
     }
 
     #[inline]
@@ -94,8 +96,6 @@ impl Hub {
             self.dirty.insert(sid);
         }
     }
-
-
 
     // Garde la version simple si vous en avez besoin ailleurs
     pub fn subscribe(&self, sid: i32) -> watch::Receiver<SseSnapshot> {
@@ -162,7 +162,7 @@ impl Hub {
                     }
 
                     let last = t.last_sent_at.load(Ordering::SeqCst);
-                    let due  = last == 0 || now.saturating_sub(last) >= DEBOUNCE_MS;
+                    let due = last == 0 || now.saturating_sub(last) >= DEBOUNCE_MS;
 
                     if due {
                         let snap = SseSnapshot::new(
@@ -213,7 +213,10 @@ impl Hub {
     }
 }
 
-pub fn subscribe_with_guard(hub: Arc<Hub>, sid: i32) -> (watch::Receiver<SseSnapshot>, SubscriptionGuard) {
+pub fn subscribe_with_guard(
+    hub: Arc<Hub>,
+    sid: i32,
+) -> (watch::Receiver<SseSnapshot>, SubscriptionGuard) {
     let t = hub.or_insert_topic(sid);
     t.subs.fetch_add(1, Ordering::SeqCst);
     let rx = t.tx.subscribe();
@@ -225,7 +228,6 @@ pub fn subscribe_with_guard(hub: Arc<Hub>, sid: i32) -> (watch::Receiver<SseSnap
     };
     (rx, guard)
 }
-
 
 pub struct SubscriptionGuard {
     hub: Weak<Hub>,
@@ -246,8 +248,6 @@ impl Drop for SubscriptionGuard {
     }
 }
 
-
-
 fn snapshot_to_payload(s: &SseSnapshot) -> String {
     // Votre format actuel: "live_ver?:match_ver" (live vide si 0)
     if s.live_ver == 0 {
@@ -265,7 +265,12 @@ pub async fn sse_broadcast_match_updated(
     // IMPORTANT: on récupère un guard pour décrémenter à la fermeture de la connexion SSE
     let (mut rx, guard) = subscribe_with_guard(state.hub.clone(), summoner_id);
 
-    if state.live_game_cache.get_game_data(summoner_id).await.is_some() {
+    if state
+        .live_game_cache
+        .get_game_data(summoner_id)
+        .await
+        .is_some()
+    {
         state.hub.ensure_live_present(summoner_id);
     } else {
         let hub = state.hub.clone();
@@ -273,7 +278,10 @@ pub async fn sse_broadcast_match_updated(
         let riot_api = state.riot_api.clone();
         tokio::spawn(async move {
             let puuid = Puuid::new(
-                find_summoner_puuid_by_id(&db, summoner_id).await.expect("puuid").as_str(),
+                find_summoner_puuid_by_id(&db, summoner_id)
+                    .await
+                    .expect("puuid")
+                    .as_str(),
             );
             match ssr::get_live_game_data(&db, &riot_api, puuid, platform).await {
                 Ok(Some((_ids, _live))) => hub.bump_live_epoch(summoner_id),

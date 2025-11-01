@@ -11,8 +11,8 @@ use crate::backend::tasks::update_matches::bulk_lol_matches::{
 use crate::backend::tasks::update_matches::bulk_summoners::{
     bulk_insert_summoners, bulk_update_summoners,
 };
-use crate::ssr::{RiotApiState};
-use crate::utils::{ProPlayerSlug};
+use crate::ssr::RiotApiState;
+use crate::utils::ProPlayerSlug;
 use crate::DB_CHUNK_SIZE;
 use chrono::NaiveDateTime;
 use common::consts;
@@ -45,7 +45,7 @@ impl UpdateMatchesTask {
         db: PgPool,
         api: RiotApiState,
         update_interval: Duration,
-        hub:Arc<crate::sse::Hub>
+        hub: Arc<crate::sse::Hub>,
     ) -> Self {
         let next_run = Instant::now() + update_interval;
         Self {
@@ -74,7 +74,12 @@ impl Task for UpdateMatchesTask {
                         for id in summoner_ids {
                             hub.bump_matches(id);
                         }
-                        log!("Updated {} matches in {:?} and bump in {:?}", match_len, start.elapsed(), now.elapsed());
+                        log!(
+                            "Updated {} matches in {:?} and bump in {:?}",
+                            match_len,
+                            start.elapsed(),
+                            now.elapsed()
+                        );
                     }
                     Err(e) => {
                         log!("Error updating matches: {:?}", e);
@@ -605,8 +610,6 @@ pub async fn find_conflicting_summoners(
     .map(|((game_name, tag_line, platform), ids)| (game_name, tag_line, platform, ids))
     .collect())
 }
-
-
 
 pub async fn update_summoner_account_by_id(
     db: &PgPool,

@@ -29,8 +29,7 @@ pub async fn update_match_timeline(
     let mut lol_match_timelines = HashMap::new();
 
     for participant in &timeline.info.participants.unwrap_or_default() {
-        let Some(summoner_id) = puuids_summoner_ids
-            .get(participant.puuid.as_str()) else {
+        let Some(summoner_id) = puuids_summoner_ids.get(participant.puuid.as_str()) else {
             continue;
         };
         lol_match_timelines.insert(
@@ -55,7 +54,7 @@ pub async fn update_match_timeline(
                     let skill_slot = event.skill_slot.ok_or_else(|| {
                         AppError::CustomError("Missing skill_slot in SKILL_LEVEL_UP event".into())
                     })?;
-                    let Some(participant) = lol_match_timelines.get_mut(&participant_id)else {
+                    let Some(participant) = lol_match_timelines.get_mut(&participant_id) else {
                         continue;
                     };
                     participant
@@ -91,7 +90,7 @@ pub async fn update_match_timeline(
                     );
                 }
                 EventType::ItemUndo => {
-                    let Some(participant) = lol_match_timelines.get_mut(&participant_id)else {
+                    let Some(participant) = lol_match_timelines.get_mut(&participant_id) else {
                         continue;
                     };
                     if let Some(before_id) = event.before_id {
@@ -162,8 +161,7 @@ pub fn push_item_event_into_participant_id(
     timestamp: i64,
     event: ItemEvent,
 ) {
-    let Some(participant) = participants
-        .get_mut(&participant_id)  else {
+    let Some(participant) = participants.get_mut(&participant_id) else {
         return;
     };
     participant

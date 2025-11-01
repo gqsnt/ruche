@@ -1,10 +1,10 @@
 use crate::app::EncounterRouteParams;
+use crate::utils::{SSEVersions, SSEVersionsStoreFields};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::components::A;
 use leptos_router::hooks::use_params;
 use reactive_stores::Store;
-use crate::utils::{SSEVersions, SSEVersionsStoreFields};
 
 #[component]
 pub fn SummonerNav() -> impl IntoView {
@@ -40,7 +40,7 @@ pub fn SummonerNav() -> impl IntoView {
                         <A
                             href="live"
                             // highlight via CSS when data-live="1"
-                            attr:data-live=move || sse_in_live_game.live_ver().get().map(|_|"1")
+                            attr:data-live=move || sse_in_live_game.live_ver().get().map(|_| "1")
                             attr:class="tab"
                         >
                             "Live"
@@ -57,7 +57,9 @@ pub fn SummonerNav() -> impl IntoView {
                                 }
                             }
                         >
-                            <span class="tab" aria-current="page">"Encounter"</span>
+                            <span class="tab" aria-current="page">
+                                "Encounter"
+                            </span>
                         </Show>
                     </li>
                 </ul>

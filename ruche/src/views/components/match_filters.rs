@@ -86,7 +86,10 @@ pub fn MatchFilters(hidden: Signal<bool>, children: Children) -> impl IntoView {
                             type="date"
                             name="start_date"
                             id="start_date"
-                            prop:value= filters.start_date().get_untracked().map(|start_date| start_date.to_string())
+                            prop:value=filters
+                                .start_date()
+                                .get_untracked()
+                                .map(|start_date| start_date.to_string())
                             on:input=move |e| {
                                 filters.start_date().set(to_opt_date(event_target_value(&e)))
                             }
@@ -100,7 +103,10 @@ pub fn MatchFilters(hidden: Signal<bool>, children: Children) -> impl IntoView {
                             type="date"
                             name="end_date"
                             id="end_date"
-                            prop:value=filters.end_date().get_untracked().map(|end_date| end_date.to_string())
+                            prop:value=filters
+                                .end_date()
+                                .get_untracked()
+                                .map(|end_date| end_date.to_string())
                             on:input=move |e| {
                                 filters.end_date().set(to_opt_date(event_target_value(&e)))
                             }

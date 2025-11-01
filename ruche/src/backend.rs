@@ -26,7 +26,6 @@ pub mod ssr {
 
     pub type AppResult<T> = Result<T, AppError>;
 
-
     pub fn format_duration_since(date_time: NaiveDateTime) -> DurationSince {
         let now = Utc::now().naive_utc();
         let seconds = (now - date_time).num_seconds();
@@ -87,8 +86,6 @@ pub mod ssr {
         }
     }
 
-
-
     impl From<chrono::ParseError> for AppError {
         fn from(e: chrono::ParseError) -> Self {
             AppError::ChronoError(Arc::new(e))
@@ -148,9 +145,7 @@ pub mod ssr {
         }
     }
 
-    #[derive(
-        Clone, Copy, Debug, PartialEq, PartialOrd, sqlx::Type
-    )]
+    #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, sqlx::Type)]
     #[sqlx(type_name = "platform_type")]
     pub enum PlatformRouteDb {
         BR,
@@ -234,7 +229,4 @@ pub mod ssr {
             write!(f, "{}", PlatformRoute::from(*self))
         }
     }
-
-
-
 }

@@ -382,7 +382,6 @@ pub mod ssr {
         .map_err(|e| e.into())
     }
 
-
     #[derive(sqlx::FromRow)]
     pub struct SummonerEncounterStatsModel {
         pub total_matches: Option<i64>,

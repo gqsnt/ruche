@@ -1,27 +1,23 @@
+use axum::body::Body;
+use axum::extract::Request;
+use axum::handler::HandlerWithoutStateExt;
+use axum::response::{IntoResponse, Redirect};
+use axum::{BoxError, Router};
+use axum_extra::extract::Host;
+use axum_server::tls_rustls::RustlsConfig;
+use http::{HeaderValue, StatusCode, Uri};
+use leptos::leptos_dom::log;
+use rustls::pki_types::pem::PemObject;
+use rustls::pki_types::{CertificateDer, PrivateKeyDer};
+use rustls::ServerConfig;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::Arc;
-use rustls::pki_types::{CertificateDer, PrivateKeyDer};
-use axum::response::{IntoResponse, Redirect};
-use tower_http::services::ServeFile;
-use axum::extract::Request;
-use axum::body::Body;
-use leptos::leptos_dom::log;
-use http::{HeaderValue, StatusCode, Uri};
-use axum::{BoxError, Router};
-use axum_server::tls_rustls::RustlsConfig;
-use tower_http::set_header::SetResponseHeaderLayer;
-use rustls::ServerConfig;
-use axum_extra::extract::Host;
-use rustls::pki_types::pem::PemObject;
-use axum::handler::HandlerWithoutStateExt;
 use tower::ServiceExt;
+use tower_http::services::ServeFile;
+use tower_http::set_header::SetResponseHeaderLayer;
 
-pub async fn serve(
-    app: Router,
-    is_prod: bool,
-    socket_addr: SocketAddr,
-) -> Result<(), axum::Error> {
+pub async fn serve(app: Router, is_prod: bool, socket_addr: SocketAddr) -> Result<(), axum::Error> {
     if is_prod {
         tokio::spawn(redirect_http_to_https());
         serve_with_tsl(app, socket_addr).await
@@ -110,7 +106,9 @@ async fn redirect_http_to_https() {
 
 pub async fn serve_locally(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
     axum_server::bind(socket_addr)
-        .serve(app.into_make_service()).await.unwrap();
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
     Ok(())
 }
 

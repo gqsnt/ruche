@@ -3,7 +3,10 @@ use crate::app::{
     SummonerRouteParams,
 };
 use crate::backend::server_fns::get_encounters::get_encounters;
-use crate::utils::{calculate_loss_and_win_rate, format_float_to_2digits, summoner_encounter_url, summoner_url, SSEVersions, SSEVersionsStoreFields};
+use crate::utils::{
+    calculate_loss_and_win_rate, format_float_to_2digits, summoner_encounter_url, summoner_url,
+    SSEVersions, SSEVersionsStoreFields,
+};
 use crate::views::components::pagination::Pagination;
 use crate::views::{
     BackEndMatchFiltersSearch, BackEndMatchFiltersSearchStoreFields, ImgSrc, PendingLoading,
@@ -81,12 +84,17 @@ impl LazyRoute for SummonerEncountersRoute {
 
         batch(|| {
             let me = summoner_identifier_memo.read();
-            meta_store.title().set(format!("{}#{} Encounters & Head-to-Head | Ruche", me.game_name, me.tag_line));
+            meta_store.title().set(format!(
+                "{}#{} Encounters & Head-to-Head | Ruche",
+                me.game_name, me.tag_line
+            ));
             meta_store.description().set(format!(
                 "See {}#{}’s frequent teammates and opponents with with/against records and shared matches. Real-time updates, low-latency delivery.",
                 me.game_name, me.tag_line
             ));
-            meta_store.url().set(format!("{}/encounters", me.base_route()));
+            meta_store
+                .url()
+                .set(format!("{}/encounters", me.base_route()));
         });
         view! {
             <div>

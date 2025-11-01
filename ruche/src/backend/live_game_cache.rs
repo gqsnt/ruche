@@ -1,7 +1,7 @@
-use std::{sync::Arc, time::Duration};
-use moka::future::{Cache, FutureExt};
 use crate::utils::RiotMatchId;
 use crate::views::summoner_page::summoner_live_page::LiveGame;
+use moka::future::{Cache, FutureExt};
+use std::{sync::Arc, time::Duration};
 
 #[derive(Clone)]
 pub struct LiveGameWithIdx {
@@ -14,8 +14,8 @@ pub struct LiveGameCache {
     match_to_live: Cache<RiotMatchId, Arc<LiveGameWithIdx>>,
 }
 
-impl LiveGameCache {
-    pub fn new() -> Self {
+impl Default for LiveGameCache {
+    fn default() -> Self {
         let summoner_to_match = Cache::builder()
             .max_capacity(1_000_000)
             .time_to_idle(Duration::from_secs(120))
@@ -39,23 +39,36 @@ impl LiveGameCache {
                             }
                         }
                     }
-                }.boxed()
+                }
+                .boxed()
             })
             .build();
 
-        Self { summoner_to_match, match_to_live }
+        Self {
+            summoner_to_match,
+            match_to_live,
+        }
     }
+}
 
+impl LiveGameCache {
     pub async fn get_game_data(&self, summoner_id: i32) -> Option<Arc<LiveGame>> {
-        let Some(mid) = self.summoner_to_match
-            .get(&summoner_id)
-            .await else {
+        let mid = (self.summoner_to_match.get(&summoner_id).await)?;
+        let Some(mid) = self.summoner_to_match.get(&summoner_id).await else {
             return None;
         };
-        self.match_to_live.get(&mid).await.map(|x| Arc::new(x.live.clone()))
+        self.match_to_live
+            .get(&mid)
+            .await
+            .map(|x| Arc::new(x.live.clone()))
     }
 
-    pub async fn set_game_data(&self, match_id: RiotMatchId, summoner_ids: Vec<i32>, live: LiveGame) {
+    pub async fn set_game_data(
+        &self,
+        match_id: RiotMatchId,
+        summoner_ids: Vec<i32>,
+        live: LiveGame,
+    ) {
         let participants: Arc<[i32]> = summoner_ids.clone().into();
         let with_idx = Arc::new(LiveGameWithIdx { live, participants });
         self.match_to_live.insert(match_id, with_idx).await;
@@ -78,13 +91,17 @@ impl LiveGameCache {
                 for sid in v.participants.iter() {
                     if *sid != summoner_id {
                         if let Some(m) = self.summoner_to_match.get(sid).await {
-                            if m == mid { any = true; break; }
+                            if m == mid {
+                                any = true;
+                                break;
+                            }
                         }
                     }
                 }
-                if !any { self.match_to_live.invalidate(&mid).await; }
+                if !any {
+                    self.match_to_live.invalidate(&mid).await;
+                }
             }
         }
     }
-
 }

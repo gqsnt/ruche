@@ -3,7 +3,11 @@ use crate::app::{
     SummonerRouteParams,
 };
 use crate::backend::server_fns::get_matches::get_matches;
-use crate::utils::{calculate_and_format_kda, calculate_loss_and_win_rate, format_duration, format_float_to_2digits, items_from_slice, summoner_encounter_url, summoner_url, DurationSince, ProPlayerSlug, RiotMatchId, SSEVersions, SSEVersionsStoreFields};
+use crate::utils::{
+    calculate_and_format_kda, calculate_loss_and_win_rate, format_duration,
+    format_float_to_2digits, items_from_slice, summoner_encounter_url, summoner_url, DurationSince,
+    ProPlayerSlug, RiotMatchId, SSEVersions, SSEVersionsStoreFields,
+};
 use crate::views::components::pagination::Pagination;
 use crate::views::{
     BackEndMatchFiltersSearch, ImgChampion, ImgItem, ImgPerk, ImgSummonerSpell, ProPlayerSlugView,
@@ -66,7 +70,10 @@ impl LazyRoute for SummonerMatchesRoute {
         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
         batch(|| {
             let me = summoner_identifier_memo.read();
-            meta_store.title().set(format!("{}#{} Match History | Ruche", me.game_name, me.tag_line));
+            meta_store.title().set(format!(
+                "{}#{} Match History | Ruche",
+                me.game_name, me.tag_line
+            ));
             meta_store.description().set(format!(
                 "View {}#{}’s match history: results, K/D/A, items, runes, participants, and timelines. Real-time updates on a fast, full-stack Rust platform.",
                 me.game_name, me.tag_line
@@ -75,87 +82,87 @@ impl LazyRoute for SummonerMatchesRoute {
         });
 
         view! {
-        <div class="w-[768px] inline-block align-top justify-center">
-            <div class="">
-                <Transition fallback=move || {
-                    view! { <div class="text-center">Loading Matches</div> }
-                }>
-                    {move || Suspend::new(async move {
-                        match matches_resource.await {
-                            Ok(matches_result) => {
-                                let total_pages = matches_result.total_pages;
-                                if matches_result.matches.is_empty() {
-                                    Ok(
-                                        Either::Left(
-                                            view! { <div class="text-center">No Matches Found</div> },
-                                        ),
-                                    )
-                                } else {
-                                    Ok(
-                                        Either::Right({
-                                            let (losses, winrate) = calculate_loss_and_win_rate(
-                                                matches_result.matches_result_info.total_wins,
-                                                matches_result.matches_result_info.total_matches,
-                                            );
-                                            view! {
-                                                <div class="my-2 flex my-card w-fit">
-                                                    <div class="flex flex-col">
-                                                        <div>
-                                                            {matches_result.matches_result_info.total_matches}G
-                                                            {matches_result.matches_result_info.total_wins}W
-                                                            {losses as u16}L
+            <div class="w-[768px] inline-block align-top justify-center">
+                <div class="">
+                    <Transition fallback=move || {
+                        view! { <div class="text-center">Loading Matches</div> }
+                    }>
+                        {move || Suspend::new(async move {
+                            match matches_resource.await {
+                                Ok(matches_result) => {
+                                    let total_pages = matches_result.total_pages;
+                                    if matches_result.matches.is_empty() {
+                                        Ok(
+                                            Either::Left(
+                                                view! { <div class="text-center">No Matches Found</div> },
+                                            ),
+                                        )
+                                    } else {
+                                        Ok(
+                                            Either::Right({
+                                                let (losses, winrate) = calculate_loss_and_win_rate(
+                                                    matches_result.matches_result_info.total_wins,
+                                                    matches_result.matches_result_info.total_matches,
+                                                );
+                                                view! {
+                                                    <div class="my-2 flex my-card w-fit">
+                                                        <div class="flex flex-col">
+                                                            <div>
+                                                                {matches_result.matches_result_info.total_matches}G
+                                                                {matches_result.matches_result_info.total_wins}W
+                                                                {losses as u16}L
+                                                            </div>
+                                                            <div>{format_float_to_2digits(winrate)}%</div>
                                                         </div>
-                                                        <div>{format_float_to_2digits(winrate)}%</div>
+                                                        <div class="flex flex-col ml-2">
+                                                            <div>
+                                                                {format!(
+                                                                    "{:.2}/{:.2}/{:.2}",
+                                                                    matches_result.matches_result_info.avg_kills,
+                                                                    matches_result.matches_result_info.avg_deaths,
+                                                                    matches_result.matches_result_info.avg_assists,
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                {calculate_and_format_kda(
+                                                                    matches_result.matches_result_info.avg_kills,
+                                                                    matches_result.matches_result_info.avg_deaths,
+                                                                    matches_result.matches_result_info.avg_assists,
+                                                                )}:1
+                                                            </div>
+                                                            <div>
+                                                                P/kill
+                                                                {format!(
+                                                                    "{:.2}",
+                                                                    matches_result.matches_result_info.avg_kill_participation,
+                                                                )}%
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div class="flex flex-col ml-2">
-                                                        <div>
-                                                            {format!(
-                                                                "{:.2}/{:.2}/{:.2}",
-                                                                matches_result.matches_result_info.avg_kills,
-                                                                matches_result.matches_result_info.avg_deaths,
-                                                                matches_result.matches_result_info.avg_assists,
-                                                            )}
-                                                        </div>
-                                                        <div>
-                                                            {calculate_and_format_kda(
-                                                                matches_result.matches_result_info.avg_kills,
-                                                                matches_result.matches_result_info.avg_deaths,
-                                                                matches_result.matches_result_info.avg_assists,
-                                                            )}:1
-                                                        </div>
-                                                        <div>
-                                                            P/kill
-                                                            {format!(
-                                                                "{:.2}",
-                                                                matches_result.matches_result_info.avg_kill_participation,
-                                                            )}%
-                                                        </div>
+                                                    <div class="text-gray-200 space-y-2">
+                                                        <For
+                                                            each=move || matches_result.matches.clone()
+                                                            key=|match_| match_.match_id
+                                                            let:match_
+                                                        >
+                                                            <MatchCard match_=match_ />
+                                                        </For>
                                                     </div>
-                                                </div>
-                                                <div class="text-gray-200 space-y-2">
-                                                    <For
-                                                        each=move || matches_result.matches.clone()
-                                                        key=|match_| match_.match_id
-                                                        let:match_
-                                                    >
-                                                        <MatchCard match_=match_ />
-                                                    </For>
-                                                </div>
-                                                <Show when=move || (total_pages > 1)>
-                                                    <Pagination max_page=total_pages />
-                                                </Show>
-                                            }
-                                        }),
-                                    )
+                                                    <Show when=move || (total_pages > 1)>
+                                                        <Pagination max_page=total_pages />
+                                                    </Show>
+                                                }
+                                            }),
+                                        )
+                                    }
                                 }
+                                Err(e) => Err(e),
                             }
-                            Err(e) => Err(e),
-                        }
-                    })}
-                </Transition>
+                        })}
+                    </Transition>
+                </div>
             </div>
-        </div>
-    }.into_any()
+        }.into_any()
     }
 }
 

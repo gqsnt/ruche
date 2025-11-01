@@ -3,7 +3,10 @@ use crate::app::{
     MetaStoreStoreFields, SummonerIdentifier, SummonerRouteParams,
 };
 use crate::backend::server_fns::get_encounter::get_encounter;
-use crate::utils::{calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits, items_from_slice, DurationSince, RiotMatchId, SSEVersions, SSEVersionsStoreFields};
+use crate::utils::{
+    calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits,
+    items_from_slice, DurationSince, RiotMatchId, SSEVersions, SSEVersionsStoreFields,
+};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::summoner_matches_page::{MatchInfoCard, MatchSummonerCard};
@@ -90,7 +93,10 @@ impl LazyRoute for SummonerEncounterRoute {
                 opp_slug
             );
 
-            meta_store.title().set(format!("{}#{} vs {}#{} — Head-to-Head | Ruche", me.game_name, me.tag_line, opp.game_name, opp.tag_line));
+            meta_store.title().set(format!(
+                "{}#{} vs {}#{} — Head-to-Head | Ruche",
+                me.game_name, me.tag_line, opp.game_name, opp.tag_line
+            ));
             meta_store.description().set(format!(
                 "Head-to-head: {}#{} vs {}#{}. Wins/losses together and against, shared matches, and detailed performance metrics. Updated in near real time.",
                 me.game_name, me.tag_line, opp.game_name, opp.tag_line

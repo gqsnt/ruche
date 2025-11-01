@@ -3,7 +3,10 @@ use crate::app::{
     SummonerRouteParams,
 };
 use crate::backend::server_fns::get_champions::get_champions;
-use crate::utils::{calculate_and_format_kda, format_float_to_2digits, format_with_spaces, SSEVersions, SSEVersionsStoreFields};
+use crate::utils::{
+    calculate_and_format_kda, format_float_to_2digits, format_with_spaces, SSEVersions,
+    SSEVersionsStoreFields,
+};
 use crate::views::{BackEndMatchFiltersSearch, ImgChampion};
 use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
@@ -32,7 +35,7 @@ impl LazyRoute for SummonerChampionsRoute {
         let champions_resource = Resource::new_bitcode(
             move || {
                 (
-                     sse_version.match_ver().get(),
+                    sse_version.match_ver().get(),
                     match_filters.get(),
                     summoner_identifier_memo.get(),
                 )
@@ -70,12 +73,17 @@ impl LazyRoute for SummonerChampionsRoute {
         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
         batch(|| {
             let me = summoner_identifier_memo.read();
-            meta_store.title().set(format!("{}#{} Champion Stats | Ruche", me.game_name, me.tag_line));
+            meta_store.title().set(format!(
+                "{}#{} Champion Stats | Ruche",
+                me.game_name, me.tag_line
+            ));
             meta_store.description().set(format!(
                 "Explore {}#{}’s champion stats: win rate, K/D/A, CS, damage, gold, and multi-kills. Compact binary payloads and native SSE for speed.",
                 me.game_name, me.tag_line
             ));
-            meta_store.url().set(format!("{}/champions", me.base_route()));
+            meta_store
+                .url()
+                .set(format!("{}/champions", me.base_route()));
         });
         view! {
             <div>

@@ -1,6 +1,12 @@
-use crate::app::{summoner_route_params_to_identifier, to_summoner_identifier_memo, MetaStore, MetaStoreStoreFields, SummonerIdentifier, SummonerRouteParams};
+use crate::app::{
+    summoner_route_params_to_identifier, MetaStore, MetaStoreStoreFields, SummonerIdentifier,
+    SummonerRouteParams,
+};
 use crate::backend::server_fns::get_live_game::get_live_game;
-use crate::utils::{calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits, parse_summoner_slug, summoner_encounter_url, summoner_url, ProPlayerSlug, RiotMatchId, SSEVersions};
+use crate::utils::{
+    calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits,
+    summoner_encounter_url, summoner_url, ProPlayerSlug, RiotMatchId, SSEVersions,
+};
 use crate::views::{ImgChampion, ImgPerk, ImgSummonerSpell, PendingLoading, ProPlayerSlugView};
 use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
@@ -13,7 +19,6 @@ use leptos::either::Either;
 use leptos::prelude::codee::binary::BitcodeCodec;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos::logging::log;
 use leptos_router::components::A;
 use leptos_router::hooks::use_params;
 use leptos_router::{lazy_route, LazyRoute};
@@ -29,7 +34,8 @@ pub struct SummonerLiveRoute {
 impl LazyRoute for SummonerLiveRoute {
     fn data() -> Self {
         let summoner_route_params = use_params::<SummonerRouteParams>();
-        let (summoner_identifier, _ ) =  signal(summoner_route_params_to_identifier(summoner_route_params));
+        let (summoner_identifier, _) =
+            signal(summoner_route_params_to_identifier(summoner_route_params));
         let sse_versions = expect_context::<Store<SSEVersions>>();
 
         let refresh_signal = RwSignal::new(0);
@@ -38,7 +44,7 @@ impl LazyRoute for SummonerLiveRoute {
                 (
                     sse_versions.get(),
                     refresh_signal.get(),
-                    summoner_identifier.get()
+                    summoner_identifier.get(),
                 )
             },
             |(_, refresh_version, summoner_identifier)| async move {
@@ -62,7 +68,10 @@ impl LazyRoute for SummonerLiveRoute {
         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
         batch(|| {
             let me = summoner_identifier.get();
-            meta_store.title().set(format!("{}#{} Live Game | Ruche", me.game_name, me.tag_line));
+            meta_store.title().set(format!(
+                "{}#{} Live Game | Ruche",
+                me.game_name, me.tag_line
+            ));
             meta_store.description().set(format!(
                 "Watch {}#{}’s live game: compositions, runes, spells, ranked and champion stats. Auto-refresh via SSE on a full-stack Rust platform.",
                 me.game_name, me.tag_line
@@ -127,8 +136,8 @@ impl LazyRoute for SummonerLiveRoute {
                                 )
                             }
                             _ => {
-
                                 Either::Left(
+
                                     view! { <div class="text-center">Not In Live Game</div> },
                                 )
                             }

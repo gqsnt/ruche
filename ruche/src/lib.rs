@@ -20,13 +20,12 @@ pub mod ssr {
     use sqlx::PgPool;
     use std::sync::Arc;
 
+    use crate::app::SummonerIdentifier;
+    use crate::sse::Hub;
     use moka::future::Cache;
     use once_cell::sync::Lazy;
-    use crate::app::SummonerIdentifier;
-    use crate::sse::{Hub};
 
     pub type RiotApiState = Arc<RiotApi>;
-
 
     #[derive(Clone, axum::extract::FromRef)]
     pub struct AppState {
@@ -35,9 +34,8 @@ pub mod ssr {
         pub db: PgPool,
         pub live_game_cache: Arc<live_game_cache::LiveGameCache>,
         pub max_matches: usize,
-        pub hub: Arc<Hub>
+        pub hub: Arc<Hub>,
     }
-
 
     pub static S_IDENTIFIER_TO_ID: Lazy<Cache<SummonerIdentifier, Arc<i32>>> = Lazy::new(|| {
         Cache::builder()
@@ -46,8 +44,6 @@ pub mod ssr {
             .build()
     });
 
-
-    
     pub fn init_riot_api() -> RiotApi {
         let api_key = dotenv::var("RIOT_API_KEY").expect("RIOT_API_KEY must be set");
         RiotApi::new(api_key)

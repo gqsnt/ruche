@@ -1,17 +1,11 @@
-
-
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> ruche::backend::ssr::AppResult<()> {
     use axum::routing::get;
-    use tower::ServiceBuilder;
     use axum::Router;
-    use sqlx::PgPool;
-    use http::HeaderValue;
-    use tower_http::set_header::SetResponseHeaderLayer;
     use dotenv::dotenv;
+    use http::HeaderValue;
     use leptos::logging::log;
-    use ruche::sse::Hub;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use memory_serve::{load_assets, CacheControl, MemoryServe};
@@ -24,16 +18,20 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use ruche::backend::tasks::update_matches::UpdateMatchesTask;
     use ruche::backend::tasks::update_pro_players::UpdateProPlayerTask;
     use ruche::serve::get_sitemap;
-    use ruche::ssr::init_riot_api;
     use ruche::serve::serve;
     use ruche::sse::sse_broadcast_match_updated;
+    use ruche::sse::Hub;
+    use ruche::ssr::init_riot_api;
     use ruche::ssr::AppState;
+    use sqlx::PgPool;
     use std::net::SocketAddr;
     use std::sync::Arc;
+    use tower::ServiceBuilder;
     use tower_http::compression::predicate::NotForContentType;
     use tower_http::compression::predicate::SizeAbove;
     use tower_http::compression::CompressionLayer;
     use tower_http::compression::Predicate;
+    use tower_http::set_header::SetResponseHeaderLayer;
     use tower_http::CompressionLevel;
 
     dotenv().ok();
@@ -82,7 +80,6 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
 
     let site_address = leptos_options.site_addr;
 
-
     let database_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let pool = PgPool::connect(database_url.as_str())
         .await
@@ -90,7 +87,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     let riot_api = Arc::new(init_riot_api());
     let hub = Hub::new();
     tokio::spawn(hub.clone().run(std::time::Duration::from_millis(500)));
-    let live_game_cache = Arc::new(LiveGameCache::new());
+    let live_game_cache = Arc::new(LiveGameCache::default());
 
     let mut task_director = TaskDirector::default();
     task_director.add_task(HandleLiveGameCacheTask::new(
@@ -110,7 +107,6 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     ));
 
     // cleanup sse_broadcast_match_updated subscriptions
-
 
     if is_prod {
         task_director.add_task(GenerateSiteMapTask::new(
@@ -136,7 +132,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         db: pool,
         live_game_cache,
         max_matches,
-        hub
+        hub,
     };
 
     let routes = generate_route_list(App);
@@ -181,8 +177,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         )
         .route(
             "/sse/match_updated/{platform_route}/{summoner_id}",
-            get(sse_broadcast_match_updated)
-                .layer(sse_middleware),
+            get(sse_broadcast_match_updated).layer(sse_middleware),
         )
         .route("/sitemap-index.xml", get(get_sitemap))
         .fallback(leptos_axum::file_and_error_handler::<LeptosOptions, _>(
