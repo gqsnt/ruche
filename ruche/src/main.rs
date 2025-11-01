@@ -1,10 +1,11 @@
-use ruche::backend::task_director::Task;
+
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> ruche::backend::ssr::AppResult<()> {
     use axum::routing::get;
     use axum::Router;
+    use ruche::backend::task_director::Task;
     use dotenv::dotenv;
     use http::HeaderValue;
     use leptos::logging::log;
@@ -107,14 +108,14 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         update_interval_duration,
         hub.clone(),
     ));
-
+    task_director.add_task(GenerateSiteMapTask::new(
+        pool.clone(),
+        3,
+        site_map_task_on_startup,
+    ));
+    task_director.add_task(DailySqlCleanTask::new(pool.clone(), 1, true));
     if is_prod {
-        task_director.add_task(GenerateSiteMapTask::new(
-            pool.clone(),
-            3,
-            site_map_task_on_startup,
-        ));
-        task_director.add_task(DailySqlCleanTask::new(pool.clone(), 1, true));
+
         task_director.add_task(UpdateProPlayerTask::new(
             pool.clone(),
             riot_api.clone(),
