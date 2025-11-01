@@ -9,14 +9,12 @@ use sitemap::structs::{SiteMapEntry, UrlEntry};
 use sitemap::writer::{SiteMapIndexWriter, SiteMapWriter};
 use sqlx::PgPool;
 use std::future::Future;
-use std::ops::Add;
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use std::time::Duration;
 use tokio::time::Instant;
 
 pub struct GenerateSiteMapTask {
