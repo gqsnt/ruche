@@ -48,10 +48,8 @@ impl Task for GenerateSiteMapTask {
         Box::pin(async move {
             if let Err(e) = generate_site_map(&db).await {
                 log!("Failed to generate ruche-lol map: {:?}", e);
-                println!("Failed to generate ruche-lol map: {:?}", e);
             } else {
                 log!("Site map generated successfully");
-                println!("Site map generated successfully");
             }
         })
     }
