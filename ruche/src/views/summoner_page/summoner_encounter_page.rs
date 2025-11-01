@@ -3,14 +3,11 @@ use crate::app::{
     MetaStoreStoreFields, SummonerIdentifier, SummonerRouteParams,
 };
 use crate::backend::server_fns::get_encounter::get_encounter;
-use crate::utils::{
-    calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits,
-    items_from_slice, DurationSince, RiotMatchId,
-};
+use crate::utils::{calculate_and_format_kda, calculate_loss_and_win_rate, format_float_to_2digits, items_from_slice, DurationSince, RiotMatchId, SSEVersions, SSEVersionsStoreFields};
 use crate::views::components::pagination::Pagination;
 use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::summoner_matches_page::{MatchInfoCard, MatchSummonerCard};
-use crate::views::summoner_page::{SSEMatchUpdateVersion, Summoner, SummonerInfo};
+use crate::views::summoner_page::{Summoner, SummonerInfo};
 use crate::views::BackEndMatchFiltersSearch;
 use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
@@ -43,13 +40,13 @@ impl LazyRoute for SummonerEncounterRoute {
         let encounter_route_params = use_params::<EncounterRouteParams>();
         let encounter_identifier_memo = to_encounter_identifier_memo(encounter_route_params);
 
-        let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
+        let sse_version = expect_context::<Store<SSEVersions>>();
         let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
 
         let encounter_resource = leptos::server::Resource::new_bitcode(
             move || {
                 (
-                    sse_match_update_version.get().unwrap_or_default(),
+                    sse_version.match_ver().get(),
                     summoner_identifier_memo.get(),
                     encounter_identifier_memo.get(),
                     match_filters.get(),
@@ -57,7 +54,6 @@ impl LazyRoute for SummonerEncounterRoute {
                 )
             },
             |(_, summoner, encounter, filters, is_with)| async move {
-                //println!("{:?} {:?} {:?}", filters, summoner, page_number);
                 get_encounter(summoner, encounter, is_with, Some(filters)).await
             },
         );

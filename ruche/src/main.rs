@@ -6,12 +6,12 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use axum::routing::get;
     use tower::ServiceBuilder;
     use axum::Router;
-    use dashmap::DashMap;
     use sqlx::PgPool;
     use http::HeaderValue;
     use tower_http::set_header::SetResponseHeaderLayer;
     use dotenv::dotenv;
     use leptos::logging::log;
+    use ruche::sse::Hub;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use memory_serve::{load_assets, CacheControl, MemoryServe};
@@ -21,7 +21,6 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use ruche::backend::tasks::daily_sql_clean::DailySqlCleanTask;
     use ruche::backend::tasks::generate_sitemap::GenerateSiteMapTask;
     use ruche::backend::tasks::handle_live_game_cache::HandleLiveGameCacheTask;
-    use ruche::backend::tasks::sse_broadcast_match_updated_cleanup::SummonerUpdatedSenderCleanupTask;
     use ruche::backend::tasks::update_matches::UpdateMatchesTask;
     use ruche::backend::tasks::update_pro_players::UpdateProPlayerTask;
     use ruche::serve::get_sitemap;
@@ -89,14 +88,16 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         .await
         .expect("Could not connect to database");
     let riot_api = Arc::new(init_riot_api());
-    let live_game_cache = Arc::new(LiveGameCache::new(std::time::Duration::from_secs(60)));
-    let summoner_updated_sender = Arc::new(DashMap::new());
+    let hub = Hub::new();
+    tokio::spawn(hub.clone().run(std::time::Duration::from_millis(500)));
+    let live_game_cache = Arc::new(LiveGameCache::new());
+
     let mut task_director = TaskDirector::default();
     task_director.add_task(HandleLiveGameCacheTask::new(
         pool.clone(),
         riot_api.clone(),
         live_game_cache.clone(),
-        summoner_updated_sender.clone(),
+        hub.clone(),
         live_game_cache_interval_duration,
     ));
 
@@ -105,14 +106,11 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         pool.clone(),
         Arc::clone(&riot_api),
         update_interval_duration,
-        Arc::clone(&summoner_updated_sender),
+        hub.clone(),
     ));
 
     // cleanup sse_broadcast_match_updated subscriptions
-    task_director.add_task(SummonerUpdatedSenderCleanupTask::new(
-        Arc::clone(&summoner_updated_sender),
-        tokio::time::Duration::from_secs(10),
-    ));
+
 
     if is_prod {
         task_director.add_task(GenerateSiteMapTask::new(
@@ -138,7 +136,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         db: pool,
         live_game_cache,
         max_matches,
-        summoner_updated_sender,
+        hub
     };
 
     let routes = generate_route_list(App);
@@ -155,20 +153,20 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
 
     // build our application with a route
     let app = Router::<AppState>::new()
-        // .nest(
-        //     "/assets",
-        //     MemoryServe::new(load_assets!("../target/site/assets"))
-        //         .enable_brotli(!cfg!(debug_assertions))
-        //         .cache_control(CacheControl::Custom("public, max-age=31536000"))
-        //         .into_router::<AppState>(),
-        // )
-        // .nest(
-        //     "/pkg",
-        //     MemoryServe::new(load_assets!("../target/site/pkg"))
-        //         .enable_brotli(!cfg!(debug_assertions))
-        //         .cache_control(CacheControl::Custom("public, max-age=31536000"))
-        //         .into_router::<AppState>(),
-        // )
+        .nest(
+            "/assets",
+            MemoryServe::new(load_assets!("../target/site/assets"))
+                .enable_brotli(!cfg!(debug_assertions))
+                .cache_control(CacheControl::Custom("public, max-age=31536000"))
+                .into_router::<AppState>(),
+        )
+        .nest(
+            "/pkg",
+            MemoryServe::new(load_assets!("../target/site/pkg"))
+                .enable_brotli(!cfg!(debug_assertions))
+                .cache_control(CacheControl::Custom("public, max-age=31536000"))
+                .into_router::<AppState>(),
+        )
         .leptos_routes_with_context(
             &app_state,
             routes,

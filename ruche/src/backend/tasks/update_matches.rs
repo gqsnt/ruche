@@ -11,9 +11,8 @@ use crate::backend::tasks::update_matches::bulk_lol_matches::{
 use crate::backend::tasks::update_matches::bulk_summoners::{
     bulk_insert_summoners, bulk_update_summoners,
 };
-use crate::sse::{SubscriberMap};
 use crate::ssr::{RiotApiState};
-use crate::utils::{ProPlayerSlug, SSEEvent};
+use crate::utils::{ProPlayerSlug};
 use crate::DB_CHUNK_SIZE;
 use chrono::NaiveDateTime;
 use common::consts;
@@ -36,7 +35,7 @@ pub struct UpdateMatchesTask {
     db: PgPool,
     api: RiotApiState,
     update_interval: Duration,
-    update_matches_sender: Arc<SubscriberMap>,
+    hub: Arc<crate::sse::Hub>,
     next_run: Instant,
     running: Arc<AtomicBool>,
 }
@@ -46,14 +45,14 @@ impl UpdateMatchesTask {
         db: PgPool,
         api: RiotApiState,
         update_interval: Duration,
-        update_matches_sender: Arc<SubscriberMap>,
+        hub:Arc<crate::sse::Hub>
     ) -> Self {
         let next_run = Instant::now() + update_interval;
         Self {
             db,
             api,
             update_interval,
-            update_matches_sender,
+            hub,
             next_run,
             running: Arc::new(AtomicBool::new(false)),
         }
@@ -64,19 +63,18 @@ impl Task for UpdateMatchesTask {
     fn execute(&self) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>> {
         let db = self.db.clone();
         let api = self.api.clone();
-        let update_matches_sender = self.update_matches_sender.clone();
+        let hub = self.hub.clone();
         Box::pin(async move {
             while let Ok(matches) = get_not_updated_match(&db, 100).await {
                 let start = Instant::now();
                 let match_len = matches.len();
                 match update_matches_task(&db, &api, matches).await {
                     Ok(summoner_ids) => {
+                        let now = std::time::Instant::now();
                         for id in summoner_ids {
-                            if let Some(sender) = update_matches_sender.get(&id) {
-                                let _ = sender.send(SSEEvent::SummonerMatches(0));
-                            }
+                            hub.bump_matches(id);
                         }
-                        log!("Updated {} matches in {:?}", match_len, start.elapsed());
+                        log!("Updated {} matches in {:?} and bump in {:?}", match_len, start.elapsed(), now.elapsed());
                     }
                     Err(e) => {
                         log!("Error updating matches: {:?}", e);
@@ -107,7 +105,7 @@ impl Task for UpdateMatchesTask {
             db: self.db.clone(),
             api: self.api.clone(),
             update_interval: self.update_interval,
-            update_matches_sender: self.update_matches_sender.clone(),
+            hub: self.hub.clone(),
             next_run: self.next_run,
             running: self.running.clone(),
         })

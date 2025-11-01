@@ -21,7 +21,7 @@ pub async fn get_live_game(
         &summoner_identifier,
     )
     .await?;
-    if force_refresh || live_cache.get_game_data(summoner_id).is_none() {
+    if force_refresh || live_cache.get_game_data(summoner_id).await.is_none() {
         let riot_api = state.riot_api.clone();
         let puuid = Puuid::new(find_summoner_puuid_by_id(&db, summoner_id).await?.as_str());
         let live_game =
@@ -29,7 +29,7 @@ pub async fn get_live_game(
                 .await?;
         Ok(match live_game {
             Some((summoner_ids, live_data)) => {
-                live_cache.set_game_data(live_data.game_id, summoner_ids, live_data.clone());
+                live_cache.set_game_data(live_data.game_id, summoner_ids, live_data.clone()).await;
                 Some(ssr::add_encounters(&db, live_data, summoner_id).await?)
             }
             None => None,
@@ -38,7 +38,7 @@ pub async fn get_live_game(
         Ok(Some(
             ssr::add_encounters(
                 &db,
-                live_cache.get_game_data(summoner_id).unwrap(),
+                live_cache.get_game_data(summoner_id).await.unwrap().as_ref().clone(),
                 summoner_id,
             )
             .await?,

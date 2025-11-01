@@ -3,13 +3,8 @@ use crate::app::{
     SummonerRouteParams,
 };
 use crate::backend::server_fns::get_matches::get_matches;
-use crate::utils::{
-    calculate_and_format_kda, calculate_loss_and_win_rate, format_duration,
-    format_float_to_2digits, items_from_slice, summoner_encounter_url, summoner_url, DurationSince,
-    ProPlayerSlug, RiotMatchId,
-};
+use crate::utils::{calculate_and_format_kda, calculate_loss_and_win_rate, format_duration, format_float_to_2digits, items_from_slice, summoner_encounter_url, summoner_url, DurationSince, ProPlayerSlug, RiotMatchId, SSEVersions, SSEVersionsStoreFields};
 use crate::views::components::pagination::Pagination;
-use crate::views::summoner_page::SSEMatchUpdateVersion;
 use crate::views::{
     BackEndMatchFiltersSearch, ImgChampion, ImgItem, ImgPerk, ImgSummonerSpell, ProPlayerSlugView,
 };
@@ -41,13 +36,13 @@ impl LazyRoute for SummonerMatchesRoute {
     fn data() -> Self {
         let summoner_route_params = use_params::<SummonerRouteParams>();
         let summoner_identifier_memo = to_summoner_identifier_memo(summoner_route_params);
-        let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
+        let sse_versions = expect_context::<Store<SSEVersions>>();
         let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
 
         let matches_resource = Resource::new_bitcode(
             move || {
                 (
-                    sse_match_update_version.get().unwrap_or_default(),
+                    sse_versions.match_ver().get(),
                     match_filters.get(),
                     summoner_identifier_memo.get(),
                 )

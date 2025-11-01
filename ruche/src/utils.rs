@@ -1,6 +1,6 @@
 use bitcode::{Decode, Encode};
 use common::consts::item::Item;
-use std::fmt::Formatter;
+use reactive_stores_macro::Store;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Encode, Decode)]
 pub struct FixedSizeString<const N: usize>([u8; N]);
@@ -179,39 +179,25 @@ pub fn format_float_to_2digits(value: f32) -> String {
     value.to_string()
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub enum SSEEvent {
-    LiveGame(Option<u16>),
-    SummonerMatches(u16),
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Store)]
+pub struct SSEVersions {
+    pub live_ver: Option<u64>,
+    pub match_ver: u64,
 }
 
-impl SSEEvent {
-    // Parse from a compact string representation
-    pub fn from_string(s: &str) -> Result<Self, &'static str> {
-        let parts: Vec<&str> = s.split(':').collect();
-        if parts.len() != 2 {
-            return Err("Invalid number of parts");
+impl SSEVersions {
+    /// Parse "0:{live},1:{match}"
+    pub fn parse(s: &str) -> Option<Self> {
+        // très tolérant : "k:v" séparés par virgule
+        let parts = s.split(':').collect::<Vec<_>>();
+        if parts.len() != 2{
+            return None;
         }
-
-        match parts[0] {
-            "0" => Ok(SSEEvent::LiveGame(parts[1].parse::<u16>().ok())),
-            "1" => match parts[1].parse::<u16>() {
-                Ok(value) => Ok(SSEEvent::SummonerMatches(value)),
-                Err(_) => Err("Invalid u16 value"),
-            },
-            _ => Err("Invalid event type"),
-        }
-    }
-}
-
-impl std::fmt::Display for SSEEvent {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SSEEvent::LiveGame(value) => {
-                write!(f, "0:{}", value.map(|v| v.to_string()).unwrap_or_default())
-            }
-            SSEEvent::SummonerMatches(value) => write!(f, "1:{}", value),
-        }
+        let (live_ver, match_ver) = (parts.get(0)?, parts.get(1)?);
+        Some(Self{
+         live_ver: live_ver.parse::<u64>().ok(),
+            match_ver:match_ver.parse::<u64>().unwrap_or_default(),
+        })
     }
 }
 

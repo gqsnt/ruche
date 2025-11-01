@@ -4,7 +4,6 @@ use tokio::time::Instant;
 pub mod daily_sql_clean;
 pub mod generate_sitemap;
 pub mod handle_live_game_cache;
-pub mod sse_broadcast_match_updated_cleanup;
 pub mod update_matches;
 pub mod update_pro_players;
 

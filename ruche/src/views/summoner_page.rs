@@ -102,61 +102,40 @@ impl LazyRoute for SummonerPageRoute {
 
                                     #[cfg(not(feature = "ssr"))]
                                     {
-                                        let summoner_sse_url = format!(
-                                                        "/sse/match_updated/{}/{}",
-                                                        summoner.platform,
-                                                        summoner.id,
-                                                    );
-                                        use futures::StreamExt;
+                                        use reactive_stores::Store;
+                                          use futures::StreamExt;
                                         use send_wrapper::SendWrapper;
-                                        use crate::utils::SSEEvent;
+                                        use crate::utils::SSEVersions;
+
+                                        let summoner_sse_url = format!("/sse/match_updated/{}/{}", summoner.platform, summoner.id);
                                         let mut source = SendWrapper::new(
-                                            gloo_net::eventsource::futures::EventSource::new(
-                                                    summoner_sse_url
-                                                        .as_str(),
-                                                )
+                                            gloo_net::eventsource::futures::EventSource::new(&summoner_sse_url)
                                                 .expect("couldn't connect to SSE stream"),
                                         );
+
                                         let s = ReadSignal::from_stream_unsync(
                                             source
                                                 .subscribe("message")
                                                 .expect("couldn't subscribe to SSE stream")
                                                 .filter_map(|value| async move {
-                                                    value
-                                                        .map(|(_, message_event)| {
-                                                            SSEEvent::from_string(
-                                                                    message_event
-                                                                        .data()
-                                                                        .as_string()
-                                                                        .expect("failed to parse sse string")
-                                                                        .as_str(),
-                                                                )
-                                                                .ok()
-                                                        })
-                                                        .ok()
-                                                        .flatten()
+                                                    value.ok()
+                                                         .and_then(|(_, ev)| ev.data().as_string())
+                                                         .and_then(|s| SSEVersions::parse(&s))
                                                 }),
                                         );
                                         on_cleanup(move || source.take().close());
-                                        let sse_match_update_version = expect_context::<
-                                            RwSignal<Option<SSEMatchUpdateVersion>>,
-                                        >();
-                                        let sse_in_live = expect_context::<
-                                            RwSignal<SSEInLiveGame>,
-                                        >();
-                                        Effect::new(move |_| {
-                                            let event = s.get();
-                                            match event {
-                                                Some(SSEEvent::SummonerMatches(version)) => {
-                                                    sse_match_update_version
-                                                        .set(Some(SSEMatchUpdateVersion(version)));
+
+                                        let sse_versions = expect_context::<Store<SSEVersions>>();
+                                        Effect::watch(move || s.get(), move |new_ver, _, _| {
+                                            if let Some(ver) = *new_ver {
+                                                // Mise à jour seulement si différent
+                                                let prev = sse_versions.get_untracked();
+                                                if prev != ver {
+                                                    sse_versions.set(ver);
                                                 }
-                                                Some(SSEEvent::LiveGame(version)) => {
-                                                    sse_in_live.set(SSEInLiveGame(version));
-                                                }
-                                                _ => {}
                                             }
-                                        });
+                                        }, false);
+
                                     }
                                     meta_store
                                         .image()
@@ -270,8 +249,3 @@ pub struct Summoner {
 }
 
 
-#[derive(Clone, PartialEq, Eq, Copy, Default, Debug)]
-pub struct SSEMatchUpdateVersion(pub u16);
-
-#[derive(Clone, PartialEq, Eq, Copy, Default, Debug)]
-pub struct SSEInLiveGame(pub Option<u16>);

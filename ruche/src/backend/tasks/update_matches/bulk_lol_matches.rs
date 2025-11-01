@@ -51,13 +51,6 @@ pub async fn bulk_update_matches(
     ) = matches
         .iter()
         .map(|(x, _)| {
-            // log!(
-            //     "Match: Queue: {:?}, Map: {:?}, Version: {:?}, Mode: {:?}",
-            //     x.info.queue_id.0,
-            //     x.info.map_id.0,
-            //     x.info.game_version,
-            //     x.info.game_mode
-            // );
             (
                 x.metadata.match_id.as_str(),
                 chrono::DateTime::from_timestamp_millis(x.info.game_start_timestamp)

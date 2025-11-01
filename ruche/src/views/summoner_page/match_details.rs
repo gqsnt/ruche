@@ -1,10 +1,9 @@
 use crate::app::SummonerIdentifier;
 use crate::backend::server_fns::get_match_details::get_match_details;
-use crate::utils::{ProPlayerSlug, RiotMatchId};
+use crate::utils::{ProPlayerSlug, RiotMatchId, SSEVersions, SSEVersionsStoreFields};
 use crate::views::summoner_page::match_details::match_details_build::MatchDetailsBuild;
 use crate::views::summoner_page::match_details::match_details_overview::MatchDetailsOverview;
 use crate::views::summoner_page::match_details::match_details_team::MatchDetailsTeam;
-use crate::views::summoner_page::SSEMatchUpdateVersion;
 use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use leptos::either::{Either, EitherOf3};
@@ -13,6 +12,7 @@ use leptos::{component, view, IntoView};
 
 use std::fmt::Formatter;
 use std::sync::Arc;
+use reactive_stores::Store;
 
 pub mod match_details_build;
 pub mod match_details_overview;
@@ -26,11 +26,12 @@ pub fn MatchDetails(
     in_encounter: bool,
 ) -> impl IntoView {
     let summoner_identifier = expect_context::<Memo<SummonerIdentifier>>();
-    let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
+    let sse_version = expect_context::<Store<SSEVersions>>();
+
     let match_details = Resource::new_bitcode(
         move || {
             (
-                sse_match_update_version.get().unwrap_or_default(),
+                 sse_version.match_ver().get(),
                 match_id,
                 riot_match_id,
                 platform,

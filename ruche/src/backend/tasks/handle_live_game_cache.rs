@@ -1,29 +1,26 @@
-use crate::backend::live_game_cache::LiveGameCache;
-use crate::backend::server_fns::get_live_game::ssr::{
-    game_info_to_live_game, get_all_participants_live_game_stats,
-};
-use crate::backend::ssr::{AppResult, PlatformRouteDb};
-use crate::backend::task_director::Task;
-use crate::sse::SubscriberMap;
-use crate::utils::{Puuid, RiotMatchId, SSEEvent};
-use common::consts::platform_route::PlatformRoute;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::pin::Pin;
+use std::future::Future;
+use tokio::time::{Duration, Instant};
 use itertools::Itertools;
-use leptos::logging::log;
 use riven::models::spectator_v5::CurrentGameInfo;
+use crate::backend::task_director::Task;
+use crate::backend::live_game_cache::LiveGameCache;
+use crate::backend::server_fns::get_live_game::ssr::{game_info_to_live_game, get_all_participants_live_game_stats};
+use crate::sse::Hub;
+use crate::utils::{Puuid, RiotMatchId};
 use riven::RiotApi;
 use sqlx::PgPool;
-use std::collections::HashMap;
-use std::future::Future;
-use std::pin::Pin;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use tokio::time::{Duration, Instant};
+use common::consts::platform_route::PlatformRoute;
+use crate::backend::ssr::{AppResult, PlatformRouteDb};
 
 pub struct HandleLiveGameCacheTask {
     pub db: PgPool,
     pub riot_api: Arc<RiotApi>,
     pub cache: Arc<LiveGameCache>,
-    pub summoner_updated_sender: Arc<SubscriberMap>,
+    pub hub: Arc<Hub>,
     pub update_interval: Duration,
     pub next_run: Instant,
     pub running: Arc<AtomicBool>,
@@ -34,17 +31,13 @@ impl HandleLiveGameCacheTask {
         db: PgPool,
         riot_api: Arc<RiotApi>,
         cache: Arc<LiveGameCache>,
-        summoner_updated_sender: Arc<SubscriberMap>,
+        hub: Arc<Hub>,
         update_interval: Duration,
     ) -> Self {
-        let next_run = Instant::now() + update_interval;
         Self {
-            db,
-            riot_api,
-            cache,
-            summoner_updated_sender,
+            db, riot_api, cache, hub,
             update_interval,
-            next_run,
+            next_run: Instant::now() + update_interval,
             running: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -55,23 +48,23 @@ impl Task for HandleLiveGameCacheTask {
         let db = self.db.clone();
         let riot_api = self.riot_api.clone();
         let cache = self.cache.clone();
-        let summoner_updated_sender = self.summoner_updated_sender.clone();
+        let hub = self.hub.clone();
+
         Box::pin(async move {
-            // split the summoner_updated_sender into two groups, none_ids: Vec<i32> and ig_ids: HashMap<RiotMatchId, Vec<i32>>
-            let (none_ids, ig_ids): (
-                Vec<(Option<RiotMatchId>, i32)>,
-                Vec<(Option<RiotMatchId>, i32)>,
-            ) = summoner_updated_sender
-                .iter()
-                .map(|entry| {
-                    let summoner_id = *entry.key();
-                    let match_id = cache
-                        .summoner_id_to_game
-                        .get(&summoner_id)
-                        .map(|entry| *entry.value());
-                    (match_id, summoner_id)
-                })
-                .partition(|(match_id, _)| match_id.is_none());
+            // Clés “actives” = toutes celles connues du hub
+            let sids: Vec<i32> = hub.topics.iter().map(|e| *e.key()).collect();
+            let mut sids_cache= Vec::with_capacity(sids.len());
+            for sid in sids{
+                sids_cache.push((
+                    cache.get_game_data(sid).await.as_ref().map(|g| g.game_id) ,
+                    sid
+                    ))
+            }
+            let (none_ids, ig_ids): (Vec<(Option<RiotMatchId>, i32)>, Vec<(Option<RiotMatchId>, i32)>) =
+                sids_cache
+                    .into_iter()
+                    .partition(|(m, _)| m.is_none());
+
             let none_ids = none_ids.into_iter().map(|(_, id)| id).collect::<Vec<_>>();
             let ig_ids = ig_ids
                 .into_iter()
@@ -81,101 +74,50 @@ impl Task for HandleLiveGameCacheTask {
             let (mut summoner_match_id, mut match_id_game_info) =
                 fetch_all_game_info(&db, &riot_api, &ig_ids, &none_ids).await;
 
-            // determine sse events to send
-            let mut sse_events = vec![];
-            for (summoner_id, match_id) in summoner_match_id.drain() {
-                let previous_match_id = cache
-                    .summoner_id_to_game
-                    .get(&summoner_id)
-                    .map(|entry| *entry.value());
-                match (previous_match_id, match_id) {
-                    (Some(previous_match_id), Some(match_id)) => {
-                        if previous_match_id != match_id {
-                            cache.clear_game_data(summoner_id);
-                            sse_events.push((summoner_id, SSEEvent::LiveGame(Some(1))));
-                        } else {
-                            match_id_game_info.remove(&match_id);
-                        }
-                    }
-                    (Some(_), None) => {
-                        cache.clear_game_data(summoner_id);
-                        sse_events.push((summoner_id, SSEEvent::LiveGame(None)));
-                    }
-                    (None, Some(_)) => {
-                        sse_events.push((summoner_id, SSEEvent::LiveGame(Some(1))));
-                    }
-                    (None, None) => {}
+            // Transitions
+            for (sid, new_mid) in summoner_match_id.drain() {
+                let prev_mid = cache.summoner_to_match.get(&sid).await;
+                match (prev_mid, new_mid) {
+                    (Some(p), Some(n)) if p == n => { match_id_game_info.remove(&n); }
+                    (Some(_), None) => { cache.clear_game_data(sid).await; hub.set_live_none(sid); }
+                    (None, Some(_)) => { hub.bump_live_epoch(sid); }
+                    (Some(p), Some(n)) if p != n => { cache.clear_game_data(sid).await; hub.bump_live_epoch(sid); }
+                    _ => {}
                 }
             }
 
-            // update cache
-            let (all_participants, live_game_stats) = get_all_participants_live_game_stats(
-                &db,
-                &riot_api,
-                match_id_game_info.values().collect::<Vec<_>>(),
-            )
-            .await
-            .unwrap();
-            for (match_id, game_info) in match_id_game_info {
-                let (summoner_ids, live_game) = game_info_to_live_game(
-                    match_id,
-                    game_info,
-                    &all_participants,
-                    &live_game_stats,
-                );
-                cache.set_game_data(match_id, summoner_ids, live_game);
-            }
+            // Mise à jour du cache pour les matchs restants
+            if !match_id_game_info.is_empty() {
+                let (all_participants, live_game_stats) =
+                    get_all_participants_live_game_stats(&db, &riot_api, match_id_game_info.values().collect::<Vec<_>>()).await.unwrap();
 
-            // send sse events
-            for (summoner_id, event) in sse_events {
-                if let Some(sender) = summoner_updated_sender.get(&summoner_id) {
-                    match sender.value().send(event) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            log!("Error sending sse event: {:?}", e);
-                        }
-                    }
+                for (mid, gi) in match_id_game_info {
+                    let (summoner_ids, live) = game_info_to_live_game(mid, gi, &all_participants, &live_game_stats);
+                    cache.set_game_data(mid, summoner_ids, live).await;
                 }
             }
         })
     }
 
-    fn next_execution(&self) -> Instant {
-        self.next_run
-    }
-
-    fn update_schedule(&mut self) {
-        self.next_run = Instant::now() + self.update_interval;
-    }
-
-    fn is_running(&self) -> bool {
-        self.running.load(Ordering::SeqCst)
-    }
-
-    fn set_running(&self, running: bool) {
-        self.running.store(running, Ordering::SeqCst);
-    }
-
-    fn clone_box(&self) -> Box<dyn Task> {
+    fn next_execution(&self) -> Instant { self.next_run }
+    fn update_schedule(&mut self) { self.next_run = Instant::now() + self.update_interval; }
+    fn is_running(&self) -> bool { self.running.load(Ordering::SeqCst) }
+    fn set_running(&self, running: bool) { self.running.store(running, Ordering::SeqCst); }
+    fn clone_box(&self) -> Box<dyn crate::backend::task_director::Task> {
         Box::new(Self {
             db: self.db.clone(),
             riot_api: self.riot_api.clone(),
-            summoner_updated_sender: self.summoner_updated_sender.clone(),
             cache: self.cache.clone(),
+            hub: self.hub.clone(),
             update_interval: self.update_interval,
             next_run: self.next_run,
             running: self.running.clone(),
         })
     }
-
-    fn name(&self) -> &'static str {
-        "LiveGameCacheCleanupTask"
-    }
-
-    fn allow_concurrent(&self) -> bool {
-        false // Do not allow concurrent executions
-    }
+    fn name(&self) -> &'static str { "HandleLiveGameCacheTask" }
+    fn allow_concurrent(&self) -> bool { false }
 }
+
 
 pub async fn fetch_all_game_info(
     db: &PgPool,

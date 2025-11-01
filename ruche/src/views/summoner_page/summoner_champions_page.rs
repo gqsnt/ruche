@@ -3,8 +3,7 @@ use crate::app::{
     SummonerRouteParams,
 };
 use crate::backend::server_fns::get_champions::get_champions;
-use crate::utils::{calculate_and_format_kda, format_float_to_2digits, format_with_spaces};
-use crate::views::summoner_page::SSEMatchUpdateVersion;
+use crate::utils::{calculate_and_format_kda, format_float_to_2digits, format_with_spaces, SSEVersions, SSEVersionsStoreFields};
 use crate::views::{BackEndMatchFiltersSearch, ImgChampion};
 use bitcode::{Decode, Encode};
 use common::consts::champion::Champion;
@@ -27,18 +26,18 @@ impl LazyRoute for SummonerChampionsRoute {
     fn data() -> Self {
         let summoner_route_params = use_params::<SummonerRouteParams>();
         let summoner_identifier_memo = to_summoner_identifier_memo(summoner_route_params);
-        let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
+        let sse_version = expect_context::<Store<SSEVersions>>();
+
         let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
         let champions_resource = Resource::new_bitcode(
             move || {
                 (
-                    sse_match_update_version.get().unwrap_or_default(),
+                     sse_version.match_ver().get(),
                     match_filters.get(),
                     summoner_identifier_memo.get(),
                 )
             },
             |(_, filters, summoner_identifier)| async move {
-                //println!("{:?} {:?} {:?}", filters, summoner, page_number);
                 get_champions(summoner_identifier, Some(filters)).await
             },
         );

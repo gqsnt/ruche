@@ -1,9 +1,9 @@
-use crate::views::summoner_page::{SSEInLiveGame, SSEMatchUpdateVersion, SummonerPageRoute};
+use crate::views::summoner_page::{SummonerPageRoute};
 use crate::views::summoner_search_page::SummonerSearchPage;
 use bitcode::{Decode, Encode};
 use leptos::config::LeptosOptions;
 
-use crate::utils::{parse_summoner_slug, summoner_url, summoner_url_default};
+use crate::utils::{parse_summoner_slug, summoner_url, summoner_url_default, SSEVersions};
 use crate::views::summoner_page::summoner_champions_page::SummonerChampionsRoute;
 use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterRoute;
 use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersRoute;
@@ -58,12 +58,10 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
-    let sse_match_update_version = RwSignal::new(None::<SSEMatchUpdateVersion>);
-    let sse_in_live_game = RwSignal::new(SSEInLiveGame::default());
+    let sse_versions = Store::new(SSEVersions::default());
+    provide_context(sse_versions);
 
     let filters = Store::new(BackEndMatchFiltersSearch::default());
-    provide_context(sse_match_update_version);
-    provide_context(sse_in_live_game);
     provide_context(filters);
 
     view! {

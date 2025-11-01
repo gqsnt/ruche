@@ -3,11 +3,8 @@ use crate::app::{
     SummonerRouteParams,
 };
 use crate::backend::server_fns::get_encounters::get_encounters;
-use crate::utils::{
-    calculate_loss_and_win_rate, format_float_to_2digits, summoner_encounter_url, summoner_url,
-};
+use crate::utils::{calculate_loss_and_win_rate, format_float_to_2digits, summoner_encounter_url, summoner_url, SSEVersions, SSEVersionsStoreFields};
 use crate::views::components::pagination::Pagination;
-use crate::views::summoner_page::SSEMatchUpdateVersion;
 use crate::views::{
     BackEndMatchFiltersSearch, BackEndMatchFiltersSearchStoreFields, ImgSrc, PendingLoading,
 };
@@ -37,7 +34,7 @@ impl LazyRoute for SummonerEncountersRoute {
     fn data() -> Self {
         let summoner_route_params = use_params::<SummonerRouteParams>();
         let summoner_identifier_memo = to_summoner_identifier_memo(summoner_route_params);
-        let sse_match_update_version = expect_context::<RwSignal<Option<SSEMatchUpdateVersion>>>();
+        let sse_version = expect_context::<Store<SSEVersions>>();
         let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
 
         let search_summoner = RwSignal::new(None::<String>);
@@ -45,7 +42,7 @@ impl LazyRoute for SummonerEncountersRoute {
         let encounters_resource = Resource::new_bitcode(
             move || {
                 (
-                    sse_match_update_version.get().unwrap_or_default(),
+                    sse_version.match_ver().get(),
                     search_summoner.get(),
                     match_filters.get(),
                     summoner_identifier_memo.get(),
@@ -53,7 +50,6 @@ impl LazyRoute for SummonerEncountersRoute {
                 )
             },
             |(_, search_summoner, filters, summoner_identifier, pending)| async move {
-                //println!("{:?} {:?} {:?}", filters, summoner.unwrap(), page_number);
                 let r = get_encounters(summoner_identifier, search_summoner, Some(filters)).await;
                 pending.set(false);
                 r

@@ -109,17 +109,6 @@ async fn redirect_http_to_https() {
 }
 
 pub async fn serve_locally(app: Router, socket_addr: SocketAddr) -> Result<(), axum::Error> {
-    // let cert_path = PathBuf::from("certs").join("localhost+2.pem");
-    // let key_path = PathBuf::from("certs").join("localhost+2-key.pem");
-    // let axum_rustls = RustlsConfig::from_pem_file(cert_path.clone(), key_path.clone())
-    //     .await
-    //     .expect("failed to load rustls config for local TLS");
-    // log!("listening (local TLS, H1/H2 only) on {}", socket_addr);
-    // axum_server::bind_rustls(socket_addr, axum_rustls)
-    //     .serve(app.into_make_service())
-    //     .await
-    //     .unwrap();
-
     axum_server::bind(socket_addr)
         .serve(app.into_make_service()).await.unwrap();
     Ok(())
