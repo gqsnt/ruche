@@ -1,3 +1,5 @@
+use ruche::backend::task_director::Task;
+
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> ruche::backend::ssr::AppResult<()> {
@@ -105,8 +107,6 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
         update_interval_duration,
         hub.clone(),
     ));
-
-    // cleanup sse_broadcast_match_updated subscriptions
 
     if is_prod {
         task_director.add_task(GenerateSiteMapTask::new(

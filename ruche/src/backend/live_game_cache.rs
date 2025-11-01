@@ -53,7 +53,6 @@ impl Default for LiveGameCache {
 
 impl LiveGameCache {
     pub async fn get_game_data(&self, summoner_id: i32) -> Option<Arc<LiveGame>> {
-        let mid = (self.summoner_to_match.get(&summoner_id).await)?;
         let Some(mid) = self.summoner_to_match.get(&summoner_id).await else {
             return None;
         };

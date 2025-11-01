@@ -6,15 +6,17 @@ use chrono::{DateTime, FixedOffset, NaiveDateTime};
 use common::consts::platform_route::PlatformRoute;
 use leptos::leptos_dom::log;
 use sitemap::structs::{SiteMapEntry, UrlEntry};
-use sitemap::writer::SiteMapWriter;
+use sitemap::writer::{SiteMapIndexWriter, SiteMapWriter};
 use sqlx::PgPool;
 use std::future::Future;
+use std::ops::Add;
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
+use std::time::Duration;
 use tokio::time::Instant;
 
 pub struct GenerateSiteMapTask {
@@ -46,8 +48,10 @@ impl Task for GenerateSiteMapTask {
         Box::pin(async move {
             if let Err(e) = generate_site_map(&db).await {
                 log!("Failed to generate ruche-lol map: {:?}", e);
+                println!("Failed to generate ruche-lol map: {:?}", e);
             } else {
                 log!("Site map generated successfully");
+                println!("Site map generated successfully");
             }
         })
     }
@@ -98,9 +102,9 @@ pub async fn generate_site_map_index(index: usize, urls: &[UrlEntry]) -> AppResu
     }
     let dest_path = PathBuf::from("target")
         .join("site")
-        .join(format!("sitemap-index{}.xml.gz", index));
-    let output = flate2::write::GzEncoder::new(output, flate2::Compression::default());
-    let output = output.finish()?;
+        .join(format!("sitemap-index{}.xml", index));
+    // let output = flate2::write::GzEncoder::new(output, flate2::Compression::default());
+    // let output = output.finish()?;
     tokio::fs::write(dest_path, output).await?;
     Ok(())
 }
@@ -109,8 +113,13 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
     let base_url = "https://ruche.lol";
     let mut urls = vec![get_site_map_url(base_url.to_string(), None)];
     let total_summoners = get_total_summoners(db).await?;
-    let chunk_size = 500;
+    let chunk_size = 1000;
     let total_chunks = total_summoners / chunk_size;
+    let mut output = Vec::<u8>::new();
+    let now = chrono::Utc::now().fixed_offset();
+    let mut site_map_index = 0;
+    let writer = SiteMapWriter::new(&mut output);
+    let mut url_writer = writer.start_sitemapindex()?;
     for page in 1..=total_chunks {
         let summoners = get_platforms_summoners_taglines(db, chunk_size, page).await?;
         for (game_name, tag_line, platform, updated_at) in summoners {
@@ -123,33 +132,41 @@ pub async fn generate_site_map(db: &PgPool) -> AppResult<()> {
                 ),
                 Some(updated_at.and_utc().fixed_offset()),
             ));
+            if urls.len() >=10_000{
+                let _ = write_url_to_file(site_map_index, &mut urls,&mut url_writer, now, base_url).await;
+                site_map_index +=1;
+                urls.clear();
+            }
         }
     }
-
-    let now = chrono::Utc::now().fixed_offset();
-
-    let mut output = Vec::<u8>::new();
-    {
-        let writer = SiteMapWriter::new(&mut output);
-        let mut url_writer = writer.start_sitemapindex()?;
-
-        for (idx, urls_) in urls.chunks(50000).enumerate() {
-            generate_site_map_index(idx, urls_).await?;
-            url_writer.sitemap(
-                SiteMapEntry::builder()
-                    .loc(format!("{}/sitemap-index{}.xml.gz", base_url, idx))
-                    .lastmod(now)
-                    .build()?,
-            )?;
-        }
-        url_writer.end()?;
+    if urls.len() > 0 {
+        let _ = write_url_to_file(site_map_index, &mut urls,&mut url_writer, now, base_url).await;
     }
+    url_writer.end()?;
     let dest_path = PathBuf::from("target")
         .join("site")
         .join("sitemap-index.xml");
     tokio::fs::write(dest_path, output).await?;
     Ok(())
 }
+
+
+pub async fn write_url_to_file(idx: usize, urls:&mut Vec<UrlEntry>,url_writer:&mut SiteMapIndexWriter<&mut Vec<u8>>, now:DateTime<FixedOffset>, base_url:&str) -> AppResult<()>{
+
+
+    generate_site_map_index(idx, urls).await?;
+    url_writer.sitemap(
+        SiteMapEntry::builder()
+            .loc(format!("{}/sitemap-index{}.xml.gz", base_url, idx))
+            .lastmod(now)
+            .build()?,
+    )?;
+
+    Ok(())
+}
+
+
+
 
 pub async fn get_total_summoners(db: &PgPool) -> AppResult<i64> {
     let total = sqlx::query_scalar(
