@@ -18,10 +18,13 @@ use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_params;
 use leptos_router::{lazy_route, LazyRoute};
 use reactive_stores::Store;
+use crate::views::components::match_filters::MatchFilters;
+use crate::views::summoner_page::expect_filters;
 
 pub struct SummonerChampionsRoute {
     champions_resource: Resource<Result<Vec<ChampionStats>, ServerFnError>, BitcodeCodec>,
     summoner_identifier_memo: Memo<SummonerIdentifier>,
+    filters:Store<BackEndMatchFiltersSearch>
 }
 
 #[lazy_route]
@@ -30,13 +33,13 @@ impl LazyRoute for SummonerChampionsRoute {
         let summoner_route_params = use_params::<SummonerRouteParams>();
         let summoner_identifier_memo = to_summoner_identifier_memo(summoner_route_params);
         let sse_version = expect_context::<Store<SSEVersions>>();
+        let filters = Store::new(BackEndMatchFiltersSearch::default());
 
-        let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
         let champions_resource = Resource::new_bitcode(
             move || {
                 (
                     sse_version.match_ver().get(),
-                    match_filters.get(),
+                    filters.get(),
                     summoner_identifier_memo.get(),
                 )
             },
@@ -47,6 +50,7 @@ impl LazyRoute for SummonerChampionsRoute {
         Self {
             champions_resource,
             summoner_identifier_memo,
+            filters
         }
     }
 
@@ -54,8 +58,9 @@ impl LazyRoute for SummonerChampionsRoute {
         let SummonerChampionsRoute {
             champions_resource,
             summoner_identifier_memo,
+            filters
         } = this;
-
+       provide_context(filters);
         let (table_sort, set_table_sort) =
             signal::<(TableSortType, bool)>((TableSortType::default(), true));
         let current_sort_type = move || table_sort.get().0;
@@ -86,6 +91,7 @@ impl LazyRoute for SummonerChampionsRoute {
                 .set(format!("{}/champions", me.base_route()));
         });
         view! {
+             <MatchFilters/>
             <div>
                 <Transition fallback=move || {
                     view! { <div class="text-center">Loading Champions</div> }

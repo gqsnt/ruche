@@ -29,10 +29,12 @@ use leptos_router::components::A;
 use leptos_router::hooks::use_params;
 use leptos_router::{lazy_route, LazyRoute};
 use reactive_stores::Store;
+use crate::views::components::match_filters::MatchFilters;
 
 pub struct SummonerMatchesRoute {
     matches_resource: Resource<Result<GetSummonerMatchesResult, ServerFnError>, BitcodeCodec>,
     summoner_identifier_memo: Memo<SummonerIdentifier>,
+    filters:Store<BackEndMatchFiltersSearch>
 }
 
 #[lazy_route]
@@ -41,13 +43,13 @@ impl LazyRoute for SummonerMatchesRoute {
         let summoner_route_params = use_params::<SummonerRouteParams>();
         let summoner_identifier_memo = to_summoner_identifier_memo(summoner_route_params);
         let sse_versions = expect_context::<Store<SSEVersions>>();
-        let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
+        let filters = Store::new(BackEndMatchFiltersSearch::default());
 
         let matches_resource = Resource::new_bitcode(
             move || {
                 (
                     sse_versions.match_ver().get(),
-                    match_filters.get(),
+                    filters.get(),
                     summoner_identifier_memo.get(),
                 )
             },
@@ -58,6 +60,7 @@ impl LazyRoute for SummonerMatchesRoute {
         Self {
             matches_resource,
             summoner_identifier_memo,
+            filters
         }
     }
 
@@ -65,8 +68,9 @@ impl LazyRoute for SummonerMatchesRoute {
         let SummonerMatchesRoute {
             matches_resource,
             summoner_identifier_memo,
+            filters
         } = this;
-
+        provide_context(filters);
         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
         batch(|| {
             let me = summoner_identifier_memo.read();
@@ -82,6 +86,7 @@ impl LazyRoute for SummonerMatchesRoute {
         });
 
         view! {
+                        <MatchFilters/>
             <div class="w-[768px] inline-block align-top justify-center">
                 <div class="">
                     <Transition fallback=move || {

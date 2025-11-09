@@ -7,7 +7,7 @@ use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::utils::{summoner_url, ProPlayerSlug};
 use crate::views::components::match_filters::MatchFilters;
 use crate::views::summoner_page::summoner_nav::SummonerNav;
-use crate::views::{ImgSrc, PendingLoading, ProPlayerSlugView};
+use crate::views::{BackEndMatchFiltersSearch, ImgSrc, PendingLoading, ProPlayerSlugView};
 use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use common::consts::profile_icon::ProfileIcon;
@@ -23,6 +23,7 @@ use crate::views::summoner_page::summoner_search_page::SummonerSearch;
 use leptos_router::components::{Outlet, A};
 use leptos_router::hooks::{use_location, use_params};
 use leptos_router::{lazy_route, LazyRoute};
+use reactive_stores::Store;
 
 pub mod match_details;
 pub mod summoner_champions_page;
@@ -37,6 +38,18 @@ pub struct SummonerPageRoute {
     pub summoner_resource: Resource<Result<Summoner, ServerFnError>, BitcodeCodec>,
     pub summoner_identifier_memo: Memo<SummonerIdentifier>,
 }
+
+pub fn expect_filters() -> Store<BackEndMatchFiltersSearch>{
+    #[cfg(feature = "ssr")]
+    {
+        Store::new(BackEndMatchFiltersSearch::default())
+    }
+    #[cfg(not(feature = "ssr"))]
+    {
+        expect_context()
+    }
+}
+
 
 #[lazy_route]
 impl LazyRoute for SummonerPageRoute {
@@ -60,8 +73,8 @@ impl LazyRoute for SummonerPageRoute {
             summoner_identifier_memo,
         } = this;
         provide_context(summoner_identifier_memo);
+
         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
-        let location = use_location();
         view! {
             <div class="my-0 mx-auto max-w-5xl text-center">
                 <A href="/" attr:class="p-6 text-4xl my-4">
@@ -191,11 +204,9 @@ impl LazyRoute for SummonerPageRoute {
                     })}
                 </Transition>
                 <SummonerNav />
-                <MatchFilters hidden=Signal::derive(move || {
-                    location.pathname.get().ends_with("/live")
-                })>
-                    <Outlet />
-                </MatchFilters>
+               
+                  <Outlet />
+
             </div>
         }.into_any()
     }

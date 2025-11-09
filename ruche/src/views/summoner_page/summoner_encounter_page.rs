@@ -25,12 +25,14 @@ use leptos::{component, IntoView};
 use leptos_router::hooks::use_params;
 use leptos_router::{lazy_route, LazyRoute};
 use reactive_stores::Store;
+use crate::views::components::match_filters::MatchFilters;
 
 pub struct SummonerEncounterRoute {
     encounter_resource: Resource<Result<SummonerEncounterResult, ServerFnError>, BitcodeCodec>,
     is_with: RwSignal<bool>,
     summoner_identifier_memo: Memo<SummonerIdentifier>,
     encounter_identifier_memo: Memo<SummonerIdentifier>,
+    filters:Store<BackEndMatchFiltersSearch>
 }
 
 #[lazy_route]
@@ -44,7 +46,7 @@ impl LazyRoute for SummonerEncounterRoute {
         let encounter_identifier_memo = to_encounter_identifier_memo(encounter_route_params);
 
         let sse_version = expect_context::<Store<SSEVersions>>();
-        let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
+        let filters = Store::new(BackEndMatchFiltersSearch::default());
 
         let encounter_resource = leptos::server::Resource::new_bitcode(
             move || {
@@ -52,7 +54,7 @@ impl LazyRoute for SummonerEncounterRoute {
                     sse_version.match_ver().get(),
                     summoner_identifier_memo.get(),
                     encounter_identifier_memo.get(),
-                    match_filters.get(),
+                    filters.get(),
                     is_with.get(),
                 )
             },
@@ -65,6 +67,7 @@ impl LazyRoute for SummonerEncounterRoute {
             is_with,
             summoner_identifier_memo,
             encounter_identifier_memo,
+            filters
         }
     }
 
@@ -74,7 +77,9 @@ impl LazyRoute for SummonerEncounterRoute {
             is_with,
             summoner_identifier_memo,
             encounter_identifier_memo,
+            filters
         } = this;
+       provide_context(filters);
         let meta_store = expect_context::<reactive_stores::Store<MetaStore>>();
 
         batch(|| {
@@ -236,6 +241,7 @@ pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl I
     );
 
     view! {
+                    <MatchFilters/>
         <div class="flex flex-col">
             <div class="flex  my-card w-[768px]">
                 <MatchInfoCard

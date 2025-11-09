@@ -23,12 +23,13 @@ use leptos_router::components::A;
 use leptos_router::hooks::use_params;
 use leptos_router::{lazy_route, LazyRoute};
 use reactive_stores::Store;
+use crate::views::components::match_filters::MatchFilters;
 
 pub struct SummonerEncountersRoute {
     encounters_resource: Resource<Result<SummonerEncountersResult, ServerFnError>, BitcodeCodec>,
     pending: RwSignal<bool>,
     search_summoner: RwSignal<Option<String>>,
-    match_filters: Store<BackEndMatchFiltersSearch>,
+    filters: Store<BackEndMatchFiltersSearch>,
     summoner_identifier_memo: Memo<SummonerIdentifier>,
 }
 
@@ -38,7 +39,7 @@ impl LazyRoute for SummonerEncountersRoute {
         let summoner_route_params = use_params::<SummonerRouteParams>();
         let summoner_identifier_memo = to_summoner_identifier_memo(summoner_route_params);
         let sse_version = expect_context::<Store<SSEVersions>>();
-        let match_filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
+        let filters = Store::new(BackEndMatchFiltersSearch::default());
 
         let search_summoner = RwSignal::new(None::<String>);
         let pending = RwSignal::new(false);
@@ -47,7 +48,7 @@ impl LazyRoute for SummonerEncountersRoute {
                 (
                     sse_version.match_ver().get(),
                     search_summoner.get(),
-                    match_filters.get(),
+                    filters.get(),
                     summoner_identifier_memo.get(),
                     pending,
                 )
@@ -62,7 +63,7 @@ impl LazyRoute for SummonerEncountersRoute {
             encounters_resource,
             pending,
             search_summoner,
-            match_filters,
+            filters,
             summoner_identifier_memo,
         }
     }
@@ -72,10 +73,10 @@ impl LazyRoute for SummonerEncountersRoute {
             encounters_resource,
             pending,
             search_summoner,
-            match_filters,
+            filters,
             summoner_identifier_memo,
         } = this;
-
+        provide_context(filters);
         let to_opt_string = |v: String| if v.is_empty() { None } else { Some(v) };
 
         let (local_search_summoner, set_local_search_summoner) = signal("".to_string());
@@ -97,6 +98,7 @@ impl LazyRoute for SummonerEncountersRoute {
                 .set(format!("{}/encounters", me.base_route()));
         });
         view! {
+                        <MatchFilters/>
             <div>
                 <div class="my-card flex space-x-2 my-2 w-fit">
                     <input
@@ -110,7 +112,7 @@ impl LazyRoute for SummonerEncountersRoute {
                         class="my-button flex items-center"
                         on:click=move |_| {
                             pending.set(true);
-                            match_filters.page().set(None);
+                            filters.page().set(None);
                             search_summoner.set(to_opt_string(local_search_summoner.get()));
                         }
                     >
@@ -121,7 +123,7 @@ impl LazyRoute for SummonerEncountersRoute {
                         on:click=move |_| {
                             search_summoner.set(None);
                             set_local_search_summoner(String::new());
-                            match_filters.page().set(None);
+                            filters.page().set(None);
                         }
                     >
                         Clear

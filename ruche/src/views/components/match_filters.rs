@@ -5,12 +5,13 @@ use common::consts::queue::Queue;
 use leptos::prelude::*;
 
 use leptos::{component, view, IntoView};
+use leptos_router::hooks::use_location;
 use reactive_stores::Store;
 
 #[component]
-pub fn MatchFilters(hidden: Signal<bool>, children: Children) -> impl IntoView {
+pub fn MatchFilters() -> impl IntoView {
     let filters = expect_context::<Store<BackEndMatchFiltersSearch>>();
-
+    let location = use_location();
     Effect::new(move |_| {
         let _ = filters.champion_id().get();
         let _ = filters.queue_id().get();
@@ -34,7 +35,7 @@ pub fn MatchFilters(hidden: Signal<bool>, children: Children) -> impl IntoView {
     };
 
     view! {
-        <div class="flex justify-center my-2" class:hidden=move || hidden()>
+        <div class="flex justify-center my-2" class:hidden=move ||  location.pathname.get().ends_with("/live")>
             <div class="my-card w-[768px]">
                 <div class="flex text-left space-x-2 justify-center">
                     <div class="flex flex-col">
@@ -115,6 +116,5 @@ pub fn MatchFilters(hidden: Signal<bool>, children: Children) -> impl IntoView {
                 </div>
             </div>
         </div>
-        {children()}
     }
 }

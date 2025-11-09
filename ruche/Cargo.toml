@@ -40,7 +40,7 @@ leptos_router = { git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5
 reactive_stores ={git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c"}
 reactive_stores_macro = {git="https://github.com/gqsnt/leptos-bitcode", rev="2edb3af4d5e885fc3a4c14efe5a94fb3b1022b8c"}
 
-wasm-bindgen = "0.2.104"
+wasm-bindgen = "0.2.105"
 itertools = "0.14.0"
 urlencoding = "2"
 http = { version = "1.3.1" ,optional = true}
@@ -50,9 +50,9 @@ gloo-net = "0.6.0"
 common={path="../common"}
 axum-extra = {version = "0.12.0", optional = true}
 quinn = { version = "0.11.7", optional = true }
-h3-util = {version = "0.0.4" ,optional = true, default-features = false, features = ["quinn"]}
+h3-util = {version = "0.0.5" ,optional = true, default-features = false, features = ["quinn"]}
 rcgen = { version = "0.14.5", optional = true}
-axum-h3 = {version = "0.0.4", optional = true}
+axum-h3 = {version = "0.0.5", optional = true}
 once_cell = {version = "1.21.3", optional = true}
 
 

@@ -60,8 +60,6 @@ pub fn App() -> impl IntoView {
     let sse_versions = Store::new(SSEVersions::default());
     provide_context(sse_versions);
 
-    let filters = Store::new(BackEndMatchFiltersSearch::default());
-    provide_context(filters);
 
     view! {
         // injects a stylesheet into the document <head>
