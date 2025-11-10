@@ -1,5 +1,5 @@
 use crate::utils::format_with_spaces;
-use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
+use crate::views::components::match_details::LolMatchParticipantDetails;
 use crate::views::ImgChampion;
 use common::consts::champion::Champion;
 

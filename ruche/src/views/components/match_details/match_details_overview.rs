@@ -1,5 +1,5 @@
 use crate::utils::{format_with_spaces, items_from_slice, summoner_encounter_url, summoner_url};
-use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
+use crate::views::components::match_details::LolMatchParticipantDetails;
 use std::sync::Arc;
 
 use crate::views::{ImgChampion, ImgItem, ImgPerk, ImgSummonerSpell, ProPlayerSlugView};

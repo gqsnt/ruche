@@ -5,8 +5,6 @@ use crate::app::{
 use crate::backend::server_fns::get_summoner::get_summoner;
 use crate::backend::server_fns::update_summoner::UpdateSummoner;
 use crate::utils::{summoner_url, ProPlayerSlug};
-use crate::views::components::match_filters::MatchFilters;
-use crate::views::summoner_page::summoner_nav::SummonerNav;
 use crate::views::{BackEndMatchFiltersSearch, ImgSrc, PendingLoading, ProPlayerSlugView};
 use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
@@ -19,20 +17,19 @@ use leptos::prelude::*;
 use leptos::server::codee::binary::BitcodeCodec;
 use leptos::{component, view, IntoView};
 
-use crate::views::summoner_page::summoner_search_page::SummonerSearch;
+
 use leptos_router::components::{Outlet, A};
-use leptos_router::hooks::{use_location, use_params};
+use leptos_router::hooks::{use_params};
 use leptos_router::{lazy_route, LazyRoute};
 use reactive_stores::Store;
+use crate::views::components::summoner_nav::SummonerNav;
+use crate::views::components::summoner_search_page::SummonerSearch;
 
-pub mod match_details;
 pub mod summoner_champions_page;
 pub mod summoner_encounter_page;
 pub mod summoner_encounters_page;
 pub mod summoner_live_page;
 pub mod summoner_matches_page;
-pub mod summoner_nav;
-pub mod summoner_search_page;
 
 pub struct SummonerPageRoute {
     pub summoner_resource: Resource<Result<Summoner, ServerFnError>, BitcodeCodec>,
@@ -204,8 +201,8 @@ impl LazyRoute for SummonerPageRoute {
                     })}
                 </Transition>
                 <SummonerNav />
-               
-                  <Outlet />
+
+                <Outlet />
 
             </div>
         }.into_any()

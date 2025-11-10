@@ -98,7 +98,7 @@ impl LazyRoute for SummonerEncountersRoute {
                 .set(format!("{}/encounters", me.base_route()));
         });
         view! {
-                        <MatchFilters/>
+            <MatchFilters />
             <div>
                 <div class="my-card flex space-x-2 my-2 w-fit">
                     <input

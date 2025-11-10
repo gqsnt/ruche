@@ -1,6 +1,6 @@
 use crate::backend::ssr::{AppError, AppResult};
 use crate::ssr::RiotApiState;
-use crate::views::summoner_page::match_details::{ItemEvent, ItemEventType, Skill};
+use crate::views::components::match_details::{ItemEvent, ItemEventType, Skill};
 use chrono::NaiveDateTime;
 use common::consts::platform_route::PlatformRoute;
 use serde::{Deserialize, Serialize};

@@ -1,9 +1,6 @@
 use crate::app::SummonerIdentifier;
 use crate::backend::server_fns::get_match_details::get_match_details;
 use crate::utils::{ProPlayerSlug, RiotMatchId, SSEVersions, SSEVersionsStoreFields};
-use crate::views::summoner_page::match_details::match_details_build::MatchDetailsBuild;
-use crate::views::summoner_page::match_details::match_details_overview::MatchDetailsOverview;
-use crate::views::summoner_page::match_details::match_details_team::MatchDetailsTeam;
 use bitcode::{Decode, Encode};
 use common::consts::platform_route::PlatformRoute;
 use leptos::either::{Either, EitherOf3};
@@ -13,6 +10,9 @@ use leptos::{component, view, IntoView};
 use reactive_stores::Store;
 use std::fmt::Formatter;
 use std::sync::Arc;
+use crate::views::components::match_details::match_details_build::MatchDetailsBuild;
+use crate::views::components::match_details::match_details_overview::MatchDetailsOverview;
+use crate::views::components::match_details::match_details_team::MatchDetailsTeam;
 
 pub mod match_details_build;
 pub mod match_details_overview;

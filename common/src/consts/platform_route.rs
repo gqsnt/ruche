@@ -47,7 +47,7 @@ pub enum PlatformRoute {
     JP = 19,
 
     /// Korea.
-    #[strum(serialize = "KR", to_string = "KR")]
+    #[strum(serialize = "KR",to_string = "KR")]
     KR = 20,
 
     /// Latin America, North.

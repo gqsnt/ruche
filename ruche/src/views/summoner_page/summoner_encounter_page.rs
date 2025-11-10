@@ -8,7 +8,6 @@ use crate::utils::{
     items_from_slice, DurationSince, RiotMatchId, SSEVersions, SSEVersionsStoreFields,
 };
 use crate::views::components::pagination::Pagination;
-use crate::views::summoner_page::match_details::MatchDetails;
 use crate::views::summoner_page::summoner_matches_page::{MatchInfoCard, MatchSummonerCard};
 use crate::views::summoner_page::{Summoner, SummonerInfo};
 use crate::views::BackEndMatchFiltersSearch;
@@ -25,6 +24,7 @@ use leptos::{component, IntoView};
 use leptos_router::hooks::use_params;
 use leptos_router::{lazy_route, LazyRoute};
 use reactive_stores::Store;
+use crate::views::components::match_details::MatchDetails;
 use crate::views::components::match_filters::MatchFilters;
 
 pub struct SummonerEncounterRoute {
@@ -110,6 +110,7 @@ impl LazyRoute for SummonerEncounterRoute {
         });
 
         view! {
+            <MatchFilters />
             <div class="flex my-card justify-center space-x-2 my-2">
                 <button
 
@@ -241,7 +242,6 @@ pub fn SummonerEncounterMatchComponent(match_: SummonerEncounterMatch) -> impl I
     );
 
     view! {
-                    <MatchFilters/>
         <div class="flex flex-col">
             <div class="flex  my-card w-[768px]">
                 <MatchInfoCard

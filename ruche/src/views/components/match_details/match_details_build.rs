@@ -1,4 +1,4 @@
-use crate::views::summoner_page::match_details::{
+use crate::views::components::match_details::{
     ItemEventType, LolMatchParticipantDetails, Skill,
 };
 use crate::views::{ImgItem, ImgPerk};

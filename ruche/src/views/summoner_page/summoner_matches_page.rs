@@ -14,7 +14,7 @@ use crate::views::{
 };
 use bitcode::{Decode, Encode};
 
-use crate::views::summoner_page::match_details::MatchDetails;
+use crate::views::components::match_details::MatchDetails;
 use common::consts::champion::Champion;
 use common::consts::item::Item;
 use common::consts::perk::Perk;
@@ -86,7 +86,7 @@ impl LazyRoute for SummonerMatchesRoute {
         });
 
         view! {
-                        <MatchFilters/>
+            <MatchFilters />
             <div class="w-[768px] inline-block align-top justify-center">
                 <div class="">
                     <Transition fallback=move || {

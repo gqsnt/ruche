@@ -19,7 +19,6 @@ use leptos_router::hooks::use_params;
 use leptos_router::{lazy_route, LazyRoute};
 use reactive_stores::Store;
 use crate::views::components::match_filters::MatchFilters;
-use crate::views::summoner_page::expect_filters;
 
 pub struct SummonerChampionsRoute {
     champions_resource: Resource<Result<Vec<ChampionStats>, ServerFnError>, BitcodeCodec>,
@@ -91,7 +90,7 @@ impl LazyRoute for SummonerChampionsRoute {
                 .set(format!("{}/champions", me.base_route()));
         });
         view! {
-             <MatchFilters/>
+            <MatchFilters />
             <div>
                 <Transition fallback=move || {
                     view! { <div class="text-center">Loading Champions</div> }

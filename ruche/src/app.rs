@@ -9,7 +9,6 @@ use crate::views::summoner_page::summoner_encounter_page::SummonerEncounterRoute
 use crate::views::summoner_page::summoner_encounters_page::SummonerEncountersRoute;
 use crate::views::summoner_page::summoner_live_page::SummonerLiveRoute;
 use crate::views::summoner_page::summoner_matches_page::SummonerMatchesRoute;
-use crate::views::BackEndMatchFiltersSearch;
 use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, Title};

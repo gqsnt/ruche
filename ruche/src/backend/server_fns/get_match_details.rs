@@ -1,5 +1,5 @@
 use crate::utils::RiotMatchId;
-use crate::views::summoner_page::match_details::LolMatchParticipantDetails;
+use crate::views::components::match_details::LolMatchParticipantDetails;
 use common::consts::platform_route::PlatformRoute;
 use leptos::prelude::*;
 use leptos::server;
@@ -65,7 +65,7 @@ pub mod ssr {
     use crate::backend::server_fns::get_matches::ssr::get_summoner_encounters;
     use crate::backend::ssr::{AppResult, PlatformRouteDb};
     use crate::utils::ProPlayerSlug;
-    use crate::views::summoner_page::match_details::{
+    use crate::views::components::match_details::{
         LolMatchParticipantDetails, LolMatchTimeline, Skill,
     };
     use bigdecimal::{BigDecimal, ToPrimitive};

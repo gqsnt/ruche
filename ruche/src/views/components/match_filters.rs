@@ -35,7 +35,10 @@ pub fn MatchFilters() -> impl IntoView {
     };
 
     view! {
-        <div class="flex justify-center my-2" class:hidden=move ||  location.pathname.get().ends_with("/live")>
+        <div
+            class="flex justify-center my-2"
+            class:hidden=move || location.pathname.get().ends_with("/live")
+        >
             <div class="my-card w-[768px]">
                 <div class="flex text-left space-x-2 justify-center">
                     <div class="flex flex-col">

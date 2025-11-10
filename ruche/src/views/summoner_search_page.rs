@@ -1,8 +1,8 @@
 use crate::app::{MetaStore, MetaStoreStoreFields};
-use crate::views::summoner_page::summoner_search_page::SummonerSearch;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::components::A;
+use crate::views::components::summoner_search_page::SummonerSearch;
 
 #[component]
 pub fn SummonerSearchPage() -> impl IntoView {
