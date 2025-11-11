@@ -9,6 +9,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
     use http::HeaderValue;
     use leptos::logging::log;
     use leptos::prelude::*;
+    use ruche::ssr::init_database;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use memory_serve::{load_assets, CacheControl, MemoryServe};
     use ruche::app::*;
@@ -82,10 +83,7 @@ async fn main() -> ruche::backend::ssr::AppResult<()> {
 
     let site_address = leptos_options.site_addr;
 
-    let database_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let pool = PgPool::connect(database_url.as_str())
-        .await
-        .expect("Could not connect to database");
+    let pool = init_database(is_prod).await;
     let riot_api = Arc::new(init_riot_api());
     let hub = Hub::new();
     tokio::spawn(hub.clone().run(std::time::Duration::from_millis(500)));

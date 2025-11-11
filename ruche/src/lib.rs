@@ -9,6 +9,8 @@ pub mod serve;
 #[cfg(feature = "ssr")]
 pub mod sse;
 
+
+
 pub const DB_CHUNK_SIZE: usize = 500;
 
 #[cfg(feature = "ssr")]
@@ -48,7 +50,7 @@ pub mod ssr {
         let api_key = dotenv::var("RIOT_API_KEY").expect("RIOT_API_KEY must be set");
         RiotApi::new(api_key)
     }
-    pub async fn init_database() -> PgPool {
+    pub async fn init_database(is_prod:bool) -> PgPool {
         let max_connections = dotenv::var("MAX_PG_CONNECTIONS")
             .unwrap_or("10".to_string())
             .parse::<u32>()
@@ -56,22 +58,28 @@ pub mod ssr {
         let db_username = dotenv::var("DB_USER_NAME").expect("no db username specify");
         let db_password = dotenv::var("DB_PASSWORD").expect("no db password specify");
         let db_name = dotenv::var("DB_NAME").expect("no db name specify");
-        let socket = dotenv::var("DB_SOCKET").unwrap_or("".to_string());
-        let opts = PgConnectOptions::new()
-            .username(db_username.as_str())
-            .password(db_password.as_str())
-            .database(db_name.as_str())
-            .socket(socket.as_str());
-        let pool = sqlx::postgres::PgPoolOptions::new()
-            .max_connections(max_connections)
-            .connect_with(opts)
-            .await
-            .expect("failed to connect to database");
+       let pool = if is_prod{
+           let socket = dotenv::var("DB_SOCKET").unwrap_or("".to_string());
+           let opts = PgConnectOptions::new()
+               .username(db_username.as_str())
+               .password(db_password.as_str())
+               .database(db_name.as_str())
+               .socket(socket.as_str());
+            sqlx::postgres::PgPoolOptions::new()
+               .max_connections(max_connections)
+               .connect_with(opts)
+               .await
+               .expect("failed to connect to database")
+       }else{
+           let db_url = dotenv::var("DATABASE_URL").expect("no db url specified");
+           PgPool::connect(db_url.as_str())
+               .await
+               .expect("failed to connect to database")
+       };
         sqlx::migrate!()
             .run(&pool)
             .await
             .expect("migrations failed");
-
         pool
     }
 }
